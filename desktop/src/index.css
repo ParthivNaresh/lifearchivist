@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    transition: border-color 0.2s ease;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    /* Dramatic gradient background for glass-morphism - Light theme */
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(120, 113, 255, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 113, 145, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 40% 80%, rgba(113, 255, 193, 0.3) 0%, transparent 50%),
+      linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+    min-height: 100vh;
+    transition: background 0.3s ease, color 0.2s ease;
+  }
+  
+  .dark body {
+    /* Dark theme gradient with deep purples and blues */
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 40% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+      linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  }
+}
+
+@layer components {
+  /* Glass-morphism card component */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .dark .glass-card {
+    background: rgba(17, 24, 39, 0.25);
+    backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid rgba(75, 85, 99, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Upload queue glassmorphism styles */
+  .upload-queue-glass {
+    background: rgba(15, 23, 42, 0.15);
+    backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    box-shadow: 
+      0 25px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.03),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .upload-queue-glass:hover {
+    border-color: rgba(99, 102, 241, 0.25);
+    box-shadow: 
+      0 32px 80px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Progress bar glassmorphism */
+  .progress-glass {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    background: linear-gradient(90deg, 
+      rgba(168, 85, 247, 0.8) 0%, 
+      rgba(99, 102, 241, 0.9) 50%, 
+      rgba(59, 130, 246, 0.8) 100%);
+    box-shadow: 
+      0 0 20px rgba(99, 102, 241, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Upload item glassmorphism */
+  .upload-item-glass {
+    background: rgba(17, 24, 39, 0.12);
+    backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(75, 85, 99, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .upload-item-glass:hover {
+    background: rgba(17, 24, 39, 0.18);
+    border-color: rgba(99, 102, 241, 0.3);
+    transform: translateY(-1px);
+  }
+
+  /* Floating button glassmorphism */
+  .floating-button-glass {
+    background: rgba(15, 23, 42, 0.2);
+    backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    box-shadow: 
+      0 20px 40px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .floating-button-glass:hover {
+    background: rgba(15, 23, 42, 0.3);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px) scale(1.05);
+  }
+
+  /* Shimmer animation for loading states */
+  @keyframes shimmer {
+    0% {
+      background-position: -200px 0;
+    }
+    100% {
+      background-position: calc(200px + 100%) 0;
+    }
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.1) 20%,
+      rgba(255, 255, 255, 0.2) 60%,
+      rgba(255, 255, 255, 0)
+    );
+    background-size: 200px 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  /* Enhanced drop zone with glass effect */
+  .glass-dropzone {
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(16px) saturate(200%);
+    @apply border-2 border-dashed;
+    border-color: rgba(156, 163, 175, 0.8);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+  }
+  
+  .glass-dropzone:hover {
+    background: rgba(255, 255, 255, 0.45);
+    border-color: rgba(107, 114, 128, 0.9);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+  
+  .dark .glass-dropzone {
+    background: rgba(31, 41, 55, 0.75);
+    backdrop-filter: blur(10px);
+    border-color: rgba(75, 85, 99, 0.6);
+  }
+  
+  .dark .glass-dropzone:hover {
+    background: rgba(31, 41, 55, 0.85);
+    border-color: rgba(107, 114, 128, 0.8);
+    transform: translateY(-2px);
+  }
+}

@@ -1,0 +1,189 @@
+[tool.poetry]
+name = "lifearchivist"
+version = "0.1.0"
+description = "Local-first, privacy-preserving personal knowledge system with MCP architecture"
+authors = ["Parthiv Naresh <parthivnaresh@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/parthivnaresh/lifearchivist"
+documentation = "https://docs.lifearchivist.dev"
+keywords = ["knowledge-management", "personal", "privacy", "local-first", "mcp", "search", "documents"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Desktop Environment :: File Managers",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+packages = [{include = "lifearchivist"}]
+
+[tool.poetry.dependencies]
+python = "^3.12.0"
+# MCP and API Framework
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.31.0"}
+pydantic = "^2.9.0"
+pydantic-settings = "^2.10.0"
+mcp = "^1.0.0"
+# Storage
+sqlalchemy = "^2.0.35"
+qdrant-client = "^1.12.0"
+# ML/NLP
+sentence-transformers = "^3.0.0"
+torch = "^2.3.0"
+scikit-learn = "^1.3.0"
+# Document Processing
+pypdf = "*"
+python-docx = "^1.1.0"
+beautifulsoup4 = "^4.12.0"
+pytesseract = "^0.3.10"
+pillow = "^10.4.0"
+python-magic = "^0.4.27"
+# Audio/Video
+faster-whisper = "^1.0.0"
+ffmpeg-python = "^0.2.0"
+# Task Queue and Scheduling
+arq = "^0.26.0"
+redis = "^5.0.0"
+apscheduler = "^3.10.4"
+# CLI
+typer = {extras = ["all"], version = "^0.13.0"}
+rich = "^13.7.0"
+# LLM Integration
+ollama = "*"
+llama-index = "0.13.2"
+llama-index-llms-ollama = "*"
+llama-index-embeddings-huggingface = "*"
+# Utilities
+aiofiles = "^24.1.0"
+watchfiles = "^0.24.0"
+cryptography = "^43.0.0"
+keyring = "^25.4.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+pytest-asyncio = "*"
+pytest-cov = "*"
+black = "*"
+flake8 = "*"
+mypy = "*"
+isort = "*"
+ruff = "*"
+lxml = "*"
+autoflake = "*"
+pre-commit = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
+myst-parser = "*"
+bandit = "*"
+safety = "*"
+testcontainers = "*"
+localstack = "*"
+pymongo = "*"
+PyMySQL = "*"
+types-PyMySQL = "*"
+docker = "*"
+urllib3 = "*"
+types-aiofiles = "^24.1.0.20250708"
+types-PyYAML = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["lifearchivist"]
+skip_glob = ["*/migrations/*"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+ignore_missing_imports = true
+show_error_codes = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"]  # pyflakes, pycodestyle, bugbear, import sorting
+ignore = ["E501"]  # disable line length if black handles it
+
+[tool.ruff.lint.isort]
+known-first-party = ["lifearchivist"]
+
+[[tool.mypy.overrides]]
+module = "lifearchivist.config.settings"
+ignore_errors = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --strict-config --disable-warnings"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "live: Live integration tests with real services",
+    "localstack: Tests requiring LocalStack",
+    "docker_required: Tests requiring Docker daemon",
+    "terraform_required: Tests requiring Terraform binary",
+    "e2e: End-to-end tests",
+    "slow: Slow tests",
+]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["lifearchivist"]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

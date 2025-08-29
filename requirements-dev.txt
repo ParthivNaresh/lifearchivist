@@ -1,0 +1,34 @@
+# Development dependencies for Orcastrate
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-xdist>=3.3.0
+pytest-mock>=3.11.0
+
+# Code quality
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+pylint>=2.17.0
+mypy>=1.4.0
+
+# Documentation
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
+myst-parser>=0.18.0
+
+# Development tools
+pre-commit>=3.3.0
+pip-tools>=6.13.0
+build>=0.10.0
+twine>=4.0.0
+
+# Debugging and profiling
+ipdb>=0.13.0
+memory-profiler>=0.60.0
+line-profiler>=4.0.0
+
+# Rich output for development
+rich>=13.0.0
