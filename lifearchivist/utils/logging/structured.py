@@ -288,11 +288,11 @@ def create_development_formatter() -> logging.Formatter:
             ]
 
             # Check for structured data to build components
-            correlation_info = ""
+            # correlation_info = ""
             operation_info = ""
             status_info = ""
             message_content = record.getMessage()
-            error_info= ""
+            error_info = ""
             data = None
 
             if hasattr(record, "structured_data") and record.structured_data:
@@ -316,7 +316,6 @@ def create_development_formatter() -> logging.Formatter:
 
                 if "error" in data:
                     error_info = f" | {data['error']} ❌"
-
 
             # Build clean message with emoji timing prefix when present
             message = f"{timestamp} | {record.levelname:5} | {message_content}{operation_info}{status_info}{error_info}"

@@ -10,7 +10,9 @@ from lifearchivist.tools.date_extract.date_extraction_tool import (
 )
 from lifearchivist.tools.extract.extract_tools import ExtractTextTool
 from lifearchivist.tools.file_import.file_import_tool import FileImportTool
+from lifearchivist.tools.llamaindex.llamaindex_query_tool import LlamaIndexQueryTool
 from lifearchivist.tools.ollama.ollama_tool import OllamaTool
+from lifearchivist.tools.search.search_tool import IndexSearchTool
 from lifearchivist.utils.logging import log_context, log_event, log_method
 from lifearchivist.utils.logging.structured import MetricsCollector
 
@@ -96,6 +98,18 @@ class ToolRegistry:
                     "dependencies": [],
                     "kwargs": {},
                 },
+                {
+                    "name": "IndexSearchTool",
+                    "class": IndexSearchTool,
+                    "dependencies": ["llamaindex_service"],
+                    "kwargs": {"llamaindex_service": self.llamaindex_service},
+                },
+                {
+                    "name": "LlamaIndexQueryTool",
+                    "class": LlamaIndexQueryTool,
+                    "dependencies": ["llamaindex_service"],
+                    "kwargs": {"llamaindex_service": self.llamaindex_service},
+                },
             ]
 
             metrics.add_metric("tools_to_register", len(tool_definitions))
@@ -124,7 +138,7 @@ class ToolRegistry:
                             "tool_registration_dependency_check_failed",
                             {
                                 "tool_name": tool_def["name"],
-                                "error": f"Missing dependencies: {missing_deps} for {tool_def["name"]}",
+                                "error": f"Missing dependencies: {missing_deps} for {tool_def['name']}",
                             },
                         )
                         failed_registrations += 1

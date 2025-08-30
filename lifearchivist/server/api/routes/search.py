@@ -3,7 +3,7 @@ Search and query endpoints.
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 
@@ -82,7 +82,7 @@ async def search_documents_get(
 
 
 @router.post("/ask")
-async def ask_question(request: Dict[str, str]):
+async def ask_question(request: Dict[str, Any]):
     """Ask a question using RAG Q&A."""
     server = get_server()
 
@@ -93,12 +93,45 @@ async def ask_question(request: Dict[str, str]):
         if not question:
             raise HTTPException(status_code=400, detail="Question is required")
 
-        # Use the query agent for Q&A
-        result = await server.query_agent.answer_question(
-            question=question, context_limit=context_limit
+        # Convert context_limit to int if it's a string
+        if isinstance(context_limit, str):
+            try:
+                context_limit = int(context_limit)
+            except ValueError:
+                context_limit = 5
+
+        # Use the llamaindex.query tool directly instead of query_agent
+        result = await server.execute_tool(
+            "llamaindex.query",
+            {
+                "question": question,
+                "similarity_top_k": context_limit,
+                "response_mode": "tree_summarize",
+            },
         )
 
-        return result
+        if result.get("success"):
+            # Transform the result to match the expected format for the UI
+            tool_result = result["result"]
+            return {
+                "answer": tool_result.get("answer", ""),
+                "confidence": tool_result.get("confidence", 0.0),
+                "citations": [
+                    {
+                        "doc_id": source.get("document_id", ""),
+                        "title": source.get("title", ""),
+                        "snippet": source.get("text", "")[:200],
+                        "score": source.get("score", 0.0),
+                    }
+                    for source in tool_result.get("sources", [])
+                ],
+                "method": tool_result.get("method", "llamaindex_tool"),
+                "context_length": len(tool_result.get("sources", [])),
+            }
+        else:
+            raise HTTPException(
+                status_code=500, detail=result.get("error", "Q&A tool failed")
+            )
 
     except HTTPException:
         raise
