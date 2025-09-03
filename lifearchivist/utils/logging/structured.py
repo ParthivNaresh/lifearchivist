@@ -7,7 +7,6 @@ for creating searchable, queryable log entries.
 
 import json
 import logging
-import sys
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -182,43 +181,6 @@ def log_event(
     structured_logger.event(event_name, data, level)
 
 
-def log_performance(operation: str, duration_ms: int, **metrics):
-    """
-    Convenience function for logging performance metrics.
-
-    Args:
-        operation: Name of the operation
-        duration_ms: Duration in milliseconds
-        **metrics: Additional performance metrics
-    """
-    structured_logger = get_structured_logger()
-    structured_logger.performance(operation, duration_ms, metrics)
-
-
-def log_business_event(
-    event_type: str, entity_id: Optional[str] = None, **business_data
-):
-    """
-    Log business/domain events for analytics and monitoring.
-
-    Args:
-        event_type: Type of business event (e.g., 'document_ingested', 'search_performed')
-        entity_id: ID of the primary entity involved
-        **business_data: Business-specific data
-    """
-    event_data = {
-        "business_event": True,
-        "event_type": event_type,
-    }
-
-    if entity_id:
-        event_data["entity_id"] = entity_id
-
-    event_data.update(business_data)
-
-    log_event("business_event", event_data)
-
-
 class MetricsCollector:
     """
     Utility class for collecting and aggregating metrics during operation execution.
@@ -286,82 +248,35 @@ def create_development_formatter() -> logging.Formatter:
             timestamp = datetime.fromtimestamp(record.created).strftime("%H:%M:%S.%f")[
                 :-3
             ]
-
-            # Check for structured data to build components
-            # correlation_info = ""
-            operation_info = ""
-            status_info = ""
             message_content = record.getMessage()
-            error_info = ""
-            data = None
+            extras = []
 
-            if hasattr(record, "structured_data") and record.structured_data:
-                data = record.structured_data
+            data = getattr(record, "structured_data", None)
+            if data:
+                # Lookup strategy: map keys -> formatter functions
+                strategies = {
+                    "duration_ms": lambda v: f"⏱️ {v}ms | {message_content}",
+                    "operation": lambda v: f"op={v}",
+                    "success": lambda v: "✅" if v else "❌",
+                    "error": lambda v: f"error={v} ❌",
+                }
 
-                # Add timing prefix with emoji for performance logs
                 if "duration_ms" in data:
-                    message_content = f"⏱️  {data['duration_ms']}ms | {message_content}"
+                    message_content = strategies["duration_ms"](data["duration_ms"])
 
-                # if "correlation_id" in data:
-                #     short_id = data["correlation_id"][:8]
-                #     correlation_info = f" | {short_id}"
+                for key, fn in strategies.items():
+                    if key != "duration_ms" and key in data:
+                        extras.append(fn(data[key]))
 
-                if "operation" in data:
-                    operation_info = f" | {data['operation']}"
-
-                # Add success/failure indicator
-                if "success" in data:
-                    status = "✅" if data["success"] else "❌"
-                    status_info = f" | {status}"
-
-                if "error" in data:
-                    error_info = f" | {data['error']} ❌"
+                # Add any remaining keys not in strategies
+                for key, value in data.items():
+                    if key not in strategies:
+                        extras.append(f"{key}={value}")
 
             # Build clean message with emoji timing prefix when present
-            message = f"{timestamp} | {record.levelname:5} | {message_content}{operation_info}{status_info}{error_info}"
-
-            return message
+            extras_str = " | ".join(extras)
+            return f"{timestamp} | {record.levelname:5} | {message_content}" + (
+                f" | {extras_str}" if extras_str else ""
+            )
 
     return DevelopmentFormatter()
-
-
-def setup_structured_logging(
-    level: str = "INFO", use_json: bool = True, logger_name: str = "lifearchivist"
-) -> logging.Logger:
-    """
-    Set up structured logging with appropriate formatter.
-
-    Args:
-        level: Log level string
-        use_json: Whether to use JSON formatting (vs development formatting)
-        logger_name: Name of the logger to configure
-
-    Returns:
-        Configured logger instance
-    """
-    log_level = getattr(logging, level.upper())
-
-    # Get or create logger
-    structured_logger = logging.getLogger(logger_name)
-    structured_logger.setLevel(log_level)
-
-    # Remove existing handlers
-    for handler in structured_logger.handlers[:]:
-        structured_logger.removeHandler(handler)
-
-    # Create handler with appropriate formatter
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(log_level)
-
-    if use_json:
-        formatter = StructuredFormatter()
-    else:
-        formatter = create_development_formatter()
-
-    handler.setFormatter(formatter)
-    structured_logger.addHandler(handler)
-
-    # Don't propagate to avoid duplication
-    structured_logger.propagate = False
-
-    return structured_logger

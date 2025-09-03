@@ -213,17 +213,18 @@ class FileImportTool(BaseTool):
                     {"file_id": file_id, "text_available": bool(extracted_text)},
                 )
 
-                metadata = create_document_metadata(
+                doc_metadata = create_document_metadata(
                     file_id=file_id,
                     file_hash=file_hash,
                     original_path=display_path,
                     mime_type=mime_type,
                     stat=stat,
                     text=extracted_text,
+                    custom_metadata=metadata,
                 )
 
                 success = await self.llamaindex_service.add_document(
-                    document_id=file_id, content=extracted_text, metadata=metadata
+                    document_id=file_id, content=extracted_text, metadata=doc_metadata
                 )
 
                 if not success:

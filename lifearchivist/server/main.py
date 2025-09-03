@@ -98,13 +98,6 @@ def create_app() -> FastAPI:
             "ui_enabled": settings.enable_ui,
         }
 
-    # Tool execution endpoint (for backwards compatibility)
-    @app.post("/api/tools/execute")
-    async def execute_tool(request: ToolExecutionRequest) -> ToolExecutionResult:
-        """Execute a tool via REST API."""
-        result = await server.execute_tool(request.tool, request.params)
-        return ToolExecutionResult(**result)
-
     # Include all API routes
     app.include_router(get_api_router())
 

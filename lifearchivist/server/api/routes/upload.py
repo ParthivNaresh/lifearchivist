@@ -30,7 +30,6 @@ async def ingest_document(request: IngestRequest):
         file_path=request.path,
         has_session_id=bool(request.session_id),
     ):
-
         metrics = MetricsCollector("api_document_ingest")
         metrics.start()
 
@@ -82,8 +81,6 @@ async def ingest_document(request: IngestRequest):
                 )
                 raise HTTPException(status_code=500, detail=error_msg)
 
-        except HTTPException:
-            raise
         except Exception as e:
             metrics.set_error(e)
             metrics.report("api_ingest_failed")

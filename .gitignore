@@ -110,13 +110,6 @@ venv/
 env.bak/
 venv.bak/
 
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
 # mkdocs documentation
 /site
 
@@ -131,7 +124,6 @@ mypy-report-json/
 .pyre/
 
 # IDEs
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -149,3 +141,6 @@ mypy-report-json/
 # Logs
 logs/
 *.log
+
+# UI
+desktop/node_modules

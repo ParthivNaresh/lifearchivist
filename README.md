@@ -189,13 +189,6 @@ curl -X POST http://localhost:8000/api/ask \
   -d '{"question": "What is my mortgage interest rate?"}' | jq
 ```
 
-### Direct Tool Execution
-```bash
-curl -X POST http://localhost:8000/api/tools/execute \
-  -H "Content-Type: application/json" \
-  -d '{"tool": "llamaindex.query", "params": {"question": "summarize key terms"}}' | jq
-```
-
 See `COMMANDS.md` for comprehensive API testing commands.
 
 ## 🏥 Health Monitoring

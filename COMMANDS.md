@@ -25,9 +25,9 @@ This file contains curl commands for testing all API endpoints during developmen
 - [Ask Questions](#ask-questions-rag)
 - [Different Question Types](#different-question-types)
 
-### MCP Tools
-- [Tool Execution](#direct-tool-execution)
-- [Available Tools](#available-tools)
+### Advanced Search & Q&A
+- [Search with Filters](#search-with-filters)
+- [Q&A Examples](#qa-examples)
 
 ### Storage & Organization
 - [Vault Information](#vault-information)
@@ -52,7 +52,7 @@ curl -s http://localhost:11434/api/tags | python3 -m json.tool
 
 ### Ollama Model Test
 ```bash
-curl -s -X POST http://localhost:11434/api/generate -H "Content-Type: application/json" -d '{"model": "llama3.2:3b", "prompt": "Hello, how are you?", "stream": false}' | python3 -m json.tool
+curl -s -X POST http://localhost:11434/api/generate -H "Content-Type: application/json" -d '{"model": "llama3.2:1b", "prompt": "Hello, how are you?", "stream": false}' | python3 -m json.tool
 ```
 **Tests**: Model loading, text generation
 
@@ -141,9 +141,13 @@ curl -s "http://localhost:8000/api/search?q=loan&mode=hybrid&limit=5" | python3 
 
 ### Ask Questions (RAG)
 ```bash
+# Basic question with integer context_limit
 curl -s -X POST http://localhost:8000/api/ask -H "Content-Type: application/json" -d '{"question": "What is my mortgage interest rate?", "context_limit": 5}' | python3 -m json.tool
+
+# Question with string context_limit (UI format)
+curl -s -X POST http://localhost:8000/api/ask -H "Content-Type: application/json" -d '{"question": "What companies are mentioned in the documents?", "context_limit": "3"}' | python3 -m json.tool
 ```
-**Tests**: RAG pipeline, document retrieval, Ollama integration, answer generation
+**Tests**: RAG pipeline, LlamaIndex query tool, document retrieval, answer generation, confidence scoring
 
 ### Different Question Types
 ```bash
@@ -157,35 +161,36 @@ curl -s -X POST http://localhost:8000/api/ask -H "Content-Type: application/json
 
 ---
 
-## MCP Tools
+## Advanced Search & Q&A
 
-### Direct Tool Execution
-
-#### LlamaIndex Query Tool
+### Search with Filters
 ```bash
-curl -s -X POST http://localhost:8000/api/tools/execute -H "Content-Type: application/json" -d '{"tool": "llamaindex.query", "params": {"question": "What are the key points about mortgages?", "similarity_top_k": 3}}' | python3 -m json.tool
-```
+# Search with MIME type filter
+curl -s "http://localhost:8000/api/search?q=mortgage&mode=semantic&mime_type=application/pdf&limit=5" | python3 -m json.tool
 
-#### Ollama Tool
-```bash
-curl -s -X POST http://localhost:8000/api/tools/execute -H "Content-Type: application/json" -d '{"tool": "llm.ollama", "params": {"prompt": "What is 2+2?", "temperature": 0.1}}' | python3 -m json.tool
-```
+# Search with tags filter
+curl -s "http://localhost:8000/api/search?q=earnings&mode=keyword&tags=financial,reports&limit=3" | python3 -m json.tool
 
-#### File Import Tool
-```bash
-curl -s -X POST http://localhost:8000/api/tools/execute -H "Content-Type: application/json" -d '{"tool": "file.import", "params": {"path": "/path/to/document.pdf", "tags": ["imported"], "metadata": {"source": "tool_test"}}}' | python3 -m json.tool
-```
+# Search with multiple filters
+curl -s "http://localhost:8000/api/search?q=medical&mode=hybrid&status=ready&mime_type=text/plain&limit=10" | python3 -m json.tool
 
-#### Text Extraction Tool
-```bash
-curl -s -X POST http://localhost:8000/api/tools/execute -H "Content-Type: application/json" -d '{"tool": "extract.text", "params": {"file_id": "DOCUMENT_ID"}}' | python3 -m json.tool
+# Include full content in results
+curl -s "http://localhost:8000/api/search?q=bank&mode=semantic&include_content=true&limit=2" | python3 -m json.tool
 ```
+**Tests**: Metadata filtering, content inclusion, advanced search parameters
 
-### Available Tools
+### Q&A Examples
 ```bash
-curl -s http://localhost:8000/api/tools | python3 -m json.tool
+# Complex analytical question
+curl -s -X POST http://localhost:8000/api/ask -H "Content-Type: application/json" -d '{"question": "What are the main financial trends mentioned across all documents?", "context_limit": 10}' | python3 -m json.tool
+
+# Specific fact retrieval
+curl -s -X POST http://localhost:8000/api/ask -H "Content-Type: application/json" -d '{"question": "What was the account balance in the most recent statement?", "context_limit": 3}' | python3 -m json.tool
+
+# Comparative analysis
+curl -s -X POST http://localhost:8000/api/ask -H "Content-Type: application/json" -d '{"question": "How do the earnings compare between different quarters?", "context_limit": 8}' | python3 -m json.tool
 ```
-**Tests**: Tool registry, available tools listing
+**Tests**: Complex reasoning, multi-document analysis, confidence scoring, source attribution
 
 ---
 
