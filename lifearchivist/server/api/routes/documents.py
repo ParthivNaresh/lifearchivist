@@ -161,6 +161,8 @@ async def clear_all_documents():
 
             # Step 2: Clear vault files
             log_event("clear_vault_phase_started", {})
+            if not server.vault:
+                raise HTTPException(status_code=500, detail="Vault not initialized")
             vault_metrics = await server.vault.clear_all_files(
                 []
             )  # Empty list = clear all

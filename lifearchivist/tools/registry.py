@@ -129,7 +129,10 @@ class ToolRegistry:
                 try:
                     # Validate dependencies
                     missing_deps = []
-                    for dep in tool_def["dependencies"]:
+                    dependencies = tool_def.get("dependencies", [])
+                    if not hasattr(dependencies, "__iter__"):
+                        dependencies = []
+                    for dep in dependencies:
                         if getattr(self, dep, None) is None:
                             missing_deps.append(dep)
 
@@ -145,7 +148,13 @@ class ToolRegistry:
                         continue
 
                     # Create and register tool
-                    tool_instance = tool_def["class"](**tool_def["kwargs"])
+                    tool_class = tool_def["class"]
+                    if not callable(tool_class):
+                        raise ValueError(f"Tool class is not callable: {tool_class}")
+                    kwargs = tool_def.get("kwargs", {})
+                    if not isinstance(kwargs, dict):
+                        kwargs = {}
+                    tool_instance = tool_class(**kwargs)
                     self.register_tool(tool_instance)
                     successful_registrations += 1
 
@@ -269,9 +278,9 @@ class ToolRegistry:
         """List all registered tools with their metadata."""
         tool_list = {
             name: {
-                "description": tool.metadata.description,
-                "async": tool.metadata.async_tool,
-                "idempotent": tool.metadata.idempotent,
+                "description": str(tool.metadata.description),
+                "async": str(tool.metadata.async_tool),
+                "idempotent": str(tool.metadata.idempotent),
             }
             for name, tool in self.tools.items()
         }
@@ -307,11 +316,6 @@ class ToolRegistry:
             )
             return None
 
-        schema = {
-            "input_schema": tool.metadata.input_schema,
-            "output_schema": tool.metadata.output_schema,
-        }
-
         log_event(
             "tool_schema_retrieved",
             {
@@ -331,4 +335,7 @@ class ToolRegistry:
             },
         )
 
-        return schema
+        return {
+            "input_schema": str(tool.metadata.input_schema),
+            "output_schema": str(tool.metadata.output_schema),
+        }

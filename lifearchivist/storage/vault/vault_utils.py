@@ -259,7 +259,7 @@ async def get_comprehensive_directory_stats(
     directories: Dict[str, Path],
 ) -> Dict[str, Any]:
     """Get comprehensive statistics for multiple directories."""
-    stats = {
+    stats: Dict[str, Any] = {
         "total_files": 0,
         "total_size_bytes": 0,
         "total_size_mb": 0.0,
@@ -278,9 +278,10 @@ async def get_comprehensive_directory_stats(
             stats["total_files"] += dir_stats["files"]
             stats["total_size_bytes"] += dir_stats["bytes"]
 
-        stats["total_size_mb"] = bytes_to_mb(stats["total_size_bytes"])
+        stats["total_size_mb"] = bytes_to_mb(int(stats["total_size_bytes"]))
 
     except Exception as e:
         stats["error"] = str(e)
+        stats["total_size_mb"] = 0.0
 
     return stats

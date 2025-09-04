@@ -2,14 +2,14 @@
 Dependency injection for API routes.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from ..mcp_server import MCPServer
 
 
 # Global server instance - will be set during app initialization
-_server_instance: "MCPServer" = None
+_server_instance: Optional["MCPServer"] = None
 
 
 def set_server_instance(server: "MCPServer"):

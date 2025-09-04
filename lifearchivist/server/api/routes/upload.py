@@ -167,7 +167,7 @@ async def upload_file(
 
             # Create temporary file
             with tempfile.NamedTemporaryFile(
-                delete=False, suffix=Path(file.filename).suffix
+                delete=False, suffix=Path(file.filename or "").suffix
             ) as temp_file:
                 temp_file_path = temp_file.name
 

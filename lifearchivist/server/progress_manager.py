@@ -57,6 +57,7 @@ class ProgressManager:
         self.redis_client = redis.from_url(redis_url, decode_responses=True)
         self.session_manager = session_manager
         self.progress_ttl = 3600  # 1 hour TTL for progress records
+        self.key_prefix = "lifearchivist"
 
         # Test Redis connection
         try:
@@ -188,8 +189,9 @@ class ProgressManager:
                 return None
 
             data = json.loads(progress_data)
-            # Convert stage back to enum
-            stage = ProcessingStage(data["stage"])
+            # Convert stage back to enum by finding matching stage_id
+            stage_id = data["stage"]
+            stage = next(s for s in ProcessingStage if s.stage_id == stage_id)
             data["stage"] = stage
 
             return ProgressUpdate(**data)
@@ -240,10 +242,13 @@ class ProgressManager:
                 cleared_metrics["session_keys_deleted"] = deleted_sessions
                 logger.info(f"Deleted {deleted_sessions} session keys")
 
-            total_deleted = (
-                cleared_metrics["progress_keys_deleted"]
-                + cleared_metrics["session_keys_deleted"]
+            progress_deleted = cleared_metrics.get("progress_keys_deleted", 0)
+            session_deleted = cleared_metrics.get("session_keys_deleted", 0)
+            progress_count = (
+                progress_deleted if isinstance(progress_deleted, int) else 0
             )
+            session_count = session_deleted if isinstance(session_deleted, int) else 0
+            total_deleted = progress_count + session_count
             cleared_metrics["total_keys_deleted"] = total_deleted
 
             logger.info(
@@ -254,7 +259,8 @@ class ProgressManager:
         except Exception as e:
             error_msg = f"Failed to clear progress data: {e}"
             logger.error(error_msg)
-            cleared_metrics["errors"].append(error_msg)
+            if isinstance(cleared_metrics["errors"], list):
+                cleared_metrics["errors"].append(error_msg)
             return cleared_metrics
 
     def _calculate_cumulative_progress(
@@ -317,7 +323,7 @@ class ProgressContext:
         self.progress_manager = progress_manager
         self.file_id = file_id
         self.stage = stage
-        self.start_time = None
+        self.start_time: Optional[float] = None
 
     async def __aenter__(self):
         self.start_time = time.time()
@@ -334,7 +340,7 @@ class ProgressContext:
             )
         else:
             # Success
-            duration = time.time() - self.start_time
+            duration = time.time() - (self.start_time or 0.0)
             await self.progress_manager.update_progress(
                 self.file_id,
                 self.stage,

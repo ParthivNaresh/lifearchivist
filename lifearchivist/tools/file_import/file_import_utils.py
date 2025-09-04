@@ -5,7 +5,7 @@ File import utilities and constants for document processing.
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from lifearchivist.utils.logging import log_event
 
@@ -104,7 +104,7 @@ def create_document_metadata(
     mime_type: str,
     stat,
     text: str = "",
-    custom_metadata: Dict[str, Any] = None,
+    custom_metadata: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Create comprehensive document metadata for LlamaIndex.
@@ -187,7 +187,7 @@ def create_provenance_entry(
     agent: str,
     tool: str,
     params: Dict[str, Any],
-    result: Dict[str, Any] = None,
+    result: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Create a standardized provenance entry for audit trails.

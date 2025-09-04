@@ -172,7 +172,7 @@ async def search_documents_get(
 
         try:
             # Prepare filters
-            filters = {}
+            filters: Dict[str, Any] = {}
             if mime_type:
                 filters["mime_type"] = mime_type
             if status:

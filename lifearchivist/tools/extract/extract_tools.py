@@ -201,13 +201,13 @@ class ExtractTextTool(BaseTool):
 
                 # Extract text using the appropriate method
                 extracted_text = await _extract_text_by_type(
-                    actual_file_path, mime_type
+                    actual_file_path, str(mime_type)
                 )
 
                 # Calculate extraction metrics
                 word_count = len(extracted_text.split()) if extracted_text else 0
                 text_length = len(extracted_text) if extracted_text else 0
-                extraction_method = _get_extraction_method(mime_type)
+                extraction_method = _get_extraction_method(str(mime_type))
 
                 metrics.add_metric("word_count", word_count)
                 metrics.add_metric("text_length", text_length)

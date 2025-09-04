@@ -3,6 +3,7 @@ Content date extraction tool for extracting dates from document text using LLM.
 """
 
 import logging
+from typing import Any, Dict
 
 from lifearchivist.schemas.tool_schemas import (
     ContentDateExtractionInput,
@@ -114,10 +115,15 @@ class ContentDateExtractionTool(BaseTool):
         include_args=True,
         include_result=True,
     )
-    async def execute(
-        self, input_data: ContentDateExtractionInput
-    ) -> ContentDateExtractionOutput:
+    async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute the content date extraction tool."""
+        # Extract input_data from kwargs
+        input_data = kwargs.get("input_data")
+        if not input_data:
+            raise ValueError("input_data is required")
+        if not isinstance(input_data, ContentDateExtractionInput):
+            input_data = ContentDateExtractionInput(**input_data)
+
         with log_context(
             operation="date_extraction",
             document_id=input_data.document_id,
@@ -183,11 +189,12 @@ class ContentDateExtractionTool(BaseTool):
                 # Report metrics
                 metrics.report("date_extraction_completed")
 
-                return ContentDateExtractionOutput(
+                result = ContentDateExtractionOutput(
                     document_id=input_data.document_id,
                     extracted_dates=extracted_date,
                     total_dates_found=len(extracted_date),
                 )
+                return result.dict()
 
             except Exception as e:
                 metrics.set_error(e)

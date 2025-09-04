@@ -148,8 +148,8 @@ class AsyncLogContext:
         self.operation = operation
         self.correlation_id = correlation_id or str(uuid.uuid4())
         self.context_data = context_data
-        self.start_time = None
-        self.previous_context = None
+        self.start_time: Optional[float] = None
+        self.previous_context: Optional[Dict[str, Any]] = None
 
     async def __aenter__(self):
         """Enter the async context."""
@@ -182,7 +182,12 @@ class AsyncLogContext:
         """Exit the async context."""
         import time
 
-        execution_time_ms = int((time.perf_counter() - self.start_time) * 1000)
+        # Calculate execution time safely with proper type checking
+        if self.start_time is not None:
+            execution_time_ms = int((time.perf_counter() - self.start_time) * 1000)
+        else:
+            # Fallback for cases where start_time wasn't set
+            execution_time_ms = 0
 
         operation_data = {
             "operation": self.operation,
@@ -206,9 +211,8 @@ class AsyncLogContext:
                 },
             )
 
-        # Restore previous context
-        if self.previous_context is not None:
-            _operation_context.set(self.previous_context)
+        # Restore previous context - always restore even if None to clear context
+        _operation_context.set(self.previous_context)
 
 
 def create_child_context(**additional_context) -> str:

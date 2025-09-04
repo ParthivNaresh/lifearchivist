@@ -25,7 +25,7 @@ class StructuredFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as structured JSON."""
         # Base log entry
-        log_entry = {
+        log_entry: Dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "level": record.levelname,
             "logger": record.name,
@@ -38,27 +38,30 @@ class StructuredFormatter(logging.Formatter):
 
         # Add exception info if present
         if record.exc_info:
-            log_entry["exception"] = {
+            exception_info = {
                 "type": record.exc_info[0].__name__ if record.exc_info[0] else None,
                 "message": str(record.exc_info[1]) if record.exc_info[1] else None,
                 "traceback": (
                     self.formatException(record.exc_info) if record.exc_info else None
                 ),
             }
+            log_entry["exception"] = exception_info
 
         # Add process/thread info
-        log_entry["process"] = {
+        process_info = {
             "pid": record.process,
             "thread_id": record.thread,
             "thread_name": record.threadName,
         }
+        log_entry["process"] = process_info
 
         # Add source location
-        log_entry["source"] = {
+        source_info = {
             "file": record.filename,
             "function": record.funcName,
             "line": record.lineno,
         }
+        log_entry["source"] = source_info
 
         return json.dumps(log_entry, default=str, separators=(",", ":"))
 
@@ -192,7 +195,7 @@ class MetricsCollector:
     def __init__(self, operation_name: str):
         self.operation_name = operation_name
         self.metrics: Dict[str, Any] = {}
-        self.start_time = None
+        self.start_time: Optional[float] = None
 
     def start(self):
         """Start timing the operation."""
@@ -226,7 +229,7 @@ class MetricsCollector:
         """Report all collected metrics as a structured event."""
         import time
 
-        if self.start_time:
+        if self.start_time is not None:
             duration_ms = int((time.perf_counter() - self.start_time) * 1000)
             self.metrics["duration_ms"] = duration_ms
 

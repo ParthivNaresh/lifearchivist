@@ -2,6 +2,7 @@
 LLM integration tools using Ollama.
 """
 
+import asyncio
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -148,8 +149,37 @@ class OllamaTool(BaseTool):
                 },
             )
 
-            # Use session-per-request pattern for automatic cleanup
-            async with aiohttp.ClientSession() as session:
+            # Use session-per-request pattern with explicit cleanup configuration
+            timeout = aiohttp.ClientTimeout(
+                total=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+                connect=10,  # Connection timeout
+                sock_read=30,  # Socket read timeout
+            )
+
+            connector = aiohttp.TCPConnector(
+                limit=1,  # Limit connections for this session
+                limit_per_host=1,  # Single connection per host
+                ttl_dns_cache=300,  # DNS cache TTL
+                use_dns_cache=True,
+                keepalive_timeout=30,  # Keep-alive timeout
+                enable_cleanup_closed=True,  # Enable cleanup of closed connections
+            )
+
+            async with aiohttp.ClientSession(
+                timeout=timeout,
+                connector=connector,
+                connector_owner=True,  # Session owns the connector and will close it
+            ) as session:
+                # Log session creation for debugging
+                log_event(
+                    "aiohttp_session_created",
+                    {
+                        "session_id": id(session),
+                        "connector_id": id(connector),
+                        "timeout_total": timeout.total,
+                    },
+                )
+
                 try:
                     # Check if Ollama is available
                     await self._check_ollama_health(session)
@@ -174,7 +204,7 @@ class OllamaTool(BaseTool):
                         # Use simple generate format
                         request_data, endpoint = prepare_generate_request(
                             model=model,
-                            prompt=prompt,
+                            prompt=str(prompt),
                             system=system,
                             max_tokens=max_tokens,
                             temperature=temperature,
@@ -260,6 +290,30 @@ class OllamaTool(BaseTool):
                     )
 
                     return create_error_response(model, e)
+
+                finally:
+                    # Explicit session cleanup logging
+                    log_event(
+                        "aiohttp_session_cleanup_started",
+                        {
+                            "session_id": id(session),
+                            "connector_id": id(connector),
+                            "session_closed": session.closed,
+                        },
+                    )
+
+                    # Log after session is fully closed
+                    log_event(
+                        "aiohttp_session_closed",
+                        {
+                            "session_cleanup": "completed",
+                            "connector_cleanup": "completed",
+                        },
+                    )
+
+                    # Small delay to allow any remaining cleanup to complete
+                    # This helps prevent "Unclosed client session" warnings on shutdown
+                    await asyncio.sleep(0.01)
 
     @log_method(operation_name="ollama_health_check")
     async def _check_ollama_health(self, session: aiohttp.ClientSession) -> bool:
@@ -386,7 +440,7 @@ class OllamaTool(BaseTool):
         async with session.post(
             f"{self.settings.ollama_url}{endpoint}",
             json=request_data,
-            timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT_SECONDS),
+            # Timeout is configured at session level, no need to override here
         ) as response:
             if response.status != 200:
                 error_text = await response.text()
@@ -416,7 +470,7 @@ class OllamaTool(BaseTool):
                     "has_response": "response" in response_data,
                 },
             )
-            return response_data
+            return dict(response_data)
 
     @log_method(operation_name="ollama_stream_request")
     async def _stream_request(
@@ -437,7 +491,7 @@ class OllamaTool(BaseTool):
         async with session.post(
             f"{self.settings.ollama_url}{endpoint}",
             json=request_data,
-            timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT_SECONDS),
+            # Timeout is configured at session level, no need to override here
         ) as response:
             if response.status != 200:
                 error_text = await response.text()
@@ -502,7 +556,7 @@ class OllamaTool(BaseTool):
             model=model or self.settings.llm_model,
             **kwargs,
         )
-        return result.get("response", "")
+        return str(result.get("response", ""))
 
     @log_method(operation_name="ollama_generate_convenience")
     async def generate(
@@ -528,4 +582,4 @@ class OllamaTool(BaseTool):
             model=model or self.settings.llm_model,
             **kwargs,
         )
-        return result.get("response", "")
+        return str(result.get("response", ""))

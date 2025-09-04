@@ -3,7 +3,7 @@ Main FastAPI application creation and configuration.
 """
 
 from contextlib import asynccontextmanager
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,15 +21,15 @@ class ToolExecutionRequest(BaseModel):
 
     tool: str
     params: Dict[str, Any]
-    session_id: str = None
+    session_id: Optional[str] = None
 
 
 class ToolExecutionResult(BaseModel):
     """Result of tool execution."""
 
     success: bool
-    result: Dict[str, Any] = None
-    error: str = None
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
 
 
 # Global server instance
