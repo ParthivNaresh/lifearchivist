@@ -213,17 +213,18 @@ class FileImportTool(BaseTool):
                     {"file_id": file_id, "text_available": bool(extracted_text)},
                 )
 
-                metadata = create_document_metadata(
+                doc_metadata = create_document_metadata(
                     file_id=file_id,
                     file_hash=file_hash,
                     original_path=display_path,
                     mime_type=mime_type,
                     stat=stat,
                     text=extracted_text,
+                    custom_metadata=metadata,
                 )
 
                 success = await self.llamaindex_service.add_document(
-                    document_id=file_id, content=extracted_text, metadata=metadata
+                    document_id=file_id, content=extracted_text, metadata=doc_metadata
                 )
 
                 if not success:
@@ -381,7 +382,7 @@ class FileImportTool(BaseTool):
                     "text_length": len(extracted_text),
                 },
             )
-            return extracted_text
+            return str(extracted_text)
         else:
             log_event(
                 "text_extraction_unsupported",
@@ -433,8 +434,8 @@ class FileImportTool(BaseTool):
         )
         input_data = ContentDateExtractionInput(document_id=file_id, text_content=text)
 
-        result = await date_tool.execute(input_data)
-        dates_count = result.total_dates_found
+        result = await date_tool.execute(input_data=input_data)
+        dates_count = result.get("total_dates_found", 0)
 
         log_event(
             "date_extraction_completed",

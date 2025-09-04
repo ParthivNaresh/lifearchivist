@@ -10,7 +10,7 @@ import functools
 import logging
 import time
 import traceback
-from typing import Any, Callable, Dict, Optional, TypeVar
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from .context import get_correlation_id
 from .structured import log_event
@@ -140,10 +140,11 @@ def log_execution_time(
                 raise
 
         # Return appropriate wrapper based on whether function is async
+        # Use cast to tell mypy that the wrapper preserves the original type
         if asyncio.iscoroutinefunction(func):
-            return async_wrapper
+            return cast(F, async_wrapper)
         else:
-            return sync_wrapper
+            return cast(F, sync_wrapper)
 
     return decorator
 
@@ -189,7 +190,7 @@ def log_exceptions(
                         and isinstance(v, (str, int, float, bool))
                     }
                     if safe_attrs:
-                        error_context["exception_details"] = safe_attrs
+                        error_context["exception_details"] = str(safe_attrs)
 
                 log_event("exception_caught", error_context)
 
@@ -222,7 +223,7 @@ def log_exceptions(
                         and isinstance(v, (str, int, float, bool))
                     }
                     if safe_attrs:
-                        error_context["exception_details"] = safe_attrs
+                        error_context["exception_details"] = str(safe_attrs)
 
                 log_event("exception_caught", error_context)
 
@@ -231,9 +232,9 @@ def log_exceptions(
                 return None
 
         if asyncio.iscoroutinefunction(func):
-            return async_wrapper
+            return cast(F, async_wrapper)
         else:
-            return sync_wrapper
+            return cast(F, sync_wrapper)
 
     return decorator
 
@@ -293,20 +294,20 @@ def _extract_safe_args(args: tuple, kwargs: dict) -> Dict[str, Any]:
         for i, value in enumerate(args[start_idx:], start=start_idx):
             if isinstance(value, (str, int, float, bool)):
                 if isinstance(value, str) and len(value) < 100:  # Only short strings
-                    safe_context[f"arg_pos_{i}"] = value
+                    safe_context[f"arg_pos_{i}"] = str(value)
                 elif isinstance(value, (int, float, bool)):
-                    safe_context[f"arg_pos_{i}"] = value
+                    safe_context[f"arg_pos_{i}"] = str(value)
 
     # Add safe kwargs
     for key, value in kwargs.items():
         if key in safe_keys and isinstance(value, (str, int, float, bool)):
             if key == "path" and isinstance(value, str):
                 # Only log filename, not full path for privacy
-                safe_context[f"arg_{key}"] = (
+                safe_context[f"arg_{key}"] = str(
                     value.split("/")[-1] if "/" in value else value
                 )
             else:
-                safe_context[f"arg_{key}"] = value
+                safe_context[f"arg_{key}"] = str(value)
 
     return safe_context
 
@@ -318,12 +319,12 @@ def _extract_result_info(result: Any) -> Dict[str, Any]:
     }
 
     if isinstance(result, (list, tuple)):
-        result_info["result_length"] = len(result)
+        result_info["result_length"] = str(len(result))
     elif isinstance(result, dict):
-        result_info["result_keys_count"] = len(result.keys())
+        result_info["result_keys_count"] = str(len(result.keys()))
         if "success" in result:
-            result_info["operation_success"] = result["success"]
+            result_info["operation_success"] = str(result["success"])
     elif isinstance(result, str):
-        result_info["result_length"] = len(result)
+        result_info["result_length"] = str(len(result))
 
     return result_info

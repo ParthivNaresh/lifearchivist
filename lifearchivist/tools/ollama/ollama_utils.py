@@ -153,9 +153,13 @@ def extract_response_text(response_data: Dict[str, Any], endpoint: str) -> str:
         Extracted response text
     """
     if endpoint == CHAT_ENDPOINT:
-        return response_data.get("message", {}).get("content", "")
+        # Ensure we return a string by casting the result
+        content = response_data.get("message", {}).get("content", "")
+        return str(content) if content is not None else ""
     else:
-        return response_data.get("response", "")
+        # Ensure we return a string by casting the result
+        response = response_data.get("response", "")
+        return str(response) if response is not None else ""
 
 
 def calculate_generation_metrics(

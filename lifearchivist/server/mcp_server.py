@@ -63,7 +63,10 @@ class MCPServer:
         logger.error("Initializing MCP server...")
 
         # Initialize storage
-        self.vault = Vault(self.settings.vault_path)
+        vault_path = self.settings.vault_path
+        if not vault_path:
+            raise ValueError("Vault path not configured")
+        self.vault = Vault(vault_path)
         await self.vault.initialize()
         logger.error(f"Vault location: {self.vault.vault_path}")
 
@@ -100,8 +103,8 @@ class MCPServer:
             from ..agents.query import QueryAgent
 
             self.ingestion_agent = IngestionAgent(
+                database=None,
                 vault=self.vault,
-                llamaindex_service=self.llamaindex_service,
                 tool_registry=self.tool_registry,
             )
 
@@ -119,6 +122,8 @@ class MCPServer:
     ) -> Dict[str, Any]:
         """Execute a tool and return the result."""
         try:
+            if not self.tool_registry:
+                raise ValueError("Tool registry not initialized")
             tool = self.tool_registry.get_tool(tool_name)
             if not tool:
                 raise ValueError(f"Tool '{tool_name}' not found")

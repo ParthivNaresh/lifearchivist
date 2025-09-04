@@ -105,12 +105,11 @@ class QueryAgent:
             logger.info(
                 f"Search completed: {len(tool_result.get('results', []))} results"
             )
-            return tool_result
+            return dict(tool_result)
 
         except Exception as e:
             logger.error(f"Search failed: {e}")
             raise ValueError(e) from None
-            # return {"results": [], "total": 0, "error": str(e)}
 
     async def answer_question(
         self, question: str, context_limit: int = 5, max_context_length: int = 4000
@@ -148,13 +147,10 @@ class QueryAgent:
                     )
                     raise ValueError(e) from None
             else:
-                raise ValueError("NO LLAMA")
-
-            # Fallback to custom implementation
-            logger.info("Using custom RAG implementation")
-            return await self._custom_rag_implementation(
-                question, context_limit, max_context_length
-            )
+                logger.info("Using custom RAG implementation")
+                return await self._custom_rag_implementation(
+                    question, context_limit, max_context_length
+                )
 
         except Exception as e:
             logger.error(f"RAG Q&A failed: {e}")
@@ -398,15 +394,9 @@ Please answer the question based on the provided context."""
             logger.error("Ollama generation timed out - likely memory issues")
             raise ValueError("Ollama timed out due to memory constraints") from None
 
-            # Parse the structured response
-            answer, confidence = self._parse_rag_response(response)
-
-            return {"answer": answer, "confidence": confidence}
-
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
             raise ValueError(e) from None
-            # return {"answer": "", "confidence": 0.0}
 
     def _parse_rag_response(self, response: str) -> tuple[str, float]:
         """Parse the structured RAG response."""

@@ -19,6 +19,8 @@ async def get_vault_info():
     server = get_server()
 
     try:
+        if not server.vault:
+            raise HTTPException(status_code=500, detail="Vault not initialized")
         stats = await server.vault.get_vault_statistics()
         return stats
 
@@ -36,6 +38,8 @@ async def list_vault_files(
 
     try:
         vault_path = server.settings.vault_path
+        if not vault_path:
+            raise HTTPException(status_code=500, detail="Vault path not configured")
         target_dir = vault_path / directory
 
         if not target_dir.exists():
@@ -57,7 +61,11 @@ async def list_vault_files(
 
                 all_files.append(
                     {
-                        "path": str(file_path.relative_to(vault_path)),
+                        "path": (
+                            str(file_path.relative_to(vault_path))
+                            if vault_path
+                            else str(file_path)
+                        ),
                         "full_path": str(file_path),
                         "hash": full_hash,
                         "extension": file_path.suffix.lstrip("."),
@@ -68,7 +76,7 @@ async def list_vault_files(
                 )
 
         # Sort by creation time (newest first)
-        all_files.sort(key=lambda x: x["created_at"], reverse=True)
+        all_files.sort(key=lambda x: float(str(x.get("created_at", 0))), reverse=True)
 
         # Apply pagination
         paginated_files = all_files[offset : offset + limit]

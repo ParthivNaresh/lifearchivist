@@ -192,7 +192,8 @@ class Vault:
                     )
                 except Exception as e:
                     error_msg = f"Failed to delete files for hash {file_hash}: {e}"
-                    cleared_metrics["errors"].append(error_msg)
+                    if isinstance(cleared_metrics["errors"], list):
+                        cleared_metrics["errors"].append(error_msg)
                     log_event(
                         "file_hash_clear_failed",
                         {
@@ -214,13 +215,14 @@ class Vault:
             # Update final metrics
             metrics.add_metric("files_deleted", cleared_metrics["files_deleted"])
             metrics.add_metric("bytes_reclaimed", cleared_metrics["bytes_reclaimed"])
-            metrics.add_metric("errors_count", len(cleared_metrics["errors"]))
+            errors_list = cleared_metrics.get("errors", [])
+            metrics.add_metric(
+                "errors_count", len(errors_list) if isinstance(errors_list, list) else 0
+            )
 
-            if cleared_metrics["errors"]:
+            if errors_list and isinstance(errors_list, list):
                 metrics.set_error(
-                    RuntimeError(
-                        f"{len(cleared_metrics['errors'])} deletion errors occurred"
-                    )
+                    RuntimeError(f"{len(errors_list)} deletion errors occurred")
                 )
                 metrics.report("vault_clearing_completed_with_errors")
             else:
@@ -232,8 +234,13 @@ class Vault:
                 {
                     "files_deleted": cleared_metrics["files_deleted"],
                     "bytes_reclaimed": cleared_metrics["bytes_reclaimed"],
-                    "errors_count": len(cleared_metrics["errors"]),
-                    "success": len(cleared_metrics["errors"]) == 0,
+                    "errors_count": (
+                        len(errors_list) if isinstance(errors_list, list) else 0
+                    ),
+                    "success": (
+                        len(errors_list) if isinstance(errors_list, list) else 0
+                    )
+                    == 0,
                 },
             )
 

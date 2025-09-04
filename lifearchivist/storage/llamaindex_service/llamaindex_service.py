@@ -95,7 +95,9 @@ class LlamaIndexService:
 
         try:
             storage_context = StorageContext.from_defaults(persist_dir=str(storage_dir))
-            self.index = load_index_from_storage(storage_context)
+            loaded_index = load_index_from_storage(storage_context)
+            if isinstance(loaded_index, VectorStoreIndex):
+                self.index = loaded_index
             log_event(
                 "llamaindex_loaded_from_storage", {"storage_dir": str(storage_dir)}
             )
@@ -440,7 +442,8 @@ class LlamaIndexService:
         """Persist the index with version compatibility handling."""
         storage_dir = self.settings.lifearch_home / "llamaindex_storage"
         try:
-            self.index.storage_context.persist(persist_dir=str(storage_dir))
+            if self.index:
+                self.index.storage_context.persist(persist_dir=str(storage_dir))
             log_event("index_persisted_successfully", {"storage_dir": str(storage_dir)})
         except AttributeError as persist_error:
             log_event(
@@ -850,7 +853,8 @@ class LlamaIndexService:
         except Exception as e:
             error_msg = f"❌ LlamaIndex clearing failed: {e}"
             logger.error(error_msg)
-            cleared_metrics["errors"].append(error_msg)
+            if isinstance(cleared_metrics["errors"], list):
+                cleared_metrics["errors"].append(error_msg)
             return cleared_metrics
 
     async def _initialize_empty_index(self):

@@ -135,7 +135,8 @@ class NodeProcessor:
         """Generate text preview from a node with consistent truncation."""
         try:
             if node and hasattr(node, "text") and node.text:
-                text = node.text
+                # Ensure we're working with a string type
+                text = str(node.text)
                 return text[:max_length] + "..." if len(text) > max_length else text
             return ""
         except Exception:
