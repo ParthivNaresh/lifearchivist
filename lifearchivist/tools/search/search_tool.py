@@ -264,7 +264,8 @@ class IndexSearchTool(BaseTool):
                         "size_bytes": doc.get("metadata", {}).get("size_bytes", 0),
                         "match_type": "keyword",
                         "created_at": doc.get("metadata", {}).get("created_at"),
-                        "ingested_at": doc.get("metadata", {}).get("created_at"),
+                        "ingested_at": doc.get("metadata", {}).get("ingested_at")
+                        or doc.get("metadata", {}).get("created_at"),
                         "word_count": doc.get("metadata", {}).get("word_count"),
                         "tags": doc.get("metadata", {}).get("tags", []),
                     }
@@ -293,12 +294,12 @@ class IndexSearchTool(BaseTool):
 
         start_time = time.time()
 
-        # Get results from both methods
-        semantic_results = await self._semantic_search(
-            query, limit, 0, filters, include_content
-        )
-        keyword_results = await self._keyword_search(
-            query, limit, 0, filters, include_content
+        # Get results from both methods in parallel for performance
+        import asyncio
+
+        semantic_results, keyword_results = await asyncio.gather(
+            self._semantic_search(query, limit, 0, filters, include_content),
+            self._keyword_search(query, limit, 0, filters, include_content),
         )
 
         # Combine and deduplicate results
@@ -394,9 +395,8 @@ class IndexSearchTool(BaseTool):
                 "word_count": metadata.get("word_count"),
                 "match_type": match_type,
                 "created_at": metadata.get("created_at"),
-                "ingested_at": metadata.get(
-                    "created_at"
-                ),  # Use created_at as ingested_at
+                "ingested_at": metadata.get("ingested_at")
+                or metadata.get("created_at"),
                 "tags": metadata.get("tags", []),
             }
 
