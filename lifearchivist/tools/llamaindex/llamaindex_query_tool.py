@@ -6,7 +6,7 @@ import logging
 from typing import Any, Dict
 
 from lifearchivist.tools.base import BaseTool, ToolMetadata
-from lifearchivist.utils.logging import log_context, log_event, log_method
+from lifearchivist.utils.logging import log_context, log_method
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 logger = logging.getLogger(__name__)
@@ -99,25 +99,12 @@ class LlamaIndexQueryTool(BaseTool):
             metrics.add_metric("response_mode", response_mode)
 
             if not question:
-                log_event("query_empty_question", {})
                 return self._empty_response("Question cannot be empty")
 
             if not self.llamaindex_service:
-                log_event(
-                    "query_service_unavailable", {"question_preview": question[:50]}
-                )
                 metrics.set_error(RuntimeError("LlamaIndex service not available"))
                 metrics.report("llamaindex_query_failed")
                 return self._empty_response("LlamaIndex service not available")
-
-            log_event(
-                "query_started",
-                {
-                    "question_preview": question[:100],
-                    "similarity_top_k": similarity_top_k,
-                    "response_mode": response_mode,
-                },
-            )
 
             try:
                 # Use the LlamaIndex service query method
@@ -139,30 +126,11 @@ class LlamaIndexQueryTool(BaseTool):
                 metrics.add_metric("query_successful", True)
                 metrics.set_success(True)
                 metrics.report("llamaindex_query_completed")
-
-                log_event(
-                    "query_completed",
-                    {
-                        "answer_length": len(transformed_result.get("answer", "")),
-                        "sources_count": len(transformed_result.get("sources", [])),
-                        "method": transformed_result.get("method", "unknown"),
-                    },
-                )
-
                 return transformed_result
 
             except Exception as e:
                 metrics.set_error(e)
                 metrics.report("llamaindex_query_failed")
-
-                log_event(
-                    "query_failed",
-                    {
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                        "question_preview": question[:50],
-                    },
-                )
                 return self._empty_response(f"Query failed: {str(e)}")
 
     def _transform_query_result(

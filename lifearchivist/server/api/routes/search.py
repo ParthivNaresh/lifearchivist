@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException
 
 from lifearchivist.models import SearchRequest
-from lifearchivist.utils.logging import log_context, log_event
+from lifearchivist.utils.logging import log_context
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 from ..dependencies import get_server
@@ -38,17 +38,6 @@ async def search_documents_post(request: SearchRequest):
         metrics.add_metric("offset", request.offset)
         metrics.add_metric("has_filters", bool(request.filters))
 
-        log_event(
-            "api_search_post_started",
-            {
-                "query_preview": (request.query or "")[:100],
-                "mode": request.mode,
-                "limit": request.limit,
-                "offset": request.offset,
-                "filters": request.filters or {},
-            },
-        )
-
         try:
             result = await server.execute_tool("index.search", request.dict())
 
@@ -61,31 +50,12 @@ async def search_documents_post(request: SearchRequest):
                 metrics.add_metric("query_time_ms", query_time_ms)
                 metrics.set_success(True)
                 metrics.report("api_search_post_completed")
-
-                log_event(
-                    "api_search_post_successful",
-                    {
-                        "results_count": results_count,
-                        "query_time_ms": query_time_ms,
-                        "query_preview": (request.query or "")[:50],
-                        "mode": request.mode,
-                    },
-                )
-
                 return search_result
             else:
                 error = result.get("error", "Search tool returned None")
                 metrics.set_error(RuntimeError(error))
                 metrics.report("api_search_post_failed")
 
-                log_event(
-                    "api_search_post_tool_failed",
-                    {
-                        "error": error,
-                        "query_preview": (request.query or "")[:50],
-                        "mode": request.mode,
-                    },
-                )
                 raise HTTPException(status_code=500, detail=error)
 
         except HTTPException:
@@ -94,15 +64,6 @@ async def search_documents_post(request: SearchRequest):
             metrics.set_error(e)
             metrics.report("api_search_post_failed")
 
-            log_event(
-                "api_search_post_exception",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "query_preview": (request.query or "")[:50],
-                    "mode": request.mode,
-                },
-            )
             raise HTTPException(status_code=500, detail=str(e)) from None
 
 
@@ -139,10 +100,6 @@ async def search_documents_get(
         # Validate parameters
         valid_modes = ["keyword", "semantic", "hybrid"]
         if mode not in valid_modes:
-            log_event(
-                "api_search_get_invalid_mode",
-                {"mode": mode, "valid_modes": valid_modes, "query_preview": q[:50]},
-            )
             metrics.set_error(ValueError("Invalid search mode"))
             metrics.report("api_search_get_failed")
             raise HTTPException(
@@ -151,10 +108,6 @@ async def search_documents_get(
             )
 
         if limit < 1 or limit > 100:
-            log_event(
-                "api_search_get_invalid_limit",
-                {"limit": limit, "query_preview": q[:50]},
-            )
             metrics.set_error(ValueError("Invalid limit parameter"))
             metrics.report("api_search_get_failed")
             raise HTTPException(
@@ -162,10 +115,6 @@ async def search_documents_get(
             )
 
         if offset < 0:
-            log_event(
-                "api_search_get_invalid_offset",
-                {"offset": offset, "query_preview": q[:50]},
-            )
             metrics.set_error(ValueError("Invalid offset parameter"))
             metrics.report("api_search_get_failed")
             raise HTTPException(status_code=400, detail="Offset must be non-negative")
@@ -184,19 +133,6 @@ async def search_documents_get(
                     filters["tags"] = tag_list
 
             metrics.add_metric("filters_count", len(filters))
-
-            log_event(
-                "api_search_get_started",
-                {
-                    "query_preview": q[:100],
-                    "mode": mode,
-                    "limit": limit,
-                    "offset": offset,
-                    "include_content": include_content,
-                    "filters": filters,
-                },
-            )
-
             # Execute search using the search tool
             result = await server.execute_tool(
                 "index.search",
@@ -219,33 +155,11 @@ async def search_documents_get(
                 metrics.add_metric("query_time_ms", query_time_ms)
                 metrics.set_success(True)
                 metrics.report("api_search_get_completed")
-
-                log_event(
-                    "api_search_get_successful",
-                    {
-                        "results_count": results_count,
-                        "query_time_ms": query_time_ms,
-                        "query_preview": q[:50],
-                        "mode": mode,
-                        "filters": filters,
-                    },
-                )
-
                 return search_result
             else:
                 error = result.get("error", "Search failed")
                 metrics.set_error(RuntimeError(error))
                 metrics.report("api_search_get_failed")
-
-                log_event(
-                    "api_search_get_tool_failed",
-                    {
-                        "error": error,
-                        "query_preview": q[:50],
-                        "mode": mode,
-                        "filters": filters,
-                    },
-                )
                 raise HTTPException(status_code=500, detail=error)
 
         except HTTPException:
@@ -253,16 +167,6 @@ async def search_documents_get(
         except Exception as e:
             metrics.set_error(e)
             metrics.report("api_search_get_failed")
-
-            log_event(
-                "api_search_get_exception",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "query_preview": q[:50],
-                    "mode": mode,
-                },
-            )
             raise HTTPException(status_code=500, detail=str(e)) from None
 
 
@@ -287,19 +191,11 @@ async def ask_question(request: Dict[str, Any]):
 
         # Validate question
         if not question:
-            log_event(
-                "api_ask_question_empty_question",
-                {"request_keys": list(request.keys())},
-            )
             metrics.set_error(ValueError("Empty question"))
             metrics.report("api_ask_question_failed")
             raise HTTPException(status_code=400, detail="Question is required")
 
         if len(question) < 3:
-            log_event(
-                "api_ask_question_too_short",
-                {"question_length": len(question), "question_preview": question[:50]},
-            )
             metrics.set_error(ValueError("Question too short"))
             metrics.report("api_ask_question_failed")
             raise HTTPException(
@@ -311,13 +207,6 @@ async def ask_question(request: Dict[str, Any]):
             try:
                 context_limit = int(context_limit)
             except ValueError:
-                log_event(
-                    "api_ask_question_invalid_context_limit",
-                    {
-                        "context_limit_str": context_limit,
-                        "question_preview": question[:50],
-                    },
-                )
                 metrics.set_error(ValueError("Invalid context_limit format"))
                 metrics.report("api_ask_question_failed")
                 raise HTTPException(
@@ -325,10 +214,6 @@ async def ask_question(request: Dict[str, Any]):
                 ) from None
 
         if context_limit < 1 or context_limit > 20:
-            log_event(
-                "api_ask_question_context_limit_out_of_range",
-                {"context_limit": context_limit, "question_preview": question[:50]},
-            )
             metrics.set_error(ValueError("context_limit out of range"))
             metrics.report("api_ask_question_failed")
             raise HTTPException(
@@ -336,15 +221,6 @@ async def ask_question(request: Dict[str, Any]):
             )
 
         metrics.add_metric("validated_context_limit", context_limit)
-
-        log_event(
-            "api_ask_question_started",
-            {
-                "question_preview": question[:100],
-                "question_length": len(question),
-                "context_limit": context_limit,
-            },
-        )
 
         try:
             # Use the llamaindex.query tool directly instead of query_agent
@@ -390,32 +266,11 @@ async def ask_question(request: Dict[str, Any]):
                 metrics.add_metric("citations_count", len(citations))
                 metrics.set_success(True)
                 metrics.report("api_ask_question_completed")
-
-                log_event(
-                    "api_ask_question_successful",
-                    {
-                        "question_preview": question[:50],
-                        "answer_length": len(answer),
-                        "confidence": confidence,
-                        "citations_count": len(citations),
-                        "method": tool_result.get("method"),
-                    },
-                )
-
                 return final_response
             else:
                 error = result.get("error", "Q&A tool failed")
                 metrics.set_error(RuntimeError(error))
                 metrics.report("api_ask_question_failed")
-
-                log_event(
-                    "api_ask_question_tool_failed",
-                    {
-                        "error": error,
-                        "question_preview": question[:50],
-                        "context_limit": context_limit,
-                    },
-                )
                 raise HTTPException(status_code=500, detail=error)
 
         except HTTPException:
@@ -423,14 +278,4 @@ async def ask_question(request: Dict[str, Any]):
         except Exception as e:
             metrics.set_error(e)
             metrics.report("api_ask_question_failed")
-
-            log_event(
-                "api_ask_question_exception",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "question_preview": question[:50],
-                    "context_limit": context_limit,
-                },
-            )
             raise HTTPException(status_code=500, detail=str(e)) from None
