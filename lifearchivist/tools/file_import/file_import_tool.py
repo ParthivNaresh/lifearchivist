@@ -22,7 +22,7 @@ from lifearchivist.tools.file_import.file_import_utils import (
     should_extract_dates,
     should_extract_embeddings,
 )
-from lifearchivist.utils.logging import log_context, log_event, log_method
+from lifearchivist.utils.logging import log_context, log_method
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 logger = logging.getLogger(__name__)
@@ -126,18 +126,6 @@ class FileImportTool(BaseTool):
             # Use provided file_id or generate unique ID
             file_id = metadata.get("file_id") or str(uuid.uuid4())
 
-            # Log the import start with rich context
-            log_event(
-                "file_import_started",
-                {
-                    "file_id": file_id,
-                    "file_hash": file_hash,
-                    "file_size_bytes": file_size_bytes,
-                    "mime_type": mime_type,
-                    "has_session": session_id is not None,
-                },
-            )
-
             # Initialize progress tracking
             if self.progress_manager and session_id:
                 await self.progress_manager.start_progress(file_id, session_id)
@@ -161,11 +149,6 @@ class FileImportTool(BaseTool):
 
                 # Check for duplicate using vault result AND LlamaIndex metadata check
                 if vault_result["existed"]:
-                    log_event(
-                        "duplicate_detected_vault",
-                        {"file_hash": file_hash, "checking_llamaindex": True},
-                    )
-
                     # Check LlamaIndex for existing document with this file hash
                     existing_docs = (
                         await self.llamaindex_service.query_documents_by_metadata(
@@ -174,14 +157,6 @@ class FileImportTool(BaseTool):
                     )
 
                     if existing_docs:
-                        log_event(
-                            "duplicate_confirmed_llamaindex",
-                            {
-                                "file_hash": file_hash,
-                                "existing_document_id": existing_docs[0]["document_id"],
-                            },
-                        )
-
                         # For duplicates, clean up progress tracking without sending completion
                         if self.progress_manager and session_id:
                             await self.progress_manager.cleanup_progress(file_id)
@@ -196,23 +171,8 @@ class FileImportTool(BaseTool):
                         return create_duplicate_response(
                             existing_doc, file_hash, stat, mime_type, display_path
                         )
-                    else:
-                        log_event(
-                            "vault_duplicate_not_in_llamaindex",
-                            {"file_hash": file_hash, "proceeding_with_indexing": True},
-                        )
-                else:
-                    log_event(
-                        "new_file_processing",
-                        {"file_hash": file_hash, "is_new_file": True},
-                    )
 
                 # Create document in LlamaIndex with full content immediately to prevent race conditions
-                log_event(
-                    "llamaindex_document_creation_started",
-                    {"file_id": file_id, "text_available": bool(extracted_text)},
-                )
-
                 doc_metadata = create_document_metadata(
                     file_id=file_id,
                     file_hash=file_hash,
@@ -237,10 +197,6 @@ class FileImportTool(BaseTool):
                         "error": f"Failed to create document {file_id} in LlamaIndex",
                         "original_path": display_path,
                     }
-
-                log_event(
-                    "llamaindex_document_created", {"file_id": file_id, "success": True}
-                )
 
                 metrics.increment("documents_created")
 
@@ -285,16 +241,6 @@ class FileImportTool(BaseTool):
                 metrics.add_metric("document_ready", True)
                 metrics.report("file_import_completed")
 
-                log_event(
-                    "file_import_successful",
-                    {
-                        "file_id": file_id,
-                        "vault_path": vault_result["path"],
-                        "word_count": word_count,
-                        "execution_time_ms": metrics.metrics.get("duration_ms", 0),
-                    },
-                )
-
                 return create_success_response(
                     file_id, file_hash, stat, mime_type, display_path, vault_result
                 )
@@ -303,17 +249,6 @@ class FileImportTool(BaseTool):
                 # Report error metrics and structured logging
                 metrics.set_error(e)
                 metrics.report("file_import_failed")
-
-                log_event(
-                    "file_import_error",
-                    {
-                        "file_path": display_path,
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                        "has_file_id": "file_id" in locals(),
-                    },
-                )
-
                 # Report error to progress tracking if we have a file_id
                 if self.progress_manager and session_id and "file_id" in locals():
                     try:
@@ -321,13 +256,7 @@ class FileImportTool(BaseTool):
                             file_id, str(e), ProcessingStage.UPLOAD
                         )
                     except Exception as progress_error:
-                        log_event(
-                            "progress_tracking_error",
-                            {
-                                "original_error": str(e),
-                                "progress_error": str(progress_error),
-                            },
-                        )
+                        raise progress_error
 
                 # Update document metadata to failed status if document exists
                 if self.llamaindex_service and "file_id" in locals():
@@ -337,20 +266,16 @@ class FileImportTool(BaseTool):
                             {"status": "failed", "error_message": str(e)},
                             merge_mode="update",
                         )
-                        log_event(
-                            "document_status_updated",
-                            {"file_id": file_id, "status": "failed"},
-                        )
                     except Exception as metadata_error:
-                        log_event(
-                            "metadata_cleanup_failed",
-                            {"file_id": file_id, "cleanup_error": str(metadata_error)},
-                        )
+                        raise metadata_error
 
                 return create_error_response(e, display_path)
 
     @log_method(
-        operation_name="text_extraction", include_args=True, include_result=True
+        operation_name="text_extraction",
+        include_args=True,
+        include_result=True,
+        indent=1,
     )
     async def _try_extract_text(
         self, file_id: str, file_path: Path, mime_type: str, file_hash: str
@@ -368,60 +293,25 @@ class FileImportTool(BaseTool):
             )
 
             extracted_text = result.get("text", "")
-            word_count = result.get("metadata", {}).get("word_count", 0)
-            extraction_method = result.get("metadata", {}).get(
-                "extraction_method", "unknown"
-            )
-
-            log_event(
-                "text_extraction_successful",
-                {
-                    "file_id": file_id,
-                    "word_count": word_count,
-                    "extraction_method": extraction_method,
-                    "text_length": len(extracted_text),
-                },
-            )
             return str(extracted_text)
         else:
-            log_event(
-                "text_extraction_unsupported",
-                {"file_id": file_id, "mime_type": mime_type},
-            )
             return ""
 
     @log_method(operation_name="embedding_generation")
     async def _try_generate_embeddings(self, file_id: str, text: str):
         """Try to generate embeddings and chunks for the document."""
         if not should_extract_embeddings(text):
-            log_event(
-                "embedding_generation_skipped",
-                {
-                    "file_id": file_id,
-                    "reason": "text_too_short",
-                    "text_length": len(text.strip()),
-                },
-            )
             return
 
-        # Skip embedding generation - LlamaIndex handles this internally
-        log_event(
-            "embedding_generation_delegated",
-            {"file_id": file_id, "handler": "llamaindex", "text_length": len(text)},
-        )
-
-    @log_method(operation_name="date_extraction")
+    @log_method(
+        operation_name="date_extraction",
+        include_args=True,
+        include_result=True,
+        indent=2,
+    )
     async def _try_extract_content_dates(self, file_id: str, text: str):
         """Try to extract content dates from document text."""
         if not should_extract_dates(text):
-            log_event(
-                "date_extraction_skipped",
-                {
-                    "file_id": file_id,
-                    "reason": "text_too_short",
-                    "text_length": len(text.strip()),
-                },
-            )
             return
 
         from lifearchivist.schemas.tool_schemas import ContentDateExtractionInput
@@ -435,13 +325,4 @@ class FileImportTool(BaseTool):
         input_data = ContentDateExtractionInput(document_id=file_id, text_content=text)
 
         result = await date_tool.execute(input_data=input_data)
-        dates_count = result.get("total_dates_found", 0)
-
-        log_event(
-            "date_extraction_completed",
-            {
-                "file_id": file_id,
-                "dates_found": dates_count,
-                "extraction_successful": dates_count > 0,
-            },
-        )
+        _ = result.get("total_dates_found", 0)

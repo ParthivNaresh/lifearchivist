@@ -24,6 +24,7 @@ def log_execution_time(
     operation_name: Optional[str] = None,
     include_args: bool = False,
     include_result: bool = False,
+    indent: int = 0,
 ) -> Callable[[F], F]:
     """
     Decorator to automatically log method execution time and basic metrics.
@@ -32,6 +33,7 @@ def log_execution_time(
         operation_name: Custom operation name (defaults to class.method)
         include_args: Whether to log method arguments (be careful with sensitive data)
         include_result: Whether to log return value size/type info
+        indent: Indentation level for nested method calls (0 = no indent)
     """
 
     def decorator(func: F) -> F:
@@ -48,6 +50,7 @@ def log_execution_time(
                 "method": method_name,
                 "correlation_id": correlation_id,
                 "args_count": len(args),
+                "indent": indent,
                 "kwargs_count": len(kwargs),
             }
 
@@ -56,6 +59,11 @@ def log_execution_time(
                 safe_args = _extract_safe_args(args, kwargs)
                 context.update(safe_args)
 
+            # Set context in operation context so it can be inherited
+            from .context import add_context
+
+            add_context(indent=indent, method=method_name)
+
             # Log method start
             log_event("method_started", context)
 
@@ -63,16 +71,22 @@ def log_execution_time(
                 result = await func(*args, **kwargs)
                 execution_time_ms = int((time.perf_counter() - start_time) * 1000)
 
-                success_context = {
-                    **context,
-                    "execution_time_ms": execution_time_ms,
-                    "success": True,
-                }
+                # Check if MetricsCollector has disabled decorator completion logging
+                from .context import get_operation_context
 
-                if include_result and result is not None:
-                    success_context.update(_extract_result_info(result))
+                operation_context = get_operation_context()
 
-                log_event("method_completed", success_context)
+                if not operation_context.get("_disable_decorator_completion", False):
+                    success_context = {
+                        **context,
+                        "execution_time_ms": execution_time_ms,
+                        "success": True,
+                    }
+
+                    if include_result and result is not None:
+                        success_context.update(_extract_result_info(result))
+
+                    log_event("method_completed", success_context)
                 return result
 
             except Exception as e:
@@ -101,11 +115,17 @@ def log_execution_time(
                 "correlation_id": correlation_id,
                 "args_count": len(args),
                 "kwargs_count": len(kwargs),
+                "indent": indent,
             }
 
             if include_args:
                 safe_args = _extract_safe_args(args, kwargs)
                 context.update(safe_args)
+
+            # Set context in operation context so it can be inherited
+            from .context import add_context
+
+            add_context(indent=indent, method=method_name)
 
             log_event("method_started", context)
 
@@ -113,16 +133,22 @@ def log_execution_time(
                 result = func(*args, **kwargs)
                 execution_time_ms = int((time.perf_counter() - start_time) * 1000)
 
-                success_context = {
-                    **context,
-                    "execution_time_ms": execution_time_ms,
-                    "success": True,
-                }
+                # Check if MetricsCollector has disabled decorator completion logging
+                from .context import get_operation_context
 
-                if include_result and result is not None:
-                    success_context.update(_extract_result_info(result))
+                operation_context = get_operation_context()
 
-                log_event("method_completed", success_context)
+                if not operation_context.get("_disable_decorator_completion", False):
+                    success_context = {
+                        **context,
+                        "execution_time_ms": execution_time_ms,
+                        "success": True,
+                    }
+
+                    if include_result and result is not None:
+                        success_context.update(_extract_result_info(result))
+
+                    log_event("method_completed", success_context)
                 return result
 
             except Exception as e:
@@ -153,6 +179,7 @@ def log_exceptions(
     reraise: bool = True,
     include_stack_trace: bool = True,
     operation_name: Optional[str] = None,
+    indent: int = 0,
 ) -> Callable[[F], F]:
     """
     Decorator to automatically log exceptions with full context.
@@ -176,6 +203,7 @@ def log_exceptions(
                     "correlation_id": get_correlation_id(),
                     "error_type": type(e).__name__,
                     "error_message": str(e),
+                    "indent": indent,
                 }
 
                 if include_stack_trace:
@@ -210,6 +238,7 @@ def log_exceptions(
                     "correlation_id": get_correlation_id(),
                     "error_type": type(e).__name__,
                     "error_message": str(e),
+                    "indent": indent,
                 }
 
                 if include_stack_trace:
@@ -243,6 +272,7 @@ def log_method(
     operation_name: Optional[str] = None,
     include_args: bool = False,
     include_result: bool = False,
+    indent: int = 0,
 ) -> Callable[[F], F]:
     """
     Combined decorator that applies both timing and exception logging.
@@ -257,11 +287,12 @@ def log_method(
             operation_name=operation_name,
             include_args=include_args,
             include_result=include_result,
+            indent=indent,
         )(func)
 
-        instrumented_func = log_exceptions(operation_name=operation_name)(
-            instrumented_func
-        )
+        instrumented_func = log_exceptions(
+            operation_name=operation_name, indent=indent
+        )(instrumented_func)
 
         return instrumented_func
 

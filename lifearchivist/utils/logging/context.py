@@ -95,39 +95,22 @@ def log_context(operation: str, correlation_id: Optional[str] = None, **context_
     else:
         set_correlation_id(correlation_id)
 
-    # Prepare operation context
+    # Save current context to restore later
+    previous_context = get_operation_context()
+
+    # Prepare operation context - inherit from previous context, then add new data
     operation_data = {
+        **previous_context,  # Inherit from current context (including indent)
         "operation": operation,
         "correlation_id": correlation_id,
         **context_data,
     }
 
-    # Save current context to restore later
-    previous_context = get_operation_context()
-
     try:
         # Set new context
         _operation_context.set(operation_data)
-
-        # Log operation start
-        log_event("operation_started", operation_data)
-
         yield correlation_id
-
-        # Log successful completion
-        log_event("operation_completed", {**operation_data, "success": True})
-
-    except Exception as e:
-        # Log operation failure
-        log_event(
-            "operation_failed",
-            {
-                **operation_data,
-                "success": False,
-                "error_type": type(e).__name__,
-                "error_message": str(e),
-            },
-        )
+    except Exception:
         raise
     finally:
         # Restore previous context

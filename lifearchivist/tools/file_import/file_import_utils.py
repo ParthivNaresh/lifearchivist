@@ -7,8 +7,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from lifearchivist.utils.logging import log_event
-
 SUPPORTED_TEXT_EXTRACTION_TYPES = [
     "text/",  # All text/* types
     "application/pdf",  # PDF documents
@@ -85,15 +83,6 @@ async def calculate_file_hash(file_path: Path) -> str:
             bytes_processed += len(chunk)
 
     file_hash = hash_sha256.hexdigest()
-    log_event(
-        "hash_calculation_completed",
-        {
-            "file_path": str(file_path),
-            "bytes_processed": bytes_processed,
-            "hash_algorithm": "sha256",
-        },
-    )
-
     return file_hash
 
 

@@ -13,7 +13,7 @@ from lifearchivist.tools.file_import.file_import_tool import FileImportTool
 from lifearchivist.tools.llamaindex.llamaindex_query_tool import LlamaIndexQueryTool
 from lifearchivist.tools.ollama.ollama_tool import OllamaTool
 from lifearchivist.tools.search.search_tool import IndexSearchTool
-from lifearchivist.utils.logging import log_context, log_event, log_method
+from lifearchivist.utils.logging import log_context, log_method
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 from .base import BaseTool
@@ -30,22 +30,6 @@ class ToolRegistry:
         self.llamaindex_service = llamaindex_service
         self.progress_manager = progress_manager
 
-        log_event(
-            "tool_registry_initialized",
-            {
-                "has_vault": vault is not None,
-                "has_llamaindex_service": llamaindex_service is not None,
-                "has_progress_manager": progress_manager is not None,
-                "vault_type": type(vault).__name__ if vault else None,
-                "llamaindex_service_type": (
-                    type(llamaindex_service).__name__ if llamaindex_service else None
-                ),
-                "progress_manager_type": (
-                    type(progress_manager).__name__ if progress_manager else None
-                ),
-            },
-        )
-
     @log_method(
         operation_name="tool_registration_batch", include_args=True, include_result=True
     )
@@ -55,17 +39,10 @@ class ToolRegistry:
             metrics = MetricsCollector("tool_registration_batch")
             metrics.start()
 
-            log_event("tool_registration_started", {})
-
             # LlamaIndex service should already be initialized by MCP server
             if not self.llamaindex_service:
                 metrics.set_error(ValueError("LlamaIndex service is required"))
                 metrics.report("tool_registration_failed")
-
-                log_event(
-                    "tool_registration_dependency_missing",
-                    {"missing_dependency": "llamaindex_service"},
-                )
                 raise ValueError("LlamaIndex service is required")
 
             # Define tools to register with their dependencies
@@ -114,14 +91,6 @@ class ToolRegistry:
 
             metrics.add_metric("tools_to_register", len(tool_definitions))
 
-            log_event(
-                "tool_definitions_prepared",
-                {
-                    "tool_count": len(tool_definitions),
-                    "tool_names": [td["name"] for td in tool_definitions],
-                },
-            )
-
             successful_registrations = 0
             failed_registrations = 0
 
@@ -137,13 +106,6 @@ class ToolRegistry:
                             missing_deps.append(dep)
 
                     if missing_deps:
-                        log_event(
-                            "tool_registration_dependency_check_failed",
-                            {
-                                "tool_name": tool_def["name"],
-                                "error": f"Missing dependencies: {missing_deps} for {tool_def['name']}",
-                            },
-                        )
                         failed_registrations += 1
                         continue
 
@@ -157,25 +119,8 @@ class ToolRegistry:
                     tool_instance = tool_class(**kwargs)
                     self.register_tool(tool_instance)
                     successful_registrations += 1
-
-                    log_event(
-                        "tool_registered_successfully",
-                        {
-                            "tool_name": tool_def["name"],
-                            "tool_metadata_name": tool_instance.metadata.name,
-                            "dependencies_provided": tool_def["dependencies"],
-                        },
-                    )
-                except Exception as e:
+                except Exception as _:
                     failed_registrations += 1
-                    log_event(
-                        "tool_registration_failed",
-                        {
-                            "tool_name": tool_def["name"],
-                            "error_type": type(e).__name__,
-                            "error_message": str(e),
-                        },
-                    )
 
             metrics.add_metric("successful_registrations", successful_registrations)
             metrics.add_metric("failed_registrations", failed_registrations)
@@ -190,72 +135,14 @@ class ToolRegistry:
                 metrics.set_success(True)
                 metrics.report("tool_registration_completed")
 
-            log_event(
-                "tool_registration_finished",
-                {
-                    "total_tools_registered": len(self.tools),
-                    "successful_registrations": successful_registrations,
-                    "failed_registrations": failed_registrations,
-                    "registered_tool_names": list(self.tools.keys()),
-                },
-            )
-
     def register_tool(self, tool: BaseTool):
         """Register a single tool."""
         tool_name = tool.metadata.name
-
-        # Check if tool already exists
-        already_existed = tool_name in self.tools
-
-        if already_existed:
-            log_event(
-                "tool_registration_overwrite",
-                {
-                    "tool_name": tool_name,
-                    "previous_tool_type": type(self.tools[tool_name]).__name__,
-                    "new_tool_type": type(tool).__name__,
-                },
-            )
-
         self.tools[tool_name] = tool
-
-        log_event(
-            "individual_tool_registered",
-            {
-                "tool_name": tool_name,
-                "tool_type": type(tool).__name__,
-                "tool_description": tool.metadata.description,
-                "is_async": tool.metadata.async_tool,
-                "is_idempotent": tool.metadata.idempotent,
-                "was_overwrite": already_existed,
-                "total_tools_now": len(self.tools),
-            },
-        )
 
     def get_tool(self, name: str) -> Optional[BaseTool]:
         """Get a tool by name."""
         tool = self.tools.get(name)
-
-        log_event(
-            "tool_retrieval_attempt",
-            {
-                "requested_tool_name": name,
-                "tool_found": tool is not None,
-                "available_tools": list(self.tools.keys()),
-                "total_available_tools": len(self.tools),
-            },
-        )
-
-        if tool is None:
-            log_event(
-                "tool_not_found",
-                {
-                    "requested_tool_name": name,
-                    "available_tools": list(self.tools.keys()),
-                    "suggestion": self._suggest_similar_tool(name),
-                },
-            )
-
         return tool
 
     def _suggest_similar_tool(self, requested_name: str) -> Optional[str]:
@@ -284,21 +171,6 @@ class ToolRegistry:
             }
             for name, tool in self.tools.items()
         }
-
-        log_event(
-            "tool_list_accessed",
-            {
-                "total_tools": len(self.tools),
-                "tool_names": list(self.tools.keys()),
-                "async_tools_count": sum(
-                    1 for tool in self.tools.values() if tool.metadata.async_tool
-                ),
-                "idempotent_tools_count": sum(
-                    1 for tool in self.tools.values() if tool.metadata.idempotent
-                ),
-            },
-        )
-
         return tool_list
 
     def get_tool_schema(self, name: str) -> Optional[Dict[str, str]]:
@@ -306,34 +178,7 @@ class ToolRegistry:
         tool = self.get_tool(name)
 
         if not tool:
-            log_event(
-                "tool_schema_request_failed",
-                {
-                    "requested_tool_name": name,
-                    "reason": "tool_not_found",
-                    "available_tools": list(self.tools.keys()),
-                },
-            )
             return None
-
-        log_event(
-            "tool_schema_retrieved",
-            {
-                "tool_name": name,
-                "has_input_schema": bool(tool.metadata.input_schema),
-                "has_output_schema": bool(tool.metadata.output_schema),
-                "input_schema_properties_count": (
-                    len(tool.metadata.input_schema.get("properties", {}))
-                    if tool.metadata.input_schema
-                    else 0
-                ),
-                "output_schema_properties_count": (
-                    len(tool.metadata.output_schema.get("properties", {}))
-                    if tool.metadata.output_schema
-                    else 0
-                ),
-            },
-        )
 
         return {
             "input_schema": str(tool.metadata.input_schema),

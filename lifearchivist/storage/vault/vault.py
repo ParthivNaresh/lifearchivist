@@ -20,7 +20,7 @@ from lifearchivist.storage.vault.vault_utils import (
     get_comprehensive_directory_stats,
     safe_get_file_size,
 )
-from lifearchivist.utils.logging import log_context, log_event, log_method
+from lifearchivist.utils.logging import log_context, log_method
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 
@@ -81,15 +81,6 @@ class Vault:
             ]
 
             metrics.add_metric("directories_to_create", len(directories))
-
-            log_event(
-                "vault_initialization_started",
-                {
-                    "vault_path": str(self.vault_path),
-                    "directories_count": len(directories),
-                },
-            )
-
             created_count = 0
             for name, directory in directories:
                 try:
@@ -98,25 +89,12 @@ class Vault:
 
                     if not existed_before:
                         created_count += 1
-                        log_event(
-                            "vault_directory_created",
-                            {"directory_type": name, "directory_path": str(directory)},
-                        )
 
                     metrics.add_metric(f"{name}_directory_created", not existed_before)
 
                 except OSError as e:
                     metrics.set_error(e)
                     metrics.report("vault_initialization_failed")
-
-                    log_event(
-                        "vault_directory_creation_failed",
-                        {
-                            "directory_type": name,
-                            "directory_path": str(directory),
-                            "error_message": str(e),
-                        },
-                    )
                     raise OSError(
                         f"Failed to create vault directory {directory}: {e}"
                     ) from None
@@ -125,15 +103,6 @@ class Vault:
             metrics.add_metric("directories_existed", len(directories) - created_count)
             metrics.set_success(True)
             metrics.report("vault_initialization_completed")
-
-            log_event(
-                "vault_initialization_successful",
-                {
-                    "vault_path": str(self.vault_path),
-                    "directories_created": created_count,
-                    "directories_existed": len(directories) - created_count,
-                },
-            )
 
     @log_method(
         operation_name="vault_file_clearing", include_args=True, include_result=True
@@ -174,42 +143,20 @@ class Vault:
             metrics.add_metric("target_hashes_count", len(file_hashes))
             metrics.add_metric("clear_all_mode", len(file_hashes) == 0)
 
-            log_event(
-                "vault_clearing_started",
-                {
-                    "vault_path": str(self.vault_path),
-                    "target_hashes_count": len(file_hashes),
-                    "clear_all_mode": len(file_hashes) == 0,
-                },
-            )
-
             # Clear files by specific hashes
             for file_hash in file_hashes:
                 try:
                     await self._delete_file_by_hash(file_hash, cleared_metrics)
-                    log_event(
-                        "file_hash_cleared", {"file_hash": file_hash, "success": True}
-                    )
                 except Exception as e:
                     error_msg = f"Failed to delete files for hash {file_hash}: {e}"
                     if isinstance(cleared_metrics["errors"], list):
                         cleared_metrics["errors"].append(error_msg)
-                    log_event(
-                        "file_hash_clear_failed",
-                        {
-                            "file_hash": file_hash,
-                            "error_message": str(e),
-                            "error_type": type(e).__name__,
-                        },
-                    )
 
             # If no file hashes provided or we need comprehensive cleanup, clear all files
             if not file_hashes:
-                log_event("vault_comprehensive_clearing_started", {})
                 await self._clear_all_vault_files(cleared_metrics)
 
             # Clean up empty directories
-            log_event("vault_directory_cleanup_started", {})
             await self._cleanup_empty_directories()
 
             # Update final metrics
@@ -228,21 +175,6 @@ class Vault:
             else:
                 metrics.set_success(True)
                 metrics.report("vault_clearing_completed")
-
-            log_event(
-                "vault_clearing_finished",
-                {
-                    "files_deleted": cleared_metrics["files_deleted"],
-                    "bytes_reclaimed": cleared_metrics["bytes_reclaimed"],
-                    "errors_count": (
-                        len(errors_list) if isinstance(errors_list, list) else 0
-                    ),
-                    "success": (
-                        len(errors_list) if isinstance(errors_list, list) else 0
-                    )
-                    == 0,
-                },
-            )
 
             return cleared_metrics
 
@@ -332,12 +264,6 @@ class Vault:
         ):
             metrics = MetricsCollector("vault_statistics")
             metrics.start()
-
-            log_event(
-                "vault_statistics_collection_started",
-                {"vault_path": str(self.vault_path)},
-            )
-
             try:
                 directories = {
                     "content": self.content_dir,
@@ -360,33 +286,11 @@ class Vault:
                 metrics.set_success(True)
                 metrics.report("vault_statistics_completed")
 
-                log_event(
-                    "vault_statistics_collection_successful",
-                    {
-                        "vault_path": str(self.vault_path),
-                        "total_files": stats.get("total_files", 0),
-                        "total_size_mb": stats.get("total_size_mb", 0),
-                        "content_files": stats.get("content_files", 0),
-                        "thumbnail_files": stats.get("thumbnail_files", 0),
-                        "temp_files": stats.get("temp_files", 0),
-                    },
-                )
-
                 return stats
 
             except Exception as e:
                 metrics.set_error(e)
                 metrics.report("vault_statistics_failed")
-
-                log_event(
-                    "vault_statistics_collection_error",
-                    {
-                        "vault_path": str(self.vault_path),
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                    },
-                )
-
                 return {
                     "vault_path": str(self.vault_path),
                     "error": f"Failed to collect vault statistics: {e}",
@@ -450,14 +354,6 @@ class Vault:
             metrics.add_metric("file_size_bytes", file_size)
             metrics.add_metric("file_path", str(file_path))
 
-            log_event(
-                "file_hash_calculation_started",
-                {
-                    "file_path": str(file_path),
-                    "file_size_bytes": file_size,
-                },
-            )
-
             try:
                 file_hash = await calculate_file_hash(file_path)
 
@@ -465,35 +361,16 @@ class Vault:
                 metrics.add_metric("hash_length", len(file_hash))
                 metrics.set_success(True)
                 metrics.report("file_hash_calculation_completed")
-
-                log_event(
-                    "file_hash_calculation_successful",
-                    {
-                        "file_path": str(file_path),
-                        "file_size_bytes": file_size,
-                        "hash": file_hash,
-                        "hash_length": len(file_hash),
-                    },
-                )
-
                 return file_hash
 
             except Exception as e:
                 metrics.set_error(e)
                 metrics.report("file_hash_calculation_failed")
-
-                log_event(
-                    "file_hash_calculation_error",
-                    {
-                        "file_path": str(file_path),
-                        "file_size_bytes": file_size,
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                    },
-                )
                 raise
 
-    @log_method(operation_name="file_storage", include_args=True, include_result=True)
+    @log_method(
+        operation_name="file_storage", include_args=True, include_result=True, indent=1
+    )
     async def store_file(
         self, source_path: Path, file_hash: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -534,22 +411,9 @@ class Vault:
             source_size = source_path.stat().st_size
             metrics.add_metric("source_file_size_bytes", source_size)
             metrics.add_metric("has_precomputed_hash", file_hash is not None)
-
-            log_event(
-                "file_storage_started",
-                {
-                    "source_path": str(source_path),
-                    "source_file_size_bytes": source_size,
-                    "has_precomputed_hash": file_hash is not None,
-                },
-            )
-
             try:
                 # Calculate hash if not provided
                 if file_hash is None:
-                    log_event(
-                        "hash_calculation_needed", {"source_path": str(source_path)}
-                    )
                     file_hash = await self.calculate_hash(source_path)
                     metrics.add_metric("hash_calculated_internally", True)
                 else:
@@ -559,29 +423,12 @@ class Vault:
                 extension = source_path.suffix.lstrip(".")
                 if not extension:
                     extension = "bin"
-                    log_event(
-                        "extension_defaulted_to_bin",
-                        {
-                            "source_path": str(source_path),
-                            "original_suffix": source_path.suffix,
-                        },
-                    )
 
                 metrics.add_metric("file_extension", extension)
 
                 # Get storage path
                 target_path = self._get_content_path(file_hash, extension)
                 metrics.add_metric("target_path", str(target_path))
-
-                log_event(
-                    "storage_path_determined",
-                    {
-                        "file_hash": file_hash,
-                        "extension": extension,
-                        "target_path": str(target_path),
-                    },
-                )
-
                 # Check if file already exists
                 if target_path.exists():
                     size_bytes = safe_get_file_size(target_path)
@@ -590,16 +437,6 @@ class Vault:
                     metrics.add_metric("existing_file_size_bytes", size_bytes)
                     metrics.set_success(True)
                     metrics.report("file_storage_completed")
-
-                    log_event(
-                        "file_storage_duplicate_found",
-                        {
-                            "file_hash": file_hash,
-                            "target_path": str(target_path),
-                            "size_bytes": size_bytes,
-                        },
-                    )
-
                     return {
                         "file_hash": file_hash,
                         "path": str(target_path),
@@ -610,21 +447,9 @@ class Vault:
                 # Create directory if needed
                 try:
                     target_path.parent.mkdir(parents=True, exist_ok=True)
-                    log_event(
-                        "vault_directory_ensured",
-                        {"directory_path": str(target_path.parent)},
-                    )
                 except OSError as e:
                     metrics.set_error(e)
                     metrics.report("file_storage_failed")
-
-                    log_event(
-                        "vault_directory_creation_failed",
-                        {
-                            "directory_path": str(target_path.parent),
-                            "error_message": str(e),
-                        },
-                    )
                     raise RuntimeError(
                         f"Failed to create vault directory {target_path.parent}: {e}"
                     ) from None
@@ -633,31 +458,12 @@ class Vault:
                 try:
                     shutil.copy2(source_path, target_path)
                     metrics.add_metric("file_copied", True)
-
-                    log_event(
-                        "file_copied_to_vault",
-                        {
-                            "source_path": str(source_path),
-                            "target_path": str(target_path),
-                            "file_hash": file_hash,
-                        },
-                    )
                 except (OSError, shutil.Error) as e:
                     metrics.set_error(e)
                     metrics.report("file_storage_failed")
-
-                    log_event(
-                        "file_copy_failed",
-                        {
-                            "source_path": str(source_path),
-                            "target_path": str(target_path),
-                            "error_message": str(e),
-                        },
-                    )
                     raise RuntimeError(f"Failed to copy file to vault: {e}") from None
 
                 # Generate thumbnail for images
-                log_event("thumbnail_generation_started", {"file_hash": file_hash})
                 await self._generate_thumbnail(target_path, file_hash)
                 metrics.add_metric("thumbnail_generation_attempted", True)
 
@@ -667,18 +473,6 @@ class Vault:
                 metrics.add_metric("final_file_size_bytes", size_bytes)
                 metrics.set_success(True)
                 metrics.report("file_storage_completed")
-
-                log_event(
-                    "file_storage_successful",
-                    {
-                        "source_path": str(source_path),
-                        "target_path": str(target_path),
-                        "file_hash": file_hash,
-                        "size_bytes": size_bytes,
-                        "extension": extension,
-                    },
-                )
-
                 return {
                     "file_hash": file_hash,
                     "path": str(target_path),
@@ -689,16 +483,6 @@ class Vault:
             except Exception as e:
                 metrics.set_error(e)
                 metrics.report("file_storage_failed")
-
-                log_event(
-                    "file_storage_error",
-                    {
-                        "source_path": str(source_path),
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                        "file_hash": file_hash if file_hash else "not_calculated",
-                    },
-                )
                 raise
 
     async def get_file_path(self, file_hash: str, extension: str) -> Optional[Path]:
@@ -773,16 +557,6 @@ class Vault:
             metrics.add_metric("content_file_path", str(file_path))
             metrics.add_metric("thumbnail_path", str(thumbnail_path))
 
-            log_event(
-                "file_deletion_started",
-                {
-                    "file_hash": file_hash,
-                    "extension": extension,
-                    "content_file_path": str(file_path),
-                    "thumbnail_path": str(thumbnail_path),
-                },
-            )
-
             deleted = False
             content_existed = file_path.exists()
             thumbnail_existed = thumbnail_path.exists()
@@ -798,25 +572,8 @@ class Vault:
                     deleted = True
                     metrics.add_metric("content_file_deleted", True)
                     metrics.add_metric("content_file_size_bytes", file_size)
-
-                    log_event(
-                        "content_file_deleted",
-                        {
-                            "file_hash": file_hash,
-                            "file_path": str(file_path),
-                            "file_size_bytes": file_size,
-                        },
-                    )
-                except Exception as e:
+                except Exception:
                     metrics.add_metric("content_file_deleted", False)
-                    log_event(
-                        "content_file_deletion_failed",
-                        {
-                            "file_hash": file_hash,
-                            "file_path": str(file_path),
-                            "error_message": str(e),
-                        },
-                    )
             else:
                 metrics.add_metric("content_file_deleted", False)
 
@@ -827,43 +584,13 @@ class Vault:
                     thumbnail_path.unlink()
                     metrics.add_metric("thumbnail_deleted", True)
                     metrics.add_metric("thumbnail_size_bytes", thumbnail_size)
-
-                    log_event(
-                        "thumbnail_file_deleted",
-                        {
-                            "file_hash": file_hash,
-                            "thumbnail_path": str(thumbnail_path),
-                            "thumbnail_size_bytes": thumbnail_size,
-                        },
-                    )
-                except Exception as e:
+                except Exception:
                     metrics.add_metric("thumbnail_deleted", False)
-                    log_event(
-                        "thumbnail_deletion_failed",
-                        {
-                            "file_hash": file_hash,
-                            "thumbnail_path": str(thumbnail_path),
-                            "error_message": str(e),
-                        },
-                    )
             else:
                 metrics.add_metric("thumbnail_deleted", False)
 
             metrics.set_success(True)
             metrics.report("file_deletion_completed")
-
-            log_event(
-                "file_deletion_finished",
-                {
-                    "file_hash": file_hash,
-                    "extension": extension,
-                    "content_file_deleted": deleted,
-                    "thumbnail_deleted": thumbnail_existed
-                    and not thumbnail_path.exists(),
-                    "any_files_existed": content_existed or thumbnail_existed,
-                },
-            )
-
             return deleted
 
     @log_method(
@@ -888,11 +615,6 @@ class Vault:
         ):
             metrics = MetricsCollector("temp_file_cleanup")
             metrics.start()
-
-            log_event(
-                "temp_file_cleanup_started", {"temp_directory": str(self.temp_dir)}
-            )
-
             try:
                 cleanup_result = await cleanup_old_temp_files(self.temp_dir)
 
@@ -913,35 +635,9 @@ class Vault:
                 else:
                     metrics.set_success(True)
                     metrics.report("temp_file_cleanup_completed")
-
-                log_event(
-                    "temp_file_cleanup_finished",
-                    {
-                        "temp_directory": str(self.temp_dir),
-                        "cleaned_files": cleaned_files,
-                        "cleaned_bytes": cleaned_bytes,
-                        "cleaned_mb": (
-                            round(cleaned_bytes / (1024 * 1024), 2)
-                            if cleaned_bytes > 0
-                            else 0
-                        ),
-                        "errors_count": errors_count,
-                        "success": errors_count == 0,
-                    },
-                )
-
                 return cleanup_result
 
             except Exception as e:
                 metrics.set_error(e)
                 metrics.report("temp_file_cleanup_failed")
-
-                log_event(
-                    "temp_file_cleanup_error",
-                    {
-                        "temp_directory": str(self.temp_dir),
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                    },
-                )
                 raise

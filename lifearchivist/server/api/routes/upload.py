@@ -12,7 +12,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from lifearchivist.models import IngestRequest
-from lifearchivist.utils.logging import log_context, log_event
+from lifearchivist.utils.logging import log_context
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 from ..dependencies import get_server
@@ -47,15 +47,6 @@ async def ingest_document(request: IngestRequest):
         metrics.add_metric("has_session_id", bool(session_id))
         metrics.add_metric("param_count", len(params))
 
-        log_event(
-            "api_ingest_started",
-            {
-                "file_path": request.path,
-                "has_session_id": bool(session_id),
-                "params_keys": list(params.keys()),
-            },
-        )
-
         try:
             result = await server.execute_tool("file.import", params)
 
@@ -64,35 +55,17 @@ async def ingest_document(request: IngestRequest):
                 metrics.add_metric("file_id", file_id)
                 metrics.set_success(True)
                 metrics.report("api_ingest_completed")
-
-                log_event(
-                    "api_ingest_successful",
-                    {"file_id": file_id, "file_path": request.path},
-                )
                 return result["result"]
             else:
                 error_msg = result["error"]
                 metrics.set_error(RuntimeError(error_msg))
                 metrics.report("api_ingest_failed")
-
-                log_event(
-                    "api_ingest_tool_failed",
-                    {"error_message": error_msg, "file_path": request.path},
-                )
                 raise HTTPException(status_code=500, detail=error_msg)
 
         except Exception as e:
             metrics.set_error(e)
             metrics.report("api_ingest_failed")
 
-            log_event(
-                "api_ingest_exception",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "file_path": request.path,
-                },
-            )
             raise HTTPException(status_code=500, detail=str(e)) from None
 
 
@@ -123,15 +96,6 @@ async def upload_file(
         metrics.add_metric("content_type", file.content_type)
         metrics.add_metric("has_session_id", bool(session_id))
 
-        log_event(
-            "api_upload_started",
-            {
-                "filename": file.filename,
-                "content_type": file.content_type,
-                "has_session_id": bool(session_id),
-            },
-        )
-
         try:
             # Parse JSON strings
             try:
@@ -141,24 +105,7 @@ async def upload_file(
                 metrics.add_metric("tags_count", len(tags_list))
                 metrics.add_metric("metadata_keys_count", len(metadata_dict))
 
-                log_event(
-                    "upload_json_parsed",
-                    {
-                        "tags_count": len(tags_list),
-                        "metadata_keys": list(metadata_dict.keys()),
-                    },
-                )
             except json.JSONDecodeError as e:
-                log_event(
-                    "upload_json_parse_error",
-                    {
-                        "error_message": str(e),
-                        "tags_preview": tags[:100] + "..." if len(tags) > 100 else tags,
-                        "metadata_preview": (
-                            metadata[:100] + "..." if len(metadata) > 100 else metadata
-                        ),
-                    },
-                )
                 metrics.set_error(e)
                 metrics.report("api_upload_failed")
                 raise HTTPException(
@@ -179,15 +126,6 @@ async def upload_file(
                 content_size = len(content)
                 metrics.add_metric("file_size_bytes", content_size)
 
-                log_event(
-                    "temp_file_created",
-                    {
-                        "temp_path": temp_file.name,
-                        "file_size_bytes": content_size,
-                        "filename": file.filename,
-                    },
-                )
-
                 # Import the temporary file with progress tracking
                 import_params = {
                     "path": temp_file.name,
@@ -198,16 +136,6 @@ async def upload_file(
                     },
                     "session_id": session_id,
                 }
-
-                log_event(
-                    "file_import_started",
-                    {
-                        "temp_path": temp_file.name,
-                        "original_filename": file.filename,
-                        "has_session_id": bool(session_id),
-                    },
-                )
-
                 result = await server.execute_tool("file.import", import_params)
                 metrics.add_metric("tool_execution_completed", True)
 
@@ -215,56 +143,24 @@ async def upload_file(
                     file_id = result["result"].get("file_id")
                     metrics.add_metric("file_id", file_id)
                     metrics.set_success(True)
-
-                    log_event(
-                        "api_upload_successful",
-                        {
-                            "file_id": file_id,
-                            "original_filename": file.filename,
-                            "file_size_bytes": content_size,
-                        },
-                    )
-
                     return result["result"]
                 else:
                     error_msg = result["error"]
                     metrics.set_error(RuntimeError(error_msg))
-
-                    log_event(
-                        "file_import_tool_failed",
-                        {"error_message": error_msg, "filename": file.filename},
-                    )
                     raise HTTPException(status_code=500, detail=error_msg)
 
         except HTTPException:
             raise
         except Exception as e:
             metrics.set_error(e)
-            log_event(
-                "api_upload_exception",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "filename": file.filename,
-                },
-            )
             raise HTTPException(status_code=500, detail=str(e)) from None
         finally:
             # Clean up temp file
             if temp_file_path:
                 try:
                     Path(temp_file_path).unlink()
-                    log_event(
-                        "temp_file_cleanup_successful", {"temp_path": temp_file_path}
-                    )
                 except Exception as cleanup_error:
-                    log_event(
-                        "temp_file_cleanup_failed",
-                        {
-                            "temp_path": temp_file_path,
-                            "cleanup_error": str(cleanup_error),
-                        },
-                    )
+                    raise cleanup_error
 
             metrics.report("api_upload_completed")
 
@@ -294,15 +190,9 @@ async def bulk_ingest_files(request: BulkIngestRequest):
         metrics.add_metric("folder_path", folder_path)
 
         if not file_paths:
-            log_event("bulk_ingest_no_files", {"folder_path": folder_path})
             metrics.set_error(ValueError("No file paths provided"))
             metrics.report("api_bulk_ingest_failed")
             raise HTTPException(status_code=400, detail="No file paths provided")
-
-        log_event(
-            "bulk_ingest_started",
-            {"total_files": len(file_paths), "folder_path": folder_path},
-        )
 
         results = []
         successful_count = 0
@@ -310,15 +200,6 @@ async def bulk_ingest_files(request: BulkIngestRequest):
 
         try:
             for i, file_path in enumerate(file_paths):
-                log_event(
-                    "bulk_ingest_file_processing",
-                    {
-                        "file_index": i + 1,
-                        "total_files": len(file_paths),
-                        "file_path": file_path,
-                    },
-                )
-
                 try:
                     # Use the file import tool
                     result = await server.execute_tool(
@@ -336,16 +217,6 @@ async def bulk_ingest_files(request: BulkIngestRequest):
                     if result.get("success"):
                         successful_count += 1
                         file_id = result["result"]["file_id"]
-
-                        log_event(
-                            "bulk_ingest_file_successful",
-                            {
-                                "file_path": file_path,
-                                "file_id": file_id,
-                                "progress": f"{i+1}/{len(file_paths)}",
-                            },
-                        )
-
                         results.append(
                             {
                                 "file_path": file_path,
@@ -358,15 +229,6 @@ async def bulk_ingest_files(request: BulkIngestRequest):
                         failed_count += 1
                         error_msg = result.get("error", "Unknown error")
 
-                        log_event(
-                            "bulk_ingest_file_failed",
-                            {
-                                "file_path": file_path,
-                                "error_message": error_msg,
-                                "progress": f"{i+1}/{len(file_paths)}",
-                            },
-                        )
-
                         results.append(
                             {
                                 "file_path": file_path,
@@ -377,17 +239,6 @@ async def bulk_ingest_files(request: BulkIngestRequest):
 
                 except Exception as e:
                     failed_count += 1
-
-                    log_event(
-                        "bulk_ingest_file_exception",
-                        {
-                            "file_path": file_path,
-                            "error_type": type(e).__name__,
-                            "error_message": str(e),
-                            "progress": f"{i+1}/{len(file_paths)}",
-                        },
-                    )
-
                     results.append(
                         {"file_path": file_path, "success": False, "error": str(e)}
                     )
@@ -400,21 +251,6 @@ async def bulk_ingest_files(request: BulkIngestRequest):
             )
             metrics.set_success(True)
             metrics.report("api_bulk_ingest_completed")
-
-            log_event(
-                "bulk_ingest_completed",
-                {
-                    "total_files": len(file_paths),
-                    "successful_count": successful_count,
-                    "failed_count": failed_count,
-                    "success_rate": (
-                        round(successful_count / len(file_paths) * 100, 1)
-                        if file_paths
-                        else 0
-                    ),
-                },
-            )
-
             return {
                 "success": True,
                 "total_files": len(file_paths),
@@ -427,16 +263,6 @@ async def bulk_ingest_files(request: BulkIngestRequest):
         except Exception as e:
             metrics.set_error(e)
             metrics.report("api_bulk_ingest_failed")
-
-            log_event(
-                "bulk_ingest_exception",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "processed_files": successful_count + failed_count,
-                    "total_files": len(file_paths),
-                },
-            )
             raise HTTPException(status_code=500, detail=str(e)) from None
 
 
@@ -452,14 +278,8 @@ async def get_upload_progress(file_id: str):
 
         metrics.add_metric("file_id", file_id)
 
-        log_event("progress_check_started", {"file_id": file_id})
-
         try:
             if not server.progress_manager:
-                log_event(
-                    "progress_manager_unavailable",
-                    {"file_id": file_id, "reason": "progress_manager_disabled"},
-                )
                 metrics.set_error(RuntimeError("Progress manager not available"))
                 metrics.report("api_progress_check_failed")
                 raise HTTPException(
@@ -468,7 +288,6 @@ async def get_upload_progress(file_id: str):
 
             progress = await server.progress_manager.get_progress(file_id)
             if not progress:
-                log_event("progress_not_found", {"file_id": file_id})
                 metrics.set_error(KeyError("Progress not found"))
                 metrics.report("api_progress_check_failed")
                 raise HTTPException(status_code=404, detail="Progress not found")
@@ -480,30 +299,10 @@ async def get_upload_progress(file_id: str):
             )
             metrics.set_success(True)
             metrics.report("api_progress_check_completed")
-
-            log_event(
-                "progress_check_successful",
-                {
-                    "file_id": file_id,
-                    "stage": progress_dict.get("stage", "unknown"),
-                    "percentage": progress_dict.get("percentage", 0),
-                },
-            )
-
             return progress_dict
-
         except HTTPException:
             raise
         except Exception as e:
             metrics.set_error(e)
             metrics.report("api_progress_check_failed")
-
-            log_event(
-                "progress_check_exception",
-                {
-                    "file_id": file_id,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
-            )
             raise HTTPException(status_code=500, detail=str(e)) from None

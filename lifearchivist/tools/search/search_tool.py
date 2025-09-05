@@ -6,7 +6,7 @@ import logging
 from typing import Any, Dict, List
 
 from lifearchivist.tools.base import BaseTool, ToolMetadata
-from lifearchivist.utils.logging import log_context, log_event, log_method
+from lifearchivist.utils.logging import log_context, log_method
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 logger = logging.getLogger(__name__)
@@ -119,24 +119,12 @@ class IndexSearchTool(BaseTool):
             metrics.add_metric("filters_count", len(filters))
 
             if not query:
-                log_event("search_empty_query", {"mode": mode})
                 return self._empty_search_result("Query cannot be empty")
 
             if not self.llamaindex_service:
-                log_event("search_service_unavailable", {"query_preview": query[:50]})
                 metrics.set_error(RuntimeError("LlamaIndex service not available"))
                 metrics.report("index_search_failed")
                 return self._empty_search_result("Search service not available")
-
-            log_event(
-                "search_started",
-                {
-                    "query_preview": query[:100],
-                    "mode": mode,
-                    "filters": filters,
-                    "limit": limit,
-                },
-            )
 
             try:
                 # Determine search strategy based on mode
@@ -158,30 +146,11 @@ class IndexSearchTool(BaseTool):
                 metrics.set_success(True)
                 metrics.report("index_search_completed")
 
-                log_event(
-                    "search_completed",
-                    {
-                        "results_count": len(results["results"]),
-                        "query_time_ms": results.get("query_time_ms", 0),
-                        "mode": mode,
-                    },
-                )
-
                 return results
 
             except Exception as e:
                 metrics.set_error(e)
                 metrics.report("index_search_failed")
-
-                log_event(
-                    "search_failed",
-                    {
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                        "query_preview": query[:50],
-                        "mode": mode,
-                    },
-                )
                 return self._empty_search_result(f"Search failed: {str(e)}")
 
     async def _semantic_search(

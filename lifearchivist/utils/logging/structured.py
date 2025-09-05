@@ -229,12 +229,23 @@ class MetricsCollector:
         """Report all collected metrics as a structured event."""
         import time
 
+        from .context import add_context, get_operation_context
+
         if self.start_time is not None:
             duration_ms = int((time.perf_counter() - self.start_time) * 1000)
             self.metrics["duration_ms"] = duration_ms
+            self.metrics["execution_time_ms"] = duration_ms
 
+        # Inherit context (including indent) from current operation context
+        context = get_operation_context()
+        event_data = {**context, **self.metrics}
+
+        # Disable decorator completion logging to avoid duplicates
+        add_context(_disable_decorator_completion=True)
+
+        # Emit the detailed metrics event
         event_name = event_name or f"{self.operation_name}_metrics"
-        log_event(event_name, self.metrics)
+        log_event(event_name, event_data)
 
 
 def create_development_formatter() -> logging.Formatter:
@@ -254,32 +265,45 @@ def create_development_formatter() -> logging.Formatter:
             message_content = record.getMessage()
             extras = []
 
-            data = getattr(record, "structured_data", None)
+            data: Optional[dict] = getattr(record, "structured_data", None)
+
+            # Get indent level from structured data
+            indent_level = data.get("indent", 0) if data else 0
+            indent_str = "    " * indent_level
+
             if data:
                 # Lookup strategy: map keys -> formatter functions
                 strategies = {
-                    "duration_ms": lambda v: f"⏱️ {v}ms | {message_content}",
-                    "operation": lambda v: f"op={v}",
-                    "success": lambda v: "✅" if v else "❌",
+                    "duration_ms": lambda v: f"⏱️ {v}ms {message_content}",
                     "error": lambda v: f"error={v} ❌",
                 }
 
                 if "duration_ms" in data:
                     message_content = strategies["duration_ms"](data["duration_ms"])
+                else:
+                    message_content = ""
 
                 for key, fn in strategies.items():
                     if key != "duration_ms" and key in data:
                         extras.append(fn(data[key]))
 
-                # Add any remaining keys not in strategies
                 for key, value in data.items():
-                    if key not in strategies:
-                        extras.append(f"{key}={value}")
+                    if key == "event" and value == "tool_registered_successfully":
+                        extras.append(
+                            f"✅ {data.get("tool_name")} registered successfully"
+                        )
+                    if key == "event" and value == "method_completed":
+                        extras.append(
+                            f"✅ {data.get("method")} completed successfully >>> {str(data)}"
+                        )
+                    if key == "event" and value == "method_started":
+                        extras.append(f"🚀 {data.get("method")} started")
 
             # Build clean message with emoji timing prefix when present
             extras_str = " | ".join(extras)
-            return f"{timestamp} | {record.levelname:5} | {message_content}" + (
-                f" | {extras_str}" if extras_str else ""
-            )
+            return (
+                f"{timestamp} | {record.levelname:5} | {indent_str}{message_content}"
+                + (f" {extras_str}" if extras_str else "")
+            )  # + f" ==== DATA ==== {data}" + f" ==== record.getMessage() ==== {record.getMessage()}"
 
     return DevelopmentFormatter()

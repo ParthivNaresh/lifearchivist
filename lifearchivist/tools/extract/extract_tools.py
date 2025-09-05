@@ -12,7 +12,7 @@ from lifearchivist.tools.extract.extract_utils import (
     _extract_text_by_type,
     _get_extraction_method,
 )
-from lifearchivist.utils.logging import log_context, log_event, log_method
+from lifearchivist.utils.logging import log_context, log_method
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,10 @@ class ExtractTextTool(BaseTool):
         )
 
     @log_method(
-        operation_name="text_extraction", include_args=True, include_result=True
+        operation_name="text_extraction",
+        include_args=True,
+        include_result=True,
+        indent=2,
     )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Extract text from a document."""
@@ -88,15 +91,6 @@ class ExtractTextTool(BaseTool):
             metrics.add_metric("has_file_hash", bool(file_hash))
             metrics.add_metric("initial_mime_type", mime_type or "unknown")
 
-            log_event(
-                "text_extraction_started",
-                {
-                    "file_id": file_id,
-                    "mime_type": mime_type or "unknown",
-                    "input_method": "file_path" if file_path else "vault_hash",
-                },
-            )
-
             try:
                 if file_path:
                     # Direct file path provided
@@ -104,38 +98,12 @@ class ExtractTextTool(BaseTool):
 
                     if not mime_type:
                         mime_type = mimetypes.guess_type(str(actual_file_path))[0]
-                        if not mime_type:
-                            log_event(
-                                "mime_type_detection_failed",
-                                {
-                                    "file_id": file_id,
-                                    "file_path": str(actual_file_path),
-                                    "fallback_needed": True,
-                                },
-                            )
-                        else:
-                            log_event(
-                                "mime_type_detected",
-                                {
-                                    "file_id": file_id,
-                                    "detected_mime_type": mime_type,
-                                    "method": "mimetypes.guess_type",
-                                },
-                            )
 
                     metrics.add_metric("file_path_provided", True)
                     metrics.add_metric("detected_mime_type", mime_type or "unknown")
                 else:
                     # Use vault with file hash
                     if not file_hash or not mime_type:
-                        log_event(
-                            "insufficient_vault_parameters",
-                            {
-                                "file_id": file_id,
-                                "has_file_hash": bool(file_hash),
-                                "has_mime_type": bool(mime_type),
-                            },
-                        )
                         raise ValueError(
                             "Either file_path or both file_hash and mime_type must be provided"
                         )
@@ -143,25 +111,12 @@ class ExtractTextTool(BaseTool):
                     # Determine file extension from mime type
                     extension = mimetypes.guess_extension(mime_type)
                     if not extension:
-                        log_event(
-                            "extension_detection_failed",
-                            {"file_id": file_id, "mime_type": mime_type},
-                        )
                         raise ValueError(
                             f"Could not determine extension from mime_type: {mime_type}"
                         )
 
                     if extension.startswith("."):
                         extension = extension[1:]
-
-                    log_event(
-                        "vault_file_resolution_started",
-                        {
-                            "file_id": file_id,
-                            "file_hash": file_hash,
-                            "extension": extension,
-                        },
-                    )
 
                     actual_file_path = await self.vault.get_file_path(
                         file_hash, extension
@@ -171,33 +126,11 @@ class ExtractTextTool(BaseTool):
 
                 # Verify file exists
                 if not actual_file_path or not actual_file_path.exists():
-                    log_event(
-                        "file_not_found",
-                        {
-                            "file_id": file_id,
-                            "file_path": (
-                                str(actual_file_path) if actual_file_path else "None"
-                            ),
-                            "exists": (
-                                actual_file_path.exists() if actual_file_path else False
-                            ),
-                        },
-                    )
                     raise ValueError(f"File not found: {actual_file_path}")
 
                 # Get file size before extraction
                 file_size = actual_file_path.stat().st_size
                 metrics.add_metric("file_size_bytes", file_size)
-
-                log_event(
-                    "file_located_successfully",
-                    {
-                        "file_id": file_id,
-                        "file_path": str(actual_file_path),
-                        "file_size_bytes": file_size,
-                        "mime_type": mime_type,
-                    },
-                )
 
                 # Extract text using the appropriate method
                 extracted_text = await _extract_text_by_type(
@@ -225,25 +158,6 @@ class ExtractTextTool(BaseTool):
                 metrics.set_success(True)
                 metrics.report("text_extraction_completed")
 
-                log_event(
-                    "text_extraction_successful",
-                    {
-                        "file_id": file_id,
-                        "word_count": word_count,
-                        "text_length": text_length,
-                        "extraction_method": extraction_method,
-                        "file_size_bytes": file_size,
-                        "extraction_efficiency": {
-                            "words_per_kb": (
-                                round(words_per_kb, 1) if file_size > 0 else 0
-                            ),
-                            "chars_per_byte": (
-                                round(chars_per_byte, 3) if file_size > 0 else 0
-                            ),
-                        },
-                    },
-                )
-
                 return {
                     "text": extracted_text,
                     "metadata": {
@@ -258,18 +172,4 @@ class ExtractTextTool(BaseTool):
                 metrics.set_error(e)
                 metrics.report("text_extraction_failed")
 
-                log_event(
-                    "text_extraction_error",
-                    {
-                        "file_id": file_id,
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                        "mime_type": mime_type or "unknown",
-                        "file_path": (
-                            str(actual_file_path)
-                            if "actual_file_path" in locals()
-                            else "unknown"
-                        ),
-                    },
-                )
                 raise ValueError(f"Text extraction failed for {file_id}: {e}") from None

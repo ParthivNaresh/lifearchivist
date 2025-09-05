@@ -16,7 +16,7 @@ from lifearchivist.tools.date_extract.date_extraction_utils import (
     truncate_text_for_llm,
 )
 from lifearchivist.tools.ollama.ollama_tool import OllamaTool
-from lifearchivist.utils.logging import log_context, log_event, log_method
+from lifearchivist.utils.logging import log_context, log_method
 from lifearchivist.utils.logging.structured import MetricsCollector
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,10 @@ class ContentDateExtractionTool(BaseTool):
         )
 
     @log_method(
-        operation_name="llm_date_extraction", include_args=True, include_result=True
+        operation_name="llm_date_extraction",
+        include_args=True,
+        include_result=True,
+        indent=4,
     )
     async def extract_date_from_text(self, text: str, document_id: str) -> str:
         """Extract dates from text using LLM analysis."""
@@ -53,29 +56,11 @@ class ContentDateExtractionTool(BaseTool):
         prompt = create_date_extraction_prompt(text)
         prompt_length = len(prompt)
 
-        log_event(
-            "llm_date_extraction_started",
-            {
-                "document_id": document_id,
-                "text_length": len(text),
-                "prompt_length": prompt_length,
-            },
-        )
-
         ollama_tool = OllamaTool()
         response = await ollama_tool.generate(
             prompt=prompt,
             temperature=0.1,
             max_tokens=1000,
-        )
-
-        log_event(
-            "llm_date_extraction_completed",
-            {
-                "document_id": document_id,
-                "response_length": len(response),
-                "response_preview": response[:50] if response else "[empty]",
-            },
         )
 
         return response
@@ -85,35 +70,18 @@ class ContentDateExtractionTool(BaseTool):
         """Store extracted dates in LlamaIndex metadata."""
         metadata_updates = {"content_date": extracted_date}
 
-        log_event(
-            "date_storage_attempt",
-            {
-                "document_id": document_id,
-                "extracted_date": extracted_date,
-                "metadata_keys": list(metadata_updates.keys()),
-            },
-        )
-
         success = await self.llamaindex_service.update_document_metadata(
             document_id, metadata_updates, merge_mode="update"
         )
 
-        if success:
-            log_event(
-                "date_storage_successful",
-                {"document_id": document_id, "extracted_date": extracted_date},
-            )
-        else:
-            log_event(
-                "date_storage_failed",
-                {"document_id": document_id, "extracted_date": extracted_date},
-            )
+        if not success:
             raise RuntimeError(f"Failed to store content dates for {document_id}")
 
     @log_method(
         operation_name="date_extraction_pipeline",
         include_args=True,
         include_result=True,
+        indent=3,
     )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute the content date extraction tool."""
@@ -137,14 +105,6 @@ class ContentDateExtractionTool(BaseTool):
             metrics.add_metric("text_length", len(input_data.text_content))
             metrics.add_metric("document_id", input_data.document_id)
 
-            log_event(
-                "date_extraction_started",
-                {
-                    "document_id": input_data.document_id,
-                    "text_length": len(input_data.text_content),
-                },
-            )
-
             try:
                 # Extract dates from text
                 extracted_date = await self.extract_date_from_text(
@@ -165,26 +125,9 @@ class ContentDateExtractionTool(BaseTool):
 
                     metrics.set_success(True)
                     metrics.add_metric("dates_stored", True)
-
-                    log_event(
-                        "date_extraction_successful",
-                        {
-                            "document_id": input_data.document_id,
-                            "extracted_date": extracted_date,
-                            "date_length": len(extracted_date),
-                        },
-                    )
                 else:
                     metrics.set_success(False)
                     metrics.add_metric("dates_stored", False)
-
-                    log_event(
-                        "no_dates_found",
-                        {
-                            "document_id": input_data.document_id,
-                            "text_length": len(input_data.text_content),
-                        },
-                    )
 
                 # Report metrics
                 metrics.report("date_extraction_completed")
@@ -199,13 +142,4 @@ class ContentDateExtractionTool(BaseTool):
             except Exception as e:
                 metrics.set_error(e)
                 metrics.report("date_extraction_failed")
-
-                log_event(
-                    "date_extraction_error",
-                    {
-                        "document_id": input_data.document_id,
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                    },
-                )
                 raise

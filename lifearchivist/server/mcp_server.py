@@ -10,7 +10,10 @@ from fastapi import WebSocket
 from ..config import get_settings
 from ..storage.llamaindex_service import LlamaIndexService
 from ..storage.vault.vault import Vault
+from ..tools.exceptions import ToolExecutionError, ToolNotFoundError, ValidationError
 from ..tools.registry import ToolRegistry
+from ..utils.logging import log_context
+from ..utils.logging.structured import MetricsCollector
 from .progress_manager import ProgressManager
 
 logger = logging.getLogger(__name__)
@@ -68,7 +71,6 @@ class MCPServer:
             raise ValueError("Vault path not configured")
         self.vault = Vault(vault_path)
         await self.vault.initialize()
-        logger.error(f"Vault location: {self.vault.vault_path}")
 
         # Initialize LlamaIndex service
         self.llamaindex_service = LlamaIndexService(vault=self.vault)
@@ -80,9 +82,7 @@ class MCPServer:
                 redis_url="redis://localhost:6379",
                 session_manager=self.session_manager,
             )
-            logger.info("Progress manager initialized")
-        except Exception as e:
-            logger.warning(f"Failed to initialize progress manager: {e}")
+        except Exception:
             self.progress_manager = None
         # else:
         #     logger.info("Progress manager disabled (websockets off)")
@@ -120,23 +120,74 @@ class MCPServer:
     async def execute_tool(
         self, tool_name: str, params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Execute a tool and return the result."""
-        try:
-            if not self.tool_registry:
-                raise ValueError("Tool registry not initialized")
-            tool = self.tool_registry.get_tool(tool_name)
-            if not tool:
-                raise ValueError(f"Tool '{tool_name}' not found")
+        """Execute a tool with input/output validation."""
+        with log_context(
+            operation="execute_tool",
+            tool_name=tool_name,
+            param_keys=list(params.keys()) if params else [],
+        ):
+            metrics = MetricsCollector("execute_tool")
+            metrics.start()
+            metrics.add_metric("tool_name", tool_name)
+            metrics.add_metric("param_count", len(params) if params else 0)
 
-            logger.info(f"Executing tool {tool_name} with params: {params}")
-            result = await tool.execute(**params)
+            try:
+                # Check tool registry initialization
+                if not self.tool_registry:
+                    metrics.set_error(
+                        ToolExecutionError("Tool registry not initialized")
+                    )
+                    metrics.report("tool_execution_failed")
+                    raise ToolExecutionError("Tool registry not initialized")
 
-            return {"success": True, "result": result}
+                # Get the tool
+                tool = self.tool_registry.get_tool(tool_name)
+                if not tool:
+                    metrics.set_error(
+                        ToolNotFoundError(f"Tool '{tool_name}' not found")
+                    )
+                    metrics.report("tool_execution_failed")
+                    raise ToolNotFoundError(f"Tool '{tool_name}' not found")
 
-        except Exception as e:
-            logger.error(f"Tool execution failed: {e}")
-            # raise ValueError(e)
-            return {"success": False, "error": str(e)}
+                try:
+                    validated_params = await tool.validate_input(params)
+                    metrics.add_metric("input_validation", "passed")
+                except ValidationError as e:
+                    metrics.set_error(e)
+                    metrics.add_metric("input_validation", "failed")
+                    metrics.report("tool_execution_failed")
+                    return {"success": False, "error": f"Invalid input: {str(e)}"}
+
+                try:
+                    result = await tool.execute(**validated_params)
+                    metrics.add_metric("tool_execution", "completed")
+                except Exception as e:
+                    metrics.set_error(e)
+                    metrics.add_metric("tool_execution", "failed")
+                    metrics.report("tool_execution_failed")
+                    raise ToolExecutionError(f"Tool execution failed: {str(e)}") from e
+
+                try:
+                    validated_result = await tool.validate_output(result)
+                    metrics.add_metric("output_validation", "passed")
+                except ValidationError as e:
+                    metrics.set_error(e)
+                    metrics.add_metric("output_validation", "failed")
+                    metrics.report("tool_execution_failed")
+                    return {"success": False, "error": f"Invalid tool output: {str(e)}"}
+
+                metrics.set_success(True)
+                metrics.report("tool_execution_completed")
+                return {"success": True, "result": validated_result}
+
+            except (ToolNotFoundError, ToolExecutionError) as e:
+                metrics.set_error(e)
+                metrics.report("tool_execution_failed")
+                return {"success": False, "error": str(e)}
+            except Exception as e:
+                metrics.set_error(e)
+                metrics.report("tool_execution_failed")
+                return {"success": False, "error": f"Internal server error: {str(e)}"}
 
     async def query_agent_async(self, agent_name: str, query: str) -> Dict[str, Any]:
         """Query an agent asynchronously."""
