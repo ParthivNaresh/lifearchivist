@@ -7,6 +7,7 @@ queryable log entries with human-readable development formatting.
 
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 # Get logger for this module
@@ -271,10 +272,21 @@ def create_development_formatter() -> logging.Formatter:
             # File analysis events
             if event == "mime_type_detected":
                 mime_type = data.get("mime_type", "unknown")
-                return mime_type
+                detection_method = data.get("detection_method", "unknown")
+                return f"{mime_type} ({detection_method})"
+            elif event == "mime_type_detection_failed":
+                file_path = data.get("file_path", "unknown")
+                return f"failed for {Path(file_path).name if file_path != 'unknown' else 'unknown file'}"
             elif event == "mime_type_override":
                 mime_type = data.get("mime_type", "unknown")
                 return f"{mime_type} (hint)"
+            elif event == "file_not_found":
+                file_path = data.get("file_path", "unknown")
+                file_hash = data.get("file_hash", "")
+                if file_hash:
+                    return f"{Path(file_path).name if file_path != 'None' else 'unknown'} (hash: {file_hash[:8]}...)"
+                else:
+                    return f"{Path(file_path).name if file_path != 'None' else 'unknown file'}"
 
             # Text extraction events
             elif event == "text_extracted":
