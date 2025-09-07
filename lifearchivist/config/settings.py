@@ -62,14 +62,14 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, description="Server port")
 
     # Feature Flags
-    enable_ui: bool = Field(default=False, description="Enable UI and desktop app")
+    enable_ui: bool = Field(default=True, description="Enable UI and desktop app")
     enable_agents: bool = Field(
         default=False, description="Enable MCP agents and complex processing"
     )
     enable_websockets: bool = Field(
-        default=False, description="Enable WebSocket support"
+        default=True, description="Enable WebSocket support"
     )
-    api_only_mode: bool = Field(default=True, description="API-only mode for debugging")
+    api_only_mode: bool = Field(default=False, description="API-only mode for debugging")
 
     class Config:
         env_prefix = "LIFEARCH_"
@@ -91,35 +91,20 @@ class Settings(BaseSettings):
         (self.lifearch_home / "data").mkdir(parents=True, exist_ok=True)
 
 
-def configure_logging(level: str = "INFO", use_structured: bool = True) -> None:
+def configure_logging(level: str = "INFO") -> None:
     """
-    Configure logging with professional structured output or development formatting.
+    Configure logging with development-friendly structured output.
 
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        use_structured: Whether to use structured logging (True) or simple dev formatting (False)
     """
     log_level = getattr(logging, level.upper())
 
-    # Import structured logging components
+    # Import development formatter
     try:
-        from ..utils.logging.structured import (
-            StructuredFormatter,
-            create_development_formatter,
-        )
-
-        structured_available = True
-    except ImportError:
-        structured_available = False
-
-    # Create appropriate formatter
-    if use_structured and structured_available:
-        # Use development-friendly structured formatter that shows timing and correlation
+        from ..utils.logging.structured import create_development_formatter
         formatter = create_development_formatter()
-    elif structured_available:
-        # Fallback to JSON structured formatter
-        formatter = StructuredFormatter()
-    else:
+    except ImportError:
         # Fallback to basic formatter if structured logging not available
         formatter = logging.Formatter(
             "%(asctime)s | %(levelname)s | %(name)s | %(message)s"

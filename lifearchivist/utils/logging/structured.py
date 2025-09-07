@@ -1,11 +1,10 @@
 """
 Structured logging utilities for professional event-based logging.
 
-Provides structured event logging, JSON formatting, and utilities
-for creating searchable, queryable log entries.
+Provides structured event logging and utilities for creating searchable,
+queryable log entries with human-readable development formatting.
 """
 
-import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
@@ -14,56 +13,7 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 
-class StructuredFormatter(logging.Formatter):
-    """
-    JSON formatter for structured logging that creates searchable log entries.
-
-    Outputs logs in JSON format with consistent field names and data types
-    for easy parsing by log aggregation systems.
-    """
-
-    def format(self, record: logging.LogRecord) -> str:
-        """Format log record as structured JSON."""
-        # Base log entry
-        log_entry: Dict[str, Any] = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-        }
-
-        # Add structured data if present
-        if hasattr(record, "structured_data") and record.structured_data:
-            log_entry.update(record.structured_data)
-
-        # Add exception info if present
-        if record.exc_info:
-            exception_info = {
-                "type": record.exc_info[0].__name__ if record.exc_info[0] else None,
-                "message": str(record.exc_info[1]) if record.exc_info[1] else None,
-                "traceback": (
-                    self.formatException(record.exc_info) if record.exc_info else None
-                ),
-            }
-            log_entry["exception"] = exception_info
-
-        # Add process/thread info
-        process_info = {
-            "pid": record.process,
-            "thread_id": record.thread,
-            "thread_name": record.threadName,
-        }
-        log_entry["process"] = process_info
-
-        # Add source location
-        source_info = {
-            "file": record.filename,
-            "function": record.funcName,
-            "line": record.lineno,
-        }
-        log_entry["source"] = source_info
-
-        return json.dumps(log_entry, default=str, separators=(",", ":"))
+# StructuredFormatter removed - only using DevelopmentFormatter for human-readable logs
 
 
 class StructuredLogger:
@@ -184,126 +134,390 @@ def log_event(
     structured_logger.event(event_name, data, level)
 
 
-class MetricsCollector:
-    """
-    Utility class for collecting and aggregating metrics during operation execution.
-
-    Useful for operations that need to track multiple metrics and report them
-    as a single structured event.
-    """
-
-    def __init__(self, operation_name: str):
-        self.operation_name = operation_name
-        self.metrics: Dict[str, Any] = {}
-        self.start_time: Optional[float] = None
-
-    def start(self):
-        """Start timing the operation."""
-        import time
-
-        self.start_time = time.perf_counter()
-
-    def add_metric(self, name: str, value: Any):
-        """Add a metric to the collector."""
-        self.metrics[name] = value
-
-    def increment(self, name: str, amount: int = 1):
-        """Increment a counter metric."""
-        self.metrics[name] = self.metrics.get(name, 0) + amount
-
-    def set_success(self, success: bool = True):
-        """Set the success status."""
-        self.metrics["success"] = success
-
-    def set_error(self, error: Exception):
-        """Set error information."""
-        self.metrics.update(
-            {
-                "success": False,
-                "error_type": type(error).__name__,
-                "error_message": str(error),
-            }
-        )
-
-    def report(self, event_name: Optional[str] = None):
-        """Report all collected metrics as a structured event."""
-        import time
-
-        from .context import add_context, get_operation_context
-
-        if self.start_time is not None:
-            duration_ms = int((time.perf_counter() - self.start_time) * 1000)
-            self.metrics["duration_ms"] = duration_ms
-            self.metrics["execution_time_ms"] = duration_ms
-
-        # Inherit context (including indent) from current operation context
-        context = get_operation_context()
-        event_data = {**context, **self.metrics}
-
-        # Disable decorator completion logging to avoid duplicates
-        add_context(_disable_decorator_completion=True)
-
-        # Emit the detailed metrics event
-        event_name = event_name or f"{self.operation_name}_metrics"
-        log_event(event_name, event_data)
-
-
 def create_development_formatter() -> logging.Formatter:
     """
     Create a human-readable formatter for development environments.
 
     Returns a formatter that outputs clean, readable logs for development
-    while still including structured data.
+    while still including structured data with intelligent event-based formatting.
     """
 
     class DevelopmentFormatter(logging.Formatter):
         def format(self, record: logging.LogRecord) -> str:
-            # Format timestamp
             timestamp = datetime.fromtimestamp(record.created).strftime("%H:%M:%S.%f")[
                 :-3
             ]
-            message_content = record.getMessage()
-            extras = []
-
+            
             data: Optional[dict] = getattr(record, "structured_data", None)
-
-            # Get indent level from structured data
-            indent_level = data.get("indent", 0) if data else 0
-            indent_str = "    " * indent_level
-
-            if data:
-                # Lookup strategy: map keys -> formatter functions
-                strategies = {
-                    "duration_ms": lambda v: f"⏱️ {v}ms {message_content}",
-                    "error": lambda v: f"error={v} ❌",
-                }
-
-                if "duration_ms" in data:
-                    message_content = strategies["duration_ms"](data["duration_ms"])
+            
+            # Handle non-structured logs (fallback)
+            if not data:
+                return f"{timestamp} | {record.levelname:5} | {record.getMessage()}"
+            
+            # Route to appropriate formatter based on event type
+            event = data.get("event", "")
+            operation = data.get("operation", "")
+            
+            if event == "operation_started":
+                message_content = self._format_operation_start(operation)
+            elif event == "operation_completed":
+                message_content = self._format_operation_success(data, operation)
+            elif event == "operation_failed":
+                message_content = self._format_operation_error(data, operation)
+            elif event in ["file_processed", "document_indexed", "user_action"]:
+                message_content = self._format_business_event(data, event)
+            elif event in ["system_startup", "service_ready", "health_check"]:
+                message_content = self._format_system_event(data, event)
+            else:
+                message_content = self._format_generic_event(data, event)
+            
+            return f"{timestamp} | {record.levelname:5} | {message_content}"
+        
+        def _format_operation_start(self, operation: str) -> str:
+            """Format operation start events."""
+            if not operation:
+                return "🚀 operation started"
+            return f"🚀 {operation} started"
+        
+        def _format_operation_success(self, data: dict, operation: str) -> str:
+            """Format successful operation completion events."""
+            duration_ms = data.get("duration_ms", 0)
+            
+            if duration_ms < 50:
+                duration_emoji = "⚡"
+            elif duration_ms > 2000:
+                duration_emoji = "🐌"
+            else:
+                duration_emoji = "⏱️"
+            
+            if duration_ms >= 1000:
+                duration_str = f"{duration_ms/1000:.1f}s"
+            else:
+                duration_str = f"{duration_ms}ms"
+            
+            # Add operation-specific context
+            context = self._get_operation_context(data, operation)
+            
+            base_message = f"{duration_emoji} {duration_str} {operation}"
+            return f"{base_message}{context}" if context else base_message
+        
+        def _format_operation_error(self, data: dict, operation: str) -> str:
+            """Format failed operation events."""
+            duration_ms = data.get("duration_ms", 0)
+            error_type = data.get("error_type", "Error")
+            error_message = data.get("error_message", "")
+            
+            # Format duration if available
+            duration_part = ""
+            if duration_ms > 0:
+                if duration_ms >= 1000:
+                    duration_part = f" {duration_ms/1000:.1f}s"
                 else:
-                    message_content = ""
-
-                for key, fn in strategies.items():
-                    if key != "duration_ms" and key in data:
-                        extras.append(fn(data[key]))
-
-                for key, value in data.items():
-                    if key == "event" and value == "tool_registered_successfully":
-                        extras.append(
-                            f"✅ {data.get("tool_name")} registered successfully"
-                        )
-                    if key == "event" and value == "method_completed":
-                        extras.append(
-                            f"✅ {data.get("method")} completed successfully >>> {str(data)}"
-                        )
-                    if key == "event" and value == "method_started":
-                        extras.append(f"🚀 {data.get("method")} started")
-
-            # Build clean message with emoji timing prefix when present
-            extras_str = " | ".join(extras)
-            return (
-                f"{timestamp} | {record.levelname:5} | {indent_str}{message_content}"
-                + (f" {extras_str}" if extras_str else "")
-            )  # + f" ==== DATA ==== {data}" + f" ==== record.getMessage() ==== {record.getMessage()}"
+                    duration_part = f" {duration_ms}ms"
+            
+            # Truncate long error messages
+            if len(error_message) > 60:
+                error_message = error_message[:57] + "..."
+            
+            return f"❌{duration_part} {operation} failed ({error_type}: {error_message})"
+        
+        def _format_business_event(self, data: dict, event: str) -> str:
+            """Format business/application events."""
+            if event == "file_processed":
+                file_id = data.get("file_id", "unknown")
+                processing_time = data.get("processing_time", 0)
+                return f"📄 file_processed (id={file_id}, {processing_time}s)"
+            elif event == "document_indexed":
+                doc_id = data.get("document_id", "unknown")
+                chunks = data.get("chunks", 0)
+                return f"📄 document_indexed (id={doc_id}, {chunks} chunks)"
+            elif event == "user_action":
+                action = data.get("action", "unknown")
+                return f"👤 user_action ({action})"
+            else:
+                return f"📋 {event}"
+        
+        def _format_system_event(self, data: dict, event: str) -> str:
+            """Format system-level events."""
+            if event == "service_ready":
+                service = data.get("service", "unknown")
+                status = data.get("status", "unknown")
+                return f"✅ {service} service ready ({status})"
+            elif event == "system_startup":
+                return f"🚀 system startup"
+            elif event == "health_check":
+                status = data.get("status", "unknown")
+                return f"💚 health_check ({status})"
+            else:
+                return f"⚙️ {event}"
+        
+        def _format_generic_event(self, data: dict, event: str) -> str:
+            """Format generic/unknown events with contextual information."""
+            if not event:
+                return "📝 log_event"
+            
+            # Add specific context for common business events
+            context = self._get_business_event_context(data, event)
+            
+            if context:
+                return f"📝 {event}: {context}"
+            else:
+                return f"📝 {event}"
+        
+        def _get_business_event_context(self, data: dict, event: str) -> str:
+            """Get contextual information for business events."""
+            # File analysis events
+            if event == "mime_type_detected":
+                mime_type = data.get("mime_type", "unknown")
+                return mime_type
+            elif event == "mime_type_override":
+                mime_type = data.get("mime_type", "unknown")
+                return f"{mime_type} (hint)"
+            
+            # Text extraction events
+            elif event == "text_extracted":
+                text_length = data.get("text_length", 0)
+                if text_length > 1000:
+                    return f"{text_length/1000:.1f}k chars"
+                else:
+                    return f"{text_length} chars"
+            elif event == "text_extraction_skipped":
+                reason = data.get("reason", "unknown")
+                return f"skipped ({reason})"
+            elif event == "text_extraction_supported":
+                mime_type = data.get("mime_type", "unknown")
+                return f"{mime_type} supported"
+            
+            # Date extraction events
+            elif event == "date_extraction_completed":
+                dates_found = data.get("dates_found", 0)
+                if dates_found > 0:
+                    extracted_date = data.get("extracted_date", "unknown")
+                    return f"{dates_found} dates found: {extracted_date}"
+                else:
+                    return "No dates found"
+            elif event == "date_extraction_skipped":
+                reason = data.get("reason", "unknown")
+                return f"skipped ({reason})"
+            elif event == "date_extraction_started":
+                word_count = data.get("word_count", 0)
+                return f"{word_count} words to analyze"
+            
+            # LLM debugging events
+            elif event == "llm_prompt_created":
+                text_length = data.get("text_length", 0)
+                prompt_length = data.get("prompt_length", 0)
+                return f"text: {text_length} chars, prompt: {prompt_length} chars"
+            elif event == "llm_response_received":
+                response = data.get("response", "")
+                response_length = data.get("response_length", 0)
+                if response and response != "None":
+                    return f"'{response}' ({response_length} chars)"
+                else:
+                    return "empty response"
+            
+            # Document events
+            elif event == "document_created":
+                word_count = data.get("word_count", 0)
+                return f"{word_count} words indexed"
+            elif event == "document_creation_started":
+                content_length = data.get("content_length", 0)
+                metadata_fields = data.get("metadata_fields", 0)
+                return f"{content_length} chars, {metadata_fields} fields"
+            elif event == "document_creation_failed":
+                error = data.get("error", "unknown error")
+                return error
+            elif event == "document_status_updated":
+                status = data.get("status", "unknown")
+                return f"status={status}"
+            
+            # File processing events
+            elif event == "file_processed":
+                size_bytes = data.get("size_bytes", 0)
+                mime_type = data.get("mime_type", "unknown")
+                if size_bytes > 1024 * 1024:
+                    size_str = f"{size_bytes / (1024*1024):.1f}MB"
+                elif size_bytes > 1024:
+                    size_str = f"{size_bytes / 1024:.1f}KB"
+                else:
+                    size_str = f"{size_bytes}B"
+                return f"{size_str} {mime_type}"
+            elif event == "file_analysis_started":
+                file_size_mb = data.get("file_size_mb", 0)
+                return f"{file_size_mb}MB file"
+            
+            # Vault events
+            elif event == "vault_storage_completed":
+                vault_existed = data.get("vault_existed", False)
+                return "existed" if vault_existed else "new file"
+            
+            # Duplicate detection events
+            elif event == "duplicate_found":
+                existing_doc_id = data.get("existing_doc_id", "unknown")
+                return f"existing doc: {existing_doc_id[:8]}..."
+            elif event == "duplicate_check_started":
+                return "checking for duplicates"
+            
+            # Progress tracking events
+            elif event == "progress_tracking_started":
+                session_id = data.get("session_id", "unknown")
+                return f"session: {session_id[:8]}..."
+            elif event == "progress_tracking_completed":
+                session_id = data.get("session_id", "unknown")
+                return f"session: {session_id[:8]}... completed"
+            
+            # Success/completion events
+            elif event == "file_import_success":
+                word_count = data.get("word_count", 0)
+                vault_existed = data.get("vault_existed", False)
+                status = "duplicate" if vault_existed else "new"
+                return f"{word_count} words, {status}"
+            elif event == "text_extraction_completed":
+                word_count = data.get("word_count", 0)
+                has_text = data.get("has_text", False)
+                if has_text:
+                    return f"{word_count} words extracted"
+                else:
+                    return "no text found"
+            
+            # Error events
+            elif event == "file_import_error":
+                error_type = data.get("error_type", "Error")
+                return f"{error_type}"
+            elif event == "progress_error_failed":
+                return "progress tracking failed"
+            elif event == "metadata_update_failed":
+                return "metadata update failed"
+            
+            # Default: return empty string for no context
+            return ""
+        
+        def _get_operation_context(self, data: dict, operation: str) -> str:
+            """Get operation-specific context information."""
+            context_parts = []
+            
+            # File operations context
+            if operation in ["file_storage", "file_import", "file_deletion"]:
+                context_parts.extend(self._get_file_context(data))
+            
+            # Document operations context  
+            elif operation in ["document_addition", "document_analysis", "text_extraction"]:
+                context_parts.extend(self._get_document_context(data))
+            
+            # Query operations context
+            elif operation in ["metadata_query", "document_retrieval", "llamaindex_query"]:
+                context_parts.extend(self._get_query_context(data))
+            
+            # Cleanup operations context
+            elif operation in ["temp_file_cleanup", "vault_file_clearing", "data_cleanup"]:
+                context_parts.extend(self._get_cleanup_context(data))
+            
+            # System operations context
+            elif operation in ["vault_initialization", "llama_index_setup", "query_engine_setup"]:
+                context_parts.extend(self._get_system_context(data))
+            
+            return f" ({', '.join(context_parts)})" if context_parts else ""
+        
+        def _get_file_context(self, data: dict) -> list:
+            """Get context for file operations."""
+            context = []
+            
+            # File size (from result data or direct field)
+            size_bytes = data.get("size_bytes", 0)
+            if size_bytes > 1024 * 1024:
+                context.append(f"{size_bytes / (1024*1024):.1f}MB")
+            elif size_bytes > 1024:
+                context.append(f"{size_bytes / 1024:.1f}KB")
+            elif size_bytes > 0:
+                context.append(f"{size_bytes}B")
+            
+            # File existence/status
+            if "existed" in data:
+                existed = data.get("existed", False)
+                context.append("existed" if existed else "new")
+            
+            # Boolean result (for operations like delete)
+            if "result_value" in data:
+                result = data.get("result_value")
+                if isinstance(result, bool):
+                    context.append("success" if result else "not_found")
+            
+            return context
+        
+        def _get_document_context(self, data: dict) -> list:
+            """Get context for document operations."""
+            context = []
+            
+            # Content length
+            if "result_length" in data:
+                length = data.get("result_length", 0)
+                if length > 1000:
+                    context.append(f"{length/1000:.1f}k chars")
+                else:
+                    context.append(f"{length} chars")
+            
+            # Result keys (for metadata operations)
+            if "result_keys_count" in data:
+                keys = data.get("result_keys_count", 0)
+                context.append(f"{keys} fields")
+            
+            # Success status
+            if "operation_success" in data:
+                success = data.get("operation_success")
+                if success is False:
+                    context.append("failed")
+            
+            return context
+        
+        def _get_query_context(self, data: dict) -> list:
+            """Get context for query operations."""
+            context = []
+            
+            # Result count
+            if "result_length" in data:
+                count = data.get("result_length", 0)
+                context.append(f"{count} results")
+            
+            # Result keys count (for metadata queries)
+            if "result_keys_count" in data:
+                count = data.get("result_keys_count", 0)
+                context.append(f"{count} matches")
+            
+            return context
+        
+        def _get_cleanup_context(self, data: dict) -> list:
+            """Get context for cleanup operations."""
+            context = []
+            
+            # Files cleaned
+            if "result_keys_count" in data:
+                files = data.get("result_keys_count", 0)
+                context.append(f"{files} files")
+            
+            # Bytes freed
+            if "result_length" in data:
+                bytes_freed = data.get("result_length", 0)
+                if bytes_freed > 1024 * 1024:
+                    context.append(f"{bytes_freed / (1024*1024):.1f}MB freed")
+                elif bytes_freed > 1024:
+                    context.append(f"{bytes_freed / 1024:.1f}KB freed")
+                elif bytes_freed > 0:
+                    context.append(f"{bytes_freed}B freed")
+            
+            return context
+        
+        def _get_system_context(self, data: dict) -> list:
+            """Get context for system operations."""
+            context = []
+            
+            # Success status
+            if "operation_success" in data:
+                success = data.get("operation_success")
+                if success is True:
+                    context.append("ready")
+                elif success is False:
+                    context.append("failed")
+            
+            return context
 
     return DevelopmentFormatter()

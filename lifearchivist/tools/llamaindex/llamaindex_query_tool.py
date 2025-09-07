@@ -2,14 +2,10 @@
 LlamaIndex query tool for Q&A functionality.
 """
 
-import logging
 from typing import Any, Dict
 
 from lifearchivist.tools.base import BaseTool, ToolMetadata
-from lifearchivist.utils.logging import log_context, log_method
-from lifearchivist.utils.logging.structured import MetricsCollector
-
-logger = logging.getLogger(__name__)
+from lifearchivist.utils.logging import track
 
 
 class LlamaIndexQueryTool(BaseTool):
@@ -76,8 +72,8 @@ class LlamaIndexQueryTool(BaseTool):
             idempotent=True,
         )
 
-    @log_method(
-        operation_name="llamaindex_query", include_args=True, include_result=True
+    @track(
+        operation="llamaindex_query"
     )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute LlamaIndex query for Q&A."""
@@ -85,53 +81,26 @@ class LlamaIndexQueryTool(BaseTool):
         similarity_top_k = kwargs.get("similarity_top_k", 5)
         response_mode = kwargs.get("response_mode", "tree_summarize")
 
-        with log_context(
-            operation="llamaindex_query",
-            question_length=len(question),
-            similarity_top_k=similarity_top_k,
-            response_mode=response_mode,
-        ):
-            metrics = MetricsCollector("llamaindex_query")
-            metrics.start()
+        if not question:
+            return self._empty_response("Question cannot be empty")
 
-            metrics.add_metric("question_length", len(question))
-            metrics.add_metric("similarity_top_k", similarity_top_k)
-            metrics.add_metric("response_mode", response_mode)
+        if not self.llamaindex_service:
+            return self._empty_response("LlamaIndex service not available")
 
-            if not question:
-                return self._empty_response("Question cannot be empty")
+        try:
+            # Use the LlamaIndex service query method
+            result = await self.llamaindex_service.query(
+                question=question,
+                similarity_top_k=similarity_top_k,
+                response_mode=response_mode,
+            )
 
-            if not self.llamaindex_service:
-                metrics.set_error(RuntimeError("LlamaIndex service not available"))
-                metrics.report("llamaindex_query_failed")
-                return self._empty_response("LlamaIndex service not available")
+            # Transform the result to match expected output schema
+            transformed_result = self._transform_query_result(result, question)
+            return transformed_result
 
-            try:
-                # Use the LlamaIndex service query method
-                result = await self.llamaindex_service.query(
-                    question=question,
-                    similarity_top_k=similarity_top_k,
-                    response_mode=response_mode,
-                )
-
-                # Transform the result to match expected output schema
-                transformed_result = self._transform_query_result(result, question)
-
-                metrics.add_metric(
-                    "answer_length", len(transformed_result.get("answer", ""))
-                )
-                metrics.add_metric(
-                    "sources_count", len(transformed_result.get("sources", []))
-                )
-                metrics.add_metric("query_successful", True)
-                metrics.set_success(True)
-                metrics.report("llamaindex_query_completed")
-                return transformed_result
-
-            except Exception as e:
-                metrics.set_error(e)
-                metrics.report("llamaindex_query_failed")
-                return self._empty_response(f"Query failed: {str(e)}")
+        except Exception as e:
+            return self._empty_response(f"Query failed: {str(e)}")
 
     def _transform_query_result(
         self, result: Dict[str, Any], question: str

@@ -3,15 +3,12 @@ Progress tracking system for upload and processing operations.
 """
 
 import json
-import logging
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any, Dict, Optional
 
 import redis
-
-logger = logging.getLogger(__name__)
 
 
 class ProcessingStage(Enum):
@@ -213,13 +210,10 @@ class ProgressManager:
             if progress_keys:
                 deleted_progress = self.redis_client.delete(*progress_keys)
                 cleared_metrics["progress_keys_deleted"] = deleted_progress
-                logger.info(f"Deleted {deleted_progress} progress keys")
-
             # Delete session keys
             if session_keys:
                 deleted_sessions = self.redis_client.delete(*session_keys)
                 cleared_metrics["session_keys_deleted"] = deleted_sessions
-                logger.info(f"Deleted {deleted_sessions} session keys")
 
             progress_deleted = cleared_metrics.get("progress_keys_deleted", 0)
             session_deleted = cleared_metrics.get("session_keys_deleted", 0)

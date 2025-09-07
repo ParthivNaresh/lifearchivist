@@ -2,10 +2,7 @@
 Ingestion agent for processing documents.
 """
 
-import logging
 from typing import Any, Dict
-
-logger = logging.getLogger(__name__)
 
 
 class IngestionAgent:
@@ -18,8 +15,6 @@ class IngestionAgent:
 
     async def process(self, request: str) -> Dict[str, Any]:
         """Process an ingestion request."""
-        logger.info(f"Processing ingestion request: {request}")
-
         # TODO: Implement actual ingestion pipeline
         # This would involve:
         # 1. Parse request (file path, options)
@@ -42,7 +37,6 @@ class IngestionAgent:
             import_result = await import_tool.execute(path=file_path, **options)
 
             file_id = import_result["file_id"]
-            logger.info(f"File imported with ID: {file_id}")
 
             # Step 2: Extract text
             extract_tool = self.tool_registry.get_tool("extract.text")
@@ -76,8 +70,6 @@ class IngestionAgent:
 
             await self.database.update_document_status(file_id, "ready")
 
-            logger.info(f"Document processing completed: {file_id}")
-
             return {
                 "success": True,
                 "file_id": file_id,
@@ -86,7 +78,6 @@ class IngestionAgent:
             }
 
         except Exception as e:
-            logger.error(f"Ingestion failed: {e}")
             if "file_id" in locals():
                 await self.database.update_document_status(file_id, "failed", str(e))
 

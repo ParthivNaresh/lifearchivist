@@ -2,7 +2,6 @@
 Base tool class for MCP tools.
 """
 
-import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
@@ -11,8 +10,6 @@ from jsonschema import ValidationError as JSONSchemaValidationError
 from pydantic import BaseModel
 
 from .exceptions import ValidationError
-
-logger = logging.getLogger(__name__)
 
 
 class ToolMetadata(BaseModel):

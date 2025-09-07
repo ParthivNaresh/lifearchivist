@@ -50,7 +50,9 @@ EXAMPLES:
 - "Issued: February 15, 2022" → date: "2022-02-15"
 - "Lab Results - Date: 01/28/2022" → date: "2022-01-28"
 
+### VERY IMPORTANT
 Return ONLY ONE DATE - the primary document creation/issue date. Do this without any additional commentary.
+Don't include any other output text besides the date.
 
 DATE OUTPUT:"""
 

@@ -16,5 +16,5 @@ class ContentDateExtractionOutput(BaseModel):
     """Output schema for content date extraction."""
 
     document_id: str = Field(description="Document ID")
-    extracted_dates: str = Field(description="Extracted date")
+    extracted_date: str = Field(description="Extracted date")
     total_dates_found: int = Field(description="Total number of dates extracted")

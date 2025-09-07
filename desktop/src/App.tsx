@@ -8,7 +8,6 @@ import DocumentsPage from './pages/DocumentsPage';
 import DocumentDetailPage from './pages/DocumentDetailPage';
 import TimelinePage from './pages/TimelinePage';
 import VaultPage from './pages/VaultPage';
-import EmbeddingsPage from './pages/EmbeddingsPage';
 import QAPage from './pages/QAPage';
 import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
@@ -24,7 +23,6 @@ function App() {
             <Route path="/documents/:documentId/details" element={<DocumentDetailPage />} />
             <Route path="/timeline" element={<TimelinePage />} />
             <Route path="/vault" element={<VaultPage />} />
-            <Route path="/embeddings" element={<EmbeddingsPage />} />
             <Route path="/qa" element={<QAPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/settings" element={<SettingsPage />} />

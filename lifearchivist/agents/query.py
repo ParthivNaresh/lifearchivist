@@ -2,11 +2,8 @@
 Query agent for search and Q&A using RAG (Retrieval-Augmented Generation).
 """
 
-import logging
 import re
 from typing import Any, Dict, List, Optional
-
-logger = logging.getLogger(__name__)
 
 
 class QueryAgent:
@@ -18,8 +15,6 @@ class QueryAgent:
 
     async def process(self, query: str) -> Dict[str, Any]:
         """Process a search query or question intelligently."""
-        logger.info(f"Processing query: {query}")
-
         # Determine if this is a question or a search
         if self._is_question(query):
             return await self.answer_question(query)
@@ -86,29 +81,18 @@ class QueryAgent:
         try:
             # Use the search tool
             search_tool = self.tool_registry.get_tool("index.search")
-            logger.info(
-                f"QueryAgent.search_documents called with query='{query}', mode='{mode}', limit={limit}"
-            )
 
             if not search_tool:
-                logger.error("Search tool not found in registry")
                 return {"results": [], "total": 0, "error": "Search tool not found"}
 
             tool_result = await search_tool.execute(
                 query=query, mode=mode, filters=filters, limit=limit
             )
-            logger.info(
-                f"Search tool returned: success={tool_result.get('success')}, result_type={type(tool_result.get('result'))}"
-            )
 
             # Extract the actual search result from the tool execution result
-            logger.info(
-                f"Search completed: {len(tool_result.get('results', []))} results"
-            )
             return dict(tool_result)
 
         except Exception as e:
-            logger.error(f"Search failed: {e}")
             raise ValueError(e) from None
 
     async def answer_question(
@@ -116,15 +100,8 @@ class QueryAgent:
     ) -> Dict[str, Any]:
         """Answer a question using LlamaIndex RAG with fallback to custom implementation."""
         try:
-            logger.info(f"Starting RAG Q&A for question: {question}")
-
-            # Temporarily disable LlamaIndex due to performance issues
-            logger.info(
-                "LlamaIndex temporarily disabled due to performance issues, using custom RAG"
-            )
             llamaindex_tool = self.tool_registry.get_tool("llamaindex.query")
             if llamaindex_tool:
-                logger.info("Using LlamaIndex for advanced RAG")
                 try:
                     result = await llamaindex_tool.execute(
                         question=question,
@@ -142,18 +119,13 @@ class QueryAgent:
                         "metadata": result.get("metadata", {}),
                     }
                 except Exception as e:
-                    logger.warning(
-                        f"LlamaIndex failed, falling back to custom RAG: {e}"
-                    )
                     raise ValueError(e) from None
             else:
-                logger.info("Using custom RAG implementation")
                 return await self._custom_rag_implementation(
                     question, context_limit, max_context_length
                 )
 
         except Exception as e:
-            logger.error(f"RAG Q&A failed: {e}")
             raise ValueError(e) from None
 
     def _convert_llamaindex_sources(self, sources: List[Dict]) -> List[Dict]:
@@ -210,7 +182,6 @@ class QueryAgent:
         ollama_tool = self.tool_registry.get_tool("llm.ollama")
 
         if not ollama_tool:
-            logger.error("Ollama tool not available, falling back to simple response")
             return await self._fallback_answer(question, context_info["citations"])
 
         # Step 4: Call LLM with structured RAG prompt
@@ -218,7 +189,6 @@ class QueryAgent:
             ollama_tool, question, context_info
         )
         if not rag_response.get("answer"):
-            logger.warning("Empty response from LLM, using fallback")
             return await self._fallback_answer(question, context_info["citations"])
 
         return {
@@ -296,10 +266,6 @@ class QueryAgent:
             )
 
         context = "\n".join(context_pieces)
-
-        logger.info(
-            f"Prepared context: {len(context)} characters from {len(citations)} sources"
-        )
 
         return {
             "context": context,

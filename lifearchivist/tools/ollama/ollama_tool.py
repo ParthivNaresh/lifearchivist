@@ -3,7 +3,6 @@ LLM integration tools using Ollama.
 """
 
 import asyncio
-import logging
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -25,10 +24,7 @@ from lifearchivist.tools.ollama.ollama_utils import (
     prepare_chat_request,
     prepare_generate_request,
 )
-from lifearchivist.utils.logging import log_context, log_method
-from lifearchivist.utils.logging.structured import MetricsCollector
-
-logger = logging.getLogger(__name__)
+from lifearchivist.utils.logging import track
 
 
 class OllamaTool(BaseTool):
@@ -98,11 +94,8 @@ class OllamaTool(BaseTool):
             idempotent=False,
         )
 
-    @log_method(
-        operation_name="ollama_text_generation",
-        include_args=True,
-        include_result=True,
-        indent=6,
+    @track(
+        operation="ollama_text_generation"
     )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Generate text using Ollama."""
@@ -117,139 +110,85 @@ class OllamaTool(BaseTool):
         if not prompt and not messages:
             raise ValueError("Either 'prompt' or 'messages' must be provided")
 
-        with log_context(
-            operation="ollama_generation",
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stream=stream,
-        ):
+        # Use session-per-request pattern with explicit cleanup configuration
+        timeout = aiohttp.ClientTimeout(
+            total=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+            connect=10,  # Connection timeout
+            sock_read=30,  # Socket read timeout
+        )
 
-            metrics = MetricsCollector("ollama_generation")
-            metrics.start()
+        connector = aiohttp.TCPConnector(
+            limit=1,  # Limit connections for this session
+            limit_per_host=1,  # Single connection per host
+            ttl_dns_cache=300,  # DNS cache TTL
+            use_dns_cache=True,
+            keepalive_timeout=30,  # Keep-alive timeout
+            enable_cleanup_closed=True,  # Enable cleanup of closed connections
+        )
 
-            # Calculate input metrics
-            input_metrics = calculate_input_metrics(prompt, messages, system)
-            input_length = input_metrics["input_length"]
-            system_length = input_metrics["system_length"]
+        async with aiohttp.ClientSession(
+            timeout=timeout,
+            connector=connector,
+            connector_owner=True,  # Session owns the connector and will close it
+        ) as session:
+            try:
+                # Check if Ollama is available
+                await self._check_ollama_health(session)
 
-            metrics.add_metric("model", model)
-            metrics.add_metric("input_length", input_length)
-            metrics.add_metric("system_length", system_length)
-            metrics.add_metric("max_tokens", max_tokens)
-            metrics.add_metric("temperature", temperature)
-            metrics.add_metric("stream", stream)
-
-            # Use session-per-request pattern with explicit cleanup configuration
-            timeout = aiohttp.ClientTimeout(
-                total=DEFAULT_REQUEST_TIMEOUT_SECONDS,
-                connect=10,  # Connection timeout
-                sock_read=30,  # Socket read timeout
-            )
-
-            connector = aiohttp.TCPConnector(
-                limit=1,  # Limit connections for this session
-                limit_per_host=1,  # Single connection per host
-                ttl_dns_cache=300,  # DNS cache TTL
-                use_dns_cache=True,
-                keepalive_timeout=30,  # Keep-alive timeout
-                enable_cleanup_closed=True,  # Enable cleanup of closed connections
-            )
-
-            async with aiohttp.ClientSession(
-                timeout=timeout,
-                connector=connector,
-                connector_owner=True,  # Session owns the connector and will close it
-            ) as session:
-                try:
-                    # Check if Ollama is available
-                    await self._check_ollama_health(session)
-                    metrics.add_metric("ollama_health_check_passed", True)
-
-                    # Prepare the request
-                    if messages:
-                        # Use chat format
-                        request_data, endpoint = prepare_chat_request(
-                            model=model,
-                            messages=messages,
-                            system=system,
-                            prompt=prompt,
-                            max_tokens=max_tokens,
-                            temperature=temperature,
-                            stream=stream,
-                        )
-                        metrics.add_metric(
-                            "message_count", len(request_data["messages"])
-                        )
-                    else:
-                        # Use simple generate format
-                        request_data, endpoint = prepare_generate_request(
-                            model=model,
-                            prompt=str(prompt),
-                            system=system,
-                            max_tokens=max_tokens,
-                            temperature=temperature,
-                            stream=stream,
-                        )
-                        metrics.add_metric("prompt_length", len(request_data["prompt"]))
-
-                    # Make the request
-                    if stream:
-                        response_text = await self._stream_request(
-                            session, endpoint, request_data
-                        )
-                        generation_time = 0  # Cannot accurately measure for streaming
-                        tokens_generated = 0  # Cannot measure for streaming
-                    else:
-                        response_data = await self._single_request(
-                            session, endpoint, request_data
-                        )
-                        response_text = extract_response_text(response_data, endpoint)
-
-                        # Calculate generation time and tokens
-                        generation_time = (
-                            response_data.get("total_duration", 0) // 1_000_000
-                        )
-                        tokens_generated = response_data.get("eval_count", 0)
-
-                        # Add generation metrics
-                        gen_metrics = calculate_generation_metrics(
-                            response_data, len(response_text), tokens_generated
-                        )
-                        for key, value in gen_metrics.items():
-                            metrics.add_metric(key, value)
-
-                    # Calculate output metrics
-                    output_length = len(response_text)
-                    metrics.add_metric("output_length", output_length)
-                    metrics.add_metric("tokens_generated", tokens_generated)
-                    metrics.add_metric("generation_time_ms", generation_time)
-
-                    metrics.set_success(True)
-                    metrics.report("ollama_generation_completed")
-
-                    chars_per_second = (
-                        gen_metrics.get("chars_per_second", 0) if not stream else 0
+                # Prepare the request
+                if messages:
+                    # Use chat format
+                    request_data, endpoint = prepare_chat_request(
+                        model=model,
+                        messages=messages,
+                        system=system,
+                        prompt=prompt,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        stream=stream,
                     )
-                    return create_success_response(
-                        response_text, model, tokens_generated, generation_time
+                else:
+                    # Use simple generate format
+                    request_data, endpoint = prepare_generate_request(
+                        model=model,
+                        prompt=str(prompt),
+                        system=system,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        stream=stream,
                     )
+                # Make the request
+                if stream:
+                    response_text = await self._stream_request(
+                        session, endpoint, request_data
+                    )
+                    generation_time = 0  # Cannot accurately measure for streaming
+                    tokens_generated = 0  # Cannot measure for streaming
+                else:
+                    response_data = await self._single_request(
+                        session, endpoint, request_data
+                    )
+                    response_text = extract_response_text(response_data, endpoint)
 
-                except Exception as e:
-                    metrics.set_error(e)
-                    metrics.report("ollama_generation_failed")
-                    return create_error_response(model, e)
+                    # Calculate generation time and tokens
+                    generation_time = (
+                        response_data.get("total_duration", 0) // 1_000_000
+                    )
+                    tokens_generated = response_data.get("eval_count", 0)
 
-                finally:
-                    # Small delay to allow any remaining cleanup to complete
-                    # This helps prevent "Unclosed client session" warnings on shutdown
-                    await asyncio.sleep(0.01)
+                return create_success_response(
+                    response_text, model, tokens_generated, generation_time
+                )
 
-    @log_method(
-        operation_name="ollama_health_check",
-        include_args=True,
-        include_result=True,
-        indent=7,
+            except Exception as e:
+                return create_error_response(model, e)
+            finally:
+                # Small delay to allow any remaining cleanup to complete
+                # This helps prevent "Unclosed client session" warnings on shutdown
+                await asyncio.sleep(0.01)
+
+    @track(
+        operation="ollama_health_check"
     )
     async def _check_ollama_health(self, session: aiohttp.ClientSession) -> bool:
         """Check if Ollama service is available."""
@@ -274,7 +213,7 @@ class OllamaTool(BaseTool):
                 f"Cannot connect to Ollama at {self.settings.ollama_url}: {e}"
             ) from None
 
-    @log_method(operation_name="model_pull")
+    @track(operation="model_pull")
     async def _pull_model(
         self, session: aiohttp.ClientSession, model_name: str
     ) -> bool:
@@ -292,11 +231,8 @@ class OllamaTool(BaseTool):
         except Exception:
             return False
 
-    @log_method(
-        operation_name="ollama_single_request",
-        include_args=True,
-        include_result=True,
-        indent=7,
+    @track(
+        operation="ollama_single_request"
     )
     async def _single_request(
         self,
@@ -319,11 +255,8 @@ class OllamaTool(BaseTool):
             response_data = await response.json()
             return dict(response_data)
 
-    @log_method(
-        operation_name="ollama_stream_request",
-        include_args=True,
-        include_result=True,
-        indent=7,
+    @track(
+        operation="ollama_stream_request"
     )
     async def _stream_request(
         self,
@@ -358,7 +291,7 @@ class OllamaTool(BaseTool):
 
         return accumulated_response
 
-    @log_method(operation_name="ollama_chat_convenience")
+    @track(operation="ollama_chat_convenience")
     async def chat(
         self,
         messages: List[Dict[str, str]],
@@ -375,11 +308,8 @@ class OllamaTool(BaseTool):
         )
         return str(result.get("response", ""))
 
-    @log_method(
-        operation_name="ollama_generate_convenience",
-        include_args=True,
-        include_result=True,
-        indent=5,
+    @track(
+        operation="ollama_generate_convenience"
     )
     async def generate(
         self,

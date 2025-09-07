@@ -11,7 +11,6 @@ import {
   Database,
   HardDrive,
   Activity,
-  Brain,
   MessageCircle,
   Calendar
 } from 'lucide-react';
@@ -28,7 +27,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Documents', href: '/documents', icon: FileText },
     { name: 'Timeline', href: '/timeline', icon: Calendar },
     { name: 'Vault', href: '/vault', icon: HardDrive },
-    { name: 'Embeddings', href: '/embeddings', icon: Brain },
     { name: 'Q&A', href: '/qa', icon: MessageCircle },
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Settings', href: '/settings', icon: Settings },

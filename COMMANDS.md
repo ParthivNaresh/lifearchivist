@@ -113,6 +113,12 @@ curl -s "http://localhost:8000/api/documents/DOCUMENT_ID" | python3 -m json.tool
 ```
 **Tests**: Document retrieval, metadata storage
 
+### Delete Documents
+```bash
+curl -s -X DELETE "http://localhost:8000/api/documents" | python3 -m json.tool
+```
+**Tests**: Document deletion, metadata deletion
+
 ---
 
 ## Search & Retrieval

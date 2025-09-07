@@ -2,13 +2,9 @@
 WebSocket connection handling.
 """
 
-import logging
-
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from ..dependencies import get_server
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["websocket"])
 
@@ -39,6 +35,5 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     except WebSocketDisconnect:
         server.session_manager.disconnect(session_id)
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
         await websocket.close()
         server.session_manager.disconnect(session_id)

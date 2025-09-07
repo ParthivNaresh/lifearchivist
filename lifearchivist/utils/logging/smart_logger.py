@@ -1,0 +1,412 @@
+"""
+Next-generation logging system - single decorator handles everything.
+
+Replaces @log_method, log_context, MetricsCollector, and manual log_event calls
+with one intelligent decorator that adapts to usage patterns.
+"""
+
+import asyncio
+import functools
+import logging
+import time
+from contextlib import asynccontextmanager
+from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, Union
+
+from .context import get_correlation_id, set_correlation_id
+from .structured import log_event
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+logger = logging.getLogger(__name__)
+
+
+class LogConfig:
+    """Global configuration for smart logging."""
+    
+    # Performance settings
+    SAMPLE_RATES = {
+        "high_frequency": 0.1,    # Only log 10% of high-freq operations
+        "medium_frequency": 0.5,  # Log 50% of medium-freq operations  
+        "low_frequency": 1.0,     # Log all low-freq operations
+    }
+    
+    # Argument filtering
+    SENSITIVE_KEYS = {"password", "token", "secret", "key", "api_key", "auth"}
+    LARGE_CONTENT_KEYS = {"content", "text", "data", "body"}
+    MAX_ARG_LENGTH = 100
+    
+    # Operation categorization
+    HIGH_FREQUENCY_OPS = {
+        "query", "search", "retrieve", "get", "list", "check", "validate"
+    }
+    
+    CRITICAL_OPS = {
+        "add_document", "delete", "update", "create", "initialize", "setup"
+    }
+
+
+def track(
+    operation: Optional[str] = None,
+    level: int = logging.INFO,
+    frequency: str = "low_frequency",  # high_frequency, medium_frequency, low_frequency
+    include_args: Union[bool, List[str]] = True,
+    include_result: bool = True,
+    track_performance: bool = True,
+    emit_events: bool = True,  # Set to False for silent operations
+):
+    """
+    Single decorator that intelligently handles all logging needs.
+    
+    Args:
+        operation: Operation name (auto-detected from function if None)
+        level: Log level for this operation
+        frequency: Sampling frequency category
+        include_args: True for all args, List[str] for specific args, False for none
+        include_result: Whether to log return value info
+        track_performance: Whether to track timing metrics
+        emit_events: Whether to emit log events (False for silent mode)
+    
+    Examples:
+        @track()  # Basic tracking with defaults
+        @track(frequency="high_frequency")  # Sampled logging for hot paths
+        @track(include_args=["document_id"], track_performance=True)  # Selective args
+        @track(emit_events=False)  # Silent mode - only log on errors
+    """
+    
+    def decorator(func: F) -> F:
+        op_name = operation or _get_operation_name(func)
+        
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            # Early exit for sampled operations
+            if not _should_log(op_name, frequency):
+                return await func(*args, **kwargs)
+            
+            async with OperationTracker(
+                operation=op_name,
+                level=level,
+                include_args=include_args,
+                include_result=include_result,
+                track_performance=track_performance,
+                emit_events=emit_events,
+                args=args,
+                kwargs=kwargs
+            ) as tracker:
+                result = await func(*args, **kwargs)
+                tracker.set_result(result)
+                return result
+        
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            if not _should_log(op_name, frequency):
+                return func(*args, **kwargs)
+            
+            with SyncOperationTracker(
+                operation=op_name,
+                level=level,
+                include_args=include_args,
+                include_result=include_result,
+                track_performance=track_performance,
+                emit_events=emit_events,
+                args=args,
+                kwargs=kwargs
+            ) as tracker:
+                result = func(*args, **kwargs)
+                tracker.set_result(result)
+                return result
+        
+        # Return appropriate wrapper
+        if asyncio.iscoroutinefunction(func):
+            return async_wrapper
+        else:
+            return sync_wrapper
+    
+    return decorator
+
+
+class OperationTracker:
+    """Async context manager that handles all logging for an operation."""
+    
+    def __init__(
+        self,
+        operation: str,
+        level: int,
+        include_args: Union[bool, List[str]],
+        include_result: bool,
+        track_performance: bool,
+        emit_events: bool,
+        args: tuple,
+        kwargs: dict
+    ):
+        self.operation = operation
+        self.level = level
+        self.include_args = include_args
+        self.include_result = include_result
+        self.track_performance = track_performance
+        self.emit_events = emit_events
+        self.args = args
+        self.kwargs = kwargs
+        
+        # Runtime state
+        self.start_time: Optional[float] = None
+        self.correlation_id: Optional[str] = None
+        self.result: Any = None
+        self.metrics: Dict[str, Any] = {}
+    
+    async def __aenter__(self):
+        if self.track_performance:
+            self.start_time = time.perf_counter()
+        
+        self.correlation_id = get_correlation_id()
+        
+        # Build operation context
+        context = {
+            "operation": self.operation,
+            "correlation_id": self.correlation_id,
+        }
+        
+        # Add safe arguments
+        if self.include_args:
+            safe_args = _extract_safe_args(self.args, self.kwargs, self.include_args)
+            context.update(safe_args)
+        
+        # Emit start event only if requested and not high-frequency
+        if self.emit_events and self.level <= logging.INFO:
+            log_event("operation_started", context, self.level)
+        
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        # Calculate metrics
+        if self.track_performance and self.start_time:
+            duration_ms = int((time.perf_counter() - self.start_time) * 1000)
+            self.metrics["duration_ms"] = duration_ms
+        
+        # Build final context
+        context = {
+            "operation": self.operation,
+            "correlation_id": self.correlation_id,
+            "success": exc_type is None,
+            **self.metrics
+        }
+        
+        # Add result info if requested and successful
+        if self.include_result and exc_type is None and self.result is not None:
+            context.update(_extract_result_info(self.result))
+        
+        # Add error info if failed
+        if exc_type is not None:
+            context.update({
+                "error_type": exc_type.__name__,
+                "error_message": str(exc_val),
+            })
+        
+        # Emit completion event
+        if self.emit_events:
+            event_name = "operation_completed" if exc_type is None else "operation_failed"
+            event_level = self.level if exc_type is None else logging.ERROR
+            log_event(event_name, context, event_level)
+    
+    def set_result(self, result: Any):
+        """Set the operation result for logging."""
+        self.result = result
+    
+    def add_metric(self, key: str, value: Any):
+        """Add a custom metric to the operation."""
+        self.metrics[key] = value
+
+
+class SyncOperationTracker:
+    """Synchronous version of OperationTracker."""
+    
+    def __init__(self, operation: str, level: int, include_args: Union[bool, List[str]], 
+                 include_result: bool, track_performance: bool, emit_events: bool,
+                 args: tuple, kwargs: dict):
+        self.operation = operation
+        self.level = level
+        self.include_args = include_args
+        self.include_result = include_result
+        self.track_performance = track_performance
+        self.emit_events = emit_events
+        self.args = args
+        self.kwargs = kwargs
+        
+        self.start_time: Optional[float] = None
+        self.correlation_id: Optional[str] = None
+        self.result: Any = None
+        self.metrics: Dict[str, Any] = {}
+    
+    def __enter__(self):
+        if self.track_performance:
+            self.start_time = time.perf_counter()
+        
+        self.correlation_id = get_correlation_id()
+        
+        context = {
+            "operation": self.operation,
+            "correlation_id": self.correlation_id,
+        }
+        
+        if self.include_args:
+            safe_args = _extract_safe_args(self.args, self.kwargs, self.include_args)
+            context.update(safe_args)
+        
+        if self.emit_events and self.level <= logging.INFO:
+            log_event("operation_started", context, self.level)
+        
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.track_performance and self.start_time:
+            duration_ms = int((time.perf_counter() - self.start_time) * 1000)
+            self.metrics["duration_ms"] = duration_ms
+        
+        context = {
+            "operation": self.operation,
+            "correlation_id": self.correlation_id,
+            "success": exc_type is None,
+            **self.metrics
+        }
+        
+        if self.include_result and exc_type is None and self.result is not None:
+            context.update(_extract_result_info(self.result))
+        
+        if exc_type is not None:
+            context.update({
+                "error_type": exc_type.__name__,
+                "error_message": str(exc_val),
+            })
+        
+        if self.emit_events:
+            event_name = "operation_completed" if exc_type is None else "operation_failed"
+            event_level = self.level if exc_type is None else logging.ERROR
+            log_event(event_name, context, event_level)
+    
+    def set_result(self, result: Any):
+        self.result = result
+    
+    def add_metric(self, key: str, value: Any):
+        self.metrics[key] = value
+
+
+# Utility functions
+
+def _get_operation_name(func: Callable) -> str:
+    """Extract operation name from function."""
+    if hasattr(func, '__qualname__'):
+        return func.__qualname__.replace('.', '_').lower()
+    return func.__name__.lower()
+
+
+def _should_log(operation: str, frequency: str) -> bool:
+    """Determine if operation should be logged based on sampling."""
+    import random
+    
+    sample_rate = LogConfig.SAMPLE_RATES.get(frequency, 1.0)
+    
+    # Always log critical operations
+    if any(critical in operation.lower() for critical in LogConfig.CRITICAL_OPS):
+        return True
+    
+    # Sample based on frequency
+    return random.random() < sample_rate
+
+
+def _extract_safe_args(args: tuple, kwargs: dict, include_spec: Union[bool, List[str]]) -> Dict[str, Any]:
+    """Extract safe arguments for logging."""
+    safe_args = {}
+    
+    # Handle include specification
+    if include_spec is True:
+        # Include all safe arguments
+        include_keys = set(kwargs.keys())
+    elif isinstance(include_spec, list):
+        # Include only specified keys
+        include_keys = set(include_spec)
+    else:
+        # Include nothing
+        return safe_args
+    
+    # Process kwargs
+    for key, value in kwargs.items():
+        if key not in include_keys:
+            continue
+        
+        # Handle sensitive data
+        if any(sensitive in key.lower() for sensitive in LogConfig.SENSITIVE_KEYS):
+            safe_args[f"arg_{key}"] = "[REDACTED]"
+            continue
+        
+        # Handle large content
+        if key.lower() in LogConfig.LARGE_CONTENT_KEYS and isinstance(value, str):
+            if len(value) > LogConfig.MAX_ARG_LENGTH:
+                safe_args[f"arg_{key}"] = f"<{len(value)} chars>"
+            else:
+                safe_args[f"arg_{key}"] = value[:LogConfig.MAX_ARG_LENGTH]
+            continue
+        
+        # Handle safe types
+        if isinstance(value, (str, int, float, bool, type(None))):
+            if isinstance(value, str) and len(value) > LogConfig.MAX_ARG_LENGTH:
+                safe_args[f"arg_{key}"] = f"{value[:LogConfig.MAX_ARG_LENGTH]}..."
+            else:
+                safe_args[f"arg_{key}"] = value
+        else:
+            safe_args[f"arg_{key}"] = f"<{type(value).__name__}>"
+    
+    return safe_args
+
+
+def _extract_result_info(result: Any) -> Dict[str, Any]:
+    """Extract safe information about the result."""
+    result_info = {"result_type": type(result).__name__}
+    
+    if isinstance(result, (list, tuple)):
+        result_info["result_length"] = len(result)
+    elif isinstance(result, dict):
+        result_info["result_keys_count"] = len(result.keys())
+        if "success" in result:
+            result_info["operation_success"] = result["success"]
+    elif isinstance(result, str):
+        result_info["result_length"] = len(result)
+    elif isinstance(result, bool):
+        result_info["result_value"] = result
+    
+    return result_info
+
+
+# Convenience functions for manual logging
+
+def log_operation_start(operation: str, **context):
+    """Manually log operation start."""
+    context.update({
+        "operation": operation,
+        "correlation_id": get_correlation_id(),
+    })
+    log_event("operation_started", context)
+
+
+def log_operation_success(operation: str, duration_ms: Optional[int] = None, **context):
+    """Manually log operation success."""
+    context.update({
+        "operation": operation,
+        "correlation_id": get_correlation_id(),
+        "success": True,
+    })
+    if duration_ms is not None:
+        context["duration_ms"] = duration_ms
+    log_event("operation_completed", context)
+
+
+def log_operation_error(operation: str, error: Exception, duration_ms: Optional[int] = None, **context):
+    """Manually log operation error."""
+    context.update({
+        "operation": operation,
+        "correlation_id": get_correlation_id(),
+        "success": False,
+        "error_type": type(error).__name__,
+        "error_message": str(error),
+    })
+    if duration_ms is not None:
+        context["duration_ms"] = duration_ms
+    log_event("operation_failed", context, logging.ERROR)

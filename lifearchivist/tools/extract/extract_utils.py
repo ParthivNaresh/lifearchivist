@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 import aiofiles
@@ -8,8 +7,6 @@ from docx.oxml.text.paragraph import CT_P
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 from pypdf import PdfReader
-
-logger = logging.getLogger(__name__)
 
 
 def _get_extraction_method(mime_type: str) -> str:
@@ -24,7 +21,6 @@ def _get_extraction_method(mime_type: str) -> str:
     ):
         return "python_docx"
     else:
-        logger.error(f"Mime type not supported: {mime_type}")
         raise ValueError(f"Mime type not supported: {mime_type}")
 
 
@@ -70,8 +66,6 @@ def extract_paragraph_text(paragraph: Paragraph) -> str:
 async def _extract_docx_text(file_path: Path) -> str:
     """Extract text from Word documents using python-docx with comprehensive content extraction."""
     try:
-        logger.info(f"Extracting Word document content from {file_path}")
-
         doc = Document(str(file_path))
         extracted_content = []
 
@@ -115,12 +109,10 @@ async def _extract_docx_text(file_path: Path) -> str:
         full_text = re.sub(r"[ \t]+", " ", full_text)
 
         word_count = len(full_text.split())
-        logger.info(f"Successfully extracted {word_count} words from Word document")
 
         return full_text.strip()
 
     except Exception as e:
-        logger.error(f"Error extracting Word document text from {file_path}: {e}")
         raise ValueError(
             f"Error extracting Word document text from {file_path}: {e}"
         ) from None
@@ -137,7 +129,6 @@ async def _extract_pdf_text(file_path: Path) -> str:
 
         return "\n".join(text_content)
     except Exception as e:
-        logger.error(f"Error extracting PDF text: {e}")
         raise ValueError(f"Error extracting PDF text: {e}") from None
 
 
@@ -154,8 +145,6 @@ async def _extract_text_by_type(file_path: Path, mime_type: str) -> str:
         ):
             return await _extract_docx_text(file_path)
         else:
-            logger.warning(f"Unsupported file type for text extraction: {mime_type}")
             return ""
     except Exception as e:
-        logger.error(f"Error extracting text from {file_path}: {e}")
         raise ValueError(f"Error extracting text from {file_path}: {e}") from None

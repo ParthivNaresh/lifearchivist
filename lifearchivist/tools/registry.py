@@ -2,7 +2,6 @@
 Tool registry for managing MCP tools.
 """
 
-import logging
 from typing import Dict, Optional
 
 from lifearchivist.tools.date_extract.date_extraction_tool import (
@@ -13,12 +12,9 @@ from lifearchivist.tools.file_import.file_import_tool import FileImportTool
 from lifearchivist.tools.llamaindex.llamaindex_query_tool import LlamaIndexQueryTool
 from lifearchivist.tools.ollama.ollama_tool import OllamaTool
 from lifearchivist.tools.search.search_tool import IndexSearchTool
-from lifearchivist.utils.logging import log_context, log_method
-from lifearchivist.utils.logging.structured import MetricsCollector
 
 from .base import BaseTool
-
-logger = logging.getLogger(__name__)
+from ..utils.logging import track
 
 
 class ToolRegistry:
@@ -30,110 +26,89 @@ class ToolRegistry:
         self.llamaindex_service = llamaindex_service
         self.progress_manager = progress_manager
 
-    @log_method(
-        operation_name="tool_registration_batch", include_args=True, include_result=True
+    @track(
+        operation="tool_registration_batch"
     )
     async def register_all(self):
         """Register all available tools."""
-        with log_context(operation="tool_registration_batch"):
-            metrics = MetricsCollector("tool_registration_batch")
-            metrics.start()
+        # LlamaIndex service should already be initialized by MCP server
+        if not self.llamaindex_service:
+            raise ValueError("LlamaIndex service is required")
 
-            # LlamaIndex service should already be initialized by MCP server
-            if not self.llamaindex_service:
-                metrics.set_error(ValueError("LlamaIndex service is required"))
-                metrics.report("tool_registration_failed")
-                raise ValueError("LlamaIndex service is required")
-
-            # Define tools to register with their dependencies
-            tool_definitions = [
-                {
-                    "name": "FileImportTool",
-                    "class": FileImportTool,
-                    "dependencies": ["vault", "llamaindex_service", "progress_manager"],
-                    "kwargs": {
-                        "vault": self.vault,
-                        "llamaindex_service": self.llamaindex_service,
-                        "progress_manager": self.progress_manager,
-                    },
+        # Define tools to register with their dependencies
+        tool_definitions = [
+            {
+                "name": "FileImportTool",
+                "class": FileImportTool,
+                "dependencies": ["vault", "llamaindex_service", "progress_manager"],
+                "kwargs": {
+                    "vault": self.vault,
+                    "llamaindex_service": self.llamaindex_service,
+                    "progress_manager": self.progress_manager,
                 },
-                {
-                    "name": "ExtractTextTool",
-                    "class": ExtractTextTool,
-                    "dependencies": ["vault"],
-                    "kwargs": {"vault": self.vault},
-                },
-                {
-                    "name": "ContentDateExtractionTool",
-                    "class": ContentDateExtractionTool,
-                    "dependencies": ["llamaindex_service"],
-                    "kwargs": {"llamaindex_service": self.llamaindex_service},
-                },
-                {
-                    "name": "OllamaTool",
-                    "class": OllamaTool,
-                    "dependencies": [],
-                    "kwargs": {},
-                },
-                {
-                    "name": "IndexSearchTool",
-                    "class": IndexSearchTool,
-                    "dependencies": ["llamaindex_service"],
-                    "kwargs": {"llamaindex_service": self.llamaindex_service},
-                },
-                {
-                    "name": "LlamaIndexQueryTool",
-                    "class": LlamaIndexQueryTool,
-                    "dependencies": ["llamaindex_service"],
-                    "kwargs": {"llamaindex_service": self.llamaindex_service},
-                },
-            ]
+            },
+            {
+                "name": "ExtractTextTool",
+                "class": ExtractTextTool,
+                "dependencies": ["vault"],
+                "kwargs": {"vault": self.vault},
+            },
+            {
+                "name": "ContentDateExtractionTool",
+                "class": ContentDateExtractionTool,
+                "dependencies": ["llamaindex_service"],
+                "kwargs": {"llamaindex_service": self.llamaindex_service},
+            },
+            {
+                "name": "OllamaTool",
+                "class": OllamaTool,
+                "dependencies": [],
+                "kwargs": {},
+            },
+            {
+                "name": "IndexSearchTool",
+                "class": IndexSearchTool,
+                "dependencies": ["llamaindex_service"],
+                "kwargs": {"llamaindex_service": self.llamaindex_service},
+            },
+            {
+                "name": "LlamaIndexQueryTool",
+                "class": LlamaIndexQueryTool,
+                "dependencies": ["llamaindex_service"],
+                "kwargs": {"llamaindex_service": self.llamaindex_service},
+            },
+        ]
 
-            metrics.add_metric("tools_to_register", len(tool_definitions))
+        successful_registrations = 0
+        failed_registrations = 0
 
-            successful_registrations = 0
-            failed_registrations = 0
+        for tool_def in tool_definitions:
+            try:
+                # Validate dependencies
+                missing_deps = []
+                dependencies = tool_def.get("dependencies", [])
+                if not hasattr(dependencies, "__iter__"):
+                    dependencies = []
+                for dep in dependencies:
+                    if getattr(self, dep, None) is None:
+                        missing_deps.append(dep)
 
-            for tool_def in tool_definitions:
-                try:
-                    # Validate dependencies
-                    missing_deps = []
-                    dependencies = tool_def.get("dependencies", [])
-                    if not hasattr(dependencies, "__iter__"):
-                        dependencies = []
-                    for dep in dependencies:
-                        if getattr(self, dep, None) is None:
-                            missing_deps.append(dep)
-
-                    if missing_deps:
-                        failed_registrations += 1
-                        continue
-
-                    # Create and register tool
-                    tool_class = tool_def["class"]
-                    if not callable(tool_class):
-                        raise ValueError(f"Tool class is not callable: {tool_class}")
-                    kwargs = tool_def.get("kwargs", {})
-                    if not isinstance(kwargs, dict):
-                        kwargs = {}
-                    tool_instance = tool_class(**kwargs)
-                    self.register_tool(tool_instance)
-                    successful_registrations += 1
-                except Exception as _:
+                if missing_deps:
                     failed_registrations += 1
+                    continue
 
-            metrics.add_metric("successful_registrations", successful_registrations)
-            metrics.add_metric("failed_registrations", failed_registrations)
-            metrics.add_metric("total_registered_tools", len(self.tools))
-
-            if failed_registrations > 0:
-                metrics.set_error(
-                    RuntimeError(f"{failed_registrations} tool registrations failed")
-                )
-                metrics.report("tool_registration_completed_with_errors")
-            else:
-                metrics.set_success(True)
-                metrics.report("tool_registration_completed")
+                # Create and register tool
+                tool_class = tool_def["class"]
+                if not callable(tool_class):
+                    raise ValueError(f"Tool class is not callable: {tool_class}")
+                kwargs = tool_def.get("kwargs", {})
+                if not isinstance(kwargs, dict):
+                    kwargs = {}
+                tool_instance = tool_class(**kwargs)
+                self.register_tool(tool_instance)
+                successful_registrations += 1
+            except Exception as _:
+                failed_registrations += 1
 
     def register_tool(self, tool: BaseTool):
         """Register a single tool."""

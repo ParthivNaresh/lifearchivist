@@ -2,14 +2,10 @@
 Search tool for document retrieval using LlamaIndex.
 """
 
-import logging
 from typing import Any, Dict, List
 
 from lifearchivist.tools.base import BaseTool, ToolMetadata
-from lifearchivist.utils.logging import log_context, log_method
-from lifearchivist.utils.logging.structured import MetricsCollector
-
-logger = logging.getLogger(__name__)
+from lifearchivist.utils.logging import track
 
 
 class IndexSearchTool(BaseTool):
@@ -92,7 +88,7 @@ class IndexSearchTool(BaseTool):
             idempotent=True,
         )
 
-    @log_method(operation_name="index_search", include_args=True, include_result=True)
+    @track(operation="index_search")
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute document search."""
         query = kwargs.get("query", "").strip()
@@ -102,56 +98,29 @@ class IndexSearchTool(BaseTool):
         offset = kwargs.get("offset", 0)
         include_content = kwargs.get("include_content", False)
 
-        with log_context(
-            operation="index_search",
-            query_length=len(query),
-            mode=mode,
-            limit=limit,
-            offset=offset,
-        ):
-            metrics = MetricsCollector("index_search")
-            metrics.start()
+        if not query:
+            return self._empty_search_result("Query cannot be empty")
 
-            metrics.add_metric("query_length", len(query))
-            metrics.add_metric("search_mode", mode)
-            metrics.add_metric("limit", limit)
-            metrics.add_metric("offset", offset)
-            metrics.add_metric("filters_count", len(filters))
+        if not self.llamaindex_service:
+            return self._empty_search_result("Search service not available")
 
-            if not query:
-                return self._empty_search_result("Query cannot be empty")
-
-            if not self.llamaindex_service:
-                metrics.set_error(RuntimeError("LlamaIndex service not available"))
-                metrics.report("index_search_failed")
-                return self._empty_search_result("Search service not available")
-
-            try:
-                # Determine search strategy based on mode
-                if mode == "semantic":
-                    results = await self._semantic_search(
-                        query, limit, offset, filters, include_content
-                    )
-                elif mode == "keyword":
-                    results = await self._keyword_search(
-                        query, limit, offset, filters, include_content
-                    )
-                else:  # hybrid
-                    results = await self._hybrid_search(
-                        query, limit, offset, filters, include_content
-                    )
-
-                metrics.add_metric("results_found", len(results["results"]))
-                metrics.add_metric("search_successful", True)
-                metrics.set_success(True)
-                metrics.report("index_search_completed")
-
-                return results
-
-            except Exception as e:
-                metrics.set_error(e)
-                metrics.report("index_search_failed")
-                return self._empty_search_result(f"Search failed: {str(e)}")
+        try:
+            # Determine search strategy based on mode
+            if mode == "semantic":
+                results = await self._semantic_search(
+                    query, limit, offset, filters, include_content
+                )
+            elif mode == "keyword":
+                results = await self._keyword_search(
+                    query, limit, offset, filters, include_content
+                )
+            else:  # hybrid
+                results = await self._hybrid_search(
+                    query, limit, offset, filters, include_content
+                )
+            return results
+        except Exception as e:
+            return self._empty_search_result(f"Search failed: {str(e)}")
 
     async def _semantic_search(
         self, query: str, limit: int, offset: int, filters: Dict, include_content: bool
