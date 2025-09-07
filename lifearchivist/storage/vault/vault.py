@@ -51,9 +51,7 @@ class Vault:
         self.temp_dir = self.vault_path / "temp"
         self.exports_dir = self.vault_path / "exports"
 
-    @track(
-        operation="vault_initialization"
-    )
+    @track(operation="vault_initialization")
     async def initialize(self):
         """
         Create vault directory structure if it doesn't exist.
@@ -73,7 +71,7 @@ class Vault:
         ]
 
         created_count = 0
-        for name, directory in directories:
+        for _, directory in directories:
             try:
                 existed_before = directory.exists()
                 directory.mkdir(parents=True, exist_ok=True)
@@ -86,9 +84,7 @@ class Vault:
                     f"Failed to create vault directory {directory}: {e}"
                 ) from None
 
-    @track(
-        operation="vault_file_clearing"
-    )
+    @track(operation="vault_file_clearing")
     async def clear_all_files(self, file_hashes: List[str]) -> Dict[str, Any]:
         """
         Remove files from vault storage by hash, or clear entire vault if no hashes provided.
@@ -194,9 +190,7 @@ class Vault:
         for base_dir in directories_to_check:
             await cleanup_empty_directories(base_dir, preserve_dirs)
 
-    @track(
-        operation="vault_statistics"
-    )
+    @track(operation="vault_statistics")
     async def get_vault_statistics(self) -> Dict[str, Any]:
         """
         Get comprehensive statistics about vault storage usage.
@@ -219,7 +213,7 @@ class Vault:
             }
 
             flat_stats = await get_comprehensive_directory_stats(directories)
-            
+
             # Transform flat structure to nested structure expected by UI
             nested_directories = {}
             for dir_name in directories.keys():
@@ -272,9 +266,7 @@ class Vault:
         """
         return build_thumbnail_path(self.thumbnails_dir, file_hash)
 
-    @track(
-        operation="file_hash_calculation"
-    )
+    @track(operation="file_hash_calculation")
     async def calculate_hash(self, file_path: Path) -> str:
         """
         Calculate SHA256 hash of a file for content-addressed storage.
@@ -295,9 +287,7 @@ class Vault:
         file_hash = await calculate_file_hash(file_path)
         return file_hash
 
-    @track(
-        operation="file_storage"
-    )
+    @track(operation="file_storage")
     async def store_file(
         self, source_path: Path, file_hash: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -338,7 +328,7 @@ class Vault:
 
         # Get storage path
         target_path = self._get_content_path(file_hash, extension)
-        
+
         # Check if file already exists
         if target_path.exists():
             size_bytes = safe_get_file_size(target_path)
@@ -416,9 +406,7 @@ class Vault:
         thumbnail_path = self._get_thumbnail_path(file_hash)
         await generate_image_thumbnail(file_path, thumbnail_path)
 
-    @track(
-        operation="file_deletion"
-    )
+    @track(operation="file_deletion")
     async def delete_file(self, file_hash: str, extension: str) -> bool:
         """
         Delete a file and its thumbnail from the vault.
@@ -457,9 +445,7 @@ class Vault:
 
         return deleted
 
-    @track(
-        operation="temp_file_cleanup"
-    )
+    @track(operation="temp_file_cleanup")
     async def cleanup_temp(self):
         """
         Clean up temporary files older than 24 hours.

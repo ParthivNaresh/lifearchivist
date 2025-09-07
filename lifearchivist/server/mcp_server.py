@@ -35,7 +35,7 @@ class SessionManager:
         if session_id in self.sessions:
             try:
                 await self.sessions[session_id].send_json(message)
-            except Exception as e:
+            except Exception:
                 self.disconnect(session_id)
 
 

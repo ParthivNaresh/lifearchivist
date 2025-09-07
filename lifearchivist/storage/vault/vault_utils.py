@@ -125,7 +125,10 @@ async def delete_file_safely(
 
 
 async def clear_directory_files(
-    directory: Path, metrics: Dict[str, Any], exclude_files: Optional[List[str]] = None, metric_prefix: str = ""
+    directory: Path,
+    metrics: Dict[str, Any],
+    exclude_files: Optional[List[str]] = None,
+    metric_prefix: str = "",
 ):
     """Clear all files in a directory, updating metrics."""
     if not directory.exists():

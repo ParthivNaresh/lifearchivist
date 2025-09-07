@@ -55,9 +55,7 @@ class ExtractTextTool(BaseTool):
             idempotent=True,
         )
 
-    @track(
-        operation="text_extraction"
-    )
+    @track(operation="text_extraction")
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Extract text from a document."""
         file_id = kwargs.get("file_id")
@@ -92,9 +90,7 @@ class ExtractTextTool(BaseTool):
                 if extension.startswith("."):
                     extension = extension[1:]
 
-                actual_file_path = await self.vault.get_file_path(
-                    file_hash, extension
-                )
+                actual_file_path = await self.vault.get_file_path(file_hash, extension)
 
             # Verify file exists
             if not actual_file_path or not actual_file_path.exists():
@@ -108,15 +104,7 @@ class ExtractTextTool(BaseTool):
             )
             # Calculate extraction metrics
             word_count = len(extracted_text.split()) if extracted_text else 0
-            text_length = len(extracted_text) if extracted_text else 0
             extraction_method = _get_extraction_method(str(mime_type))
-            # Calculate extraction efficiency
-            if file_size > 0:
-                chars_per_byte = text_length / file_size
-                words_per_kb = (
-                    (word_count * 1024) / file_size if file_size > 0 else 0
-                )
-
             return {
                 "text": extracted_text,
                 "metadata": {

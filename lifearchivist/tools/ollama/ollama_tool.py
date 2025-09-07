@@ -13,8 +13,6 @@ from lifearchivist.tools.ollama.ollama_utils import (
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     HEALTH_CHECK_ENDPOINT,
     MODEL_PULL_ENDPOINT,
-    calculate_generation_metrics,
-    calculate_input_metrics,
     create_error_response,
     create_model_pull_request,
     create_success_response,
@@ -94,9 +92,7 @@ class OllamaTool(BaseTool):
             idempotent=False,
         )
 
-    @track(
-        operation="ollama_text_generation"
-    )
+    @track(operation="ollama_text_generation")
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Generate text using Ollama."""
         prompt = kwargs.get("prompt")
@@ -187,9 +183,7 @@ class OllamaTool(BaseTool):
                 # This helps prevent "Unclosed client session" warnings on shutdown
                 await asyncio.sleep(0.01)
 
-    @track(
-        operation="ollama_health_check"
-    )
+    @track(operation="ollama_health_check")
     async def _check_ollama_health(self, session: aiohttp.ClientSession) -> bool:
         """Check if Ollama service is available."""
         try:
@@ -231,9 +225,7 @@ class OllamaTool(BaseTool):
         except Exception:
             return False
 
-    @track(
-        operation="ollama_single_request"
-    )
+    @track(operation="ollama_single_request")
     async def _single_request(
         self,
         session: aiohttp.ClientSession,
@@ -255,9 +247,7 @@ class OllamaTool(BaseTool):
             response_data = await response.json()
             return dict(response_data)
 
-    @track(
-        operation="ollama_stream_request"
-    )
+    @track(operation="ollama_stream_request")
     async def _stream_request(
         self,
         session: aiohttp.ClientSession,
@@ -308,9 +298,7 @@ class OllamaTool(BaseTool):
         )
         return str(result.get("response", ""))
 
-    @track(
-        operation="ollama_generate_convenience"
-    )
+    @track(operation="ollama_generate_convenience")
     async def generate(
         self,
         prompt: str,

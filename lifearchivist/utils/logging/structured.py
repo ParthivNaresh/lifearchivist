@@ -147,17 +147,17 @@ def create_development_formatter() -> logging.Formatter:
             timestamp = datetime.fromtimestamp(record.created).strftime("%H:%M:%S.%f")[
                 :-3
             ]
-            
+
             data: Optional[dict] = getattr(record, "structured_data", None)
-            
+
             # Handle non-structured logs (fallback)
             if not data:
                 return f"{timestamp} | {record.levelname:5} | {record.getMessage()}"
-            
+
             # Route to appropriate formatter based on event type
             event = data.get("event", "")
             operation = data.get("operation", "")
-            
+
             if event == "operation_started":
                 message_content = self._format_operation_start(operation)
             elif event == "operation_completed":
@@ -170,43 +170,43 @@ def create_development_formatter() -> logging.Formatter:
                 message_content = self._format_system_event(data, event)
             else:
                 message_content = self._format_generic_event(data, event)
-            
+
             return f"{timestamp} | {record.levelname:5} | {message_content}"
-        
+
         def _format_operation_start(self, operation: str) -> str:
             """Format operation start events."""
             if not operation:
                 return "🚀 operation started"
             return f"🚀 {operation} started"
-        
+
         def _format_operation_success(self, data: dict, operation: str) -> str:
             """Format successful operation completion events."""
             duration_ms = data.get("duration_ms", 0)
-            
+
             if duration_ms < 50:
                 duration_emoji = "⚡"
             elif duration_ms > 2000:
                 duration_emoji = "🐌"
             else:
                 duration_emoji = "⏱️"
-            
+
             if duration_ms >= 1000:
                 duration_str = f"{duration_ms/1000:.1f}s"
             else:
                 duration_str = f"{duration_ms}ms"
-            
+
             # Add operation-specific context
             context = self._get_operation_context(data, operation)
-            
+
             base_message = f"{duration_emoji} {duration_str} {operation}"
             return f"{base_message}{context}" if context else base_message
-        
+
         def _format_operation_error(self, data: dict, operation: str) -> str:
             """Format failed operation events."""
             duration_ms = data.get("duration_ms", 0)
             error_type = data.get("error_type", "Error")
             error_message = data.get("error_message", "")
-            
+
             # Format duration if available
             duration_part = ""
             if duration_ms > 0:
@@ -214,13 +214,15 @@ def create_development_formatter() -> logging.Formatter:
                     duration_part = f" {duration_ms/1000:.1f}s"
                 else:
                     duration_part = f" {duration_ms}ms"
-            
+
             # Truncate long error messages
             if len(error_message) > 60:
                 error_message = error_message[:57] + "..."
-            
-            return f"❌{duration_part} {operation} failed ({error_type}: {error_message})"
-        
+
+            return (
+                f"❌{duration_part} {operation} failed ({error_type}: {error_message})"
+            )
+
         def _format_business_event(self, data: dict, event: str) -> str:
             """Format business/application events."""
             if event == "file_processed":
@@ -236,7 +238,7 @@ def create_development_formatter() -> logging.Formatter:
                 return f"👤 user_action ({action})"
             else:
                 return f"📋 {event}"
-        
+
         def _format_system_event(self, data: dict, event: str) -> str:
             """Format system-level events."""
             if event == "service_ready":
@@ -244,26 +246,26 @@ def create_development_formatter() -> logging.Formatter:
                 status = data.get("status", "unknown")
                 return f"✅ {service} service ready ({status})"
             elif event == "system_startup":
-                return f"🚀 system startup"
+                return "🚀 system startup"
             elif event == "health_check":
                 status = data.get("status", "unknown")
                 return f"💚 health_check ({status})"
             else:
                 return f"⚙️ {event}"
-        
+
         def _format_generic_event(self, data: dict, event: str) -> str:
             """Format generic/unknown events with contextual information."""
             if not event:
                 return "📝 log_event"
-            
+
             # Add specific context for common business events
             context = self._get_business_event_context(data, event)
-            
+
             if context:
                 return f"📝 {event}: {context}"
             else:
                 return f"📝 {event}"
-        
+
         def _get_business_event_context(self, data: dict, event: str) -> str:
             """Get contextual information for business events."""
             # File analysis events
@@ -273,7 +275,7 @@ def create_development_formatter() -> logging.Formatter:
             elif event == "mime_type_override":
                 mime_type = data.get("mime_type", "unknown")
                 return f"{mime_type} (hint)"
-            
+
             # Text extraction events
             elif event == "text_extracted":
                 text_length = data.get("text_length", 0)
@@ -287,7 +289,7 @@ def create_development_formatter() -> logging.Formatter:
             elif event == "text_extraction_supported":
                 mime_type = data.get("mime_type", "unknown")
                 return f"{mime_type} supported"
-            
+
             # Date extraction events
             elif event == "date_extraction_completed":
                 dates_found = data.get("dates_found", 0)
@@ -302,7 +304,7 @@ def create_development_formatter() -> logging.Formatter:
             elif event == "date_extraction_started":
                 word_count = data.get("word_count", 0)
                 return f"{word_count} words to analyze"
-            
+
             # LLM debugging events
             elif event == "llm_prompt_created":
                 text_length = data.get("text_length", 0)
@@ -315,7 +317,12 @@ def create_development_formatter() -> logging.Formatter:
                     return f"'{response}' ({response_length} chars)"
                 else:
                     return "empty response"
-            
+            elif event == "text_truncated_for_llm":
+                original_length = data.get("original_length", 0)
+                truncated_length = data.get("truncated_length", 0)
+                truncation_ratio = data.get("truncation_ratio", 0)
+                return f"{original_length} → {truncated_length} chars ({truncation_ratio:.1%} kept)"
+
             # Document events
             elif event == "document_created":
                 word_count = data.get("word_count", 0)
@@ -330,7 +337,7 @@ def create_development_formatter() -> logging.Formatter:
             elif event == "document_status_updated":
                 status = data.get("status", "unknown")
                 return f"status={status}"
-            
+
             # File processing events
             elif event == "file_processed":
                 size_bytes = data.get("size_bytes", 0)
@@ -345,19 +352,19 @@ def create_development_formatter() -> logging.Formatter:
             elif event == "file_analysis_started":
                 file_size_mb = data.get("file_size_mb", 0)
                 return f"{file_size_mb}MB file"
-            
+
             # Vault events
             elif event == "vault_storage_completed":
                 vault_existed = data.get("vault_existed", False)
                 return "existed" if vault_existed else "new file"
-            
+
             # Duplicate detection events
             elif event == "duplicate_found":
                 existing_doc_id = data.get("existing_doc_id", "unknown")
                 return f"existing doc: {existing_doc_id[:8]}..."
             elif event == "duplicate_check_started":
                 return "checking for duplicates"
-            
+
             # Progress tracking events
             elif event == "progress_tracking_started":
                 session_id = data.get("session_id", "unknown")
@@ -365,7 +372,7 @@ def create_development_formatter() -> logging.Formatter:
             elif event == "progress_tracking_completed":
                 session_id = data.get("session_id", "unknown")
                 return f"session: {session_id[:8]}... completed"
-            
+
             # Success/completion events
             elif event == "file_import_success":
                 word_count = data.get("word_count", 0)
@@ -379,7 +386,7 @@ def create_development_formatter() -> logging.Formatter:
                     return f"{word_count} words extracted"
                 else:
                     return "no text found"
-            
+
             # Error events
             elif event == "file_import_error":
                 error_type = data.get("error_type", "Error")
@@ -388,40 +395,56 @@ def create_development_formatter() -> logging.Formatter:
                 return "progress tracking failed"
             elif event == "metadata_update_failed":
                 return "metadata update failed"
-            
+
             # Default: return empty string for no context
             return ""
-        
+
         def _get_operation_context(self, data: dict, operation: str) -> str:
             """Get operation-specific context information."""
             context_parts = []
-            
+
             # File operations context
             if operation in ["file_storage", "file_import", "file_deletion"]:
                 context_parts.extend(self._get_file_context(data))
-            
-            # Document operations context  
-            elif operation in ["document_addition", "document_analysis", "text_extraction"]:
+
+            # Document operations context
+            elif operation in [
+                "document_addition",
+                "document_analysis",
+                "text_extraction",
+            ]:
                 context_parts.extend(self._get_document_context(data))
-            
+
             # Query operations context
-            elif operation in ["metadata_query", "document_retrieval", "llamaindex_query"]:
+            elif operation in [
+                "metadata_query",
+                "document_retrieval",
+                "llamaindex_query",
+            ]:
                 context_parts.extend(self._get_query_context(data))
-            
+
             # Cleanup operations context
-            elif operation in ["temp_file_cleanup", "vault_file_clearing", "data_cleanup"]:
+            elif operation in [
+                "temp_file_cleanup",
+                "vault_file_clearing",
+                "data_cleanup",
+            ]:
                 context_parts.extend(self._get_cleanup_context(data))
-            
+
             # System operations context
-            elif operation in ["vault_initialization", "llama_index_setup", "query_engine_setup"]:
+            elif operation in [
+                "vault_initialization",
+                "llama_index_setup",
+                "query_engine_setup",
+            ]:
                 context_parts.extend(self._get_system_context(data))
-            
+
             return f" ({', '.join(context_parts)})" if context_parts else ""
-        
+
         def _get_file_context(self, data: dict) -> list:
             """Get context for file operations."""
             context = []
-            
+
             # File size (from result data or direct field)
             size_bytes = data.get("size_bytes", 0)
             if size_bytes > 1024 * 1024:
@@ -430,24 +453,24 @@ def create_development_formatter() -> logging.Formatter:
                 context.append(f"{size_bytes / 1024:.1f}KB")
             elif size_bytes > 0:
                 context.append(f"{size_bytes}B")
-            
+
             # File existence/status
             if "existed" in data:
                 existed = data.get("existed", False)
                 context.append("existed" if existed else "new")
-            
+
             # Boolean result (for operations like delete)
             if "result_value" in data:
                 result = data.get("result_value")
                 if isinstance(result, bool):
                     context.append("success" if result else "not_found")
-            
+
             return context
-        
+
         def _get_document_context(self, data: dict) -> list:
             """Get context for document operations."""
             context = []
-            
+
             # Content length
             if "result_length" in data:
                 length = data.get("result_length", 0)
@@ -455,45 +478,45 @@ def create_development_formatter() -> logging.Formatter:
                     context.append(f"{length/1000:.1f}k chars")
                 else:
                     context.append(f"{length} chars")
-            
+
             # Result keys (for metadata operations)
             if "result_keys_count" in data:
                 keys = data.get("result_keys_count", 0)
                 context.append(f"{keys} fields")
-            
+
             # Success status
             if "operation_success" in data:
                 success = data.get("operation_success")
                 if success is False:
                     context.append("failed")
-            
+
             return context
-        
+
         def _get_query_context(self, data: dict) -> list:
             """Get context for query operations."""
             context = []
-            
+
             # Result count
             if "result_length" in data:
                 count = data.get("result_length", 0)
                 context.append(f"{count} results")
-            
+
             # Result keys count (for metadata queries)
             if "result_keys_count" in data:
                 count = data.get("result_keys_count", 0)
                 context.append(f"{count} matches")
-            
+
             return context
-        
+
         def _get_cleanup_context(self, data: dict) -> list:
             """Get context for cleanup operations."""
             context = []
-            
+
             # Files cleaned
             if "result_keys_count" in data:
                 files = data.get("result_keys_count", 0)
                 context.append(f"{files} files")
-            
+
             # Bytes freed
             if "result_length" in data:
                 bytes_freed = data.get("result_length", 0)
@@ -503,13 +526,13 @@ def create_development_formatter() -> logging.Formatter:
                     context.append(f"{bytes_freed / 1024:.1f}KB freed")
                 elif bytes_freed > 0:
                     context.append(f"{bytes_freed}B freed")
-            
+
             return context
-        
+
         def _get_system_context(self, data: dict) -> list:
             """Get context for system operations."""
             context = []
-            
+
             # Success status
             if "operation_success" in data:
                 success = data.get("operation_success")
@@ -517,7 +540,7 @@ def create_development_formatter() -> logging.Formatter:
                     context.append("ready")
                 elif success is False:
                     context.append("failed")
-            
+
             return context
 
     return DevelopmentFormatter()

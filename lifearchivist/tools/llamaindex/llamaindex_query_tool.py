@@ -72,9 +72,7 @@ class LlamaIndexQueryTool(BaseTool):
             idempotent=True,
         )
 
-    @track(
-        operation="llamaindex_query"
-    )
+    @track(operation="llamaindex_query")
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute LlamaIndex query for Q&A."""
         question = kwargs.get("question", "").strip()

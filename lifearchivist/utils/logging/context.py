@@ -7,10 +7,7 @@ across async operations and request boundaries.
 
 import contextvars
 import uuid
-from contextlib import contextmanager
 from typing import Any, Dict, Optional
-
-from .structured import log_event
 
 # Context variables for request-scoped data
 _correlation_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(

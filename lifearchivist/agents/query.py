@@ -199,12 +199,6 @@ class QueryAgent:
             "context_length": len(context_info["context"]),
             "method": "custom_rag",
         }
-        # return {
-        #     "answer": f"I encountered an error while processing your question. Please try rephrasing your question or contact support if the issue persists. Error: {str(e)[:100]}",
-        #     "confidence": 0.0,
-        #     "citations": [],
-        #     "method": "error",
-        # }
 
     async def _prepare_context(
         self, search_results: List[Dict], max_length: int, question: str
@@ -355,13 +349,9 @@ Please answer the question based on the provided context."""
 
             answer, confidence = self._parse_rag_response(response)
             return {"answer": answer, "confidence": confidence}
-
         except asyncio.TimeoutError:
-            logger.error("Ollama generation timed out - likely memory issues")
             raise ValueError("Ollama timed out due to memory constraints") from None
-
         except Exception as e:
-            logger.error(f"LLM generation failed: {e}")
             raise ValueError(e) from None
 
     def _parse_rag_response(self, response: str) -> tuple[str, float]:

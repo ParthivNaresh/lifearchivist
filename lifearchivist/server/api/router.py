@@ -4,7 +4,8 @@ Main API router that aggregates all route modules.
 
 from fastapi import APIRouter
 
-from ...config import get_settings
+from lifearchivist.config import get_settings
+
 from .routes import documents, search, tags, upload, vault
 from .routes import settings as settings_routes
 

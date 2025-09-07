@@ -5,9 +5,14 @@ Simplified, high-performance logging with intelligent sampling and
 single decorator that handles all use cases.
 """
 
-from .smart_logger import track, log_operation_start, log_operation_success, log_operation_error
 from .context import get_correlation_id, set_correlation_id
-from .structured import log_event, StructuredLogger
+from .smart_logger import (
+    log_operation_error,
+    log_operation_start,
+    log_operation_success,
+    track,
+)
+from .structured import StructuredLogger, log_event
 
 __all__ = [
     # Primary API
@@ -15,12 +20,10 @@ __all__ = [
     "log_event",
     "get_correlation_id",
     "set_correlation_id",
-    
     # Manual logging helpers
     "log_operation_start",
-    "log_operation_success", 
+    "log_operation_success",
     "log_operation_error",
-    
     # Advanced usage
     "StructuredLogger",
 ]

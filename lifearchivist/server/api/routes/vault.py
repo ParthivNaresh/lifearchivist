@@ -63,8 +63,10 @@ async def list_vault_files(
                 if server.llamaindex_service:
                     try:
                         # Query LlamaIndex for documents with this file hash
-                        matching_docs = await server.llamaindex_service.query_documents_by_metadata(
-                            filters={"file_hash": full_hash}, limit=1
+                        matching_docs = (
+                            await server.llamaindex_service.query_documents_by_metadata(
+                                filters={"file_hash": full_hash}, limit=1
+                            )
                         )
                         if matching_docs:
                             doc = matching_docs[0]

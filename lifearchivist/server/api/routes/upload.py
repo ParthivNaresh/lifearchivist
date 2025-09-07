@@ -129,7 +129,7 @@ async def bulk_ingest_files(request: BulkIngestRequest):
     failed_count = 0
 
     try:
-        for i, file_path in enumerate(file_paths):
+        for _, file_path in enumerate(file_paths):
             try:
                 # Use the file import tool
                 result = await server.execute_tool(

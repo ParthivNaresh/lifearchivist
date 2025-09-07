@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException
 
 from lifearchivist.models import SearchRequest
+
 from ..dependencies import get_server
 
 router = APIRouter(prefix="/api", tags=["search"])
@@ -55,9 +56,7 @@ async def search_documents_get(
         )
 
     if limit < 1 or limit > 100:
-        raise HTTPException(
-            status_code=400, detail="Limit must be between 1 and 100"
-        )
+        raise HTTPException(status_code=400, detail="Limit must be between 1 and 100")
 
     if offset < 0:
         raise HTTPException(status_code=400, detail="Offset must be non-negative")

@@ -27,7 +27,7 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 
 from lifearchivist.config import get_settings
-from lifearchivist.utils.logging import track, log_event
+from lifearchivist.utils.logging import track
 
 from .llamaindex_service_utils import (
     DocumentFilter,
@@ -53,9 +53,7 @@ class LlamaIndexService:
         self._setup_llamaindex()
         self._setup_query_engine()
 
-    @track(
-        operation="llama_index_setup"
-    )
+    @track(operation="llama_index_setup")
     def _setup_llamaindex(self):
         """Configure LlamaIndex with local models and services."""
 
@@ -89,9 +87,7 @@ class LlamaIndexService:
         except Exception as e:
             raise e
 
-    @track(
-        operation="query_engine_setup"
-    )
+    @track(operation="query_engine_setup")
     def _setup_query_engine(self):
         """Setup the query engine with retriever and response synthesizer."""
         if not self.index:
@@ -114,9 +110,7 @@ class LlamaIndexService:
             node_postprocessors=[],  # No post-processing for speed
         )
 
-    @track(
-        operation="document_addition"
-    )
+    @track(operation="document_addition")
     async def add_document(
         self,
         document_id: str,
@@ -142,9 +136,7 @@ class LlamaIndexService:
         await self._persist_index()
         return True
 
-    @track(
-        operation="metadata_update"
-    )
+    @track(operation="metadata_update")
     async def update_document_metadata(
         self,
         document_id: str,
@@ -205,8 +197,7 @@ class LlamaIndexService:
                 # Update the node in docstore using the correct method (plural)
                 docstore.add_documents([node], allow_update=True)
                 updated_nodes += 1
-
-            except Exception as node_error:
+            except Exception:
                 failed_nodes += 1
                 continue
 
@@ -261,7 +252,7 @@ class LlamaIndexService:
                         }
                         matching_documents.append(doc_info)
 
-                except Exception as e:
+                except Exception:
                     continue  # Don't raise, just continue to next document
             paginated_results = matching_documents[offset : offset + limit]
             return paginated_results
@@ -280,9 +271,7 @@ class LlamaIndexService:
             raise persist_error
             # Index changes are still in memory, just persist failed
 
-    @track(
-        operation="llamaindex_query"
-    )
+    @track(operation="llamaindex_query")
     async def query(
         self,
         question: str,
@@ -335,9 +324,7 @@ class LlamaIndexService:
             "metadata": {"error": error_message},
         }
 
-    @track(
-        operation="document_retrieval"
-    )
+    @track(operation="document_retrieval")
     async def retrieve_similar(
         self, query: str, top_k: int = 10, similarity_threshold: float = 0.7
     ) -> List[Dict[str, Any]]:
@@ -360,12 +347,10 @@ class LlamaIndexService:
                         results.append(source_info)
 
             return results
-        except Exception as e:
+        except Exception:
             return []
 
-    @track(
-        operation="document_analysis"
-    )
+    @track(operation="document_analysis")
     async def get_document_analysis(self, document_id: str) -> Dict[str, Any]:
         """Get comprehensive analysis of a document in the LlamaIndex."""
         try:
@@ -411,9 +396,7 @@ class LlamaIndexService:
         except Exception as e:
             return create_error_response(str(e))
 
-    @track(
-        operation="document_chunks_retrieval"
-    )
+    @track(operation="document_chunks_retrieval")
     async def get_document_chunks(
         self, document_id: str, limit: int = 100, offset: int = 0
     ) -> Dict[str, Any]:
@@ -538,7 +521,7 @@ class LlamaIndexService:
                 "dimension": getattr(embed_model, "embed_dim", None),
                 "max_length": getattr(embed_model, "_max_length", None),
             }
-        except Exception as e:
+        except Exception:
             return {"model": "unknown", "dimension": None}
 
     @track(operation="data_cleanup")

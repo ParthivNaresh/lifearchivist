@@ -69,7 +69,9 @@ class Settings(BaseSettings):
     enable_websockets: bool = Field(
         default=True, description="Enable WebSocket support"
     )
-    api_only_mode: bool = Field(default=False, description="API-only mode for debugging")
+    api_only_mode: bool = Field(
+        default=False, description="API-only mode for debugging"
+    )
 
     class Config:
         env_prefix = "LIFEARCH_"
@@ -103,6 +105,7 @@ def configure_logging(level: str = "INFO") -> None:
     # Import development formatter
     try:
         from ..utils.logging.structured import create_development_formatter
+
         formatter = create_development_formatter()
     except ImportError:
         # Fallback to basic formatter if structured logging not available

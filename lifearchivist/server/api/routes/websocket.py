@@ -34,6 +34,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
     except WebSocketDisconnect:
         server.session_manager.disconnect(session_id)
-    except Exception as e:
+    except Exception:
         await websocket.close()
         server.session_manager.disconnect(session_id)

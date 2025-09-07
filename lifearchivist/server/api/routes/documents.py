@@ -31,12 +31,12 @@ async def list_documents(
         raw_documents = await server.llamaindex_service.query_documents_by_metadata(
             filters=filters, limit=limit, offset=offset
         )
-        
+
         # Transform documents to UI-compatible format
         formatted_documents = []
         for doc in raw_documents:
             metadata = doc.get("metadata", {})
-            
+
             # Extract fields from metadata with fallbacks
             formatted_doc = {
                 "id": doc.get("document_id") or metadata.get("document_id"),
@@ -46,7 +46,9 @@ async def list_documents(
                 "size_bytes": metadata.get("size_bytes", 0),
                 "created_at": metadata.get("created_at", ""),
                 "modified_at": metadata.get("modified_at"),
-                "ingested_at": metadata.get("created_at", ""),  # Use created_at as ingested_at
+                "ingested_at": metadata.get(
+                    "created_at", ""
+                ),  # Use created_at as ingested_at
                 "status": metadata.get("status", "unknown"),
                 "error_message": metadata.get("error_message"),
                 "word_count": metadata.get("word_count"),
@@ -58,7 +60,7 @@ async def list_documents(
                 "tag_count": len(metadata.get("tags", [])),
             }
             formatted_documents.append(formatted_doc)
-        
+
         result = {
             "documents": formatted_documents,
             "total": len(formatted_documents),
@@ -78,9 +80,7 @@ async def clear_all_documents():
     try:
         if server.llamaindex_service:
             try:
-                llamaindex_metrics = (
-                    await server.llamaindex_service.clear_all_data()
-                )
+                llamaindex_metrics = await server.llamaindex_service.clear_all_data()
             except Exception as llamaindex_error:
                 llamaindex_metrics = {"error": str(llamaindex_error)}
         else:
@@ -89,16 +89,12 @@ async def clear_all_documents():
         # Step 2: Clear vault files
         if not server.vault:
             raise HTTPException(status_code=500, detail="Vault not initialized")
-        vault_metrics = await server.vault.clear_all_files(
-            []
-        )  # Empty list = clear all
+        vault_metrics = await server.vault.clear_all_files([])  # Empty list = clear all
 
         # Step 3: Clear progress tracking data
         if server.progress_manager:
             try:
-                progress_metrics = (
-                    await server.progress_manager.clear_all_progress()
-                )
+                progress_metrics = await server.progress_manager.clear_all_progress()
             except Exception as progress_error:
                 progress_metrics = {"error": str(progress_error)}
         else:
@@ -108,9 +104,9 @@ async def clear_all_documents():
         vault_files_deleted = vault_metrics["files_deleted"] + vault_metrics.get(
             "orphaned_files_deleted", 0
         )
-        vault_bytes_reclaimed = vault_metrics[
-            "bytes_reclaimed"
-        ] + vault_metrics.get("orphaned_bytes_reclaimed", 0)
+        vault_bytes_reclaimed = vault_metrics["bytes_reclaimed"] + vault_metrics.get(
+            "orphaned_bytes_reclaimed", 0
+        )
         total_files_deleted = vault_files_deleted + llamaindex_metrics.get(
             "storage_files_deleted", 0
         )
@@ -124,9 +120,7 @@ async def clear_all_documents():
             "summary": {
                 "total_files_deleted": total_files_deleted,
                 "total_bytes_reclaimed": total_bytes_reclaimed,
-                "total_mb_reclaimed": round(
-                    total_bytes_reclaimed / (1024 * 1024), 2
-                ),
+                "total_mb_reclaimed": round(total_bytes_reclaimed / (1024 * 1024), 2),
             },
             "vault_metrics": vault_metrics,
             "llamaindex_metrics": llamaindex_metrics,
@@ -181,9 +175,7 @@ async def get_llamaindex_document_chunks(
                 status_code=400, detail="Limit must be between 1 and 1000"
             )
         if offset < 0:
-            raise HTTPException(
-                status_code=400, detail="Offset must be non-negative"
-            )
+            raise HTTPException(status_code=400, detail="Offset must be non-negative")
 
         result = await server.llamaindex_service.get_document_chunks(
             document_id=document_id, limit=limit, offset=offset

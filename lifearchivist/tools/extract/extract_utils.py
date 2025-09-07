@@ -107,9 +107,6 @@ async def _extract_docx_text(file_path: Path) -> str:
 
         full_text = re.sub(r"\n{3,}", "\n\n", full_text)
         full_text = re.sub(r"[ \t]+", " ", full_text)
-
-        word_count = len(full_text.split())
-
         return full_text.strip()
 
     except Exception as e:
