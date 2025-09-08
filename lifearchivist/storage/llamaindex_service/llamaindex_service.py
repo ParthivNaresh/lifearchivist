@@ -3,6 +3,7 @@ LlamaIndex service for advanced RAG functionality.
 """
 
 import asyncio
+import logging
 import shutil
 from typing import Any, Dict, List, Optional
 
@@ -27,7 +28,7 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 
 from lifearchivist.config import get_settings
-from lifearchivist.utils.logging import track
+from lifearchivist.utils.logging import log_event, track
 
 from .llamaindex_service_utils import (
     DocumentFilter,
@@ -53,9 +54,26 @@ class LlamaIndexService:
         self._setup_llamaindex()
         self._setup_query_engine()
 
-    @track(operation="llama_index_setup")
+    @track(
+        operation="llama_index_setup",
+        track_performance=True,
+        frequency="low_frequency",
+    )
     def _setup_llamaindex(self):
         """Configure LlamaIndex with local models and services."""
+
+        # Log configuration being used
+        log_event(
+            "llamaindex_config",
+            {
+                "embedding_model": self.settings.embedding_model,
+                "llm_model": self.settings.llm_model,
+                "ollama_url": self.settings.ollama_url,
+                "chunk_size": 800,
+                "chunk_overlap": 100,
+                "storage_dir": str(self.settings.lifearch_home / "llamaindex_storage"),
+            },
+        )
 
         Settings.embed_model = HuggingFaceEmbedding(
             model_name=self.settings.embedding_model,
@@ -84,13 +102,67 @@ class LlamaIndexService:
             loaded_index = load_index_from_storage(storage_context)
             if isinstance(loaded_index, VectorStoreIndex):
                 self.index = loaded_index
+
+                # Log successful index loading
+                doc_count = (
+                    len(self.index.ref_doc_info)
+                    if hasattr(self.index, "ref_doc_info")
+                    else 0
+                )
+                log_event(
+                    "llamaindex_loaded",
+                    {
+                        "storage_type": "SimpleVectorStore",
+                        "document_count": doc_count,
+                        "index_type": type(loaded_index).__name__,
+                    },
+                )
+            else:
+                log_event(
+                    "llamaindex_wrong_type",
+                    {
+                        "expected_type": "VectorStoreIndex",
+                        "actual_type": type(loaded_index).__name__,
+                    },
+                    level=logging.WARNING,
+                )
+        except FileNotFoundError:
+            # This is expected on first run
+            log_event(
+                "llamaindex_not_found",
+                {
+                    "storage_dir": str(storage_dir),
+                    "action": "will_create_new",
+                },
+                level=logging.INFO,
+            )
         except Exception as e:
+            log_event(
+                "llamaindex_load_failed",
+                {
+                    "storage_dir": str(storage_dir),
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
             raise e
 
-    @track(operation="query_engine_setup")
+    @track(
+        operation="query_engine_setup",
+        track_performance=True,
+        frequency="low_frequency",
+    )
     def _setup_query_engine(self):
         """Setup the query engine with retriever and response synthesizer."""
         if not self.index:
+            log_event(
+                "query_engine_skipped",
+                {
+                    "reason": "no_index",
+                },
+                level=logging.DEBUG,
+            )
             return
 
         retriever = VectorIndexRetriever(
@@ -110,7 +182,24 @@ class LlamaIndexService:
             node_postprocessors=[],  # No post-processing for speed
         )
 
-    @track(operation="document_addition")
+        log_event(
+            "query_engine_created",
+            {
+                "retriever_type": "VectorIndexRetriever",
+                "similarity_top_k": 1,
+                "response_mode": "COMPACT",
+                "post_processors": 0,
+            },
+            level=logging.DEBUG,
+        )
+
+    @track(
+        operation="document_addition",
+        include_args=["document_id"],
+        include_result=True,
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def add_document(
         self,
         document_id: str,
@@ -119,7 +208,31 @@ class LlamaIndexService:
     ) -> bool:
         """Add a document to the LlamaIndex."""
         if not self.index:
+            log_event(
+                "document_add_failed",
+                {
+                    "document_id": document_id,
+                    "reason": "no_index",
+                },
+                level=logging.ERROR,
+            )
             return False
+
+        # Log document characteristics
+        content_length = len(content)
+        word_count = len(content.split()) if content else 0
+        metadata_fields = len(metadata) if metadata else 0
+
+        log_event(
+            "document_add_started",
+            {
+                "document_id": document_id,
+                "content_length": content_length,
+                "word_count": word_count,
+                "metadata_fields": metadata_fields,
+                "mime_type": metadata.get("mime_type") if metadata else None,
+            },
+        )
 
         # Create LlamaIndex document
         doc_metadata = metadata or {}
@@ -130,13 +243,47 @@ class LlamaIndexService:
             metadata=doc_metadata,
             id_=document_id,
         )
-        # Add to index
-        self.index.insert(document)
-        # Persist the index (handle version compatibility)
-        await self._persist_index()
-        return True
 
-    @track(operation="metadata_update")
+        try:
+            # Add to index
+            self.index.insert(document)
+
+            # Log successful insertion
+            nodes_created = len(
+                self.index.ref_doc_info.get(document_id, {}).get("node_ids", [])
+            )
+            log_event(
+                "document_indexed",
+                {
+                    "document_id": document_id,
+                    "nodes_created": nodes_created,
+                    "content_length": content_length,
+                },
+            )
+
+            # Persist the index (handle version compatibility)
+            await self._persist_index()
+            return True
+
+        except Exception as e:
+            log_event(
+                "document_indexing_error",
+                {
+                    "document_id": document_id,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
+            return False
+
+    @track(
+        operation="metadata_update",
+        include_args=["document_id", "merge_mode"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def update_document_metadata(
         self,
         document_id: str,
@@ -145,14 +292,46 @@ class LlamaIndexService:
     ) -> bool:
         """Update metadata for an existing document by updating all its nodes."""
         if not self.index:
+            log_event(
+                "metadata_update_failed",
+                {
+                    "document_id": document_id,
+                    "reason": "no_index",
+                },
+                level=logging.ERROR,
+            )
             return False
 
         # Get the nodes associated with this document using ref_doc_info
         ref_doc_info = self.index.ref_doc_info.get(document_id)
         if not ref_doc_info:
+            log_event(
+                "metadata_update_failed",
+                {
+                    "document_id": document_id,
+                    "reason": "document_not_found",
+                },
+                level=logging.WARNING,
+            )
             return False
 
         node_ids = ref_doc_info.node_ids
+
+        # Log update operation details
+        log_event(
+            "metadata_update_started",
+            {
+                "document_id": document_id,
+                "node_count": len(node_ids),
+                "merge_mode": merge_mode,
+                "update_fields": list(metadata_updates.keys()),
+                "has_list_fields": any(
+                    key in metadata_updates
+                    for key in ["content_dates", "tags", "provenance"]
+                ),
+            },
+        )
+
         # Update metadata on all nodes that belong to this document
         docstore = self.index.storage_context.docstore
         updated_nodes = 0
@@ -197,9 +376,41 @@ class LlamaIndexService:
                 # Update the node in docstore using the correct method (plural)
                 docstore.add_documents([node], allow_update=True)
                 updated_nodes += 1
-            except Exception:
+            except Exception as e:
                 failed_nodes += 1
+                # Log individual node failures at DEBUG level
+                log_event(
+                    "node_update_failed",
+                    {
+                        "document_id": document_id,
+                        "node_id": node_id,
+                        "error": str(e),
+                    },
+                    level=logging.DEBUG,
+                )
                 continue
+
+        # Log update results
+        if updated_nodes > 0:
+            log_event(
+                "metadata_update_completed",
+                {
+                    "document_id": document_id,
+                    "updated_nodes": updated_nodes,
+                    "failed_nodes": failed_nodes,
+                    "success_rate": updated_nodes / len(node_ids),
+                },
+            )
+        else:
+            log_event(
+                "metadata_update_failed",
+                {
+                    "document_id": document_id,
+                    "reason": "no_nodes_updated",
+                    "failed_nodes": failed_nodes,
+                },
+                level=logging.ERROR,
+            )
 
         if updated_nodes == 0:
             return False
@@ -208,14 +419,38 @@ class LlamaIndexService:
         await self._persist_index()
         return True
 
-    @track(operation="metadata_query")
+    @track(
+        operation="metadata_query",
+        include_args=["limit", "offset"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def query_documents_by_metadata(
         self, filters: Dict[str, Any], limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
         """Query documents based on metadata filters by checking their nodes."""
         try:
             if not self.index:
+                log_event(
+                    "metadata_query_empty",
+                    {
+                        "reason": "no_index",
+                    },
+                    level=logging.DEBUG,
+                )
                 return []
+
+            # Log query parameters
+            log_event(
+                "metadata_query_started",
+                {
+                    "filter_keys": list(filters.keys()) if filters else [],
+                    "has_filters": bool(filters),
+                    "limit": limit,
+                    "offset": offset,
+                },
+            )
 
             docstore = self.index.storage_context.docstore
             matching_documents = []
@@ -224,8 +459,14 @@ class LlamaIndexService:
             ref_doc_info = self.index.ref_doc_info
             all_document_ids = list(ref_doc_info.keys())
 
+            total_documents = len(all_document_ids)
+            documents_checked = 0
+            documents_matched = 0
+
             for document_id in all_document_ids:
                 try:
+                    documents_checked += 1
+
                     # Get the nodes for this document
                     doc_ref_info = ref_doc_info[document_id]
                     node_ids = doc_ref_info.node_ids
@@ -242,6 +483,7 @@ class LlamaIndexService:
 
                     # Check if document matches all filters
                     if DocumentFilter.matches_filters(metadata, filters):
+                        documents_matched += 1
                         doc_info = {
                             "document_id": document_id,
                             "metadata": metadata,
@@ -252,26 +494,125 @@ class LlamaIndexService:
                         }
                         matching_documents.append(doc_info)
 
-                except Exception:
+                except Exception as e:
+                    # Log individual document errors at DEBUG level
+                    log_event(
+                        "metadata_query_doc_error",
+                        {
+                            "document_id": document_id,
+                            "error": str(e),
+                        },
+                        level=logging.DEBUG,
+                    )
                     continue  # Don't raise, just continue to next document
+
+            # Log query results
+            log_event(
+                "metadata_query_completed",
+                {
+                    "total_documents": total_documents,
+                    "documents_checked": documents_checked,
+                    "documents_matched": documents_matched,
+                    "match_rate": (
+                        documents_matched / documents_checked
+                        if documents_checked > 0
+                        else 0
+                    ),
+                    "results_returned": min(len(matching_documents[offset:]), limit),
+                },
+            )
+
+            # Log if no matches found with filters
+            if filters and documents_matched == 0:
+                log_event(
+                    "metadata_query_no_matches",
+                    {
+                        "filters": filters,
+                        "documents_checked": documents_checked,
+                    },
+                    level=logging.WARNING,
+                )
+
             paginated_results = matching_documents[offset : offset + limit]
             return paginated_results
 
         except Exception as e:
+            log_event(
+                "metadata_query_failed",
+                {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "filters": filters,
+                },
+                level=logging.ERROR,
+            )
             raise ValueError(e) from None
 
-    @track(operation="index_persistence")
+    @track(
+        operation="index_persistence",
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def _persist_index(self):
         """Persist the index with version compatibility handling."""
         storage_dir = self.settings.lifearch_home / "llamaindex_storage"
         try:
             if self.index:
-                self.index.storage_context.persist(persist_dir=str(storage_dir))
-        except AttributeError as persist_error:
-            raise persist_error
-            # Index changes are still in memory, just persist failed
+                # Log persistence attempt
+                doc_count = (
+                    len(self.index.ref_doc_info)
+                    if hasattr(self.index, "ref_doc_info")
+                    else 0
+                )
+                log_event(
+                    "index_persistence_started",
+                    {
+                        "storage_dir": str(storage_dir),
+                        "document_count": doc_count,
+                    },
+                    level=logging.DEBUG,
+                )
 
-    @track(operation="llamaindex_query")
+                self.index.storage_context.persist(persist_dir=str(storage_dir))
+
+                log_event(
+                    "index_persistence_completed",
+                    {
+                        "storage_dir": str(storage_dir),
+                        "document_count": doc_count,
+                    },
+                    level=logging.DEBUG,
+                )
+        except AttributeError as persist_error:
+            log_event(
+                "index_persistence_warning",
+                {
+                    "error": "AttributeError during persist",
+                    "message": str(persist_error),
+                    "note": "Index changes still in memory",
+                },
+                level=logging.WARNING,
+            )
+            # Index changes are still in memory, just persist failed
+        except Exception as e:
+            log_event(
+                "index_persistence_failed",
+                {
+                    "storage_dir": str(storage_dir),
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
+            raise e
+
+    @track(
+        operation="llamaindex_query",
+        include_args=["similarity_top_k", "response_mode"],
+        include_result=True,
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def query(
         self,
         question: str,
@@ -280,7 +621,28 @@ class LlamaIndexService:
     ) -> Dict[str, Any]:
         """Query the index and return structured response."""
         if not self.query_engine:
+            log_event(
+                "query_engine_unavailable",
+                {
+                    "reason": "not_initialized",
+                },
+                level=logging.WARNING,
+            )
             return self._empty_response("Query engine not available")
+
+        # Log query details
+        log_event(
+            "llamaindex_query_started",
+            {
+                "question_length": len(question),
+                "question_preview": (
+                    question[:100] + "..." if len(question) > 100 else question
+                ),
+                "similarity_top_k": similarity_top_k,
+                "response_mode": response_mode,
+            },
+        )
+
         # Execute query with timeout to prevent hanging
         try:
             response: Response = await asyncio.wait_for(
@@ -288,13 +650,41 @@ class LlamaIndexService:
             )
 
         except asyncio.TimeoutError:
+            log_event(
+                "llamaindex_query_timeout",
+                {
+                    "question_preview": question[:50],
+                    "timeout_seconds": 30,
+                    "reason": "memory_constraints",
+                },
+                level=logging.ERROR,
+            )
             return self._empty_response("Query timed out due to memory constraints")
 
         except AttributeError as attr_error:
             if "usage" in str(attr_error):
-                raise attr_error
-            else:
-                raise attr_error
+                # This is a known issue with some Ollama responses
+                log_event(
+                    "llamaindex_query_usage_error",
+                    {
+                        "error": str(attr_error),
+                        "note": "Known Ollama response issue",
+                    },
+                    level=logging.DEBUG,
+                )
+            raise attr_error
+
+        except Exception as e:
+            log_event(
+                "llamaindex_query_failed",
+                {
+                    "question_preview": question[:50],
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
+            raise e
 
         # Extract source information
         sources = []
@@ -304,8 +694,21 @@ class LlamaIndexService:
                 if source_info:
                     sources.append(source_info)
 
+        answer = str(response.response) if response.response else ""
+
+        # Log query results
+        log_event(
+            "llamaindex_query_completed",
+            {
+                "answer_length": len(answer),
+                "sources_count": len(sources),
+                "has_answer": bool(answer),
+                "response_mode": response_mode,
+            },
+        )
+
         return {
-            "answer": str(response.response) if response.response else "",
+            "answer": answer,
             "sources": sources,
             "method": "llamaindex_rag",
             "metadata": {
@@ -324,14 +727,38 @@ class LlamaIndexService:
             "metadata": {"error": error_message},
         }
 
-    @track(operation="document_retrieval")
+    @track(
+        operation="document_retrieval",
+        include_args=["top_k", "similarity_threshold"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def retrieve_similar(
         self, query: str, top_k: int = 10, similarity_threshold: float = 0.7
     ) -> List[Dict[str, Any]]:
         """Retrieve similar documents without generating a response."""
         try:
             if not self.index:
+                log_event(
+                    "retrieval_skipped",
+                    {
+                        "reason": "no_index",
+                    },
+                    level=logging.DEBUG,
+                )
                 return []
+
+            log_event(
+                "similarity_retrieval_started",
+                {
+                    "query_length": len(query),
+                    "query_preview": query[:50],
+                    "top_k": top_k,
+                    "similarity_threshold": similarity_threshold,
+                },
+                level=logging.DEBUG,
+            )
 
             retriever = VectorIndexRetriever(index=self.index, similarity_top_k=top_k)
 
@@ -340,21 +767,58 @@ class LlamaIndexService:
 
             # Filter by similarity threshold and format
             results = []
+            nodes_below_threshold = 0
+
             for node in nodes:
                 if node.score and node.score >= similarity_threshold:
                     source_info = NodeProcessor.extract_source_info(node)
                     if source_info:
                         results.append(source_info)
+                else:
+                    nodes_below_threshold += 1
+
+            log_event(
+                "similarity_retrieval_completed",
+                {
+                    "nodes_retrieved": len(nodes),
+                    "nodes_above_threshold": len(results),
+                    "nodes_below_threshold": nodes_below_threshold,
+                    "threshold": similarity_threshold,
+                },
+                level=logging.DEBUG,
+            )
 
             return results
-        except Exception:
+        except Exception as e:
+            log_event(
+                "similarity_retrieval_failed",
+                {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
             return []
 
-    @track(operation="document_analysis")
+    @track(
+        operation="document_analysis",
+        include_args=["document_id"],
+        include_result=True,
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def get_document_analysis(self, document_id: str) -> Dict[str, Any]:
         """Get comprehensive analysis of a document in the LlamaIndex."""
         try:
             if not self.index:
+                log_event(
+                    "document_analysis_skipped",
+                    {
+                        "document_id": document_id,
+                        "reason": "no_index",
+                    },
+                    level=logging.WARNING,
+                )
                 return {"error": "Index not initialized"}
 
             # Get all nodes for this document using ref_doc_info
@@ -363,6 +827,13 @@ class LlamaIndexService:
             )
 
             if not nodes:
+                log_event(
+                    "document_analysis_not_found",
+                    {
+                        "document_id": document_id,
+                    },
+                    level=logging.WARNING,
+                )
                 return create_error_response(
                     f"Document {document_id} not found in LlamaIndex"
                 )
@@ -375,6 +846,18 @@ class LlamaIndexService:
 
             # Use first node's metadata (all nodes inherit document metadata)
             original_metadata = nodes[0].get("metadata", {}) if nodes else {}
+
+            log_event(
+                "document_analysis_completed",
+                {
+                    "document_id": document_id,
+                    "node_count": len(nodes),
+                    "total_chars": metrics.get("total_chars", 0),
+                    "total_words": metrics.get("total_words", 0),
+                    "avg_chunk_size": metrics.get("avg_chunk_size", 0),
+                },
+                level=logging.DEBUG,
+            )
 
             return {
                 "document_id": document_id,
@@ -394,15 +877,38 @@ class LlamaIndexService:
             }
 
         except Exception as e:
+            log_event(
+                "document_analysis_failed",
+                {
+                    "document_id": document_id,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
             return create_error_response(str(e))
 
-    @track(operation="document_chunks_retrieval")
+    @track(
+        operation="document_chunks_retrieval",
+        include_args=["document_id", "limit", "offset"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def get_document_chunks(
         self, document_id: str, limit: int = 100, offset: int = 0
     ) -> Dict[str, Any]:
         """Get all chunks for a specific document with pagination."""
         try:
             if not self.index:
+                log_event(
+                    "chunks_retrieval_skipped",
+                    {
+                        "document_id": document_id,
+                        "reason": "no_index",
+                    },
+                    level=logging.DEBUG,
+                )
                 return {"error": "Index not initialized", "chunks": [], "total": 0}
 
             # Get all nodes for this document
@@ -411,6 +917,13 @@ class LlamaIndexService:
             )
 
             if not all_nodes:
+                log_event(
+                    "chunks_not_found",
+                    {
+                        "document_id": document_id,
+                    },
+                    level=logging.WARNING,
+                )
                 return {
                     "error": f"No chunks found for document {document_id}",
                     "chunks": [],
@@ -423,19 +936,50 @@ class LlamaIndexService:
 
             # Enrich with additional metadata
             enriched_chunks = []
+            total_text_length = 0
+            total_word_count = 0
+
             for i, node_data in enumerate(paginated_nodes):
+                text = node_data.get("text", "")
+                text_length = len(text)
+                word_count = len(text.split())
+
+                total_text_length += text_length
+                total_word_count += word_count
+
                 chunk_info = {
                     "chunk_index": offset + i,
                     "node_id": node_data.get("node_id"),
-                    "text": node_data.get("text", ""),
-                    "text_length": len(node_data.get("text", "")),
-                    "word_count": len(node_data.get("text", "").split()),
+                    "text": text,
+                    "text_length": text_length,
+                    "word_count": word_count,
                     "start_char": node_data.get("start_char"),
                     "end_char": node_data.get("end_char"),
                     "metadata": node_data.get("metadata", {}),
                     "relationships": node_data.get("relationships", {}),
                 }
                 enriched_chunks.append(chunk_info)
+
+            log_event(
+                "chunks_retrieved",
+                {
+                    "document_id": document_id,
+                    "total_chunks": total,
+                    "chunks_returned": len(enriched_chunks),
+                    "avg_chunk_length": (
+                        total_text_length / len(enriched_chunks)
+                        if enriched_chunks
+                        else 0
+                    ),
+                    "avg_word_count": (
+                        total_word_count / len(enriched_chunks)
+                        if enriched_chunks
+                        else 0
+                    ),
+                    "has_more": offset + limit < total,
+                },
+                level=logging.DEBUG,
+            )
 
             return {
                 "document_id": document_id,
@@ -447,6 +991,15 @@ class LlamaIndexService:
             }
 
         except Exception as e:
+            log_event(
+                "chunks_retrieval_failed",
+                {
+                    "document_id": document_id,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
             return create_error_response(str(e), chunks=[], total=0)
 
     async def get_document_neighbors(
@@ -524,7 +1077,12 @@ class LlamaIndexService:
         except Exception:
             return {"model": "unknown", "dimension": None}
 
-    @track(operation="data_cleanup")
+    @track(
+        operation="data_cleanup",
+        include_result=True,
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def clear_all_data(self) -> Dict[str, Any]:
         """Clear all LlamaIndex data and storage."""
         storage_dir = self.settings.lifearch_home / "llamaindex_storage"
@@ -535,11 +1093,32 @@ class LlamaIndexService:
             "errors": [],
         }
 
+        log_event(
+            "data_cleanup_started",
+            {
+                "storage_dir": str(storage_dir),
+            },
+        )
+
         try:
             # Clear in-memory index
+            doc_count_before = (
+                len(self.index.ref_doc_info)
+                if self.index and hasattr(self.index, "ref_doc_info")
+                else 0
+            )
             self.index = None
             self.query_engine = None
             cleared_metrics["index_reset"] = True
+
+            log_event(
+                "index_cleared",
+                {
+                    "documents_cleared": doc_count_before,
+                },
+                level=logging.DEBUG,
+            )
+
             # Remove storage directory and all files
             if storage_dir.exists():
                 total_size = 0
@@ -553,28 +1132,73 @@ class LlamaIndexService:
                         total_size += file_size
                         file_count += 1
                         file_list.append(f"{file_path.name} ({file_size} bytes)")
+
                 # Remove the entire storage directory
                 shutil.rmtree(storage_dir)
 
                 cleared_metrics["storage_files_deleted"] = file_count
                 cleared_metrics["storage_bytes_reclaimed"] = total_size
 
+                log_event(
+                    "storage_cleared",
+                    {
+                        "files_deleted": file_count,
+                        "bytes_reclaimed": total_size,
+                        "mb_reclaimed": round(total_size / (1024 * 1024), 2),
+                    },
+                )
+
             # Reinitialize empty structures
             await self._initialize_empty_index()
+
+            log_event(
+                "data_cleanup_completed",
+                {
+                    "documents_cleared": doc_count_before,
+                    "files_deleted": cleared_metrics["storage_files_deleted"],
+                    "mb_reclaimed": round(
+                        cleared_metrics["storage_bytes_reclaimed"] / (1024 * 1024), 2
+                    ),
+                },
+            )
 
             return cleared_metrics
 
         except Exception as e:
-            error_msg = f"❌ LlamaIndex clearing failed: {e}"
+            error_msg = f"LlamaIndex clearing failed: {e}"
             if isinstance(cleared_metrics["errors"], list):
                 cleared_metrics["errors"].append(error_msg)
+
+            log_event(
+                "data_cleanup_failed",
+                {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "partial_success": cleared_metrics["index_reset"],
+                },
+                level=logging.ERROR,
+            )
+
             return cleared_metrics
 
+    @track(
+        operation="empty_index_initialization",
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def _initialize_empty_index(self):
         """Initialize a fresh empty LlamaIndex."""
         try:
             storage_dir = self.settings.lifearch_home / "llamaindex_storage"
             storage_dir.mkdir(exist_ok=True)
+
+            log_event(
+                "empty_index_init_started",
+                {
+                    "storage_dir": str(storage_dir),
+                },
+                level=logging.DEBUG,
+            )
 
             # Create new storage context with simple stores (don't load from empty directory)
             vector_store = SimpleVectorStore()
@@ -604,8 +1228,16 @@ class LlamaIndexService:
             # Persist empty index - this creates storage files
             try:
                 self.index.storage_context.persist(persist_dir=str(storage_dir))
-            except AttributeError:
+            except AttributeError as e:
                 # Handle version compatibility issues
+                log_event(
+                    "empty_index_persist_fallback",
+                    {
+                        "error": str(e),
+                        "action": "creating_manual_files",
+                    },
+                    level=logging.WARNING,
+                )
                 (storage_dir / "docstore.json").write_text("{}")
                 (storage_dir / "index_store.json").write_text(
                     '{"index_store/data": {}}'
@@ -613,12 +1245,31 @@ class LlamaIndexService:
 
             # Check what files were created
             created_files = []
+            total_size = 0
             if storage_dir.exists():
                 for file_path in storage_dir.rglob("*"):
                     if file_path.is_file():
-                        created_files.append(
-                            f"{file_path.name} ({file_path.stat().st_size} bytes)"
-                        )
+                        file_size = file_path.stat().st_size
+                        total_size += file_size
+                        created_files.append(f"{file_path.name}")
 
-        except Exception:
+            log_event(
+                "empty_index_initialized",
+                {
+                    "storage_dir": str(storage_dir),
+                    "files_created": len(created_files),
+                    "total_size_bytes": total_size,
+                    "file_names": created_files,
+                },
+            )
+
+        except Exception as e:
+            log_event(
+                "empty_index_init_failed",
+                {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
             raise

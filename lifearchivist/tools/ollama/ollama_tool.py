@@ -3,6 +3,7 @@ LLM integration tools using Ollama.
 """
 
 import asyncio
+import logging
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -22,7 +23,7 @@ from lifearchivist.tools.ollama.ollama_utils import (
     prepare_chat_request,
     prepare_generate_request,
 )
-from lifearchivist.utils.logging import track
+from lifearchivist.utils.logging import log_event, track
 
 
 class OllamaTool(BaseTool):
@@ -92,7 +93,13 @@ class OllamaTool(BaseTool):
             idempotent=False,
         )
 
-    @track(operation="ollama_text_generation")
+    @track(
+        operation="ollama_text_generation",
+        include_args=["model", "max_tokens", "temperature", "stream"],
+        include_result=True,
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Generate text using Ollama."""
         prompt = kwargs.get("prompt")
@@ -105,6 +112,29 @@ class OllamaTool(BaseTool):
 
         if not prompt and not messages:
             raise ValueError("Either 'prompt' or 'messages' must be provided")
+
+        # Log generation request with context
+        input_type = "chat" if messages else "prompt"
+        input_length = len(str(messages)) if messages else len(str(prompt))
+
+        log_event(
+            "ollama_generation_started",
+            {
+                "model": model,
+                "input_type": input_type,
+                "input_length": input_length,
+                "prompt_preview": (
+                    str(prompt)[:100] + "..."
+                    if prompt and len(str(prompt)) > 100
+                    else str(prompt) if prompt else None
+                ),
+                "message_count": len(messages) if messages else 0,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "stream": stream,
+                "has_system": bool(system),
+            },
+        )
 
         # Use session-per-request pattern with explicit cleanup configuration
         timeout = aiohttp.ClientTimeout(
@@ -172,18 +202,62 @@ class OllamaTool(BaseTool):
                     )
                     tokens_generated = response_data.get("eval_count", 0)
 
+                # Log successful generation with metrics
+                log_event(
+                    "ollama_generation_completed",
+                    {
+                        "model": model,
+                        "response_length": len(response_text),
+                        "tokens_generated": tokens_generated,
+                        "generation_time_ms": generation_time,
+                        "stream": stream,
+                        "tokens_per_second": (
+                            (tokens_generated * 1000 / generation_time)
+                            if generation_time > 0 and tokens_generated > 0
+                            else 0
+                        ),
+                    },
+                )
+
+                # Log if response is empty or very short (potential issue)
+                if not response_text or len(response_text) < 10:
+                    log_event(
+                        "ollama_short_response",
+                        {
+                            "model": model,
+                            "response_length": len(response_text),
+                            "prompt_length": input_length,
+                            "temperature": temperature,
+                        },
+                        level=logging.WARNING,
+                    )
+
                 return create_success_response(
                     response_text, model, tokens_generated, generation_time
                 )
 
             except Exception as e:
+                log_event(
+                    "ollama_generation_failed",
+                    {
+                        "model": model,
+                        "error_type": type(e).__name__,
+                        "error_message": str(e),
+                        "endpoint": endpoint if "endpoint" in locals() else "unknown",
+                    },
+                    level=logging.ERROR,
+                )
                 return create_error_response(model, e)
             finally:
                 # Small delay to allow any remaining cleanup to complete
                 # This helps prevent "Unclosed client session" warnings on shutdown
                 await asyncio.sleep(0.01)
 
-    @track(operation="ollama_health_check")
+    @track(
+        operation="ollama_health_check",
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def _check_ollama_health(self, session: aiohttp.ClientSession) -> bool:
         """Check if Ollama service is available."""
         try:
@@ -194,8 +268,27 @@ class OllamaTool(BaseTool):
                     data = await response.json()
                     models = extract_models_from_health_response(data)
 
+                    # Log available models for debugging
+                    log_event(
+                        "ollama_models_available",
+                        {
+                            "models": models,
+                            "requested_model": self.settings.llm_model,
+                            "model_available": self.settings.llm_model in models,
+                        },
+                        level=logging.DEBUG,
+                    )
+
                     if self.settings.llm_model not in models:
                         # Try to pull the model
+                        log_event(
+                            "ollama_model_missing",
+                            {
+                                "model": self.settings.llm_model,
+                                "available_models": models,
+                            },
+                            level=logging.WARNING,
+                        )
                         await self._pull_model(session, self.settings.llm_model)
                     return True
                 else:
@@ -203,29 +296,78 @@ class OllamaTool(BaseTool):
                         f"Ollama health check failed: HTTP {response.status}"
                     )
         except Exception as e:
+            log_event(
+                "ollama_health_check_failed",
+                {
+                    "url": self.settings.ollama_url,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
             raise RuntimeError(
                 f"Cannot connect to Ollama at {self.settings.ollama_url}: {e}"
             ) from None
 
-    @track(operation="model_pull")
+    @track(
+        operation="model_pull",
+        include_args=["model_name"],
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def _pull_model(
         self, session: aiohttp.ClientSession, model_name: str
     ) -> bool:
         """Attempt to pull a model if it's not available."""
+        log_event(
+            "ollama_model_pull_started",
+            {
+                "model": model_name,
+            },
+        )
+
         try:
             request_data = create_model_pull_request(model_name)
             async with session.post(
                 f"{self.settings.ollama_url}{MODEL_PULL_ENDPOINT}", json=request_data
             ) as response:
                 if response.status == 200:
+                    log_event(
+                        "ollama_model_pull_succeeded",
+                        {
+                            "model": model_name,
+                        },
+                    )
                     return True
                 else:
+                    log_event(
+                        "ollama_model_pull_failed",
+                        {
+                            "model": model_name,
+                            "status_code": response.status,
+                        },
+                        level=logging.WARNING,
+                    )
                     return False
 
-        except Exception:
+        except Exception as e:
+            log_event(
+                "ollama_model_pull_error",
+                {
+                    "model": model_name,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
             return False
 
-    @track(operation="ollama_single_request")
+    @track(
+        operation="ollama_single_request",
+        include_args=["endpoint"],
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def _single_request(
         self,
         session: aiohttp.ClientSession,
@@ -240,14 +382,46 @@ class OllamaTool(BaseTool):
         ) as response:
             if response.status != 200:
                 error_text = await response.text()
+                # Log failed requests for debugging
+                log_event(
+                    "ollama_request_failed",
+                    {
+                        "endpoint": endpoint,
+                        "status_code": response.status,
+                        "error_text": error_text[:200],  # Truncate long errors
+                        "model": request_data.get("model"),
+                    },
+                    level=logging.ERROR,
+                )
                 raise RuntimeError(
                     f"Ollama request failed: HTTP {response.status} - {error_text}"
                 )
 
             response_data = await response.json()
+
+            # Log slow requests for performance monitoring
+            total_duration_ms = response_data.get("total_duration", 0) // 1_000_000
+            if total_duration_ms > 5000:  # Log if generation takes more than 5 seconds
+                log_event(
+                    "ollama_slow_generation",
+                    {
+                        "endpoint": endpoint,
+                        "model": request_data.get("model"),
+                        "duration_ms": total_duration_ms,
+                        "prompt_eval_count": response_data.get("prompt_eval_count", 0),
+                        "eval_count": response_data.get("eval_count", 0),
+                    },
+                    level=logging.WARNING,
+                )
+
             return dict(response_data)
 
-    @track(operation="ollama_stream_request")
+    @track(
+        operation="ollama_stream_request",
+        include_args=["endpoint"],
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def _stream_request(
         self,
         session: aiohttp.ClientSession,
@@ -265,6 +439,16 @@ class OllamaTool(BaseTool):
         ) as response:
             if response.status != 200:
                 error_text = await response.text()
+                log_event(
+                    "ollama_stream_request_failed",
+                    {
+                        "endpoint": endpoint,
+                        "status_code": response.status,
+                        "error_text": error_text[:200],
+                        "model": request_data.get("model"),
+                    },
+                    level=logging.ERROR,
+                )
                 raise RuntimeError(
                     f"Ollama streaming request failed: HTTP {response.status} - {error_text}"
                 )
@@ -279,9 +463,26 @@ class OllamaTool(BaseTool):
                     if is_done:
                         break
 
+        # Log streaming metrics
+        if chunks_processed > 0:
+            log_event(
+                "ollama_stream_completed",
+                {
+                    "endpoint": endpoint,
+                    "chunks_processed": chunks_processed,
+                    "response_length": len(accumulated_response),
+                    "model": request_data.get("model"),
+                },
+                level=logging.DEBUG,
+            )
+
         return accumulated_response
 
-    @track(operation="ollama_chat_convenience")
+    @track(
+        operation="ollama_chat_convenience",
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def chat(
         self,
         messages: List[Dict[str, str]],
@@ -298,7 +499,11 @@ class OllamaTool(BaseTool):
         )
         return str(result.get("response", ""))
 
-    @track(operation="ollama_generate_convenience")
+    @track(
+        operation="ollama_generate_convenience",
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def generate(
         self,
         prompt: str,

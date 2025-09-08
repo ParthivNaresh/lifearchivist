@@ -351,6 +351,22 @@ def create_development_formatter() -> logging.Formatter:
                 return f"status={status}"
 
             # File processing events
+            elif event == "file_import_started":
+                file_size_mb = data.get("file_size_mb", 0)
+                has_mime_hint = data.get("has_mime_hint", False)
+                has_session = data.get("has_session", False)
+                context_parts = [f"{file_size_mb}MB"]
+                if has_mime_hint:
+                    context_parts.append("with hint")
+                if has_session:
+                    context_parts.append("tracked")
+                return " ".join(context_parts)
+            elif event == "file_analysis_started":
+                file_size_mb = data.get("file_size_mb", 0)
+                return f"{file_size_mb}MB file"
+            elif event == "file_hash_calculated":
+                file_hash = data.get("file_hash", "unknown")
+                return f"hash: {file_hash}"
             elif event == "file_processed":
                 size_bytes = data.get("size_bytes", 0)
                 mime_type = data.get("mime_type", "unknown")
@@ -361,9 +377,6 @@ def create_development_formatter() -> logging.Formatter:
                 else:
                     size_str = f"{size_bytes}B"
                 return f"{size_str} {mime_type}"
-            elif event == "file_analysis_started":
-                file_size_mb = data.get("file_size_mb", 0)
-                return f"{file_size_mb}MB file"
 
             # Vault events
             elif event == "vault_storage_completed":
@@ -384,6 +397,17 @@ def create_development_formatter() -> logging.Formatter:
             elif event == "progress_tracking_completed":
                 session_id = data.get("session_id", "unknown")
                 return f"session: {session_id[:8]}... completed"
+
+            # Tagging events
+            elif event == "tags_applied":
+                tags_count = data.get("tags_count", 0)
+                tags = data.get("tags", [])
+                if tags_count > 5:
+                    return (
+                        f"{tags_count} tags: {', '.join(tags)} + {tags_count - 5} more"
+                    )
+                else:
+                    return f"{tags_count} tags: {', '.join(tags)}"
 
             # Success/completion events
             elif event == "file_import_success":

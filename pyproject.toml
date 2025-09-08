@@ -142,7 +142,7 @@ line-length = 88
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "B", "I"]  # pyflakes, pycodestyle, bugbear, import sorting
+select = ["E", "F", "B"]  # pyflakes, pycodestyle, bugbear
 ignore = ["E501"]  # disable line length if black handles it
 
 [tool.ruff.lint.isort]

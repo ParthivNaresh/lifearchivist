@@ -2,10 +2,11 @@
 Search tool for document retrieval using LlamaIndex.
 """
 
+import logging
 from typing import Any, Dict, List
 
 from lifearchivist.tools.base import BaseTool, ToolMetadata
-from lifearchivist.utils.logging import track
+from lifearchivist.utils.logging import log_event, track
 
 
 class IndexSearchTool(BaseTool):
@@ -88,7 +89,13 @@ class IndexSearchTool(BaseTool):
             idempotent=True,
         )
 
-    @track(operation="index_search")
+    @track(
+        operation="index_search",
+        include_args=["mode", "limit", "offset", "include_content"],
+        include_result=True,
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute document search."""
         query = kwargs.get("query", "").strip()
@@ -104,6 +111,21 @@ class IndexSearchTool(BaseTool):
         if not self.llamaindex_service:
             return self._empty_search_result("Search service not available")
 
+        # Log search request with context
+        log_event(
+            "search_started",
+            {
+                "query": query[:100] + "..." if len(query) > 100 else query,
+                "query_length": len(query),
+                "mode": mode,
+                "limit": limit,
+                "offset": offset,
+                "has_filters": bool(filters),
+                "filter_types": list(filters.keys()) if filters else [],
+                "include_content": include_content,
+            },
+        )
+
         try:
             # Determine search strategy based on mode
             if mode == "semantic":
@@ -118,10 +140,51 @@ class IndexSearchTool(BaseTool):
                 results = await self._hybrid_search(
                     query, limit, offset, filters, include_content
                 )
+
+            # Log search completion with metrics
+            log_event(
+                "search_completed",
+                {
+                    "query_preview": query[:50],
+                    "mode": mode,
+                    "results_count": len(results.get("results", [])),
+                    "total_matches": results.get("total", 0),
+                    "query_time_ms": results.get("query_time_ms", 0),
+                    "has_results": len(results.get("results", [])) > 0,
+                },
+            )
+
+            # Log if no results found (potential issue)
+            if results.get("total", 0) == 0:
+                log_event(
+                    "search_no_results",
+                    {
+                        "query": query,
+                        "mode": mode,
+                        "filters": filters,
+                    },
+                    level=logging.WARNING,
+                )
+
             return results
         except Exception as e:
+            log_event(
+                "search_failed",
+                {
+                    "query_preview": query[:50],
+                    "mode": mode,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
             return self._empty_search_result(f"Search failed: {str(e)}")
 
+    @track(
+        operation="semantic_search",
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def _semantic_search(
         self, query: str, limit: int, offset: int, filters: Dict, include_content: bool
     ) -> Dict[str, Any]:
@@ -138,9 +201,35 @@ class IndexSearchTool(BaseTool):
             similarity_threshold=similarity_threshold,
         )
 
+        # Log retrieval metrics
+        log_event(
+            "semantic_retrieval_completed",
+            {
+                "query_preview": query[:50],
+                "nodes_retrieved": len(retrieved_nodes),
+                "similarity_threshold": similarity_threshold,
+                "top_k": min(limit * 2, 50),
+            },
+            level=logging.DEBUG,
+        )
+
         # Apply metadata filters if provided
+        nodes_before_filter = len(retrieved_nodes)
         if filters:
             retrieved_nodes = self._apply_filters(retrieved_nodes, filters)
+
+            # Log filtering impact
+            if nodes_before_filter != len(retrieved_nodes):
+                log_event(
+                    "search_filters_applied",
+                    {
+                        "nodes_before": nodes_before_filter,
+                        "nodes_after": len(retrieved_nodes),
+                        "filtered_out": nodes_before_filter - len(retrieved_nodes),
+                        "filter_types": list(filters.keys()),
+                    },
+                    level=logging.DEBUG,
+                )
 
         # Convert to search result format
         results = self._convert_nodes_to_search_results(
@@ -153,12 +242,30 @@ class IndexSearchTool(BaseTool):
 
         query_time_ms = (time.time() - start_time) * 1000
 
+        # Log slow searches
+        if query_time_ms > 1000:  # More than 1 second
+            log_event(
+                "slow_semantic_search",
+                {
+                    "query_preview": query[:50],
+                    "query_time_ms": round(query_time_ms, 2),
+                    "total_results": total,
+                    "nodes_processed": len(retrieved_nodes),
+                },
+                level=logging.WARNING,
+            )
+
         return {
             "results": paginated_results,
             "total": total,
             "query_time_ms": round(query_time_ms, 2),
         }
 
+    @track(
+        operation="keyword_search",
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def _keyword_search(
         self, query: str, limit: int, offset: int, filters: Dict, include_content: bool
     ) -> Dict[str, Any]:
@@ -170,6 +277,16 @@ class IndexSearchTool(BaseTool):
         # For keyword search, we'll query documents by metadata and then score by text similarity
         all_docs = await self.llamaindex_service.query_documents_by_metadata(
             filters=filters, limit=200  # Get more for scoring
+        )
+
+        log_event(
+            "keyword_search_docs_retrieved",
+            {
+                "query_preview": query[:50],
+                "docs_retrieved": len(all_docs),
+                "has_filters": bool(filters),
+            },
+            level=logging.DEBUG,
         )
 
         # Score documents based on keyword matching
@@ -218,12 +335,40 @@ class IndexSearchTool(BaseTool):
 
         query_time_ms = (time.time() - start_time) * 1000
 
+        # Log keyword search metrics
+        log_event(
+            "keyword_search_scored",
+            {
+                "query_words": len(query_words),
+                "docs_with_matches": len(keyword_results),
+                "match_rate": len(keyword_results) / len(all_docs) if all_docs else 0,
+            },
+            level=logging.DEBUG,
+        )
+
+        # Log slow searches
+        if query_time_ms > 1000:
+            log_event(
+                "slow_keyword_search",
+                {
+                    "query_preview": query[:50],
+                    "query_time_ms": round(query_time_ms, 2),
+                    "docs_processed": len(all_docs),
+                },
+                level=logging.WARNING,
+            )
+
         return {
             "results": paginated_results,
             "total": total,
             "query_time_ms": round(query_time_ms, 2),
         }
 
+    @track(
+        operation="hybrid_search",
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def _hybrid_search(
         self, query: str, limit: int, offset: int, filters: Dict, include_content: bool
     ) -> Dict[str, Any]:
@@ -244,13 +389,17 @@ class IndexSearchTool(BaseTool):
         combined_results = {}
 
         # Add semantic results with boost
+        semantic_count = 0
         for result in semantic_results["results"]:
             doc_id = result["document_id"]
             result["score"] = result["score"] * 1.2  # Boost semantic scores
             result["match_type"] = "hybrid_semantic"
             combined_results[doc_id] = result
+            semantic_count += 1
 
         # Add keyword results, boosting score if document already exists
+        keyword_count = 0
+        overlap_count = 0
         for result in keyword_results["results"]:
             doc_id = result["document_id"]
             if doc_id in combined_results:
@@ -259,9 +408,23 @@ class IndexSearchTool(BaseTool):
                     combined_results[doc_id]["score"] + result["score"]
                 ) / 2 + 0.1
                 combined_results[doc_id]["match_type"] = "hybrid_both"
+                overlap_count += 1
             else:
                 result["match_type"] = "hybrid_keyword"
                 combined_results[doc_id] = result
+                keyword_count += 1
+
+        # Log hybrid search metrics
+        log_event(
+            "hybrid_search_combined",
+            {
+                "semantic_results": semantic_count,
+                "keyword_results": keyword_count,
+                "overlap_results": overlap_count,
+                "total_unique": len(combined_results),
+            },
+            level=logging.DEBUG,
+        )
 
         # Convert back to list and sort
         final_results = list(combined_results.values())
@@ -273,12 +436,29 @@ class IndexSearchTool(BaseTool):
 
         query_time_ms = (time.time() - start_time) * 1000
 
+        # Log slow searches
+        if query_time_ms > 2000:  # More than 2 seconds for hybrid
+            log_event(
+                "slow_hybrid_search",
+                {
+                    "query_preview": query[:50],
+                    "query_time_ms": round(query_time_ms, 2),
+                    "total_results": total,
+                },
+                level=logging.WARNING,
+            )
+
         return {
             "results": paginated_results,
             "total": total,
             "query_time_ms": round(query_time_ms, 2),
         }
 
+    @track(
+        operation="apply_search_filters",
+        track_performance=False,  # Fast operation
+        frequency="high_frequency",
+    )
     def _apply_filters(self, nodes: List[Dict], filters: Dict) -> List[Dict]:
         """Apply metadata filters to retrieved nodes."""
         if not filters:
@@ -308,6 +488,11 @@ class IndexSearchTool(BaseTool):
 
         return filtered_nodes
 
+    @track(
+        operation="convert_search_results",
+        track_performance=False,
+        frequency="high_frequency",
+    )
     def _convert_nodes_to_search_results(
         self, nodes: List[Dict], query: str, match_type: str, include_content: bool
     ) -> List[Dict]:
@@ -382,6 +567,15 @@ class IndexSearchTool(BaseTool):
 
     def _empty_search_result(self, error_message: str) -> Dict[str, Any]:
         """Return empty search result with error message."""
+        # Log empty results as they may indicate issues
+        log_event(
+            "search_empty_result",
+            {
+                "reason": error_message,
+            },
+            level=logging.DEBUG,
+        )
+
         return {
             "results": [],
             "total": 0,

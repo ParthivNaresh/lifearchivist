@@ -6,8 +6,9 @@ from fastapi import APIRouter
 
 from lifearchivist.config import get_settings
 
-from .routes import documents, search, tags, upload, vault
+from .routes import documents, search
 from .routes import settings as settings_routes
+from .routes import tags, upload, vault
 
 
 def get_api_router() -> APIRouter:
