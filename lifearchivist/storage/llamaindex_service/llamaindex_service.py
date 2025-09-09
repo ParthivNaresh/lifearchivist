@@ -249,9 +249,18 @@ class LlamaIndexService:
             self.index.insert(document)
 
             # Log successful insertion
-            nodes_created = len(
-                self.index.ref_doc_info.get(document_id, {}).get("node_ids", [])
-            )
+            # Get node count from ref_doc_info if available
+            ref_doc_info = self.index.ref_doc_info
+            if hasattr(ref_doc_info, "get") and callable(ref_doc_info.get):
+                doc_info: Any = ref_doc_info.get(document_id, {})
+                nodes_created = (
+                    len(doc_info.get("node_ids", []))
+                    if isinstance(doc_info, dict)
+                    else 0
+                )
+            else:
+                # If ref_doc_info doesn't support get, assume document was inserted with at least 1 node
+                nodes_created = 1
             log_event(
                 "document_indexed",
                 {
@@ -1156,8 +1165,15 @@ class LlamaIndexService:
                 {
                     "documents_cleared": doc_count_before,
                     "files_deleted": cleared_metrics["storage_files_deleted"],
-                    "mb_reclaimed": round(
-                        cleared_metrics["storage_bytes_reclaimed"] / (1024 * 1024), 2
+                    "mb_reclaimed": (
+                        round(
+                            cleared_metrics["storage_bytes_reclaimed"] / (1024 * 1024),
+                            2,
+                        )
+                        if isinstance(
+                            cleared_metrics["storage_bytes_reclaimed"], (int, float)
+                        )
+                        else 0.0
                     ),
                 },
             )

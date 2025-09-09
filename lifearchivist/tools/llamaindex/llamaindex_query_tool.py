@@ -143,7 +143,7 @@ class LlamaIndexQueryTool(BaseTool):
                 },
             )
 
-            return transformed_result
+            return transformed_result  # type: ignore[no-any-return]
 
         except Exception as e:
             log_event(

@@ -9,7 +9,7 @@ import asyncio
 import functools
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union, cast
 
 from .context import get_correlation_id
 from .structured import log_event
@@ -118,11 +118,10 @@ def track(
                 tracker.set_result(result)
                 return result
 
-        # Return appropriate wrapper
         if asyncio.iscoroutinefunction(func):
-            return async_wrapper
+            return cast(F, async_wrapper)
         else:
-            return sync_wrapper
+            return cast(F, sync_wrapper)
 
     return decorator
 
@@ -336,7 +335,7 @@ def _extract_safe_args(
     args: tuple, kwargs: dict, include_spec: Union[bool, List[str]]
 ) -> Dict[str, Any]:
     """Extract safe arguments for logging."""
-    safe_args = {}
+    safe_args: Dict[str, Any] = {}
 
     # Handle include specification
     if include_spec is True:
@@ -381,7 +380,7 @@ def _extract_safe_args(
 
 def _extract_result_info(result: Any) -> Dict[str, Any]:
     """Extract safe information about the result."""
-    result_info = {"result_type": type(result).__name__}
+    result_info: Dict[str, Any] = {"result_type": type(result).__name__}
 
     if isinstance(result, (list, tuple)):
         result_info["result_length"] = len(result)

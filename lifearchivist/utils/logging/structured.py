@@ -124,7 +124,8 @@ def log_event(
         data: Optional structured data
         level: Log level
 
-    Example:
+    Example::
+
         log_event("document_processed", {
             "document_id": "123",
             "processing_time_ms": 1500,
@@ -345,7 +346,7 @@ def create_development_formatter() -> logging.Formatter:
                 return f"{content_length} chars, {metadata_fields} fields"
             elif event == "document_creation_failed":
                 error = data.get("error", "unknown error")
-                return error
+                return str(error)
             elif event == "document_status_updated":
                 status = data.get("status", "unknown")
                 return f"status={status}"

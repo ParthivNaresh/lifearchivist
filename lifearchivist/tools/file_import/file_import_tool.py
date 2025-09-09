@@ -225,7 +225,7 @@ class FileImportTool(BaseTool):
             )
 
         except Exception as e:
-            await self._handle_import_error(e, file_id, display_path, session_id)
+            await self._handle_import_error(e, file_id, display_path, session_id or "")
             return create_error_response(e, display_path)
 
     @track(
@@ -245,7 +245,7 @@ class FileImportTool(BaseTool):
     )
     async def _check_for_duplicate(
         self, file_id: str, file_hash: str
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, Any] | None:
         """Check for duplicate documents in LlamaIndex."""
         # Check LlamaIndex for existing document with this file hash
         existing_docs = await self.llamaindex_service.query_documents_by_metadata(
@@ -253,7 +253,7 @@ class FileImportTool(BaseTool):
         )
 
         if existing_docs:
-            return existing_docs[0]
+            return existing_docs[0]  # type: ignore[no-any-return]
 
         return None
 

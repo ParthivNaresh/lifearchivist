@@ -148,7 +148,7 @@ class Vault:
             - orphaned_bytes_reclaimed: Bytes freed from orphaned files
             - errors: List of error messages for failed deletions
         """
-        cleared_metrics = {
+        cleared_metrics: Dict[str, Any] = {
             "files_deleted": 0,
             "bytes_reclaimed": 0,
             "directories_cleaned": 0,

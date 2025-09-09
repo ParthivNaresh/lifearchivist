@@ -1,4 +1,7 @@
-API Modules
-===========
+lifearchivist
+=============
 
-This section is under construction.
+.. toctree::
+   :maxdepth: 4
+
+   lifearchivist

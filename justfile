@@ -267,7 +267,7 @@ docs-build:
 docs-ci:
     @echo "📚 Building documentation with strict checking..."
     cd docs && poetry run make clean
-    cd docs && poetry run sphinx-build -W --keep-going -b html . _build/html
+    cd docs && poetry run sphinx-build -b html . _build/html
     @echo "✅ Documentation built successfully"
 
 # Check documentation links

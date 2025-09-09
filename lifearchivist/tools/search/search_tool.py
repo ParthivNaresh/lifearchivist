@@ -166,7 +166,7 @@ class IndexSearchTool(BaseTool):
                     level=logging.WARNING,
                 )
 
-            return results
+            return results  # type: ignore[no-any-return]
         except Exception as e:
             log_event(
                 "search_failed",

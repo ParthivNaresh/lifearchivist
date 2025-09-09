@@ -29,9 +29,6 @@ Life Archivist is a personal knowledge management system that helps you organize
    :caption: API Reference
 
    api/modules
-   api/tools
-   api/storage
-   api/server
 
 .. toctree::
    :maxdepth: 2
