@@ -252,6 +252,58 @@ dev: lint-fix test
 ci: lint test
     @echo "✅ All checks passed"
 
+# ─────────────────────────────────────────────���──────────────────────────────────
+# 📚 Documentation
+# ────────────────────────────────────────────────────────────────────────────────
+
+# Build documentation
+docs-build:
+    @echo "📚 Building documentation with Sphinx..."
+    cd docs && poetry run make clean
+    cd docs && poetry run make html
+    @echo "✅ Documentation built at docs/_build/html/index.html"
+
+# Build documentation with strict checking (for CI)
+docs-ci:
+    @echo "📚 Building documentation with strict checking..."
+    cd docs && poetry run make clean
+    cd docs && poetry run sphinx-build -W --keep-going -b html . _build/html
+    @echo "✅ Documentation built successfully"
+
+# Check documentation links
+docs-linkcheck:
+    @echo "🔗 Checking documentation links..."
+    cd docs && poetry run sphinx-build -b linkcheck . _build/linkcheck
+    @echo "�� Link check complete - see docs/_build/linkcheck/output.txt for details"
+
+# Serve documentation locally with auto-reload
+docs-serve:
+    @echo "📚 Starting documentation server with auto-reload..."
+    @echo "📍 Documentation will be available at http://localhost:8001"
+    poetry run sphinx-autobuild docs docs/_build/html --port 8001
+
+# Open documentation in browser
+docs-open:
+    @echo "📚 Opening documentation in browser..."
+    open docs/_build/html/index.html 2>/dev/null || xdg-open docs/_build/html/index.html 2>/dev/null || echo "Please open docs/_build/html/index.html manually"
+
+# Generate API documentation from code
+docs-api:
+    @echo "📚 Generating API documentation..."
+    poetry run sphinx-apidoc -f -o docs/api lifearchivist
+    @echo "✅ API documentation generated in docs/api/"
+
+# Clean documentation build
+docs-clean:
+    @echo "🧹 Cleaning documentation build..."
+    rm -rf docs/_build
+    rm -rf docs/api/*.rst
+    @echo "✅ Documentation cleaned"
+
+# Full documentation workflow: clean, generate API docs, build, and serve
+docs: docs-clean docs-api docs-build docs-open
+    @echo "✅ Documentation ready!"
+
 # ────────────────────────────────────────────────────────────────────────────────
 # 📦 Building & Distribution
 # ────────────────────────────────────────────────────────────────────────────────
@@ -272,6 +324,7 @@ clean:
     rm -rf desktop/build/
     find . -type d -name "__pycache__" -exec rm -rf {} +
     find . -type d -name "*.egg-info" -exec rm -rf {} +
+    rm -rf docs/_build
 
 # ════════════════════════════════════════════════════════════════════════════════
 # 📋 Command Reference
