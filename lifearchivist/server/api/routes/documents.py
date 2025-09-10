@@ -23,7 +23,6 @@ async def list_documents(
             raise HTTPException(
                 status_code=503, detail="LlamaIndex service not available"
             )
-        # Use LlamaIndex service to query documents
         filters = {}
         if status:
             filters["status"] = status
@@ -32,12 +31,9 @@ async def list_documents(
             filters=filters, limit=limit, offset=offset
         )
 
-        # Transform documents to UI-compatible format
         formatted_documents = []
         for doc in raw_documents:
             metadata = doc.get("metadata", {})
-
-            # Extract fields from metadata with fallbacks
             formatted_doc = {
                 "id": doc.get("document_id") or metadata.get("document_id"),
                 "file_hash": metadata.get("file_hash", ""),
@@ -46,9 +42,7 @@ async def list_documents(
                 "size_bytes": metadata.get("size_bytes", 0),
                 "created_at": metadata.get("created_at", ""),
                 "modified_at": metadata.get("modified_at"),
-                "ingested_at": metadata.get(
-                    "created_at", ""
-                ),  # Use created_at as ingested_at
+                "ingested_at": metadata.get("created_at", ""),
                 "status": metadata.get("status", "unknown"),
                 "error_message": metadata.get("error_message"),
                 "word_count": metadata.get("word_count"),
@@ -61,13 +55,14 @@ async def list_documents(
             }
             formatted_documents.append(formatted_doc)
 
-        result = {
+        return {
             "documents": formatted_documents,
             "total": len(formatted_documents),
             "limit": limit,
             "offset": offset,
         }
-        return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from None
 
@@ -152,6 +147,8 @@ async def get_llamaindex_document_analysis(document_id: str):
             raise HTTPException(status_code=404, detail=result["error"])
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from None
 
@@ -169,7 +166,6 @@ async def get_llamaindex_document_chunks(
                 status_code=503, detail="LlamaIndex service not available"
             )
 
-        # Validate pagination parameters
         if limit < 1 or limit > 1000:
             raise HTTPException(
                 status_code=400, detail="Limit must be between 1 and 1000"
@@ -187,6 +183,8 @@ async def get_llamaindex_document_chunks(
             else:
                 raise HTTPException(status_code=500, detail=result["error"])
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from None
 

@@ -1,11 +1,18 @@
 """
 Factory for creating API request objects for testing.
+
+Integrates with DocumentFactory and TestFile to build realistic API payloads
+used by the upload and ingest routes.
 """
 
 import json
 import uuid
+from pathlib import Path
 from typing import Dict, Any, List, Optional, Union
 from io import BytesIO
+
+from .document_factory import DocumentFactory
+from .file.file_factory import TestFile
 
 
 class RequestFactory:
@@ -13,13 +20,13 @@ class RequestFactory:
     
     @classmethod
     def create_ingest_request(
-        self,
+        cls,
         path: str = "/tmp/test_file.txt",
         tags: Optional[List[str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
         session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Create an ingest request payload."""
+        """Create an ingest request payload for POST /api/ingest."""
         return {
             "path": path,
             "tags": tags or [],
@@ -29,7 +36,7 @@ class RequestFactory:
     
     @classmethod
     def create_upload_form_data(
-        self,
+        cls,
         file_content: bytes = b"Test file content",
         filename: str = "test.txt",
         content_type: str = "text/plain",
@@ -37,36 +44,72 @@ class RequestFactory:
         metadata: Optional[Dict[str, Any]] = None,
         session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Create form data for file upload testing."""
+        """Create multipart form data dict for POST /api/upload."""
         return {
             "file": (filename, BytesIO(file_content), content_type),
             "tags": json.dumps(tags or []),
             "metadata": json.dumps(metadata or {}),
             "session_id": session_id,
         }
+
+    @classmethod
+    def create_upload_form_data_from_test_file(
+        cls,
+        test_file: TestFile,
+        *,
+        tags: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create multipart form data from a TestFile using its upload tuple."""
+        upload_tuple = test_file.to_upload_format()  # (filename, bytes, mime)
+        return {
+            "file": upload_tuple,
+            "tags": json.dumps(tags if tags is not None else getattr(test_file, "expected_tags", [])),
+            "metadata": json.dumps(metadata or {"original_filename": test_file.filename}),
+            "session_id": session_id,
+        }
     
     @classmethod
     def create_bulk_ingest_request(
-        self,
-        file_paths: Optional[List[str]] = None,
+        cls,
+        file_paths: Optional[List[Union[str, Path]]] = None,
         folder_path: str = "/tmp/test_folder",
     ) -> Dict[str, Any]:
-        """Create a bulk ingest request payload."""
+        """Create a bulk ingest request payload for POST /api/bulk-ingest."""
         if file_paths is None:
             file_paths = [
                 "/tmp/test_folder/file1.txt",
                 "/tmp/test_folder/file2.pdf",
                 "/tmp/test_folder/file3.docx",
             ]
-        
+        str_paths = [str(p) for p in file_paths]
         return {
-            "file_paths": file_paths,
+            "file_paths": str_paths,
             "folder_path": folder_path,
         }
+
+    @classmethod
+    def create_ingest_request_from_test_file(
+        cls,
+        test_file: TestFile,
+        *,
+        temp_path: Union[str, Path],
+        tags: Optional[List[str]] = None,
+        extra_metadata: Optional[Dict[str, Any]] = None,
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create an ingest request from TestFile via DocumentFactory helper."""
+        body = DocumentFactory.build_ingest_request_from_test_file(
+            test_file, temp_path=str(temp_path), tags=tags, extra_metadata=extra_metadata
+        )
+        if session_id is not None:
+            body["session_id"] = session_id
+        return body
     
     @classmethod
     def create_search_request(
-        self,
+        cls,
         query: str = "test query",
         mode: str = "keyword",
         limit: int = 20,
@@ -74,7 +117,7 @@ class RequestFactory:
         include_content: bool = False,
         filters: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Create a search request payload."""
+        """Create a search request payload for POST /api/search."""
         return {
             "query": query,
             "mode": mode,
@@ -86,7 +129,7 @@ class RequestFactory:
     
     @classmethod
     def create_search_query_params(
-        self,
+        cls,
         q: str = "test query",
         mode: str = "keyword",
         limit: int = 20,
@@ -96,7 +139,7 @@ class RequestFactory:
         status: Optional[str] = None,
         tags: Optional[str] = None,
     ) -> Dict[str, Union[str, int, bool]]:
-        """Create search query parameters for GET requests."""
+        """Create query params for GET /api/search."""
         params = {
             "q": q,
             "mode": mode,
@@ -104,23 +147,23 @@ class RequestFactory:
             "offset": offset,
             "include_content": include_content,
         }
-        
+
         if mime_type:
             params["mime_type"] = mime_type
         if status:
             params["status"] = status
         if tags:
             params["tags"] = tags
-        
+
         return params
     
     @classmethod
     def create_ask_request(
-        self,
+        cls,
         question: str = "What is this document about?",
         context_limit: int = 5,
     ) -> Dict[str, Any]:
-        """Create a Q&A request payload."""
+        """Create a Q&A request payload for POST /api/ask."""
         return {
             "question": question,
             "context_limit": context_limit,
@@ -128,29 +171,29 @@ class RequestFactory:
     
     @classmethod
     def create_documents_query_params(
-        self,
+        cls,
         status: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> Dict[str, Union[str, int]]:
-        """Create documents listing query parameters."""
+        """Create query params for GET /api/documents."""
         params = {
             "limit": limit,
             "offset": offset,
         }
-        
+
         if status:
             params["status"] = status
-        
+
         return params
     
     @classmethod
     def create_document_chunks_query_params(
-        self,
+        cls,
         limit: int = 100,
         offset: int = 0,
     ) -> Dict[str, int]:
-        """Create document chunks query parameters."""
+        """Create query params for GET /api/documents/{id}/llamaindex-chunks."""
         return {
             "limit": limit,
             "offset": offset,
@@ -158,22 +201,22 @@ class RequestFactory:
     
     @classmethod
     def create_document_neighbors_query_params(
-        self,
+        cls,
         top_k: int = 10,
     ) -> Dict[str, int]:
-        """Create document neighbors query parameters."""
+        """Create query params for GET /api/documents/{id}/llamaindex-neighbors."""
         return {
             "top_k": top_k,
         }
     
     @classmethod
     def create_vault_files_query_params(
-        self,
+        cls,
         directory: str = "content",
         limit: int = 100,
         offset: int = 0,
     ) -> Dict[str, Union[str, int]]:
-        """Create vault files query parameters."""
+        """Create query params for GET /api/vault/files."""
         return {
             "directory": directory,
             "limit": limit,
@@ -182,31 +225,31 @@ class RequestFactory:
     
     @classmethod
     def create_websocket_message(
-        self,
+        cls,
         message_type: str = "tool_execute",
         tool: Optional[str] = None,
         params: Optional[Dict[str, Any]] = None,
         message_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Create a WebSocket message for testing."""
+        """Create a WebSocket message for the server's /ws/{session_id} endpoint."""
         if message_id is None:
             message_id = f"msg_{uuid.uuid4().hex[:12]}"
-        
+
         message = {
             "type": message_type,
             "id": message_id,
         }
-        
+
         if tool:
             message["tool"] = tool
         if params:
             message["params"] = params
-        
+
         return message
     
     @classmethod
     def create_agent_query_message(
-        self,
+        cls,
         agent: str = "query_agent",
         query: str = "test query",
         message_id: Optional[str] = None,
@@ -214,7 +257,7 @@ class RequestFactory:
         """Create an agent query WebSocket message."""
         if message_id is None:
             message_id = f"agent_msg_{uuid.uuid4().hex[:12]}"
-        
+
         return {
             "type": "agent_query",
             "id": message_id,

@@ -272,6 +272,7 @@ class Vault:
         total_cleaned = 0
         for base_dir in directories_to_check:
             cleaned = await cleanup_empty_directories(base_dir, preserve_dirs)
+            cleaned = int(cleaned or 0)
             total_cleaned += cleaned
 
         if total_cleaned > 0:

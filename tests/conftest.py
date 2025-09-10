@@ -101,17 +101,28 @@ async def test_llamaindex_service(test_settings: Settings, test_vault: Vault) ->
 
 @pytest.fixture
 def test_progress_manager() -> ProgressManager:
-    """Create a mock ProgressManager for testing."""
+    """Create a mock ProgressManager for testing compatible with awaited methods."""
     from unittest.mock import AsyncMock, MagicMock
-    
-    # ProgressManager requires Redis, so we'll mock it for now
-    # But we need to properly mock async methods
-    mock_manager = MagicMock()
-    
-    # Mock the async get_progress method to return None for any file_id
-    # This simulates the behavior for nonexistent progress records
+
+    # Use a spec to ensure attribute names match ProgressManager
+    mock_manager = MagicMock(spec=ProgressManager)
+
+    # Async methods used across the codebase
+    mock_manager.start_progress = AsyncMock(return_value=None)
+    mock_manager.update_progress = AsyncMock(return_value=None)
+    mock_manager.complete_progress = AsyncMock(return_value=None)
+    mock_manager.error_progress = AsyncMock(return_value=None)
+    mock_manager.cleanup_progress = AsyncMock(return_value=None)
     mock_manager.get_progress = AsyncMock(return_value=None)
-    
+    mock_manager.clear_all_progress = AsyncMock(
+        return_value={
+            "progress_keys_deleted": 0,
+            "session_keys_deleted": 0,
+            "total_keys_deleted": 0,
+            "errors": [],
+        }
+    )
+
     return mock_manager
 
 

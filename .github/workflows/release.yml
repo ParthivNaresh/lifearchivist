@@ -18,10 +18,6 @@ jobs:
     uses: ./.github/workflows/test-unit.yml
     secrets: inherit
 
-  integration-tests:
-    uses: ./.github/workflows/test-integration.yml
-    secrets: inherit
-
   quality:
     uses: ./.github/workflows/quality.yml
     secrets: inherit

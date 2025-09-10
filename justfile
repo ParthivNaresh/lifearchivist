@@ -227,6 +227,14 @@ test:
 test-cov:
     poetry run pytest --cov=lifearchivist --cov-report=html --cov-report=term
 
+# Run unit route tests (tests/routes) only
+test-unit:
+    PYTHONPATH=tests poetry run pytest -vv -ra -s tests/routes
+
+# Run unit route tests (tests/routes) with coverage and generate coverage.xml + htmlcov
+test-unit-coverage:
+    PYTHONPATH=tests poetry run pytest -vv -ra -s tests/routes --cov=lifearchivist --cov-report=xml --cov-report=html
+
 # ────────────────────────────────────────────────────────────────────────────────
 # 🎯 Code Quality
 # ────────────────────────────────────────────────────────────────────────────────

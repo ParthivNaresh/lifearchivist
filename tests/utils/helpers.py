@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable, Union
 from unittest.mock import patch
 
-from ..factories.file_factory import TestFile, TempFileFactory
+from factories.file.file_factory import TestFile
+from factories.file.temp_file_manager import TempFileManager
 
 
 def create_test_files(
@@ -31,7 +32,7 @@ def create_test_files(
     created_paths = []
     
     for test_file in test_files:
-        temp_path = TempFileFactory.create_temp_file(test_file)
+        temp_path = TempFileManager.create_temp_file(test_file)
         created_paths.append(temp_path)
         
         if cleanup_paths is not None:
