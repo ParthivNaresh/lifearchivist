@@ -16,6 +16,8 @@ jobs:
     name: "Documentation"
     uses: ./.github/workflows/docs.yml
     secrets: inherit
+    with:
+      deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
   unit-tests:
     name: "Unit Tests"
