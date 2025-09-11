@@ -59,22 +59,27 @@ def test_vault_path(temp_dir: Path) -> Path:
 
 @pytest.fixture
 def test_settings(test_vault_path: Path, temp_dir: Path) -> Settings:
-    """Create test settings with temporary paths."""
-    # Create temporary llamaindex storage
-    llamaindex_storage = temp_dir / "llamaindex_storage" 
+    """Create isolated test settings and bind them to the global config singleton."""
+    llamaindex_storage = temp_dir / "llamaindex_storage"
     llamaindex_storage.mkdir(parents=True, exist_ok=True)
-    
-    return Settings(
+
+    s = Settings(
         vault_path=test_vault_path,
         lifearch_home=temp_dir,
-        # Disable external dependencies for unit tests
         enable_agents=False,
         enable_websockets=False,
         api_only_mode=True,
-        # Use minimal models for testing
         llm_model="llama3.2:1b",
         embedding_model="all-MiniLM-L6-v2",
     )
+
+    import lifearchivist.config.settings as settings_module
+    prev = getattr(settings_module, "_settings", None)
+    settings_module._settings = s
+    try:
+        yield s
+    finally:
+        settings_module._settings = prev
 
 
 @pytest_asyncio.fixture
