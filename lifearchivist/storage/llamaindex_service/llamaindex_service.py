@@ -127,14 +127,30 @@ class LlamaIndexService:
                     level=logging.WARNING,
                 )
         except FileNotFoundError:
-            # This is expected on first run
+            # This is expected on first run - create a new empty index
             log_event(
                 "llamaindex_not_found",
                 {
                     "storage_dir": str(storage_dir),
-                    "action": "will_create_new",
+                    "action": "creating_new_index",
                 },
                 level=logging.INFO,
+            )
+            # Create new empty index
+            storage_context = StorageContext.from_defaults(
+                vector_store=SimpleVectorStore(),
+                docstore=SimpleDocumentStore(),
+                index_store=SimpleIndexStore(),
+            )
+            self.index = VectorStoreIndex([], storage_context=storage_context)
+            
+            log_event(
+                "llamaindex_created",
+                {
+                    "storage_type": "SimpleVectorStore",
+                    "document_count": 0,
+                    "index_type": "VectorStoreIndex",
+                },
             )
         except Exception as e:
             log_event(

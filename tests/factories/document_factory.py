@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from factories.file.file_factory import TestFile
+from .file.file_factory import TestFile
 
 
 def _now_iso() -> str:

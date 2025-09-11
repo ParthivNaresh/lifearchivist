@@ -1,7 +1,7 @@
 import random
 from datetime import datetime
 
-from factories.file.file_schemas import FileCategory, ContentComplexity
+from .file_schemas import FileCategory, ContentComplexity
 
 
 class ContentGenerator:

@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable, Union
 from unittest.mock import patch
 
-from factories.file.file_factory import TestFile
-from factories.file.temp_file_manager import TempFileManager
+from tests.factories.file.file_factory import TestFile
+from tests.factories.file.temp_file_manager import TempFileManager
 
 
 def create_test_files(

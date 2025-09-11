@@ -1,8 +1,8 @@
 from typing import List
 
 from factories import FileFactory
-from factories.file.file_factory import TestFile
-from factories.file.file_schemas import FileCategory, ContentComplexity, TestScenario
+from .file_factory import TestFile
+from .file_schemas import FileCategory, ContentComplexity, TestScenario
 
 
 class FileFactoryPresets:

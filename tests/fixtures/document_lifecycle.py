@@ -13,10 +13,10 @@ import os
 import pytest
 import pytest_asyncio
 
-from factories.file.temp_file_manager import TempFileManager
+from tests.factories.file.temp_file_manager import TempFileManager
 from lifearchivist.server.mcp_server import MCPServer
-from factories.file.file_factory import FileFactory
-from factories.document_factory import DocumentFactory
+from tests.factories.file.file_factory import FileFactory
+from tests.factories.document_factory import DocumentFactory
 from ..utils.helpers import assert_valid_file_id, wait_for_condition
 
 # ------------------------------------------------------------------

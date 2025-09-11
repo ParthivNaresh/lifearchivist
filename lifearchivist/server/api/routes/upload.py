@@ -146,13 +146,14 @@ async def bulk_ingest_files(request: BulkIngestRequest):
 
                 if result.get("success"):
                     successful_count += 1
-                    file_id = result["result"]["file_id"]
+                    tool_result = result.get("result", {})
+                    file_id = tool_result.get("file_id")
                     results.append(
                         {
                             "file_path": file_path,
                             "success": True,
                             "file_id": file_id,
-                            "status": result["result"]["status"],
+                            "status": tool_result.get("status", "unknown"),
                         }
                     )
                 else:

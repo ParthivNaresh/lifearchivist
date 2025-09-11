@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from factories.file.file_factory import TestFile
+from .file_factory import TestFile
 
 
 class TempFileManager:

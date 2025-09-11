@@ -15,8 +15,8 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field
 
-from factories.file.content_generator import ContentGenerator
-from factories.file.file_schemas import FileCategory, TestScenario, ContentComplexity
+from .content_generator import ContentGenerator
+from .file_schemas import FileCategory, TestScenario, ContentComplexity
 
 
 @dataclass

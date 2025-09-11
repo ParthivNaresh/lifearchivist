@@ -5,10 +5,10 @@ Tests for the /api/bulk-ingest endpoint focusing on endpoint behavior and respon
 import pytest
 from unittest.mock import AsyncMock
 
-from factories.file.file_factory import FileFactory
-from factories.file.temp_file_manager import TempFileManager
-from factories.request_factory import RequestFactory
-from factories.response_factory import ResponseFactory
+from tests.factories.file.file_factory import FileFactory
+from tests.factories.file.temp_file_manager import TempFileManager
+from tests.factories.request_factory import RequestFactory
+from tests.factories.response_factory import ResponseFactory
 
 
 @pytest.mark.asyncio
