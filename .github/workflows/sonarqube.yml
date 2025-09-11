@@ -8,16 +8,6 @@ on:
         required: false
         type: string
         default: "unit-tests-coverage"
-      integration-coverage-artifact:
-        description: "Integration test coverage artifact name"
-        required: false
-        type: string
-        default: "integration-tests-coverage"
-      live-coverage-artifact:
-        description: "Live test coverage artifact name"
-        required: false
-        type: string
-        default: "live-tests-coverage"
 
 jobs:
   sonarcloud:
@@ -33,20 +23,6 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.unit-coverage-artifact }}
-        path: ./
-      continue-on-error: true
-
-    - name: Download integration test coverage
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ inputs.integration-coverage-artifact }}
-        path: ./
-      continue-on-error: true
-
-    - name: Download live test coverage
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ inputs.live-coverage-artifact }}
         path: ./
       continue-on-error: true
 
