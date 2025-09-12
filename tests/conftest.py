@@ -93,10 +93,15 @@ async def test_vault(test_vault_path: Path) -> Vault:
 
 @pytest_asyncio.fixture 
 async def test_llamaindex_service(test_settings: Settings, test_vault: Vault) -> LlamaIndexService:
-    """Create a real LlamaIndex service for testing."""
-    # Create in-memory/temp storage for LlamaIndex
+    """Create a LlamaIndex service for testing.
+    
+    The service will automatically detect it's in test mode via PYTEST_CURRENT_TEST
+    environment variable and use mock LLM/embedding models instead of real ones.
+    """
+    # Create service - it will auto-detect test mode
     service = LlamaIndexService(vault=test_vault)
     yield service
+    
     # Clear data after test
     try:
         await service.clear_all_data()

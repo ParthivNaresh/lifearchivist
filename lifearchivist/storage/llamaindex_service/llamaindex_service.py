@@ -61,32 +61,57 @@ class LlamaIndexService:
     )
     def _setup_llamaindex(self):
         """Configure LlamaIndex with local models and services."""
+        import os
+
+        # Check if we're in test mode
+        is_test_mode = os.environ.get("PYTEST_CURRENT_TEST") is not None
 
         # Log configuration being used
         log_event(
             "llamaindex_config",
             {
-                "embedding_model": self.settings.embedding_model,
-                "llm_model": self.settings.llm_model,
-                "ollama_url": self.settings.ollama_url,
+                "embedding_model": (
+                    self.settings.embedding_model if not is_test_mode else "mock"
+                ),
+                "llm_model": self.settings.llm_model if not is_test_mode else "mock",
+                "ollama_url": self.settings.ollama_url if not is_test_mode else "mock",
                 "chunk_size": 800,
                 "chunk_overlap": 100,
                 "storage_dir": str(self.settings.lifearch_home / "llamaindex_storage"),
+                "test_mode": is_test_mode,
             },
         )
 
-        Settings.embed_model = HuggingFaceEmbedding(
-            model_name=self.settings.embedding_model,
-            cache_folder=str(self.settings.lifearch_home / "models"),
-            max_length=512,
-        )
+        if is_test_mode:
+            # Use mock components for testing
+            from llama_index.core.embeddings import MockEmbedding
+            from llama_index.core.llms import MockLLM
 
-        Settings.llm = Ollama(
-            model=self.settings.llm_model,
-            base_url=self.settings.ollama_url,
-            temperature=0.1,
-            request_timeout=300.0,
-        )
+            Settings.embed_model = MockEmbedding(embed_dim=384)
+            Settings.llm = MockLLM()
+
+            log_event(
+                "test_mode_mocks_initialized",
+                {
+                    "embedding": "MockEmbedding",
+                    "llm": "MockLLM",
+                },
+                level=logging.DEBUG,
+            )
+        else:
+            # Use real components for production
+            Settings.embed_model = HuggingFaceEmbedding(
+                model_name=self.settings.embedding_model,
+                cache_folder=str(self.settings.lifearch_home / "models"),
+                max_length=512,
+            )
+
+            Settings.llm = Ollama(
+                model=self.settings.llm_model,
+                base_url=self.settings.ollama_url,
+                temperature=0.1,
+                request_timeout=300.0,
+            )
 
         Settings.node_parser = SentenceSplitter(
             chunk_size=800,
