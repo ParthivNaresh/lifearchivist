@@ -143,7 +143,7 @@ class LlamaIndexService:
                 index_store=SimpleIndexStore(),
             )
             self.index = VectorStoreIndex([], storage_context=storage_context)
-            
+
             log_event(
                 "llamaindex_created",
                 {
