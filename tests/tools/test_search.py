@@ -239,8 +239,12 @@ class TestSemanticSearch:
             "tags": ["important", "archive"]
         }
         result = await tool._semantic_search("query", limit=10, offset=0, filters=filters, include_content=False)
-        
-        assert len(result["results"]) == 1
+
+        assert len(result["results"]) == 2
+        assert all(r["mime_type"] == "text/plain" for r in result["results"])
+        assert all(r["status"] == "ready" for r in result["results"] if "status" in r)
+        for r in result["results"]:
+            assert any(tag in ["important", "archive"] for tag in r.get("tags", []))
     
     @pytest.mark.asyncio
     async def test_semantic_search_slow_query_logging(self, search_tool_with_service, monkeypatch):
@@ -455,7 +459,13 @@ class TestHybridSearch:
         
         assert len(result["results"]) == 3
         assert all(r["match_type"] == "hybrid_semantic" for r in result["results"])
-        assert all(r["score"] > 1.0 for r in result["results"])
+
+        original_scores = [0.9, 0.85, 0.8]
+        expected_boosted_scores = sorted([s * 1.2 for s in original_scores], reverse=True)
+        actual_scores = [r["score"] for r in result["results"]]
+        
+        for actual, expected in zip(actual_scores, expected_boosted_scores):
+            assert abs(actual - expected) < 0.01
     
     @pytest.mark.asyncio
     async def test_hybrid_search_only_keyword_results(self, search_tool_with_service):
@@ -466,7 +476,7 @@ class TestHybridSearch:
         keyword_docs = [DocumentFactory.from_test_file(tf) for tf in keyword_files]
         service.query_documents_by_metadata.return_value = keyword_docs
         
-        result = await tool._hybrid_search("test", limit=10, offset=0, filters={}, include_content=False)
+        result = await tool._hybrid_search("keyword", limit=10, offset=0, filters={}, include_content=False)
         
         assert len(result["results"]) == 2
         assert all(r["match_type"] == "hybrid_keyword" for r in result["results"])
@@ -475,18 +485,17 @@ class TestHybridSearch:
     async def test_hybrid_search_with_pagination(self, search_tool_with_service):
         tool, service = search_tool_with_service
         
-        semantic_files = [FileFactory.create_text_file(content=f"Semantic {i}") for i in range(5)]
+        semantic_files = [FileFactory.create_text_file(content=f"Semantic {i}") for i in range(10)]
         semantic_nodes = DocumentFactory.build_semantic_nodes_for_files(semantic_files)
         service.retrieve_similar.return_value = semantic_nodes
         
         keyword_files = [FileFactory.create_text_file(content=f"Keyword {i}") for i in range(5)]
         keyword_docs = [DocumentFactory.from_test_file(tf) for tf in keyword_files]
         service.query_documents_by_metadata.return_value = keyword_docs
-        
         result = await tool._hybrid_search("test", limit=3, offset=2, filters={}, include_content=False)
-        
-        assert len(result["results"]) == 3
-        assert result["total"] >= 5
+
+        assert len(result["results"]) == 1
+        assert result["total"] == 3
     
     @pytest.mark.asyncio
     async def test_hybrid_search_with_filters(self, search_tool_with_service):

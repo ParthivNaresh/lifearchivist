@@ -229,11 +229,10 @@ test-cov:
 
 # Run unit route tests (tests/routes) only
 test-unit:
-    PYTHONPATH=tests poetry run pytest -vv -ra -s tests/routes
+    PYTHONPATH=tests poetry run pytest -vv -ra -s tests
 
-# Run unit route tests (tests/routes) with coverage and generate coverage.xml + htmlcov
 test-unit-coverage:
-    PYTHONPATH=tests poetry run pytest -vv -ra -s tests/routes --cov=lifearchivist --cov-report=xml --cov-report=html
+    PYTHONPATH=tests poetry run pytest -vv -ra -s tests --cov=lifearchivist --cov-report=xml --cov-report=html
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🎯 Code Quality
