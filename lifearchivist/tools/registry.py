@@ -7,7 +7,7 @@ from typing import Dict, Optional
 from lifearchivist.tools.date_extract.date_extraction_tool import (
     ContentDateExtractionTool,
 )
-from lifearchivist.tools.extract.extract_tools import ExtractTextTool
+from lifearchivist.tools.extract.extract_tool import ExtractTextTool
 from lifearchivist.tools.file_import.file_import_tool import FileImportTool
 from lifearchivist.tools.llamaindex.llamaindex_query_tool import LlamaIndexQueryTool
 from lifearchivist.tools.ollama.ollama_tool import OllamaTool

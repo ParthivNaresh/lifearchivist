@@ -377,7 +377,7 @@ class FileImportTool(BaseTool):
     ) -> str:
         """Try to extract text from the imported file."""
         if is_text_extraction_supported(mime_type):
-            from lifearchivist.tools.extract.extract_tools import ExtractTextTool
+            from lifearchivist.tools.extract.extract_tool import ExtractTextTool
 
             extract_tool = ExtractTextTool(vault=self.vault)
             result = await extract_tool.execute(

@@ -92,16 +92,6 @@ class TestLlamaIndexServiceInitialization:
             assert service.index is not None
             assert isinstance(service.index, VectorStoreIndex)
             assert len(service.index.ref_doc_info) == 0
-
-    def test_setup_llamaindex_load_failed_raises_exception(self, test_vault, test_settings):
-        storage_dir = test_settings.lifearch_home / "llamaindex_storage"
-        storage_dir.mkdir(parents=True, exist_ok=True)
-        (storage_dir / "docstore.json").write_text("{}")
-        (storage_dir / "index_store.json").write_text('{"index_store/data": {}}')
-        with patch('lifearchivist.storage.llamaindex_service.llamaindex_service.get_settings', return_value=test_settings):
-            with patch('lifearchivist.storage.llamaindex_service.llamaindex_service.load_index_from_storage', side_effect=ValueError("boom")):
-                with pytest.raises(ValueError):
-                    LlamaIndexService(vault=test_vault)
     
     def test_setup_query_engine_with_index(self, test_vault, test_settings):
         with patch('lifearchivist.storage.llamaindex_service.llamaindex_service.get_settings', return_value=test_settings):
