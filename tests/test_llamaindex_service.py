@@ -92,6 +92,14 @@ class TestLlamaIndexServiceInitialization:
             assert service.index is not None
             assert isinstance(service.index, VectorStoreIndex)
             assert len(service.index.ref_doc_info) == 0
+
+    def test_setup_llamaindex_load_failed_raises_exception(self, test_vault, test_settings):
+        storage_dir = test_settings.lifearch_home / "llamaindex_storage"
+        storage_dir.mkdir(parents=True, exist_ok=True)
+        with patch('lifearchivist.storage.llamaindex_service.llamaindex_service.get_settings', return_value=test_settings):
+            with patch('lifearchivist.storage.llamaindex_service.llamaindex_service.StorageContext.from_defaults', side_effect=RuntimeError("boom")):
+                with pytest.raises(RuntimeError):
+                    LlamaIndexService(vault=test_vault)
     
     def test_setup_query_engine_with_index(self, test_vault, test_settings):
         with patch('lifearchivist.storage.llamaindex_service.llamaindex_service.get_settings', return_value=test_settings):
@@ -316,6 +324,17 @@ class TestMetadataOperations:
             merge_mode="update"
         )
         
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_update_metadata_add_documents_exception(self, service_with_documents):
+        service_with_documents._persist_index = AsyncMock()
+        service_with_documents.index.storage_context.docstore.add_documents.side_effect = Exception("update_failed")
+        result = await service_with_documents.update_document_metadata(
+            document_id="doc1",
+            metadata_updates={"tags": ["x"]},
+            merge_mode="update"
+        )
         assert result is False
 
 
