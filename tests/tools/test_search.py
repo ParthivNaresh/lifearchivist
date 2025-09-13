@@ -186,6 +186,82 @@ class TestSemanticSearch:
             top_k=50,
             similarity_threshold=0.3
         )
+    
+    @pytest.mark.asyncio
+    async def test_semantic_search_with_content_inclusion(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        test_file = FileFactory.create_text_file(content="Document with full content")
+        node = DocumentFactory.build_semantic_node_from_test_file(test_file)
+        service.retrieve_similar.return_value = [node]
+        
+        result = await tool._semantic_search("query", limit=10, offset=0, filters={}, include_content=True)
+        
+        assert len(result["results"]) == 1
+        assert result["results"][0]["content"] == "Document with full content"
+    
+    @pytest.mark.asyncio
+    async def test_semantic_search_empty_results(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        service.retrieve_similar.return_value = []
+        
+        result = await tool._semantic_search("query", limit=10, offset=0, filters={}, include_content=False)
+        
+        assert result["results"] == []
+        assert result["total"] == 0
+        assert result["query_time_ms"] >= 0
+    
+    @pytest.mark.asyncio
+    async def test_semantic_search_offset_beyond_results(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        test_files = [FileFactory.create_text_file(content=f"Doc {i}") for i in range(3)]
+        nodes = DocumentFactory.build_semantic_nodes_for_files(test_files)
+        service.retrieve_similar.return_value = nodes
+        
+        result = await tool._semantic_search("query", limit=10, offset=10, filters={}, include_content=False)
+        
+        assert result["results"] == []
+        assert result["total"] == 3
+    
+    @pytest.mark.asyncio
+    async def test_semantic_search_complex_filters(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        test_files = [FileFactory.create_text_file(content=f"Doc {i}") for i in range(5)]
+        nodes = DocumentFactory.build_semantic_nodes_for_files(test_files)
+        for i, node in enumerate(nodes):
+            node["metadata"]["mime_type"] = "text/plain" if i < 3 else "application/pdf"
+            node["metadata"]["status"] = "ready" if i % 2 == 0 else "processing"
+            node["metadata"]["tags"] = ["important"] if i < 2 else ["archive"]
+        service.retrieve_similar.return_value = nodes
+        
+        filters = {
+            "mime_type": "text/plain",
+            "status": "ready",
+            "tags": ["important", "archive"]
+        }
+        result = await tool._semantic_search("query", limit=10, offset=0, filters=filters, include_content=False)
+        
+        assert len(result["results"]) == 1
+    
+    @pytest.mark.asyncio
+    async def test_semantic_search_slow_query_logging(self, search_tool_with_service, monkeypatch):
+        tool, service = search_tool_with_service
+        test_files = [FileFactory.create_text_file(content=f"Doc {i}") for i in range(3)]
+        nodes = DocumentFactory.build_semantic_nodes_for_files(test_files)
+        
+        async def slow_retrieve(*args, **kwargs):
+            await asyncio.sleep(1.1)
+            return nodes
+        
+        service.retrieve_similar = slow_retrieve
+        
+        with patch('lifearchivist.tools.search.search_tool.log_event') as mock_log:
+            result = await tool._semantic_search("query", limit=10, offset=0, filters={}, include_content=False)
+            
+            slow_search_logged = any(
+                call[0][0] == "slow_semantic_search" 
+                for call in mock_log.call_args_list
+            )
+            assert slow_search_logged
 
 
 class TestKeywordSearch:
@@ -338,21 +414,135 @@ class TestHybridSearch:
         
         async def slow_semantic(*args, **kwargs):
             await asyncio.sleep(0.1)
-            return []
+            return {"results": [], "total": 0, "query_time_ms": 100}
         
         async def slow_keyword(*args, **kwargs):
             await asyncio.sleep(0.1)
-            return []
+            return {"results": [], "total": 0, "query_time_ms": 100}
         
-        service.retrieve_similar.side_effect = slow_semantic
-        service.query_documents_by_metadata.side_effect = slow_keyword
+        with patch.object(tool, '_semantic_search', slow_semantic):
+            with patch.object(tool, '_keyword_search', slow_keyword):
+                import time
+                start = time.time()
+                await tool._hybrid_search("test", limit=10, offset=0, filters={}, include_content=False)
+                elapsed = time.time() - start
+                
+                assert elapsed < 0.15
+    
+    @pytest.mark.asyncio
+    async def test_hybrid_search_empty_results(self, search_tool_with_service):
+        tool, service = search_tool_with_service
         
-        import time
-        start = time.time()
-        await tool._hybrid_search("test", limit=10, offset=0, filters={}, include_content=False)
-        elapsed = time.time() - start
+        service.retrieve_similar.return_value = []
+        service.query_documents_by_metadata.return_value = []
         
-        assert elapsed < 0.15
+        result = await tool._hybrid_search("test", limit=10, offset=0, filters={}, include_content=False)
+        
+        assert result["results"] == []
+        assert result["total"] == 0
+        assert result["query_time_ms"] >= 0
+    
+    @pytest.mark.asyncio
+    async def test_hybrid_search_only_semantic_results(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        
+        test_files = [FileFactory.create_text_file(content=f"Semantic {i}") for i in range(3)]
+        semantic_nodes = DocumentFactory.build_semantic_nodes_for_files(test_files)
+        service.retrieve_similar.return_value = semantic_nodes
+        service.query_documents_by_metadata.return_value = []
+        
+        result = await tool._hybrid_search("test", limit=10, offset=0, filters={}, include_content=False)
+        
+        assert len(result["results"]) == 3
+        assert all(r["match_type"] == "hybrid_semantic" for r in result["results"])
+        assert all(r["score"] > 1.0 for r in result["results"])
+    
+    @pytest.mark.asyncio
+    async def test_hybrid_search_only_keyword_results(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        
+        service.retrieve_similar.return_value = []
+        keyword_files = [FileFactory.create_text_file(content=f"Keyword {i}") for i in range(2)]
+        keyword_docs = [DocumentFactory.from_test_file(tf) for tf in keyword_files]
+        service.query_documents_by_metadata.return_value = keyword_docs
+        
+        result = await tool._hybrid_search("test", limit=10, offset=0, filters={}, include_content=False)
+        
+        assert len(result["results"]) == 2
+        assert all(r["match_type"] == "hybrid_keyword" for r in result["results"])
+    
+    @pytest.mark.asyncio
+    async def test_hybrid_search_with_pagination(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        
+        semantic_files = [FileFactory.create_text_file(content=f"Semantic {i}") for i in range(5)]
+        semantic_nodes = DocumentFactory.build_semantic_nodes_for_files(semantic_files)
+        service.retrieve_similar.return_value = semantic_nodes
+        
+        keyword_files = [FileFactory.create_text_file(content=f"Keyword {i}") for i in range(5)]
+        keyword_docs = [DocumentFactory.from_test_file(tf) for tf in keyword_files]
+        service.query_documents_by_metadata.return_value = keyword_docs
+        
+        result = await tool._hybrid_search("test", limit=3, offset=2, filters={}, include_content=False)
+        
+        assert len(result["results"]) == 3
+        assert result["total"] >= 5
+    
+    @pytest.mark.asyncio
+    async def test_hybrid_search_with_filters(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        
+        test_file = FileFactory.create_text_file(content="Filtered content")
+        semantic_node = DocumentFactory.build_semantic_node_from_test_file(test_file)
+        semantic_node["metadata"]["mime_type"] = "text/plain"
+        service.retrieve_similar.return_value = [semantic_node]
+        
+        keyword_doc = DocumentFactory.from_test_file(test_file)
+        keyword_doc["metadata"] = {"mime_type": "text/plain"}
+        service.query_documents_by_metadata.return_value = [keyword_doc]
+        
+        filters = {"mime_type": "text/plain"}
+        result = await tool._hybrid_search("test", limit=10, offset=0, filters=filters, include_content=False)
+        
+        assert len(result["results"]) >= 1
+        assert all(r["mime_type"] == "text/plain" for r in result["results"])
+    
+    @pytest.mark.asyncio
+    async def test_hybrid_search_slow_query_logging(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        
+        async def slow_semantic(*args, **kwargs):
+            await asyncio.sleep(2.1)
+            return {"results": [], "total": 0, "query_time_ms": 2100}
+        
+        async def slow_keyword(*args, **kwargs):
+            await asyncio.sleep(2.1)
+            return {"results": [], "total": 0, "query_time_ms": 2100}
+        
+        with patch.object(tool, '_semantic_search', slow_semantic):
+            with patch.object(tool, '_keyword_search', slow_keyword):
+                with patch('lifearchivist.tools.search.search_tool.log_event') as mock_log:
+                    result = await tool._hybrid_search("test", limit=10, offset=0, filters={}, include_content=False)
+                    
+                    slow_search_logged = any(
+                        call[0][0] == "slow_hybrid_search" 
+                        for call in mock_log.call_args_list
+                    )
+                    assert slow_search_logged
+    
+    @pytest.mark.asyncio
+    async def test_hybrid_search_score_sorting(self, search_tool_with_service):
+        tool, service = search_tool_with_service
+        
+        test_files = [FileFactory.create_text_file(content=f"Doc {i}") for i in range(3)]
+        semantic_nodes = DocumentFactory.build_semantic_nodes_for_files(test_files, start_score=0.9, step=0.2)
+        service.retrieve_similar.return_value = semantic_nodes
+        service.query_documents_by_metadata.return_value = []
+        
+        result = await tool._hybrid_search("test", limit=10, offset=0, filters={}, include_content=False)
+        
+        scores = [r["score"] for r in result["results"]]
+        assert scores == sorted(scores, reverse=True)
 
 
 class TestFilterApplication:
