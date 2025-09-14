@@ -1,14 +1,19 @@
 name: Documentation
 
 on:
-  # Only trigger via workflow_call from ci.yml to avoid duplicate runs
   workflow_call:
+    inputs:
+      deploy:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-docs:
     name: "Build Documentation"
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
     steps:
     - uses: actions/checkout@v4
 
@@ -41,23 +46,24 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: documentation
-        path: docs/build/html/
+        path: docs/_build/html/
 
   deploy-docs:
     name: "Deploy Documentation"
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: inputs.deploy == true
     needs: build-docs
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
     steps:
     - name: Download documentation artifact
       uses: actions/download-artifact@v4
       with:
         name: documentation
-        path: docs/build/html
+        path: docs/_build/html
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/build/html
+        publish_dir: ./docs/_build/html

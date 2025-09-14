@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { HardDrive, Calendar, Hash, Database, Link, AlertCircle, Loader2 } from 'lucide-react';
-import { useCache } from '../hooks/useCache';
+import React, { useState, useCallback, useEffect } from 'react';
+import { HardDrive, Calendar, Hash, Database, Link, AlertCircle, Loader2, Trash2, RefreshCw } from 'lucide-react';
+import { useCache, clearCacheKey } from '../hooks/useCache';
 import axios from 'axios';
 
 interface VaultFile {
@@ -39,6 +39,8 @@ interface VaultResponse {
 
 const VaultPage: React.FC = () => {
   const [selectedDirectory, setSelectedDirectory] = useState<string>('content');
+  const [clearing, setClearing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchVaultInfo = useCallback(async () => {
     const response = await axios.get<VaultInfo>('http://localhost:8000/api/vault/info');
@@ -55,13 +57,13 @@ const VaultPage: React.FC = () => {
   const { data: vaultInfo, refresh: refreshInfo } = useCache(
     'vault-info',
     fetchVaultInfo,
-    5 * 60 * 1000 // 5 minute cache
+    30 * 1000 // 30 second cache - more responsive
   );
 
   const { data: vaultFiles, loading, error, refresh } = useCache(
     `vault-files-${selectedDirectory}`,
     fetchVaultFiles,
-    3 * 60 * 1000 // 3 minute cache
+    30 * 1000 // 30 second cache - more responsive
   );
 
   const formatFileSize = (bytes: number): string => {
@@ -75,6 +77,61 @@ const VaultPage: React.FC = () => {
   const formatDate = (timestamp: number): string => {
     return new Date(timestamp * 1000).toLocaleString();
   };
+
+  const manualRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Clear caches and refresh
+      clearCacheKey('vault-info');
+      clearCacheKey(`vault-files-${selectedDirectory}`);
+      await Promise.all([refreshInfo(), refresh()]);
+    } catch (err) {
+      console.error('Failed to refresh vault data:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const clearVault = async () => {
+    if (!confirm('Are you sure you want to clear the entire vault? This will permanently delete all files and their associated document records. This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setClearing(true);
+      
+      // Clear all data (vault files + document records)
+      await axios.delete('http://localhost:8000/api/documents');
+      
+      // Clear all caches
+      clearCacheKey('vault-info');
+      clearCacheKey(`vault-files-${selectedDirectory}`);
+      clearCacheKey('documents-all');
+      
+      // Refresh data
+      await refreshInfo();
+      await refresh();
+      
+      console.log('✅ Vault cleared successfully');
+    } catch (err) {
+      console.error('Failed to clear vault:', err);
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  // Auto-refresh when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, refresh data
+        manualRefresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [selectedDirectory]);
 
   const getDirectoryIcon = (directory: string) => {
     switch (directory) {
@@ -123,10 +180,32 @@ const VaultPage: React.FC = () => {
               Low-level content-addressed file storage
             </p>
           </div>
+          
+          <div className="flex items-center space-x-3">
+            {/* Manual Refresh Button */}
+            <button
+              onClick={manualRefresh}
+              disabled={refreshing || loading}
+              className="flex items-center space-x-2 px-3 py-2 border border-input rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
+
+            {/* Clear Vault Button */}
+            <button
+              onClick={clearVault}
+              disabled={clearing || !vaultInfo || Object.values(vaultInfo.directories || {}).every(dir => dir.file_count === 0)}
+              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>{clearing ? 'Clearing...' : 'Clear Vault'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Vault Summary */}
-        {vaultInfo && (
+        {vaultInfo && vaultInfo.directories && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {Object.entries(vaultInfo.directories).map(([dirName, stats]) => (
               <div

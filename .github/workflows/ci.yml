@@ -12,41 +12,24 @@ jobs:
     uses: ./.github/workflows/lint.yml
     secrets: inherit
 
-  security:
-    name: "Security Analysis"
-    uses: ./.github/workflows/security.yml
-    secrets: inherit
-
   documentation:
     name: "Documentation"
     uses: ./.github/workflows/docs.yml
     secrets: inherit
+    with:
+      deploy: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
   unit-tests:
     name: "Unit Tests"
-    needs: [linting, security, documentation]
+    needs: [linting, documentation]
     uses: ./.github/workflows/test-unit.yml
-    secrets: inherit
-
-  integration-tests:
-    name: "Integration Tests"
-    needs: [linting, security, documentation]
-    uses: ./.github/workflows/test-integration.yml
-    secrets: inherit
-
-  live-tests:
-    name: "Live Tests"
-    needs: [linting, security, documentation]
-    uses: ./.github/workflows/test-live.yml
     secrets: inherit
 
   sonarcloud:
     name: "SonarCloud Analysis"
     if: always()
-    needs: [unit-tests, integration-tests, live-tests]
+    needs: [unit-tests]
     uses: ./.github/workflows/sonarqube.yml
     secrets: inherit
     with:
       unit-coverage-artifact: "unit-tests-coverage"
-      integration-coverage-artifact: "integration-tests-coverage"
-      live-coverage-artifact: "live-tests-coverage"

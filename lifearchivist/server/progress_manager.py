@@ -3,15 +3,12 @@ Progress tracking system for upload and processing operations.
 """
 
 import json
-import logging
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any, Dict, Optional
 
 import redis
-
-logger = logging.getLogger(__name__)
 
 
 class ProcessingStage(Enum):
@@ -62,9 +59,7 @@ class ProgressManager:
         # Test Redis connection
         try:
             self.redis_client.ping()
-            logger.info("Redis connection established for progress tracking")
-        except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+        except Exception:
             raise
 
     def _get_progress_key(self, file_id: str) -> str:
@@ -97,11 +92,8 @@ class ProgressManager:
 
             await self._store_progress(initial_update)
             await self._broadcast_progress(initial_update)
-
-            logger.info(f"Started progress tracking for file {file_id}")
-
         except Exception as e:
-            logger.error(f"Failed to start progress tracking for {file_id}: {e}")
+            raise e
 
     async def update_progress(
         self,
@@ -129,13 +121,8 @@ class ProgressManager:
 
             await self._store_progress(update)
             await self._broadcast_progress(update)
-
-            logger.debug(
-                f"Updated progress for {file_id}: {stage.stage_id} - {cumulative_progress:.1f}%"
-            )
-
         except Exception as e:
-            logger.error(f"Failed to update progress for {file_id}: {e}")
+            raise e
 
     async def complete_progress(
         self, file_id: str, metadata: Optional[Dict[str, Any]] = None
@@ -153,11 +140,8 @@ class ProgressManager:
 
             await self._store_progress(completion_update)
             await self._broadcast_progress(completion_update)
-
-            logger.info(f"Completed progress tracking for file {file_id}")
-
         except Exception as e:
-            logger.error(f"Failed to complete progress for {file_id}: {e}")
+            raise e
 
     async def error_progress(
         self, file_id: str, error_message: str, stage: ProcessingStage
@@ -175,11 +159,8 @@ class ProgressManager:
 
             await self._store_progress(error_update)
             await self._broadcast_progress(error_update)
-
-            logger.warning(f"Error in progress tracking for {file_id}: {error_message}")
-
         except Exception as e:
-            logger.error(f"Failed to record error progress for {file_id}: {e}")
+            raise e
 
     async def get_progress(self, file_id: str) -> Optional[ProgressUpdate]:
         """Get current progress for a file."""
@@ -196,8 +177,7 @@ class ProgressManager:
 
             return ProgressUpdate(**data)
 
-        except Exception as e:
-            logger.error(f"Failed to get progress for {file_id}: {e}")
+        except Exception:
             return None
 
     async def cleanup_progress(self, file_id: str) -> None:
@@ -206,15 +186,11 @@ class ProgressManager:
             self.redis_client.delete(
                 self._get_progress_key(file_id), self._get_session_key(file_id)
             )
-            logger.debug(f"Cleaned up progress data for {file_id}")
-
         except Exception as e:
-            logger.error(f"Failed to cleanup progress for {file_id}: {e}")
+            raise e
 
     async def clear_all_progress(self) -> Dict[str, Any]:
         """Clear all progress tracking data from Redis."""
-        logger.info("Clearing all progress tracking data from Redis")
-
         cleared_metrics = {
             "progress_keys_deleted": 0,
             "session_keys_deleted": 0,
@@ -234,13 +210,10 @@ class ProgressManager:
             if progress_keys:
                 deleted_progress = self.redis_client.delete(*progress_keys)
                 cleared_metrics["progress_keys_deleted"] = deleted_progress
-                logger.info(f"Deleted {deleted_progress} progress keys")
-
             # Delete session keys
             if session_keys:
                 deleted_sessions = self.redis_client.delete(*session_keys)
                 cleared_metrics["session_keys_deleted"] = deleted_sessions
-                logger.info(f"Deleted {deleted_sessions} session keys")
 
             progress_deleted = cleared_metrics.get("progress_keys_deleted", 0)
             session_deleted = cleared_metrics.get("session_keys_deleted", 0)
@@ -250,15 +223,10 @@ class ProgressManager:
             session_count = session_deleted if isinstance(session_deleted, int) else 0
             total_deleted = progress_count + session_count
             cleared_metrics["total_keys_deleted"] = total_deleted
-
-            logger.info(
-                f"Progress data clearing completed: {total_deleted} total keys deleted"
-            )
             return cleared_metrics
 
         except Exception as e:
             error_msg = f"Failed to clear progress data: {e}"
-            logger.error(error_msg)
             if isinstance(cleared_metrics["errors"], list):
                 cleared_metrics["errors"].append(error_msg)
             return cleared_metrics
@@ -304,14 +272,9 @@ class ProgressManager:
 
             if session_id:
                 message = {"type": "upload_progress", "data": update.to_dict()}
-
                 await self.session_manager.send_to_session(session_id, message)
-                logger.debug(
-                    f"Broadcasted progress update for {update.file_id} to session {session_id}"
-                )
-
         except Exception as e:
-            logger.error(f"Failed to broadcast progress update: {e}")
+            raise e
 
 
 class ProgressContext:

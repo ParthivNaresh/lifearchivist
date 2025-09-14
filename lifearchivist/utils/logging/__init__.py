@@ -1,20 +1,29 @@
 """
-Professional logging infrastructure for Life Archivist.
+Next-generation logging infrastructure for Life Archivist.
 
-Provides decorators, context managers, and structured logging utilities
-for production-grade observability and debugging.
+Simplified, high-performance logging with intelligent sampling and
+single decorator that handles all use cases.
 """
 
-from .context import get_correlation_id, log_context
-from .decorators import log_exceptions, log_execution_time, log_method
+from .context import get_correlation_id, set_correlation_id
+from .smart_logger import (
+    log_operation_error,
+    log_operation_start,
+    log_operation_success,
+    track,
+)
 from .structured import StructuredLogger, log_event
 
 __all__ = [
-    "log_context",
-    "get_correlation_id",
-    "log_execution_time",
-    "log_exceptions",
-    "log_method",
+    # Primary API
+    "track",
     "log_event",
+    "get_correlation_id",
+    "set_correlation_id",
+    # Manual logging helpers
+    "log_operation_start",
+    "log_operation_success",
+    "log_operation_error",
+    # Advanced usage
     "StructuredLogger",
 ]

@@ -8,15 +8,118 @@ These fixtures solve the critical testing gap where routes need pre-existing pro
 documents to function properly.
 """
 
-import asyncio
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Tuple, Optional, Callable
+import os
 import pytest
 import pytest_asyncio
 
+from tests.factories.file.temp_file_manager import TempFileManager
 from lifearchivist.server.mcp_server import MCPServer
-from ..factories.file_factory import FileFactory, TestFile, TempFileFactory
-from ..utils.helpers import extract_file_id, assert_valid_file_id, wait_for_condition
+from tests.factories.file.file_factory import FileFactory
+from tests.factories.document_factory import DocumentFactory
+from ..utils.helpers import assert_valid_file_id, wait_for_condition
+
+# ------------------------------------------------------------------
+# Configuration: timeouts for readiness checks (overridable via env)
+# ------------------------------------------------------------------
+DEFAULT_TIMEOUT_SINGLE = float(os.getenv("TEST_TIMEOUT_SINGLE", "10.0"))
+DEFAULT_TIMEOUT_BATCH = float(os.getenv("TEST_TIMEOUT_BATCH", "15.0"))
+DEFAULT_TIMEOUT_QUICK = float(os.getenv("TEST_TIMEOUT_QUICK", "5.0"))
+
+
+# ------------------------------------------------------------------
+# Internal helpers to ingest files via the server and wait for readiness
+# ------------------------------------------------------------------
+async def ingest_and_wait_ready(
+    server: MCPServer,
+    test_file,
+    *,
+    extra_metadata: Optional[Dict[str, Any]] = None,
+    timeout: float = DEFAULT_TIMEOUT_SINGLE,
+    tfm: Optional[TempFileManager] = None,
+) -> Dict[str, Any]:
+    """Ingest a single TestFile and wait until it is ready in the index.
+
+    Returns a standardized dict with essential fields for assertions.
+    """
+    # Manage temp file lifecycle internally if not provided
+    if tfm is None:
+        async with _TempFileManagerAsyncContext() as ctx:
+            return await _ingest_with_manager(server, test_file, extra_metadata, timeout, ctx.tfm)
+    else:
+        return await _ingest_with_manager(server, test_file, extra_metadata, timeout, tfm)
+
+
+async def _ingest_with_manager(
+    server: MCPServer,
+    test_file,
+    extra_metadata: Optional[Dict[str, Any]],
+    timeout: float,
+    tfm: TempFileManager,
+) -> Dict[str, Any]:
+    temp_path = tfm.create_temp_file(test_file)
+    import_params = DocumentFactory.build_ingest_request_from_test_file(
+        test_file, temp_path=str(temp_path), extra_metadata=extra_metadata or {}
+    )
+    result = await server.execute_tool("file.import", import_params)
+    assert result["success"], f"Document processing failed: {result.get('error')}"
+
+    file_id = result["result"]["file_id"]
+    assert_valid_file_id(file_id)
+
+    async def check_ready():
+        return await _check_document_ready(server, file_id)
+
+    await wait_for_condition(
+        check_ready,
+        timeout=timeout,
+        error_message=f"Document {file_id} not ready within timeout",
+    )
+
+    return {
+        "file_id": file_id,
+        "filename": test_file.filename,
+        "hash": test_file.hash,
+        "size": test_file.size,
+        "mime_type": test_file.mime_type,
+        "status": "ready",
+        "metadata": result["result"],
+    }
+
+
+async def ingest_files(
+    server: MCPServer,
+    test_files: List,
+    *,
+    timeout_each: float = DEFAULT_TIMEOUT_BATCH,
+    extra_metadata_provider: Optional[Callable[[Any], Optional[Dict[str, Any]]]] = None,
+) -> List[Dict[str, Any]]:
+    """Ingest a batch of TestFiles with a shared TempFileManager and wait for readiness."""
+    results: List[Dict[str, Any]] = []
+    with TempFileManager() as tfm:
+        for tf in test_files:
+            extra = extra_metadata_provider(tf) if extra_metadata_provider else None
+            doc_info = await ingest_and_wait_ready(
+                server, tf, extra_metadata=extra, timeout=timeout_each, tfm=tfm
+            )
+            results.append(doc_info)
+    return results
+
+
+class _TempFileManagerAsyncContext:
+    """Async-friendly wrapper for TempFileManager to use with 'async with'."""
+
+    def __init__(self):
+        self.tfm: Optional[TempFileManager] = None
+
+    async def __aenter__(self):
+        self.tfm = TempFileManager()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        if self.tfm is not None:
+            self.tfm.cleanup()
+        self.tfm = None
 
 
 @pytest_asyncio.fixture
@@ -42,55 +145,20 @@ async def single_processed_document(test_server: MCPServer) -> Dict[str, Any]:
     to generate meaningful search results and answer relevant questions.
     """
     
-    # Create temporary file
+    # Create test file
     test_file = FileFactory.create_text_file(
         content=test_content.strip(),
         filename="test_document.txt",
-        metadata={"category": "test", "source": "fixture"}
+        metadata={"category": "test", "source": "fixture"},
     )
-    
-    temp_path = TempFileFactory.create_temp_file(test_file)
-    
-    try:
-        # Process through the complete pipeline
-        result = await test_server.execute_tool(
-            "file.import", 
-            {
-                "path": str(temp_path),
-                "metadata": {"original_filename": test_file.filename}
-            }
-        )
-        
-        assert result["success"], f"Document processing failed: {result.get('error')}"
-        
-        file_id = result["result"]["file_id"]
-        assert_valid_file_id(file_id)
-        
-        # Wait for document to be fully processed and ready
-        async def check_ready():
-            return await _check_document_ready(test_server, file_id)
-        
-        await wait_for_condition(
-            check_ready,
-            timeout=10.0,
-            error_message=f"Document {file_id} not ready within timeout"
-        )
-        
-        return {
-            "file_id": file_id,
-            "content": test_content.strip(),
-            "filename": test_file.filename,
-            "hash": test_file.hash,
-            "size": test_file.size,
-            "mime_type": test_file.mime_type,
-            "status": "ready",
-            "metadata": result["result"]
-        }
-        
-    finally:
-        # Cleanup temp file
-        if temp_path.exists():
-            temp_path.unlink()
+
+    doc_info = await ingest_and_wait_ready(
+        test_server, test_file, timeout=DEFAULT_TIMEOUT_SINGLE
+    )
+    return {
+        **doc_info,
+        "content": test_content.strip(),
+    }
 
 
 @pytest_asyncio.fixture
@@ -161,71 +229,29 @@ async def multiple_processed_documents(test_server: MCPServer) -> List[Dict[str,
         }
     ]
     
-    processed_docs = []
-    temp_paths = []
-    
-    try:
-        # Process each document through the pipeline
-        for doc_config in test_documents:
-            # Create test file
-            test_file = FileFactory.create_text_file(
-                content=doc_config["content"].strip(),
-                filename=doc_config["filename"],
-                metadata={"category": doc_config["category"], "source": "fixture_batch"}
+    # Build files list
+    files: List = []
+    for cfg in test_documents:
+        files.append(
+            FileFactory.create_text_file(
+                content=cfg["content"].strip(),
+                filename=cfg["filename"],
+                metadata={"category": cfg["category"], "source": "fixture_batch"},
             )
-            
-            temp_path = TempFileFactory.create_temp_file(test_file)
-            temp_paths.append(temp_path)
-            
-            # Process document
-            result = await test_server.execute_tool(
-                "file.import",
-                {
-                    "path": str(temp_path),
-                    "metadata": {
-                        "original_filename": test_file.filename,
-                        "category": doc_config["category"]
-                    }
-                }
-            )
-            
-            assert result["success"], f"Document processing failed: {result.get('error')}"
-            
-            file_id = result["result"]["file_id"]
-            assert_valid_file_id(file_id)
-            
-            processed_docs.append({
-                "file_id": file_id,
-                "content": doc_config["content"].strip(),
-                "filename": test_file.filename,
-                "category": doc_config["category"],
-                "hash": test_file.hash,
-                "size": test_file.size,
-                "mime_type": test_file.mime_type,
-                "status": "ready",
-                "metadata": result["result"]
-            })
-        
-        # Wait for all documents to be ready
-        for doc in processed_docs:
-            file_id = doc["file_id"]
-            
-            async def check_doc_ready():
-                return await _check_document_ready(test_server, file_id)
-            
-            await wait_for_condition(
-                check_doc_ready,
-                timeout=15.0,
-                error_message=f"Document {file_id} not ready within timeout"
-            )
-        
-        return processed_docs
-        
-    finally:
-        # Cleanup temp files
-        for temp_path in temp_paths:
-            if temp_path.exists():
-                temp_path.unlink()
+        )
+
+    def _extra(tf) -> Dict[str, Any]:
+        # category provided in file metadata; also surface it at ingest
+        return {"category": tf.metadata.get("category")}
+
+    processed = await ingest_files(
+        test_server, files, timeout_each=DEFAULT_TIMEOUT_BATCH, extra_metadata_provider=_extra
+    )
+
+    # Attach plain content for convenience in assertions
+    for p, cfg in zip(processed, test_documents):
+        p["content"] = cfg["content"].strip()
+    return processed
 
 
 @pytest_asyncio.fixture
@@ -317,66 +343,35 @@ async def domain_specific_documents(test_server: MCPServer) -> Dict[str, List[Di
         ]
     }
     
-    processed_domains = {}
-    all_temp_paths = []
-    
-    try:
-        for domain_name, docs in domains.items():
-            processed_docs = []
-            
-            for doc_config in docs:
-                # Create and process document
-                test_file = FileFactory.create_text_file(
-                    content=doc_config["content"],
-                    filename=doc_config["filename"],
-                    metadata={"domain": domain_name, "source": "domain_fixture"}
+    processed_domains: Dict[str, List[Dict[str, Any]]] = {}
+
+    for domain_name, docs in domains.items():
+        files_for_domain: List = []
+        for cfg in docs:
+            files_for_domain.append(
+                FileFactory.create_text_file(
+                    content=cfg["content"],
+                    filename=cfg["filename"],
+                    metadata={"domain": domain_name, "source": "domain_fixture"},
                 )
-                
-                temp_path = TempFileFactory.create_temp_file(test_file)
-                all_temp_paths.append(temp_path)
-                
-                result = await test_server.execute_tool(
-                    "file.import",
-                    {
-                        "path": str(temp_path),
-                        "metadata": {
-                            "original_filename": test_file.filename,
-                            "domain": domain_name
-                        }
-                    }
-                )
-                
-                assert result["success"], f"Domain document processing failed: {result.get('error')}"
-                
-                file_id = result["result"]["file_id"]
-                
-                # Wait for processing
-                async def check_domain_doc_ready():
-                    return await _check_document_ready(test_server, file_id)
-                
-                await wait_for_condition(
-                    check_domain_doc_ready,
-                    timeout=10.0,
-                    error_message=f"Domain document {file_id} not ready"
-                )
-                
-                processed_docs.append({
-                    "file_id": file_id,
-                    "content": doc_config["content"],
-                    "filename": test_file.filename,
-                    "domain": domain_name,
-                    "metadata": result["result"]
-                })
-            
-            processed_domains[domain_name] = processed_docs
-        
-        return processed_domains
-        
-    finally:
-        # Cleanup temp files
-        for temp_path in all_temp_paths:
-            if temp_path.exists():
-                temp_path.unlink()
+            )
+
+        def _extra(tf) -> Dict[str, Any]:
+            return {"domain": domain_name}
+
+        processed = await ingest_files(
+            test_server,
+            files_for_domain,
+            timeout_each=DEFAULT_TIMEOUT_SINGLE,
+            extra_metadata_provider=_extra,
+        )
+
+        # Attach content and group by domain
+        for p, cfg in zip(processed, docs):
+            p["content"] = cfg["content"]
+        processed_domains[domain_name] = processed
+
+    return processed_domains
 
 
 # Helper functions
@@ -386,7 +381,7 @@ async def _check_document_ready(server: MCPServer, file_id: str) -> bool:
     try:
         # Check LlamaIndex for document
         docs = await server.llamaindex_service.query_documents_by_metadata(
-            filters={"file_id": file_id}, limit=1
+            filters={"document_id": file_id}, limit=1
         )
         
         if not docs:
@@ -428,37 +423,11 @@ async def quick_test_document(test_server: MCPServer) -> str:
     """
     content = "Quick test document for simple route testing."
     
-    test_file = FileFactory.create_text_file(
-        content=content,
-        filename="quick_test.txt"
+    test_file = FileFactory.create_text_file(content=content, filename="quick_test.txt")
+    doc_info = await ingest_and_wait_ready(
+        test_server, test_file, timeout=DEFAULT_TIMEOUT_QUICK
     )
-    
-    temp_path = TempFileFactory.create_temp_file(test_file)
-    
-    try:
-        result = await test_server.execute_tool(
-            "file.import",
-            {"path": str(temp_path)}
-        )
-        
-        assert result["success"]
-        file_id = result["result"]["file_id"]
-        
-        # Wait for ready status
-        async def check_quick_doc_ready():
-            return await _check_document_ready(test_server, file_id)
-        
-        await wait_for_condition(
-            check_quick_doc_ready,
-            timeout=5.0,
-            error_message="Quick document not ready"
-        )
-        
-        return file_id
-        
-    finally:
-        if temp_path.exists():
-            temp_path.unlink()
+    return doc_info["file_id"]
 
 
 # Convenience fixtures for common testing scenarios

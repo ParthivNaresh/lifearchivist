@@ -5,8 +5,6 @@ Date extraction utilities and constants for document date parsing.
 from datetime import datetime
 from typing import Optional
 
-from lifearchivist.utils.logging import log_event
-
 SUPPORTED_DATE_FORMATS = [
     "%Y-%m-%d",  # 2024-01-15 (ISO format - preferred by LLM)
     "%B %d, %Y",  # January 15, 2024
@@ -52,7 +50,9 @@ EXAMPLES:
 - "Issued: February 15, 2022" → date: "2022-02-15"
 - "Lab Results - Date: 01/28/2022" → date: "2022-01-28"
 
+### VERY IMPORTANT
 Return ONLY ONE DATE - the primary document creation/issue date. Do this without any additional commentary.
+Don't include any other output text besides the date.
 
 DATE OUTPUT:"""
 
@@ -85,22 +85,9 @@ def parse_date_string(date_str: str) -> Optional[datetime]:
     for fmt in SUPPORTED_DATE_FORMATS:
         try:
             parsed_date = datetime.strptime(date_str, fmt)
-            log_event(
-                "date_parsing_successful",
-                {
-                    "input_date": date_str,
-                    "format_used": fmt,
-                    "parsed_date": parsed_date.isoformat(),
-                },
-            )
             return parsed_date
         except ValueError:
             continue
-
-    log_event(
-        "date_parsing_failed",
-        {"input_date": date_str, "formats_attempted": len(SUPPORTED_DATE_FORMATS)},
-    )
     return None
 
 
@@ -122,15 +109,5 @@ def truncate_text_for_llm(
         return text
 
     truncated_text = text[:max_chars] + "..."
-
-    log_event(
-        "text_truncated_for_llm",
-        {
-            "document_id": document_id,
-            "original_length": len(text),
-            "truncated_length": len(truncated_text),
-            "max_chars": max_chars,
-        },
-    )
 
     return truncated_text

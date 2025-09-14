@@ -2,7 +2,6 @@
 Content date extraction tool for extracting dates from document text using LLM.
 """
 
-import logging
 from typing import Any, Dict
 
 from lifearchivist.schemas.tool_schemas import (
@@ -16,10 +15,7 @@ from lifearchivist.tools.date_extract.date_extraction_utils import (
     truncate_text_for_llm,
 )
 from lifearchivist.tools.ollama.ollama_tool import OllamaTool
-from lifearchivist.utils.logging import log_context, log_event, log_method
-from lifearchivist.utils.logging.structured import MetricsCollector
-
-logger = logging.getLogger(__name__)
+from lifearchivist.utils.logging import log_event, track
 
 
 class ContentDateExtractionTool(BaseTool):
@@ -41,24 +37,38 @@ class ContentDateExtractionTool(BaseTool):
             idempotent=True,
         )
 
-    @log_method(
-        operation_name="llm_date_extraction", include_args=True, include_result=True
+    @track(
+        operation="llm_date_extraction",
+        include_args=["document_id"],
+        track_performance=True,
+        frequency="medium_frequency",
     )
     async def extract_date_from_text(self, text: str, document_id: str) -> str:
         """Extract dates from text using LLM analysis."""
         # Truncate text if too long to avoid token limits
+        original_length = len(text)
         text = truncate_text_for_llm(text, max_chars=10000, document_id=document_id)
+
+        if len(text) < original_length:
+            log_event(
+                "text_truncated_for_llm",
+                {
+                    "document_id": document_id,
+                    "original_length": original_length,
+                    "truncated_length": len(text),
+                    "truncation_ratio": len(text) / original_length,
+                },
+            )
 
         # Create prompt and call LLM using direct tool usage
         prompt = create_date_extraction_prompt(text)
-        prompt_length = len(prompt)
 
         log_event(
-            "llm_date_extraction_started",
+            "llm_prompt_created",
             {
                 "document_id": document_id,
                 "text_length": len(text),
-                "prompt_length": prompt_length,
+                "prompt_length": len(prompt),
             },
         )
 
@@ -69,51 +79,40 @@ class ContentDateExtractionTool(BaseTool):
             max_tokens=1000,
         )
 
+        # Log the raw LLM response for debugging
         log_event(
-            "llm_date_extraction_completed",
+            "llm_response_received",
             {
                 "document_id": document_id,
-                "response_length": len(response),
-                "response_preview": response[:50] if response else "[empty]",
+                "response": response.strip() if response else "None",
+                "response_length": len(response) if response else 0,
             },
         )
 
-        return response
+        return response.strip() if response else ""
 
-    @log_method(operation_name="date_storage", include_args=True, include_result=True)
+    @track(
+        operation="date_metadata_storage",
+        include_args=["document_id"],
+        track_performance=True,
+        emit_events=False,  # Silent operation - metadata updates are logged by LlamaIndex service
+    )
     async def store_extracted_date(self, document_id: str, extracted_date: str):
         """Store extracted dates in LlamaIndex metadata."""
         metadata_updates = {"content_date": extracted_date}
-
-        log_event(
-            "date_storage_attempt",
-            {
-                "document_id": document_id,
-                "extracted_date": extracted_date,
-                "metadata_keys": list(metadata_updates.keys()),
-            },
-        )
 
         success = await self.llamaindex_service.update_document_metadata(
             document_id, metadata_updates, merge_mode="update"
         )
 
-        if success:
-            log_event(
-                "date_storage_successful",
-                {"document_id": document_id, "extracted_date": extracted_date},
-            )
-        else:
-            log_event(
-                "date_storage_failed",
-                {"document_id": document_id, "extracted_date": extracted_date},
-            )
+        if not success:
             raise RuntimeError(f"Failed to store content dates for {document_id}")
 
-    @log_method(
-        operation_name="date_extraction_pipeline",
-        include_args=True,
+    @track(
+        operation="date_extraction_pipeline",
+        include_args=["document_id"],
         include_result=True,
+        track_performance=True,
     )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute the content date extraction tool."""
@@ -124,88 +123,56 @@ class ContentDateExtractionTool(BaseTool):
         if not isinstance(input_data, ContentDateExtractionInput):
             input_data = ContentDateExtractionInput(**input_data)
 
-        with log_context(
-            operation="date_extraction",
-            document_id=input_data.document_id,
-            text_length=len(input_data.text_content),
-        ) as _:
+        document_id = input_data.document_id
+        word_count = len(input_data.text_content.split())
 
-            # Initialize metrics collector
-            metrics = MetricsCollector("date_extraction")
-            metrics.start()
+        log_event(
+            "date_extraction_started",
+            {
+                "document_id": document_id,
+                "word_count": word_count,
+            },
+        )
 
-            metrics.add_metric("text_length", len(input_data.text_content))
-            metrics.add_metric("document_id", input_data.document_id)
+        # Extract dates from text
+        extracted_date = await self.extract_date_from_text(
+            input_data.text_content, document_id
+        )
 
+        # Check if we got a valid date (not empty, not error message)
+        has_valid_date = (
+            extracted_date
+            and extracted_date.strip()
+            and not extracted_date.lower().startswith(
+                ("no date", "none", "not found", "unable")
+            )
+        )
+
+        if has_valid_date:
+            await self.store_extracted_date(document_id, extracted_date)
+            dates_found = 1
             log_event(
-                "date_extraction_started",
+                "date_extraction_completed",
                 {
-                    "document_id": input_data.document_id,
-                    "text_length": len(input_data.text_content),
+                    "document_id": document_id,
+                    "dates_found": dates_found,
+                    "extracted_date": extracted_date,
+                },
+            )
+        else:
+            dates_found = 0
+            extracted_date = ""
+            log_event(
+                "date_extraction_completed",
+                {
+                    "document_id": document_id,
+                    "dates_found": dates_found,
                 },
             )
 
-            try:
-                # Extract dates from text
-                extracted_date = await self.extract_date_from_text(
-                    input_data.text_content, input_data.document_id
-                )
-
-                metrics.add_metric("date_extracted", bool(extracted_date))
-                metrics.add_metric(
-                    "extracted_date_length",
-                    len(extracted_date) if extracted_date else 0,
-                )
-
-                if extracted_date:
-                    # Store extracted dates in database
-                    await self.store_extracted_date(
-                        input_data.document_id, extracted_date
-                    )
-
-                    metrics.set_success(True)
-                    metrics.add_metric("dates_stored", True)
-
-                    log_event(
-                        "date_extraction_successful",
-                        {
-                            "document_id": input_data.document_id,
-                            "extracted_date": extracted_date,
-                            "date_length": len(extracted_date),
-                        },
-                    )
-                else:
-                    metrics.set_success(False)
-                    metrics.add_metric("dates_stored", False)
-
-                    log_event(
-                        "no_dates_found",
-                        {
-                            "document_id": input_data.document_id,
-                            "text_length": len(input_data.text_content),
-                        },
-                    )
-
-                # Report metrics
-                metrics.report("date_extraction_completed")
-
-                result = ContentDateExtractionOutput(
-                    document_id=input_data.document_id,
-                    extracted_dates=extracted_date,
-                    total_dates_found=len(extracted_date),
-                )
-                return result.dict()
-
-            except Exception as e:
-                metrics.set_error(e)
-                metrics.report("date_extraction_failed")
-
-                log_event(
-                    "date_extraction_error",
-                    {
-                        "document_id": input_data.document_id,
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                    },
-                )
-                raise
+        result = ContentDateExtractionOutput(
+            document_id=document_id,
+            extracted_date=extracted_date,
+            total_dates_found=dates_found,
+        )
+        return result.dict()

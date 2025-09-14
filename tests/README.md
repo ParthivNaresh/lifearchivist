@@ -35,7 +35,7 @@ tests/
 pytest
 
 # Run specific test file
-pytest tests/routes/test_upload.py
+pytest tests/routes/test_ingest.py
 
 # Run with coverage
 pytest --cov=lifearchivist --cov-report=html
@@ -414,13 +414,13 @@ async def test_custom_mock_behavior(async_client):
 
 ```bash
 # Run with verbose output
-pytest -v tests/routes/test_upload.py
+pytest -v tests/routes/test_ingest.py
 
 # Run specific test
-pytest tests/routes/test_upload.py::TestUploadRoutes::test_upload_simple_text_file
+pytest tests/routes/test_ingest.py::TestUploadRoutes::test_upload_simple_text_file
 
 # Debug with pdb
-pytest --pdb tests/routes/test_upload.py
+pytest --pdb tests/routes/test_ingest.py
 ```
 
 ## 🚀 Extension Points

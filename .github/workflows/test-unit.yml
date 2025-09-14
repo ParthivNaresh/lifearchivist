@@ -13,7 +13,7 @@ jobs:
     name: "Unit Tests (Python ${{ matrix.python-version }})"
     runs-on: ubuntu-latest
     outputs:
-      coverage-artifact: ${{ steps.upload-coverage.outputs.artifact-id }}
+      coverage-artifact: ${{ steps.unit-artifacts.outputs.artifact-id }}
     
     strategy:
       matrix:
@@ -48,7 +48,7 @@ jobs:
       run: just install
 
     - name: Run unit tests with coverage
-      run: just test-unit-coverage testing
+      run: just test-unit-coverage
 
     - name: Upload coverage to Codecov
       id: upload-coverage
@@ -60,6 +60,7 @@ jobs:
         name: unit-tests-coverage
 
     - name: Upload coverage reports for SonarQube
+      id: unit-artifacts
       if: matrix.python-version == '3.11'
       uses: actions/upload-artifact@v4
       with:

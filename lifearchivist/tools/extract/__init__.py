@@ -1,3 +1,3 @@
-from .extract_tools import ExtractTextTool
+from .extract_tool import ExtractTextTool
 
 __all__ = ["ExtractTextTool"]

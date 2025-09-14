@@ -5,7 +5,11 @@ Base tool class for MCP tools.
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+import jsonschema
+from jsonschema import ValidationError as JSONSchemaValidationError
 from pydantic import BaseModel
+
+from .exceptions import ValidationError
 
 
 class ToolMetadata(BaseModel):
@@ -37,10 +41,26 @@ class BaseTool(ABC):
 
     async def validate_input(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Validate input parameters against schema."""
-        # TODO: Implement JSON schema validation
-        return params
+        try:
+            # Use the input schema from metadata
+            jsonschema.validate(params, self.metadata.input_schema)
+            return params
+        except JSONSchemaValidationError as e:
+            raise ValidationError(f"Input validation failed: {e.message}") from e
+        except Exception as e:
+            raise ValidationError(
+                f"Unexpected error during input validation: {str(e)}"
+            ) from e
 
     async def validate_output(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """Validate output against schema."""
-        # TODO: Implement JSON schema validation
-        return result
+        try:
+            # Use the output schema from metadata
+            jsonschema.validate(result, self.metadata.output_schema)
+            return result
+        except JSONSchemaValidationError as e:
+            raise ValidationError(f"Output validation failed: {e.message}") from e
+        except Exception as e:
+            raise ValidationError(
+                f"Unexpected error during output validation: {str(e)}"
+            ) from e

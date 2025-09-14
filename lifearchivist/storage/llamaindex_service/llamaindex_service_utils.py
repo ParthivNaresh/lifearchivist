@@ -2,11 +2,8 @@
 Utility functions and classes for LlamaIndex service operations.
 """
 
-import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-
-logger = logging.getLogger(__name__)
 
 
 class DocumentFilter:
@@ -36,8 +33,7 @@ class DocumentFilter:
 
             return True
 
-        except Exception as e:
-            logger.error(f"❌ Error matching filters: {e}")
+        except Exception:
             return False
 
     @staticmethod
@@ -68,8 +64,7 @@ class DocumentFilter:
 
             return False
 
-        except Exception as e:
-            logger.error(f"❌ Error matching date range: {e}")
+        except Exception:
             return False
 
     @staticmethod
@@ -88,8 +83,7 @@ class DocumentFilter:
             # Check if any filter tag matches
             return bool(set(tag_filters) & document_tag_names)
 
-        except Exception as e:
-            logger.error(f"❌ Error matching tags: {e}")
+        except Exception:
             return False
 
 
@@ -124,8 +118,7 @@ class NodeProcessor:
                         "relationships": getattr(node, "relationships", {}),
                     }
                     nodes_data.append(node_data)
-            except Exception as e:
-                logger.error(f"Failed to retrieve node {node_id}: {e}")
+            except Exception:
                 continue
 
         return nodes_data
@@ -154,8 +147,7 @@ class NodeProcessor:
                 "text": NodeProcessor.generate_text_preview(node_with_score.node, 300),
                 "metadata": metadata,
             }
-        except Exception as e:
-            logger.error(f"❌ Failed to extract source info: {e}")
+        except Exception:
             return None
 
 

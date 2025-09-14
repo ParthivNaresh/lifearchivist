@@ -1,286 +1,161 @@
-# Life Archivist
+LifeArchivist
 
-> **Local-first, privacy-preserving personal knowledge system with MCP architecture**
-
-Life Archivist transforms how people organize and interact with their digital documents using AI-powered search and natural language querying, while keeping all data processing completely local and private.
-
-## 🎯 Quick Start
-
-```bash
-# 1. Install dependencies
-just install
-
-# 2. Start services (Ollama, Qdrant, Redis)
-just services
-
-# 3. Initialize models
-just init-models
-
-# 4. Start everything
-just fullstack
-```
-
-The Electron desktop app will launch automatically. The web interface is available at http://localhost:3000 and the API at http://localhost:8000.
-
-## 📋 What It Does
-
-Life Archivist ingests your documents (PDFs, Word docs, text files, images), extracts content, creates searchable embeddings, and enables natural language querying of your personal knowledge base.
-
-**Key Features:**
-- **Local-First**: All processing happens on your machine using Ollama LLM
-- **Content-Addressed Storage**: Automatic deduplication with hash-based file organization
-- **Hybrid Search**: Combines semantic vector search with keyword matching
-- **Natural Language Q&A**: Ask questions about your documents in plain English
-- **MCP Architecture**: Extensible tool-based system following Model Context Protocol
-- **Privacy-Preserving**: No data leaves your machine without explicit consent
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Electron UI   │    │   FastAPI       │    │   Docker        │
-│   React/TS      ├────┤   MCP Server    ├────┤   Services      │
-│   Port 3000     │    │   Port 8000     │    │   Ollama/Qdrant │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                ┌───────────────┼───────────────┐
-                │               │               │
-        ┌───────▼──────┐ ┌──────▼──────┐ ┌─────▼─────┐
-        │    Tools     │ │   Storage   │ │   Agents  │
-        │ Registry     │ │   Layer     │ │ Pipeline  │
-        │              │ │             │ │           │
-        │ • FileImport │ │ • Vault     │ │ • Ingest  │
-        │ • Extract    │ │ • LlamaIdx  │ │ • Query   │
-        │ • LLM        │ │ • Embeddings│ │           │
-        │ • Search     │ │             │ │           │
-        └──────────────┘ └─────────────┘ └───────────┘
-```
-
-### Core Components
-
-- **MCP Server**: Central orchestration layer managing tool execution and client communication
-- **Tool Registry**: Extensible MCP tools (file import, text extraction, embedding, search)
-- **Storage Layer**: Content-addressed vault + LlamaIndex for vector storage
-- **Processing Agents**: Higher-level orchestrators combining tools for complex workflows
-
-## 🚀 Development Commands
-
-### Essential Commands
-```bash
-just setup          # Complete development setup
-just fullstack       # Start everything (services + server + UI)
-just api-only        # Start just backend services for testing
-just verify          # Check all systems are working
-just health          # Test server health endpoint
-```
-
-### Individual Components
-```bash
-just services        # Start Docker services (Ollama, Qdrant, Redis)
-just server-dev      # Start backend with auto-reload
-just ui              # Start React frontend only
-just desktop         # Start full Electron app
-```
-
-### Development Workflow
-```bash
-just dev             # Fix code formatting + run tests
-just lint-fix        # Auto-fix code style issues
-just test            # Run test suite
-just ci              # Full CI checks (lint + test)
-```
-
-### Debugging
-```bash
-just check-docker    # Verify Docker services are running
-just test-cli        # Test CLI functionality
-just stop-all        # Stop all background processes
-just reset           # Clean restart everything
-```
-
-## 📁 Project Structure
-
-```
-lifearchivist/
-├── lifearchivist/              # Python package
-│   ├── server/                 # FastAPI MCP server
-│   │   ├── main.py            # Application entry point
-│   │   ├── mcp_server.py      # MCP protocol implementation  
-│   │   ├── api/               # REST API routes
-│   │   └── progress_manager.py # WebSocket progress tracking
-│   ├── storage/               # Storage layer
-│   │   ├── vault/             # Content-addressed file storage
-│   │   ├── llamaindex_service.py # LlamaIndex integration
-│   │   └── llamaindex_service_utils.py # Utilities
-│   ├── tools/                 # MCP tools
-│   │   ├── base.py           # Base tool class
-│   │   ├── registry.py       # Tool registry
-│   │   ├── file_tools.py     # File import/management
-│   │   ├── extract_tools.py  # Text extraction (PDF, DOCX)
-│   │   ├── llamaindex_tools.py # LlamaIndex operations
-│   │   └── llm_tools.py      # Ollama LLM integration
-│   ├── agents/                # Processing agents
-│   │   ├── ingestion.py      # Document ingestion pipeline
-│   │   └── query.py          # Search and Q&A pipeline
-│   ├── models/               # Pydantic schemas
-│   └── config/               # Configuration management
-├── desktop/                   # Electron desktop app
-│   ├── src/                  # React TypeScript frontend
-│   ├── package.json          # Node.js dependencies
-│   └── main.js               # Electron main process
-├── docker-compose.yml        # Development services
-├── pyproject.toml           # Python dependencies
-├── justfile                 # Development commands
-└── COMMANDS.md              # API testing commands
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-```bash
-# Core paths
-LIFEARCH_HOME=/Users/username/.lifearchivist    # Data directory
-LIFEARCH_VAULT_PATH=/custom/vault/path          # Custom vault location
-
-# Models
-LIFEARCH_LLM_MODEL=llama3.2:3b                 # Ollama model
-LIFEARCH_EMBEDDING_MODEL=all-MiniLM-L6-v2      # Embedding model
-
-# Services
-LIFEARCH_OLLAMA_URL=http://localhost:11434     # Ollama endpoint
-LIFEARCH_QDRANT_URL=http://localhost:6333      # Qdrant vector DB
-LIFEARCH_REDIS_URL=redis://localhost:6379      # Redis cache
-
-# Development
-LIFEARCH_API_ONLY_MODE=true                    # API-only mode
-LIFEARCH_ENABLE_UI=false                       # Disable UI features
-LIFEARCH_LOCAL_ONLY=true                       # Force local processing
-```
-
-### Directory Structure
-```
-~/.lifearchivist/
-├── vault/                     # Content-addressed file storage
-│   ├── content/              # Files organized by hash (ab/cd/efgh123.pdf)
-│   ├── thumbnails/           # Auto-generated image previews
-│   └── temp/                 # Temporary processing files
-├── llamaindex_storage/       # LlamaIndex vector storage
-└── models/                   # Downloaded AI models cache
-```
-
-## 🛠️ API Usage
-
-### Document Upload
-```bash
-curl -X POST http://localhost:8000/api/upload \
-  -F "file=@document.pdf" \
-  -F 'metadata={"source": "test"}' | jq
-```
-
-### Semantic Search
-```bash
-curl "http://localhost:8000/api/search?q=mortgage%20rates&mode=semantic&limit=5" | jq
-```
-
-### Natural Language Q&A
-```bash
-curl -X POST http://localhost:8000/api/ask \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What is my mortgage interest rate?"}' | jq
-```
-
-See `COMMANDS.md` for comprehensive API testing commands.
-
-## 🏥 Health Monitoring
-
-### System Check
-```bash
-# Quick health check
-curl http://localhost:8000/health | jq
-
-# Verify all services
-just verify
-
-# Check Docker services
-just check-docker
-
-# Test basic functionality
-just test-cli
-```
-
-### Troubleshooting
-```bash
-# View server logs
-just server-dev  # Shows real-time logs
-
-# Check Ollama models
-docker exec lifearchivist-ollama-1 ollama list
-
-# Restart services
-just services-stop && just services
-
-# Full reset
-just reset
-```
-
-## 📦 Dependencies
-
-### Python (pyproject.toml)
-- **FastAPI + Uvicorn**: Web framework and ASGI server
-- **LlamaIndex 0.13.2**: Vector storage and RAG framework
-- **Ollama**: Local LLM integration
-- **Sentence Transformers**: Local embeddings
-- **Qdrant Client**: Vector database client
-- **PyPDF + python-docx**: Document parsing
-- **Pydantic**: Data validation and settings
-
-### Node.js (desktop/package.json)
-- **Electron**: Desktop application framework
-- **React + TypeScript**: Frontend framework
-- **Vite**: Build tool and dev server
-- **Tailwind CSS**: Styling framework
-
-### Docker Services
-- **Ollama**: Local LLM inference server
-- **Qdrant**: Vector database for embeddings
-- **Redis**: Caching and task queue
-
-## 🔒 Privacy & Security
-
-- **Local-First**: All document processing happens locally using Ollama
-- **No Cloud Dependencies**: Can operate completely offline
-- **Content-Addressed Storage**: Files organized by hash for integrity
-- **Optional Telemetry**: Disabled by default, user-controlled
-- **Sandboxed Processing**: Document parsing isolated from main application
-
-## 📊 Status
-
-**Current Status**: Development/Alpha
-- ✅ Core architecture implemented
-- ✅ Document ingestion pipeline working
-- ✅ Basic search and Q&A functionality
-- ✅ Desktop app with file upload
-- 🔄 Hardening error handling and edge cases
-- 🔄 Adding test coverage
-- 📋 Planned: Mobile app, browser extension, advanced AI features
-
-**Known Limitations**:
-- Limited file format support (PDF, DOCX, TXT)
-- No OCR for scanned documents yet
-- Basic date extraction logic
-- Memory usage not optimized for very large documents
-
-## 🤝 Contributing
-
-This is currently a personal project in active development. The codebase follows production-grade patterns and is designed for eventual open source release.
-
-**Development Workflow**:
-1. `just setup` - Initial setup
-2. `just fullstack` - Start development environment  
-3. Make changes
-4. `just dev` - Fix formatting + run tests
-5. `just ci` - Full CI checks
-
-## 📄 License
-
-MIT License - See LICENSE file for details.
+Life Archivist - Project Summary
+Overview
+Life Archivist is a local-first, privacy-preserving personal knowledge management system that enables users to upload, process, and query their local documents using AI. The system processes documents entirely on the user's machine using Ollama for LLM inference, creates searchable embeddings, and provides natural language Q&A capabilities through a desktop Electron application.
+Core Architecture
+Technology Stack
+* Backend: Python 3.12, FastAPI, Uvicorn (ASGI server)
+* Frontend: React 18, TypeScript, Vite, Tailwind CSS
+* Desktop: Electron for cross-platform desktop application
+* Vector Storage: LlamaIndex 0.13.2 LlamaIndex's SimpleVectorStore
+* LLM: Ollama (local inference) with llama3.2 models
+* Embeddings: Sentence Transformers (all-MiniLM-L6-v2)
+* Document Processing: PyPDF, python-docx, BeautifulSoup4
+* Storage: Content-addressed vault system with SHA256 hashing
+* Caching: Redis for task queuing and progress tracking
+* Development: Poetry for Python dependencies, Just for task automation
+  System Components
+1. MCP Server (lifearchivist/server/mcp_server.py)
+* Central orchestration layer implementing Model Context Protocol
+* Manages tool execution, session management, and WebSocket connections
+* Initializes and coordinates vault storage, LlamaIndex service, and tool registry
+* Handles progress tracking through Redis-backed ProgressManager
+2. Tool Registry System (lifearchivist/tools/)
+* FileImportTool: Handles file ingestion, hash calculation, deduplication
+* ExtractTextTool: Extracts text from PDFs, DOCX, and text files
+* ContentDateExtractionTool: Extracts dates from document content
+* OllamaTool: Interfaces with local Ollama LLM for text generation
+* IndexSearchTool: Performs keyword, semantic, and hybrid searches
+* LlamaIndexQueryTool: Executes RAG queries for Q&A functionality
+3. Storage Layer
+   Vault Storage (lifearchivist/storage/vault/)
+* Content-addressed file storage using SHA256 hashes
+* Directory structure: content/ab/cd/efgh123.pdf (hash-based organization)
+* Automatic deduplication at file level
+* Thumbnail generation for images (256x256 WEBP format)
+* Temporary file management with automatic cleanup
+  LlamaIndex Service (lifearchivist/storage/llamaindex_service/)
+* Vector storage and retrieval using LlamaIndex framework
+* Document chunking with SentenceSplitter (800 chars, 100 overlap)
+* Hybrid search combining semantic vectors and keyword matching
+* Metadata management for filtering and document relationships
+* Query engine with tree_summarize response mode
+4. API Routes (lifearchivist/server/api/routes/)
+* Upload: Single/bulk file upload and ingestion endpoints
+* Search: Keyword, semantic, and hybrid search with filters
+* Documents: CRUD operations for document management
+* Ask: Natural language Q&A using RAG pipeline
+* Vault: Storage statistics and file management
+* Tags: Auto-tagging and tag management
+5. Desktop Application (desktop/)
+* Electron wrapper with React frontend
+* Multiple views: Inbox, Documents, Timeline, Q&A, Search, Settings
+* Drag-and-drop file upload with progress tracking
+* WebSocket integration for real-time updates
+* IPC handlers for native file system operations
+  Document Processing Pipeline
+1. File Import
+    * Calculate SHA256 hash for deduplication
+    * Detect MIME type using python-magic
+    * Store in content-addressed vault
+    * Check for duplicates in both vault and LlamaIndex
+2. Text Extraction
+    * PDF: PyPDF for text extraction
+    * DOCX: python-docx for Word documents
+    * Images: Pillow for thumbnail generation (OCR planned)
+    * Plain text: Direct reading
+3. Indexing
+    * Split text into chunks (800 chars with 100 char overlap)
+    * Generate embeddings using Sentence Transformers
+    * Store in Qdrant vector database
+    * Update LlamaIndex with document metadata
+4. Metadata Enrichment
+    * Extract content dates from text
+    * Auto-generate tags (if enabled)
+    * Track provenance and processing history
+    * Store file metadata (size, MIME type, timestamps)
+      Query & Retrieval System
+      Search Modes
+* Keyword: BM25-based text search
+* Semantic: Vector similarity search using embeddings
+* Hybrid: Combination of keyword and semantic search
+  Q&A Pipeline
+1. User submits natural language question
+2. Question embedded using Sentence Transformers
+3. Retrieve relevant document chunks (default: top 5)
+4. Pass context to Ollama LLM with question
+5. Generate answer with source citations
+6. Return response with confidence score
+   Logging & Monitoring
+   Smart Logging System (lifearchivist/utils/logging/)
+* Decorator-based tracking with @track() annotation
+* Automatic performance metrics collection
+* Sampling for high-frequency operations
+* Structured event logging with correlation IDs
+* Sensitive data redaction
+* Operation categorization and frequency-based sampling
+  Configuration System
+  Environment Variables (prefix: LIFEARCH_)
+* LIFEARCH_HOME: Base data directory (default: ~/.lifearchivist)
+* LIFEARCH_VAULT_PATH: Document storage location
+* LIFEARCH_LLM_MODEL: Ollama model (default: llama3.2:1b)
+* LIFEARCH_EMBEDDING_MODEL: Embedding model (default: all-MiniLM-L6-v2)
+* LIFEARCH_API_ONLY_MODE: Disable UI for API testing
+* LIFEARCH_ENABLE_AGENTS: Enable complex agent workflows
+  Development Workflow
+  Key Commands (via Justfile)
+* just setup: Complete development environment setup
+* just fullstack: Start all services + server + UI
+* just api-only: API-only mode for testing
+* just services: Start Docker containers (Ollama, Qdrant, Redis)
+* just dev: Fix code formatting + run tests
+* just verify: Check all systems operational
+  Testing Infrastructure
+* Comprehensive curl commands in COMMANDS.md
+* Support for single file, bulk upload, search, and Q&A testing
+* WebSocket progress tracking for uploads
+* Error handling and retry mechanisms
+  Current Limitations & Areas for Improvement
+1. Performance Issues
+    * Memory usage not optimized for large documents
+    * Query timeout issues with large indexes
+    * No streaming support for LLM responses
+2. Feature Gaps
+    * No OCR for scanned documents
+    * Limited audio/video processing (infrastructure exists but not implemented)
+    * Basic date extraction logic needs improvement
+    * No document relationship mapping
+3. Technical Debt
+    * Error handling needs hardening
+    * Test coverage is minimal
+    * Logging can be excessive in some areas
+    * WebSocket implementation needs reliability improvements
+4. UI/UX Improvements Needed
+    * Better progress feedback for long operations
+    * More intuitive search filters
+    * Document preview capabilities
+    * Batch operations interface
+5. Storage & Indexing
+    * No incremental indexing
+    * Metadata updates require full node traversal
+    * No automatic index optimization
+    * Limited support for document updates
+      Security & Privacy Features
+* All processing happens locally (no cloud dependencies)
+* Content-addressed storage ensures file integrity
+* Optional telemetry (disabled by default)
+* Sandboxed document processing
+* No external API calls without explicit configuration
+  Future Development Priorities
+1. Implement OCR for scanned documents
+2. Add streaming LLM responses for better UX
+3. Improve memory management for large documents
+4. Expand test coverage to 80%+
+5. Implement incremental indexing
+6. Add document relationship mapping
+7. Enhance date extraction with NLP
+8. Build mobile companion app
+9. Add browser extension for web content capture
+10. Implement advanced agent workflows for complex queries
+    This project follows production-grade patterns with comprehensive logging, error handling, and modular architecture, making it well-suited for continued development and eventual open-source release.

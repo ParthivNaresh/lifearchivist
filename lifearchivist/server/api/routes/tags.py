@@ -2,13 +2,9 @@
 Tag management endpoints.
 """
 
-import logging
-
 from fastapi import APIRouter, HTTPException
 
 from ..dependencies import get_server
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["tags"])
 
@@ -24,7 +20,6 @@ async def get_all_tags():
         return {"tags": [], "total": 0}
 
     except Exception as e:
-        logger.error(f"Failed to get tags: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from None
 
 
@@ -43,5 +38,4 @@ async def get_topic_landscape():
         }
 
     except Exception as e:
-        logger.error(f"Failed to get topic landscape: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from None

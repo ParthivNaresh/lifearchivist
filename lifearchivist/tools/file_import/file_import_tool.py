@@ -20,12 +20,8 @@ from lifearchivist.tools.file_import.file_import_utils import (
     create_success_response,
     is_text_extraction_supported,
     should_extract_dates,
-    should_extract_embeddings,
 )
-from lifearchivist.utils.logging import log_context, log_event, log_method
-from lifearchivist.utils.logging.structured import MetricsCollector
-
-logger = logging.getLogger(__name__)
+from lifearchivist.utils.logging import log_event, track
 
 
 class FileImportTool(BaseTool):
@@ -49,13 +45,13 @@ class FileImportTool(BaseTool):
                         "description": "Absolute or relative path",
                     },
                     "mime_hint": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": "Override auto-detection",
                     },
-                    "tags": {"type": "array", "items": {"type": "string"}},
-                    "metadata": {"type": "object"},
+                    "tags": {"type": ["array", "null"], "items": {"type": "string"}},
+                    "metadata": {"type": ["object", "null"]},
                     "session_id": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": "WebSocket session ID for progress tracking",
                     },
                 },
@@ -75,7 +71,13 @@ class FileImportTool(BaseTool):
             idempotent=True,
         )
 
-    @log_method(operation_name="file_import", include_args=True, include_result=True)
+    @track(
+        operation="file_import_pipeline",
+        include_args=["path", "session_id"],
+        include_result=True,
+        track_performance=True,
+        frequency="low_frequency",
+    )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Import a file into the system."""
         path = kwargs.get("path")
@@ -98,266 +100,284 @@ class FileImportTool(BaseTool):
         if not self.vault or not self.llamaindex_service:
             raise RuntimeError("Vault and LlamaIndex service dependencies not provided")
 
-        # Use structured logging context for the entire import operation
-        with log_context(
-            operation="file_import", file_path=display_path, original_path=str(path)
-        ) as correlation_id:
+        # Get file stats
+        stat = file_path.stat()
+        file_size_bytes = stat.st_size
+        file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
 
-            # Initialize metrics collector
-            metrics = MetricsCollector("file_import")
-            metrics.start()
+        # Calculate hash and detect MIME type
+        file_hash = await self._analyze_file(file_path, display_path)
 
-            # Get file stats
-            stat = file_path.stat()
-            file_size_bytes = stat.st_size
+        if mime_hint:
+            mime_type = mime_hint
+        else:
+            mime_type = magic.from_file(str(file_path), mime=True)
 
-            metrics.add_metric("file_size_bytes", file_size_bytes)
+        # Use provided file_id or generate unique ID
+        file_id = metadata.get("file_id") or str(uuid.uuid4())
 
-            # Calculate hash and detect MIME type
-            file_hash = await calculate_file_hash(file_path)
+        # Log import start with all context (single comprehensive event)
+        log_event(
+            "file_import_started",
+            {
+                "file_id": file_id,
+                "file_path": display_path,
+                "file_hash": file_hash[:8],
+                "mime_type": mime_type,
+                "mime_source": "hint" if mime_hint else "detected",
+                "size_bytes": file_size_bytes,
+                "size_mb": file_size_mb,
+                "tags_count": len(tags),
+                "has_session": bool(session_id),
+            },
+        )
 
-            if mime_hint:
-                mime_type = mime_hint
-            else:
-                mime_type = magic.from_file(str(file_path), mime=True)
+        # Initialize progress tracking
+        if self.progress_manager and session_id:
+            await self.progress_manager.start_progress(file_id, session_id)
 
-            metrics.add_metric("mime_type", mime_type)
+        try:
+            # Store file in vault first - this handles physical file deduplication
+            vault_result = await self.vault.store_file(file_path, file_hash)
 
-            # Use provided file_id or generate unique ID
-            file_id = metadata.get("file_id") or str(uuid.uuid4())
+            # Check for duplicate using vault result AND LlamaIndex metadata check
+            if vault_result["existed"]:
+                duplicate_doc = await self._check_for_duplicate(file_id, file_hash)
+                if duplicate_doc:
+                    # Clean up progress tracking for duplicates
+                    if self.progress_manager and session_id:
+                        await self.progress_manager.cleanup_progress(file_id)
 
-            # Log the import start with rich context
-            log_event(
-                "file_import_started",
-                {
-                    "file_id": file_id,
-                    "file_hash": file_hash,
-                    "file_size_bytes": file_size_bytes,
-                    "mime_type": mime_type,
-                    "has_session": session_id is not None,
-                },
-            )
-
-            # Initialize progress tracking
-            if self.progress_manager and session_id:
-                await self.progress_manager.start_progress(file_id, session_id)
-
-            try:
-                # Store file in vault first - this handles physical file deduplication
-                vault_result = await self.vault.store_file(file_path, file_hash)
-
-                metrics.add_metric("vault_existed", vault_result["existed"])
-
-                # Extract text content early to have it available for document creation
-                extracted_text = await self._try_extract_text(
-                    file_id, file_path, mime_type, file_hash
-                )
-
-                word_count = len(extracted_text.split()) if extracted_text else 0
-                metrics.add_metric("word_count", word_count)
-                metrics.add_metric(
-                    "text_length", len(extracted_text) if extracted_text else 0
-                )
-
-                # Check for duplicate using vault result AND LlamaIndex metadata check
-                if vault_result["existed"]:
+                    # Log duplicate found (important business event)
                     log_event(
-                        "duplicate_detected_vault",
-                        {"file_hash": file_hash, "checking_llamaindex": True},
-                    )
-
-                    # Check LlamaIndex for existing document with this file hash
-                    existing_docs = (
-                        await self.llamaindex_service.query_documents_by_metadata(
-                            filters={"file_hash": file_hash}, limit=1
-                        )
-                    )
-
-                    if existing_docs:
-                        log_event(
-                            "duplicate_confirmed_llamaindex",
-                            {
-                                "file_hash": file_hash,
-                                "existing_document_id": existing_docs[0]["document_id"],
-                            },
-                        )
-
-                        # For duplicates, clean up progress tracking without sending completion
-                        if self.progress_manager and session_id:
-                            await self.progress_manager.cleanup_progress(file_id)
-
-                        existing_doc = existing_docs[0]
-                        existing_metadata = existing_doc["metadata"]
-
-                        metrics.set_success(True)
-                        metrics.add_metric("duplicate_resolved", True)
-                        metrics.report("file_import_completed")
-
-                        return create_duplicate_response(
-                            existing_doc, file_hash, stat, mime_type, display_path
-                        )
-                    else:
-                        log_event(
-                            "vault_duplicate_not_in_llamaindex",
-                            {"file_hash": file_hash, "proceeding_with_indexing": True},
-                        )
-                else:
-                    log_event(
-                        "new_file_processing",
-                        {"file_hash": file_hash, "is_new_file": True},
-                    )
-
-                # Create document in LlamaIndex with full content immediately to prevent race conditions
-                log_event(
-                    "llamaindex_document_creation_started",
-                    {"file_id": file_id, "text_available": bool(extracted_text)},
-                )
-
-                doc_metadata = create_document_metadata(
-                    file_id=file_id,
-                    file_hash=file_hash,
-                    original_path=display_path,
-                    mime_type=mime_type,
-                    stat=stat,
-                    text=extracted_text,
-                    custom_metadata=metadata,
-                )
-
-                success = await self.llamaindex_service.add_document(
-                    document_id=file_id, content=extracted_text, metadata=doc_metadata
-                )
-
-                if not success:
-                    metrics.set_error(
-                        RuntimeError("Failed to create document in LlamaIndex")
-                    )
-                    metrics.report("file_import_failed")
-                    return {
-                        "success": False,
-                        "error": f"Failed to create document {file_id} in LlamaIndex",
-                        "original_path": display_path,
-                    }
-
-                log_event(
-                    "llamaindex_document_created", {"file_id": file_id, "success": True}
-                )
-
-                metrics.increment("documents_created")
-
-                # Process additional metadata asynchronously (dates, tags) without blocking the main flow
-                if extracted_text:
-                    await self._try_extract_content_dates(file_id, extracted_text)
-                    metrics.increment("date_extractions_attempted")
-
-                # Update status to ready in LlamaIndex metadata
-                await self.llamaindex_service.update_document_metadata(
-                    file_id, {"status": "ready"}, merge_mode="update"
-                )
-
-                # Complete progress tracking
-                if self.progress_manager and session_id:
-                    await self.progress_manager.complete_progress(
-                        file_id,
-                        metadata={
-                            "original_filename": original_filename,
-                            "file_size": stat.st_size,
-                            "mime_type": mime_type,
+                        "duplicate_file_detected",
+                        {
+                            "file_id": file_id,
+                            "existing_doc_id": duplicate_doc.get("document_id"),
+                            "file_hash": file_hash[:8],
+                            "file_path": display_path,
                         },
                     )
 
-                # Log provenance in LlamaIndex metadata
-                provenance_entry = create_provenance_entry(
-                    action="import",
-                    agent="file_import_tool",
-                    tool="file.import",
-                    params={"original_path": str(file_path)},
-                    result={
-                        "vault_path": vault_result["path"],
-                        "existed": vault_result["existed"],
+                    return create_duplicate_response(
+                        duplicate_doc, file_hash, stat, mime_type, display_path
+                    )
+
+            # Extract text content early to have it available for document creation
+            extracted_text = await self._try_extract_text(
+                file_id, file_path, mime_type, file_hash
+            )
+
+            # Create and store document in LlamaIndex
+            doc_metadata = create_document_metadata(
+                file_id=file_id,
+                file_hash=file_hash,
+                original_path=display_path,
+                mime_type=mime_type,
+                stat=stat,
+                text=extracted_text,
+                custom_metadata=metadata,
+            )
+
+            # Add tags to document metadata if provided
+            if tags:
+                doc_metadata["tags"] = tags
+
+            await self._create_document(file_id, extracted_text, doc_metadata)
+
+            # Process additional metadata asynchronously (dates, tags) without blocking the main flow
+            if extracted_text:
+                await self._try_extract_content_dates(file_id, extracted_text)
+
+            # Finalize document
+            await self._finalize_document(file_id, file_path, vault_result)
+
+            # Complete progress tracking
+            if self.progress_manager and session_id:
+                await self.progress_manager.complete_progress(
+                    file_id,
+                    metadata={
+                        "original_filename": original_filename,
+                        "file_size": stat.st_size,
+                        "mime_type": mime_type,
                     },
                 )
-                await self.llamaindex_service.update_document_metadata(
-                    file_id, {"provenance": [provenance_entry]}, merge_mode="update"
+
+            # Log successful import with comprehensive metrics (important business event)
+            word_count = len(extracted_text.split()) if extracted_text else 0
+            log_event(
+                "file_import_completed",
+                {
+                    "file_id": file_id,
+                    "file_hash": file_hash[:8],
+                    "file_path": display_path,
+                    "mime_type": mime_type,
+                    "size_bytes": file_size_bytes,
+                    "word_count": word_count,
+                    "text_extracted": bool(extracted_text),
+                    "tags_count": len(tags),
+                    "vault_existed": vault_result["existed"],
+                },
+            )
+
+            return create_success_response(
+                file_id, file_hash, stat, mime_type, display_path, vault_result
+            )
+
+        except Exception as e:
+            await self._handle_import_error(e, file_id, display_path, session_id or "")
+            return create_error_response(e, display_path)
+
+    @track(
+        operation="file_analysis",
+        include_args=["display_path"],
+        track_performance=True,
+    )
+    async def _analyze_file(self, file_path: Path, display_path: str) -> str:
+        """Analyze file and calculate hash."""
+        file_hash = await calculate_file_hash(file_path)
+        return file_hash
+
+    @track(
+        operation="duplicate_detection",
+        include_args=["file_id"],
+        track_performance=True,
+    )
+    async def _check_for_duplicate(
+        self, file_id: str, file_hash: str
+    ) -> Dict[str, Any] | None:
+        """Check for duplicate documents in LlamaIndex."""
+        # Check LlamaIndex for existing document with this file hash
+        existing_docs = await self.llamaindex_service.query_documents_by_metadata(
+            filters={"file_hash": file_hash}, limit=1
+        )
+
+        if existing_docs:
+            return existing_docs[0]  # type: ignore[no-any-return]
+
+        return None
+
+    @track(
+        operation="document_creation",
+        include_args=["file_id"],
+        track_performance=True,
+    )
+    async def _create_document(
+        self, file_id: str, extracted_text: str, doc_metadata: Dict[str, Any]
+    ):
+        """Create document in LlamaIndex."""
+        success = await self.llamaindex_service.add_document(
+            document_id=file_id, content=extracted_text, metadata=doc_metadata
+        )
+
+        if not success:
+            # Log failure as it's an exceptional case
+            log_event(
+                "document_indexing_failed",
+                {
+                    "file_id": file_id,
+                    "error": "LlamaIndex add_document returned False",
+                },
+                level=logging.ERROR,
+            )
+            raise RuntimeError(f"Failed to create document {file_id} in LlamaIndex")
+
+    @track(
+        operation="document_finalization",
+        include_args=["file_id"],
+        track_performance=True,
+    )
+    async def _finalize_document(
+        self, file_id: str, file_path: Path, vault_result: Dict[str, Any]
+    ):
+        """Finalize document with status update and provenance."""
+        # Update status to ready in LlamaIndex metadata
+        await self.llamaindex_service.update_document_metadata(
+            file_id, {"status": "ready"}, merge_mode="update"
+        )
+
+        # Log provenance in LlamaIndex metadata
+        provenance_entry = create_provenance_entry(
+            action="import",
+            agent="file_import_tool",
+            tool="file.import",
+            params={"original_path": str(file_path)},
+            result={
+                "vault_path": vault_result["path"],
+                "existed": vault_result["existed"],
+            },
+        )
+        await self.llamaindex_service.update_document_metadata(
+            file_id, {"provenance": [provenance_entry]}, merge_mode="update"
+        )
+
+    async def _handle_import_error(
+        self, error: Exception, file_id: str, display_path: str, session_id: str
+    ):
+        """Handle import errors with proper cleanup and logging."""
+        # Log the main error (important for debugging)
+        log_event(
+            "file_import_failed",
+            {
+                "file_id": file_id if file_id else "unknown",
+                "error_type": type(error).__name__,
+                "error_message": str(error),
+                "file_path": display_path,
+            },
+            level=logging.ERROR,
+        )
+
+        # Report error to progress tracking if we have a file_id
+        if self.progress_manager and session_id and file_id:
+            try:
+                await self.progress_manager.error_progress(
+                    file_id, str(error), ProcessingStage.UPLOAD
                 )
-
-                # Report successful completion with full metrics
-                metrics.set_success(True)
-                metrics.add_metric("document_ready", True)
-                metrics.report("file_import_completed")
-
+            except Exception as progress_error:
+                # Log secondary failures at DEBUG level to reduce noise
                 log_event(
-                    "file_import_successful",
+                    "cleanup_error",
                     {
                         "file_id": file_id,
-                        "vault_path": vault_result["path"],
-                        "word_count": word_count,
-                        "execution_time_ms": metrics.metrics.get("duration_ms", 0),
+                        "cleanup_type": "progress_tracking",
+                        "error": str(progress_error),
                     },
+                    level=logging.DEBUG,
                 )
 
-                return create_success_response(
-                    file_id, file_hash, stat, mime_type, display_path, vault_result
+        # Update document metadata to failed status if document exists
+        if self.llamaindex_service and file_id:
+            try:
+                await self.llamaindex_service.update_document_metadata(
+                    file_id,
+                    {"status": "failed", "error_message": str(error)},
+                    merge_mode="update",
                 )
-
-            except Exception as e:
-                # Report error metrics and structured logging
-                metrics.set_error(e)
-                metrics.report("file_import_failed")
-
+            except Exception as metadata_error:
+                # Log secondary failures at DEBUG level to reduce noise
                 log_event(
-                    "file_import_error",
+                    "cleanup_error",
                     {
-                        "file_path": display_path,
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                        "has_file_id": "file_id" in locals(),
+                        "file_id": file_id,
+                        "cleanup_type": "metadata_update",
+                        "error": str(metadata_error),
                     },
+                    level=logging.DEBUG,
                 )
 
-                # Report error to progress tracking if we have a file_id
-                if self.progress_manager and session_id and "file_id" in locals():
-                    try:
-                        await self.progress_manager.error_progress(
-                            file_id, str(e), ProcessingStage.UPLOAD
-                        )
-                    except Exception as progress_error:
-                        log_event(
-                            "progress_tracking_error",
-                            {
-                                "original_error": str(e),
-                                "progress_error": str(progress_error),
-                            },
-                        )
-
-                # Update document metadata to failed status if document exists
-                if self.llamaindex_service and "file_id" in locals():
-                    try:
-                        await self.llamaindex_service.update_document_metadata(
-                            file_id,
-                            {"status": "failed", "error_message": str(e)},
-                            merge_mode="update",
-                        )
-                        log_event(
-                            "document_status_updated",
-                            {"file_id": file_id, "status": "failed"},
-                        )
-                    except Exception as metadata_error:
-                        log_event(
-                            "metadata_cleanup_failed",
-                            {"file_id": file_id, "cleanup_error": str(metadata_error)},
-                        )
-
-                return create_error_response(e, display_path)
-
-    @log_method(
-        operation_name="text_extraction", include_args=True, include_result=True
+    @track(
+        operation="text_extraction",
+        include_args=["file_id", "mime_type"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
     )
     async def _try_extract_text(
         self, file_id: str, file_path: Path, mime_type: str, file_hash: str
     ) -> str:
         """Try to extract text from the imported file."""
         if is_text_extraction_supported(mime_type):
-            from lifearchivist.tools.extract.extract_tools import ExtractTextTool
+            from lifearchivist.tools.extract.extract_tool import ExtractTextTool
 
             extract_tool = ExtractTextTool(vault=self.vault)
             result = await extract_tool.execute(
@@ -368,60 +388,59 @@ class FileImportTool(BaseTool):
             )
 
             extracted_text = result.get("text", "")
-            word_count = result.get("metadata", {}).get("word_count", 0)
-            extraction_method = result.get("metadata", {}).get(
-                "extraction_method", "unknown"
-            )
 
-            log_event(
-                "text_extraction_successful",
-                {
-                    "file_id": file_id,
-                    "word_count": word_count,
-                    "extraction_method": extraction_method,
-                    "text_length": len(extracted_text),
-                },
-            )
+            # Only log if extraction had notable results or issues
+            word_count = len(extracted_text.split()) if extracted_text else 0
+            if word_count == 0:
+                log_event(
+                    "text_extraction_empty",
+                    {
+                        "file_id": file_id,
+                        "mime_type": mime_type,
+                        "extraction_method": self._get_extraction_method(mime_type),
+                    },
+                    level=logging.WARNING,
+                )
+
             return str(extracted_text)
         else:
+            # Log at DEBUG level since this is expected for many file types
             log_event(
-                "text_extraction_unsupported",
-                {"file_id": file_id, "mime_type": mime_type},
+                "text_extraction_skipped",
+                {
+                    "file_id": file_id,
+                    "mime_type": mime_type,
+                    "reason": "unsupported_format",
+                },
+                level=logging.DEBUG,
             )
             return ""
 
-    @log_method(operation_name="embedding_generation")
-    async def _try_generate_embeddings(self, file_id: str, text: str):
-        """Try to generate embeddings and chunks for the document."""
-        if not should_extract_embeddings(text):
-            log_event(
-                "embedding_generation_skipped",
-                {
-                    "file_id": file_id,
-                    "reason": "text_too_short",
-                    "text_length": len(text.strip()),
-                },
-            )
-            return
+    def _get_extraction_method(self, mime_type: str) -> str:
+        """Get extraction method name for logging."""
+        if mime_type.startswith("text/"):
+            return "text_file"
+        elif mime_type == "application/pdf":
+            return "pypdf"
+        elif (
+            mime_type
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ):
+            return "python_docx"
+        else:
+            return "unknown"
 
-        # Skip embedding generation - LlamaIndex handles this internally
-        log_event(
-            "embedding_generation_delegated",
-            {"file_id": file_id, "handler": "llamaindex", "text_length": len(text)},
-        )
-
-    @log_method(operation_name="date_extraction")
+    @track(
+        operation="content_date_extraction",
+        include_args=["file_id"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     async def _try_extract_content_dates(self, file_id: str, text: str):
         """Try to extract content dates from document text."""
         if not should_extract_dates(text):
-            log_event(
-                "date_extraction_skipped",
-                {
-                    "file_id": file_id,
-                    "reason": "text_too_short",
-                    "text_length": len(text.strip()),
-                },
-            )
+            # Skip logging for this common case - the @track decorator handles it
             return
 
         from lifearchivist.schemas.tool_schemas import ContentDateExtractionInput
@@ -435,13 +454,4 @@ class FileImportTool(BaseTool):
         input_data = ContentDateExtractionInput(document_id=file_id, text_content=text)
 
         result = await date_tool.execute(input_data=input_data)
-        dates_count = result.get("total_dates_found", 0)
-
-        log_event(
-            "date_extraction_completed",
-            {
-                "file_id": file_id,
-                "dates_found": dates_count,
-                "extraction_successful": dates_count > 0,
-            },
-        )
+        return result

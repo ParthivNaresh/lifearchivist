@@ -6,10 +6,7 @@ import logging
 from typing import Any, Dict
 
 from lifearchivist.tools.base import BaseTool, ToolMetadata
-from lifearchivist.utils.logging import log_context, log_event, log_method
-from lifearchivist.utils.logging.structured import MetricsCollector
-
-logger = logging.getLogger(__name__)
+from lifearchivist.utils.logging import log_event, track
 
 
 class LlamaIndexQueryTool(BaseTool):
@@ -76,8 +73,12 @@ class LlamaIndexQueryTool(BaseTool):
             idempotent=True,
         )
 
-    @log_method(
-        operation_name="llamaindex_query", include_args=True, include_result=True
+    @track(
+        operation="llamaindex_query",
+        include_args=["similarity_top_k", "response_mode"],
+        include_result=True,
+        track_performance=True,
+        frequency="low_frequency",
     )
     async def execute(self, **kwargs) -> Dict[str, Any]:
         """Execute LlamaIndex query for Q&A."""
@@ -85,86 +86,82 @@ class LlamaIndexQueryTool(BaseTool):
         similarity_top_k = kwargs.get("similarity_top_k", 5)
         response_mode = kwargs.get("response_mode", "tree_summarize")
 
-        with log_context(
-            operation="llamaindex_query",
-            question_length=len(question),
-            similarity_top_k=similarity_top_k,
-            response_mode=response_mode,
-        ):
-            metrics = MetricsCollector("llamaindex_query")
-            metrics.start()
+        if not question:
+            return self._empty_response("Question cannot be empty")
 
-            metrics.add_metric("question_length", len(question))
-            metrics.add_metric("similarity_top_k", similarity_top_k)
-            metrics.add_metric("response_mode", response_mode)
+        if not self.llamaindex_service:
+            return self._empty_response("LlamaIndex service not available")
 
-            if not question:
-                log_event("query_empty_question", {})
-                return self._empty_response("Question cannot be empty")
+        # Log query start with context (important for debugging Q&A issues)
+        log_event(
+            "query_started",
+            {
+                "question_length": len(question),
+                "question_preview": (
+                    question[:100] + "..." if len(question) > 100 else question
+                ),
+                "similarity_top_k": similarity_top_k,
+                "response_mode": response_mode,
+            },
+        )
 
-            if not self.llamaindex_service:
+        try:
+            # Use the LlamaIndex service query method
+            result = await self.llamaindex_service.query(
+                question=question,
+                similarity_top_k=similarity_top_k,
+                response_mode=response_mode,
+            )
+
+            # Check if we got a meaningful response
+            answer = result.get("answer", "")
+            sources = result.get("sources", [])
+
+            if not answer or "error" in answer.lower():
                 log_event(
-                    "query_service_unavailable", {"question_preview": question[:50]}
+                    "query_empty_response",
+                    {
+                        "question_preview": question[:50],
+                        "sources_found": len(sources),
+                        "answer_preview": answer[:100] if answer else "empty",
+                    },
+                    level=logging.WARNING,
                 )
-                metrics.set_error(RuntimeError("LlamaIndex service not available"))
-                metrics.report("llamaindex_query_failed")
-                return self._empty_response("LlamaIndex service not available")
 
+            # Transform the result to match expected output schema
+            transformed_result = self._transform_query_result(result, question)
+
+            # Log successful query with metrics
             log_event(
-                "query_started",
+                "query_completed",
                 {
-                    "question_preview": question[:100],
-                    "similarity_top_k": similarity_top_k,
-                    "response_mode": response_mode,
+                    "question_length": len(question),
+                    "answer_length": len(transformed_result.get("answer", "")),
+                    "confidence": transformed_result.get("confidence", 0.0),
+                    "sources_count": len(transformed_result.get("sources", [])),
+                    "method": transformed_result.get("method", "unknown"),
                 },
             )
 
-            try:
-                # Use the LlamaIndex service query method
-                result = await self.llamaindex_service.query(
-                    question=question,
-                    similarity_top_k=similarity_top_k,
-                    response_mode=response_mode,
-                )
+            return transformed_result  # type: ignore[no-any-return]
 
-                # Transform the result to match expected output schema
-                transformed_result = self._transform_query_result(result, question)
+        except Exception as e:
+            log_event(
+                "query_failed",
+                {
+                    "question_preview": question[:50],
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
+            return self._empty_response(f"Query failed: {str(e)}")
 
-                metrics.add_metric(
-                    "answer_length", len(transformed_result.get("answer", ""))
-                )
-                metrics.add_metric(
-                    "sources_count", len(transformed_result.get("sources", []))
-                )
-                metrics.add_metric("query_successful", True)
-                metrics.set_success(True)
-                metrics.report("llamaindex_query_completed")
-
-                log_event(
-                    "query_completed",
-                    {
-                        "answer_length": len(transformed_result.get("answer", "")),
-                        "sources_count": len(transformed_result.get("sources", [])),
-                        "method": transformed_result.get("method", "unknown"),
-                    },
-                )
-
-                return transformed_result
-
-            except Exception as e:
-                metrics.set_error(e)
-                metrics.report("llamaindex_query_failed")
-
-                log_event(
-                    "query_failed",
-                    {
-                        "error_type": type(e).__name__,
-                        "error_message": str(e),
-                        "question_preview": question[:50],
-                    },
-                )
-                return self._empty_response(f"Query failed: {str(e)}")
-
+    @track(
+        operation="result_transformation",
+        track_performance=True,
+        frequency="medium_frequency",
+    )
     def _transform_query_result(
         self, result: Dict[str, Any], question: str
     ) -> Dict[str, Any]:
@@ -190,6 +187,23 @@ class LlamaIndexQueryTool(BaseTool):
             }
             transformed_sources.append(transformed_source)
 
+        # Log low confidence results for debugging
+        if confidence < 0.3:
+            log_event(
+                "low_confidence_result",
+                {
+                    "confidence": confidence,
+                    "answer_length": len(answer),
+                    "sources_count": len(sources),
+                    "avg_source_score": (
+                        sum(s.get("score", 0) for s in sources) / len(sources)
+                        if sources
+                        else 0
+                    ),
+                },
+                level=logging.DEBUG,
+            )
+
         return {
             "answer": answer,
             "confidence": confidence,
@@ -202,6 +216,11 @@ class LlamaIndexQueryTool(BaseTool):
             },
         }
 
+    @track(
+        operation="confidence_calculation",
+        track_performance=False,  # Fast operation, no need to track
+        frequency="high_frequency",  # Called frequently, sample it
+    )
     def _calculate_confidence(self, answer: str, sources: list, question: str) -> float:
         """Calculate confidence score based on answer and source quality."""
         if not answer or answer.strip() in [
@@ -240,14 +259,36 @@ class LlamaIndexQueryTool(BaseTool):
             "not found",
             "insufficient",
         ]
-        if any(phrase in answer.lower() for phrase in error_phrases):
+        detected_error_phrases = [
+            phrase for phrase in error_phrases if phrase in answer.lower()
+        ]
+        if detected_error_phrases:
             confidence -= 0.3
+            # Log when error phrases affect confidence (useful for debugging)
+            log_event(
+                "confidence_reduced_error_phrases",
+                {
+                    "detected_phrases": detected_error_phrases,
+                    "original_confidence": confidence + 0.3,
+                    "adjusted_confidence": confidence,
+                },
+                level=logging.DEBUG,
+            )
 
         # Ensure confidence is between 0 and 1
         return max(0.0, min(1.0, confidence))
 
     def _empty_response(self, error_message: str) -> Dict[str, Any]:
         """Return empty response with error message."""
+        # Log empty responses as they indicate issues
+        log_event(
+            "query_empty_response_generated",
+            {
+                "reason": error_message,
+            },
+            level=logging.DEBUG,
+        )
+
         return {
             "answer": f"I encountered an error: {error_message}",
             "confidence": 0.0,

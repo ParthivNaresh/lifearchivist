@@ -40,7 +40,7 @@ server = MCPServer()
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
-    configure_logging(level="INFO", use_structured=True)
+    configure_logging(level="INFO")
     await server.initialize()
     set_server_instance(server)
     yield

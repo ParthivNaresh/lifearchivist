@@ -9,7 +9,7 @@ interface Document {
   id: string;
   file_hash: string;
   original_path: string;
-  mime_type: string;
+  mime_type: string | null;
   size_bytes: number;
   created_at: string;
   modified_at: string | null;
@@ -35,7 +35,6 @@ interface DocumentsResponse {
 const DocumentsPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [clearing, setClearing] = useState(false);
   const { clearAllData: clearUploadQueueData } = useUploadQueue();
 
   const fetchDocuments = useCallback(async () => {
@@ -54,32 +53,7 @@ const DocumentsPage: React.FC = () => {
     2 * 60 * 1000 // 2 minute cache
   );
 
-  const clearAllDocuments = async () => {
-    if (!confirm('Are you sure you want to clear all documents? This cannot be undone.')) {
-      return;
-    }
 
-    try {
-      setClearing(true);
-      
-      // Clear backend data (database, vault, LlamaIndex, Redis progress)
-      await axios.delete('http://localhost:8000/api/documents');
-      
-      // Clear frontend upload queue localStorage
-      clearUploadQueueData();
-      
-      // Clear cache and refresh
-      clearCacheKey(`documents-${selectedStatus}`);
-      clearCacheKey('vault-info');
-      await refresh();
-      
-      console.log('✅ Complete Clear All operation finished successfully');
-    } catch (err) {
-      console.error('Failed to clear documents:', err);
-    } finally {
-      setClearing(false);
-    }
-  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -119,7 +93,11 @@ const DocumentsPage: React.FC = () => {
     }
   };
 
-  const getMimeTypeIcon = (mimeType: string) => {
+  const getMimeTypeIcon = (mimeType: string | null | undefined) => {
+    if (!mimeType) {
+      return '📁';
+    }
+    
     if (mimeType.startsWith('image/')) {
       return '🖼️';
     } else if (mimeType.includes('pdf')) {
@@ -182,15 +160,6 @@ const DocumentsPage: React.FC = () => {
           <h1 className="text-2xl font-bold">Documents</h1>
           
           <div className="flex items-center space-x-4">
-            {/* Clear All Button */}
-            <button
-              onClick={clearAllDocuments}
-              disabled={clearing || !documents || documents.length === 0}
-              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            >
-              {clearing ? 'Clearing...' : 'Clear All'}
-            </button>
-            
             {/* Status Filter */}
             <div className="flex items-center space-x-2">
               <label className="text-sm font-medium">Filter by status:</label>
