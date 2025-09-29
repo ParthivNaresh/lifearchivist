@@ -2,6 +2,7 @@
 Main MCP server implementation.
 """
 
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
@@ -11,6 +12,9 @@ from ..storage.llamaindex_service import LlamaIndexService
 from ..storage.vault.vault import Vault
 from ..tools.exceptions import ToolExecutionError, ToolNotFoundError, ValidationError
 from ..tools.registry import ToolRegistry
+from ..utils.logging import log_event
+from .background_tasks import BackgroundTaskManager
+from .enrichment_queue import EnrichmentQueue
 from .progress_manager import ProgressManager
 
 
@@ -46,6 +50,8 @@ class MCPServer:
         self.settings = get_settings()
         self.session_manager = SessionManager()
         self.progress_manager: Optional[ProgressManager] = None
+        self.enrichment_queue: Optional[EnrichmentQueue] = None
+        self.background_tasks: Optional[BackgroundTaskManager] = None
         self.llamaindex_service: Optional[LlamaIndexService] = None
         self.vault: Optional[Vault] = None
         self.tool_registry: Optional[ToolRegistry] = None
@@ -75,11 +81,33 @@ class MCPServer:
         except Exception:
             self.progress_manager = None
 
+        # Initialize enrichment queue for background processing
+        try:
+            self.enrichment_queue = EnrichmentQueue(redis_url=self.settings.redis_url)
+            await self.enrichment_queue.initialize()
+
+            # Start background tasks (enrichment worker) with shared instances
+            self.background_tasks = BackgroundTaskManager(
+                llamaindex_service=self.llamaindex_service, vault=self.vault
+            )
+            await self.background_tasks.start()
+        except Exception as e:
+            log_event(
+                "background_services_init_failed",
+                {
+                    "error": str(e),
+                },
+                level=logging.WARNING,
+            )
+            self.enrichment_queue = None
+            self.background_tasks = None
+
         # Initialize tool registry with dependencies
         self.tool_registry = ToolRegistry(
             vault=self.vault,
             llamaindex_service=self.llamaindex_service,
             progress_manager=self.progress_manager,
+            enrichment_queue=self.enrichment_queue,
         )
         await self.tool_registry.register_all()
 

@@ -2,6 +2,7 @@
 Main FastAPI application creation and configuration.
 """
 
+import os
 from contextlib import asynccontextmanager
 from typing import Any, Dict, Optional
 
@@ -14,6 +15,10 @@ from ..config.settings import configure_logging
 from .api.dependencies import set_server_instance
 from .api.router import get_api_router
 from .mcp_server import MCPServer
+
+# Set tokenizer parallelism to false to avoid warnings when forking processes
+# This must be done before any HuggingFace tokenizers are loaded
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 class ToolExecutionRequest(BaseModel):
@@ -45,7 +50,10 @@ async def lifespan(app: FastAPI):
     set_server_instance(server)
     yield
     # Shutdown
-    # No explicit cleanup needed
+    if server.background_tasks:
+        await server.background_tasks.stop()
+    if server.enrichment_queue:
+        await server.enrichment_queue.cleanup()
 
 
 def create_app() -> FastAPI:

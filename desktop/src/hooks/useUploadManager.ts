@@ -41,7 +41,16 @@ export const useUploadManager = () => {
       if (update.error) {
         updateItemStatus(itemId, 'error', update.error);
       } else if (update.stage === 'complete' && update.progress >= 100) {
-        updateItemStatus(itemId, 'completed', undefined, update.metadata);
+        // Check if this is a duplicate from the metadata
+        if (update.metadata?.status === 'duplicate') {
+          updateItemStatus(itemId, 'duplicate', undefined, {
+            ...update.metadata,
+            isDuplicate: true,
+            message: update.metadata.message || 'File already exists in archive'
+          });
+        } else {
+          updateItemStatus(itemId, 'completed', undefined, update.metadata);
+        }
       } else if (update.progress > 0) {
         updateItemStatus(itemId, 'processing');
       }

@@ -6,7 +6,7 @@ from fastapi import APIRouter
 
 from lifearchivist.config import get_settings
 
-from .routes import documents, search
+from .routes import debug, documents, enrichment, search
 from .routes import settings as settings_routes
 from .routes import tags, upload, vault
 
@@ -25,6 +25,8 @@ def get_api_router() -> APIRouter:
     api_router.include_router(tags.router)
     api_router.include_router(vault.router)
     api_router.include_router(settings_routes.router)
+    api_router.include_router(enrichment.router)
+    api_router.include_router(debug.router)
 
     # Conditionally include WebSocket routes
     if settings.enable_websockets:

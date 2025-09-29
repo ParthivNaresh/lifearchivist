@@ -107,7 +107,6 @@ async def ask_question(request: Dict[str, Any]):
     question = request.get("question", "").strip()
     context_limit = request.get("context_limit", 5)
 
-    # Validate question
     if not question:
         raise HTTPException(status_code=400, detail="Question is required")
 

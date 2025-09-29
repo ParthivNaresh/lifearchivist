@@ -78,24 +78,29 @@ async def upload_file(
             content = await file.read()
             temp_file.write(content)
             temp_file.flush()
+            # Ensure all data is written to disk
+            import os
 
-            # Import the temporary file with progress tracking
-            import_params = {
-                "path": temp_file.name,
-                "tags": tags_list,
-                "metadata": {
-                    **metadata_dict,
-                    "original_filename": file.filename,
-                },
-                "session_id": session_id,
-            }
-            result = await server.execute_tool("file.import", import_params)
+            os.fsync(temp_file.fileno())
 
-            if result["success"]:
-                return result["result"]
-            else:
-                error_msg = result["error"]
-                raise HTTPException(status_code=500, detail=error_msg)
+        # File is now closed and fully written, import it
+        # Import the temporary file with progress tracking
+        import_params = {
+            "path": temp_file_path,
+            "tags": tags_list,
+            "metadata": {
+                **metadata_dict,
+                "original_filename": file.filename,
+            },
+            "session_id": session_id,
+        }
+        result = await server.execute_tool("file.import", import_params)
+
+        if result["success"]:
+            return result["result"]
+        else:
+            error_msg = result["error"]
+            raise HTTPException(status_code=500, detail=error_msg)
     except HTTPException:
         raise
     except Exception as e:

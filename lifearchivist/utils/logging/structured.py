@@ -336,6 +336,32 @@ def create_development_formatter() -> logging.Formatter:
                 truncation_ratio = data.get("truncation_ratio", 0)
                 return f"{original_length} → {truncated_length} chars ({truncation_ratio:.1%} kept)"
 
+            # Query context events
+            elif event == "query_context_used":
+                num_chunks = data.get("num_chunks", 0)
+                total_chars = data.get("total_context_chars", 0)
+                question = data.get("question", "")[:50]
+                context_preview = data.get("context_preview", "")
+
+                # Format the context preview nicely
+                if total_chars > 1000:
+                    size_str = f"{total_chars/1000:.1f}k chars"
+                else:
+                    size_str = f"{total_chars} chars"
+
+                # Show a snippet of the context
+                if context_preview and len(context_preview) > 100:
+                    context_snippet = context_preview[:100] + "..."
+                else:
+                    context_snippet = context_preview
+
+                return f"\n🔍 Query: '{question}...'\n📚 Context: {num_chunks} chunks, {size_str}\n📄 Preview: {context_snippet}"
+
+            elif event == "estimated_llm_prompt":
+                prompt_length = data.get("prompt_length", 0)
+                prompt_preview = data.get("prompt_preview", "")[:200]
+                return f"Prompt ({prompt_length} chars): {prompt_preview}..."
+
             # Document events
             elif event == "document_created":
                 word_count = data.get("word_count", 0)
@@ -353,10 +379,11 @@ def create_development_formatter() -> logging.Formatter:
 
             # File processing events
             elif event == "file_import_started":
-                file_size_mb = data.get("file_size_mb", 0)
+                file_size = data.get("file_size")
                 has_mime_hint = data.get("has_mime_hint", False)
+                mime_type = data.get("mime_type")
                 has_session = data.get("has_session", False)
-                context_parts = [f"{file_size_mb}MB"]
+                context_parts = [f"{mime_type}", f"{file_size}MB"]
                 if has_mime_hint:
                     context_parts.append("with hint")
                 if has_session:

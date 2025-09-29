@@ -219,9 +219,23 @@ class Vault:
             # Use empty prefix for main vault clearing (not "orphaned_")
             await clear_directory_files(directory, metrics, None, "")
 
+    async def delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
+        """
+        Delete all files (content and thumbnails) associated with a specific hash.
+
+        Public method for deleting files by their hash value.
+
+        Args:
+            file_hash: SHA256 hash of the file to delete
+            metrics: Dictionary to update with deletion statistics
+        """
+        await self._delete_file_by_hash(file_hash, metrics)
+
     async def _delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
         """
         Delete all files (content and thumbnails) associated with a specific hash.
+
+        Internal implementation for file deletion.
 
         Args:
             file_hash: SHA256 hash of the file to delete

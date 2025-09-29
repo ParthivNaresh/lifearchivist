@@ -2,7 +2,10 @@
 Vault management endpoints.
 """
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 
 from ..dependencies import get_server
 
@@ -111,5 +114,126 @@ async def list_vault_files(
             "offset": offset,
         }
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from None
+
+
+@router.get("/vault/file/{file_hash}")
+async def download_file_from_vault(file_hash: str):
+    """Download a file from vault by its hash."""
+    server = get_server()
+
+    try:
+        if not server.vault:
+            raise HTTPException(status_code=500, detail="Vault not initialized")
+
+        # Build the path where the file should be stored
+        # Files are stored in content/XX/YY/ZZZZ... format
+        if len(file_hash) < 4:
+            raise HTTPException(status_code=400, detail="Invalid file hash")
+
+        content_dir = server.vault.content_dir
+        # First 2 chars for first directory level
+        dir1 = file_hash[:2]
+        # Next 2 chars for second directory level
+        dir2 = file_hash[2:4]
+        # Rest of the hash for filename (without extension)
+        file_stem = file_hash[4:]
+
+        # Look for any file with this hash pattern
+        file_dir = content_dir / dir1 / dir2
+
+        if not file_dir.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Find the file (we don't know the extension)
+        matching_files = list(file_dir.glob(f"{file_stem}.*"))
+
+        if not matching_files:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Use the first matching file
+        file_path = matching_files[0]
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Get the original filename from metadata if available
+        filename = file_path.name
+        if server.llamaindex_service:
+            try:
+                # Try to get original filename from metadata
+                matching_docs = (
+                    await server.llamaindex_service.query_documents_by_metadata(
+                        filters={"file_hash": file_hash}, limit=1
+                    )
+                )
+                if matching_docs:
+                    metadata = matching_docs[0].get("metadata", {})
+                    original_path = metadata.get("original_path", "")
+                    if original_path:
+                        filename = Path(original_path).name
+            except Exception:
+                # If lookup fails, use the hash-based filename
+                pass
+
+        # Determine the correct media type based on file extension
+        extension = file_path.suffix.lower()
+        media_type = "application/octet-stream"  # default
+
+        # Set appropriate media types for common formats
+        if extension == ".pdf":
+            media_type = "application/pdf"
+        elif extension in [".jpg", ".jpeg"]:
+            media_type = "image/jpeg"
+        elif extension == ".png":
+            media_type = "image/png"
+        elif extension == ".gif":
+            media_type = "image/gif"
+        elif extension == ".webp":
+            media_type = "image/webp"
+        elif extension in [".txt", ".text"]:
+            media_type = "text/plain"
+        elif extension == ".rtf":
+            media_type = "application/rtf"
+        elif extension in [".doc", ".docx"]:
+            media_type = "application/msword"
+        elif extension in [".xls", ".xlsx"]:
+            media_type = "application/vnd.ms-excel"
+
+        # For PDFs, images, and text files, we want to display inline
+        # RTF files can sometimes display inline depending on browser
+        if extension in [
+            ".pdf",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".gif",
+            ".webp",
+            ".txt",
+            ".text",
+            ".rtf",
+        ]:
+            return FileResponse(
+                path=str(file_path),
+                media_type=media_type,
+                headers={"Content-Disposition": f'inline; filename="{filename}"'},
+            )
+        elif extension in [".doc", ".docx", ".xls", ".xlsx"]:
+            # For Office files, browsers will download them
+            # Use attachment disposition to ensure proper download
+            return FileResponse(
+                path=str(file_path),
+                media_type=media_type,
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
+        else:
+            # For other file types, allow download
+            return FileResponse(
+                path=str(file_path), filename=filename, media_type=media_type
+            )
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from None

@@ -20,11 +20,18 @@ from .base import BaseTool
 class ToolRegistry:
     """Registry for managing MCP tools."""
 
-    def __init__(self, vault=None, llamaindex_service=None, progress_manager=None):
+    def __init__(
+        self,
+        vault=None,
+        llamaindex_service=None,
+        progress_manager=None,
+        enrichment_queue=None,
+    ):
         self.tools: Dict[str, BaseTool] = {}
         self.vault = vault
         self.llamaindex_service = llamaindex_service
         self.progress_manager = progress_manager
+        self.enrichment_queue = enrichment_queue
 
     @track(operation="tool_registration_batch")
     async def register_all(self):
@@ -43,6 +50,7 @@ class ToolRegistry:
                     "vault": self.vault,
                     "llamaindex_service": self.llamaindex_service,
                     "progress_manager": self.progress_manager,
+                    "enrichment_queue": self.enrichment_queue,
                 },
             },
             {
