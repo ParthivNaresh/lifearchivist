@@ -298,12 +298,17 @@ class FileImportTool(BaseTool):
     ) -> Dict[str, Any] | None:
         """Check for duplicate documents in LlamaIndex."""
         # Check LlamaIndex for existing document with this file hash
-        existing_docs = await self.llamaindex_service.query_documents_by_metadata(
-            filters={"file_hash": file_hash}, limit=1
+        existing_docs_result = (
+            await self.llamaindex_service.query_documents_by_metadata(
+                filters={"file_hash": file_hash}, limit=1
+            )
         )
 
-        if existing_docs:
-            return existing_docs[0]  # type: ignore[no-any-return]
+        # Unwrap the Result
+        if existing_docs_result.is_success():
+            existing_docs = existing_docs_result.unwrap()
+            if existing_docs:
+                return existing_docs[0]  # type: ignore[no-any-return]
 
         return None
 
@@ -316,21 +321,21 @@ class FileImportTool(BaseTool):
         self, file_id: str, extracted_text: str, doc_metadata: Dict[str, Any]
     ):
         """Create document in LlamaIndex."""
-        success = await self.llamaindex_service.add_document(
+        result = await self.llamaindex_service.add_document(
             document_id=file_id, content=extracted_text, metadata=doc_metadata
         )
 
-        if not success:
-            # Log failure as it's an exceptional case
+        if result.is_failure():
             log_event(
                 "document_indexing_failed",
                 {
                     "file_id": file_id,
-                    "error": "LlamaIndex add_document returned False",
+                    "error": result.error,
+                    "error_type": result.error_type,
                 },
                 level=logging.ERROR,
             )
-            raise RuntimeError(f"Failed to create document {file_id} in LlamaIndex")
+            raise RuntimeError(f"Failed to create document {file_id}: {result.error}")
 
     @track(
         operation="document_finalization",
@@ -342,9 +347,20 @@ class FileImportTool(BaseTool):
     ):
         """Finalize document with status update and provenance."""
         # Update status to ready in LlamaIndex metadata
-        await self.llamaindex_service.update_document_metadata(
+        status_result = await self.llamaindex_service.update_document_metadata(
             file_id, {"status": "ready"}, merge_mode="update"
         )
+
+        if status_result.is_failure():
+            log_event(
+                "document_finalization_warning",
+                {
+                    "file_id": file_id,
+                    "step": "status_update",
+                    "error": status_result.error,
+                },
+                level=logging.WARNING,
+            )
 
         # Log provenance in LlamaIndex metadata
         provenance_entry = create_provenance_entry(
@@ -357,9 +373,20 @@ class FileImportTool(BaseTool):
                 "existed": vault_result["existed"],
             },
         )
-        await self.llamaindex_service.update_document_metadata(
+        provenance_result = await self.llamaindex_service.update_document_metadata(
             file_id, {"provenance": [provenance_entry]}, merge_mode="update"
         )
+
+        if provenance_result.is_failure():
+            log_event(
+                "document_finalization_warning",
+                {
+                    "file_id": file_id,
+                    "step": "provenance_update",
+                    "error": provenance_result.error,
+                },
+                level=logging.WARNING,
+            )
 
     async def _handle_import_error(
         self, error: Exception, file_id: str, display_path: str, session_id: str

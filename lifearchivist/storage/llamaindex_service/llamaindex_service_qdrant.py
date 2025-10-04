@@ -3,15 +3,15 @@ Qdrant-native LlamaIndex service implementation.
 
 This is a simplified version that works with Qdrant's architecture,
 providing 80% of functionality with cleaner separation of concerns.
+
+All public methods return Result types for explicit error handling and
+consistent response formats across the API and UI layers.
 """
 
-import asyncio
-import json
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from llama_index.core import (
-    Document,
     Settings,
     StorageContext,
     VectorStoreIndex,
@@ -26,7 +26,17 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
 from lifearchivist.config import get_settings
+from lifearchivist.storage.document_service import LlamaIndexDocumentService
+from lifearchivist.storage.document_tracker import JSONDocumentTracker
+from lifearchivist.storage.metadata_service import LlamaIndexMetadataService
+from lifearchivist.storage.query_service import LlamaIndexQueryService
+from lifearchivist.storage.search_service import LlamaIndexSearchService
+from lifearchivist.storage.utils import StorageConstants
 from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.result import (
+    Result,
+    internal_error,
+)
 
 
 class LlamaIndexQdrantService:
@@ -47,55 +57,174 @@ class LlamaIndexQdrantService:
         self.index: Optional[VectorStoreIndex] = None
         self.query_engine = None
 
-        # Simple document tracking (replaces ref_doc_info)
-        # This stores both node mappings and full metadata snapshots
-        self.doc_tracker_path = (
+        # Initialize services to None first
+        self.search_service = None
+        self.metadata_service = None
+        self.document_service = None
+        self.query_service = None
+        self.qdrant_client = None
+
+        # Initialize document tracker with the same path as before for compatibility
+        tracker_path = (
             self.settings.lifearch_home / "llamaindex_storage" / "doc_tracker.json"
         )
-        self.doc_tracker: Dict[str, Union[List[str], Dict[str, Any]]] = (
-            self._load_doc_tracker()
-        )
+        self.doc_tracker = JSONDocumentTracker(storage_path=tracker_path)
 
-        # Add a lock for thread-safe doc_tracker operations
-        self._doc_tracker_lock = asyncio.Lock()
+        # Mark that tracker needs async initialization
+        # This will be done on first use to avoid event loop issues
+        self._tracker_initialized = False
 
         self.setup()
 
-    def _load_doc_tracker(self) -> Dict[str, Union[List[str], Dict[str, Any]]]:
-        """
-        Load document to node mappings from JSON.
-
-        Returns a dict that can contain:
-        - document_id -> List[str] (list of node IDs)
-        - document_id_full_metadata -> Dict[str, Any] (full metadata snapshot)
-        """
-        if self.doc_tracker_path.exists():
-            try:
-                with open(self.doc_tracker_path, "r") as f:
-                    return json.load(f)
-            except (json.JSONDecodeError, IOError, OSError):
-                # JSONDecodeError: Corrupted or invalid JSON
-                # IOError/OSError: File access issues
-                return {}
-        return {}
-
-    async def _save_doc_tracker(self):
-        """Save document to node mappings to JSON (thread-safe)."""
-        async with self._doc_tracker_lock:
-            self.doc_tracker_path.parent.mkdir(exist_ok=True)
-            # Use atomic write to prevent corruption
-            temp_path = self.doc_tracker_path.with_suffix(".tmp")
-            with open(temp_path, "w") as f:
-                json.dump(self.doc_tracker, f, indent=2)
-            # Atomic rename
-            temp_path.replace(self.doc_tracker_path)
-
     def setup(self):
         """Setup functions for LlamaIndex with Qdrant."""
-        self._setup_embeddings_and_llm()
-        self._setup_qdrant()
-        self._setup_index()
-        self._setup_query_engine()
+        try:
+            self._setup_embeddings_and_llm()
+            self._setup_qdrant()
+            self._setup_index()
+            self._setup_query_engine()
+            self._setup_search_service()
+            self._setup_metadata_service()
+            self._setup_document_service()
+            self._setup_query_service()
+
+            # Log final setup status
+            log_event(
+                "llamaindex_setup_complete",
+                {
+                    "has_index": self.index is not None,
+                    "has_doc_tracker": self.doc_tracker is not None,
+                    "has_document_service": self.document_service is not None,
+                    "has_metadata_service": self.metadata_service is not None,
+                    "has_search_service": self.search_service is not None,
+                    "has_query_service": self.query_service is not None,
+                    "tracker_initialized": self._tracker_initialized,
+                },
+            )
+        except Exception as e:
+            log_event(
+                "llamaindex_setup_failed",
+                {"error": str(e), "error_type": type(e).__name__},
+                level=logging.ERROR,
+            )
+            # Don't raise, let individual operations fail gracefully
+
+    def _setup_search_service(self):
+        """Initialize the search service with the index."""
+        if self.index:
+            self.search_service = LlamaIndexSearchService(self.index)
+            log_event(
+                "search_service_initialized",
+                {"has_index": True},
+            )
+        else:
+            self.search_service = None
+            log_event(
+                "search_service_not_initialized",
+                {"reason": "no_index"},
+                level=logging.WARNING,
+            )
+
+    def _setup_metadata_service(self):
+        """Initialize the metadata service with the index and tracker."""
+        if self.index is not None and self.doc_tracker is not None:
+            self.metadata_service = LlamaIndexMetadataService(
+                index=self.index, doc_tracker=self.doc_tracker
+            )
+            log_event(
+                "metadata_service_initialized",
+                {"has_index": True, "has_tracker": True},
+            )
+        else:
+            self.metadata_service = None
+            log_event(
+                "metadata_service_not_initialized",
+                {
+                    "reason": "missing_dependencies",
+                    "has_index": self.index is not None,
+                    "has_tracker": self.doc_tracker is not None,
+                },
+                level=logging.WARNING,
+            )
+
+    def _setup_document_service(self):
+        """Initialize the document service with all dependencies."""
+        try:
+            # Log current state for debugging
+            log_event(
+                "document_service_setup_attempt",
+                {
+                    "has_index": self.index is not None,
+                    "has_doc_tracker": self.doc_tracker is not None,
+                    "has_metadata_service": self.metadata_service is not None,
+                    "has_qdrant_client": hasattr(self, "qdrant_client")
+                    and self.qdrant_client is not None,
+                    "tracker_needs_init": getattr(self, "_tracker_needs_init", False),
+                },
+                level=logging.INFO,
+            )
+
+            if self.index is not None and self.doc_tracker is not None:
+                self.document_service = LlamaIndexDocumentService(
+                    index=self.index,
+                    doc_tracker=self.doc_tracker,
+                    metadata_service=self.metadata_service,
+                    qdrant_client=self.qdrant_client,
+                    settings=self.settings,
+                )
+                log_event(
+                    "document_service_initialized",
+                    {
+                        "has_index": True,
+                        "has_tracker": True,
+                        "has_metadata_service": self.metadata_service is not None,
+                        "has_qdrant_client": self.qdrant_client is not None,
+                    },
+                )
+            else:
+                self.document_service = None
+                log_event(
+                    "document_service_not_initialized",
+                    {
+                        "reason": "missing_dependencies",
+                        "index_exists": self.index is not None,
+                        "tracker_exists": self.doc_tracker is not None,
+                    },
+                    level=logging.WARNING,
+                )
+        except Exception as e:
+            self.document_service = None
+            log_event(
+                "document_service_setup_error",
+                {"error": str(e), "error_type": type(e).__name__},
+                level=logging.ERROR,
+            )
+
+    def _setup_query_service(self):
+        """Initialize the query service with all dependencies."""
+        if self.index and self.query_engine:
+            self.query_service = LlamaIndexQueryService(
+                index=self.index,
+                query_engine=self.query_engine,
+                search_service=self.search_service,
+                metadata_service=self.metadata_service,
+            )
+            log_event(
+                "query_service_initialized",
+                {
+                    "has_index": True,
+                    "has_query_engine": True,
+                    "has_search_service": self.search_service is not None,
+                    "has_metadata_service": self.metadata_service is not None,
+                },
+            )
+        else:
+            self.query_service = None
+            log_event(
+                "query_service_not_initialized",
+                {"reason": "missing_dependencies"},
+                level=logging.WARNING,
+            )
 
     @track(
         operation="embeddings_llm_setup",
@@ -142,9 +271,9 @@ class LlamaIndexQdrantService:
             )
 
         Settings.node_parser = SentenceSplitter(
-            chunk_size=2600,  # Increased to handle larger metadata
-            chunk_overlap=200,  # Overlap for better context
-            separator="\n\n",
+            chunk_size=StorageConstants.DEFAULT_CHUNK_SIZE,
+            chunk_overlap=StorageConstants.DEFAULT_CHUNK_OVERLAP,
+            separator=StorageConstants.DEFAULT_CHUNK_SEPARATOR,
         )
 
     @track(
@@ -293,215 +422,64 @@ class LlamaIndexQdrantService:
                 {"similarity_top_k": 5},
             )
 
-    @track(
-        operation="document_addition",
-        include_args=["document_id"],
-        include_result=True,
-        track_performance=True,
-        frequency="low_frequency",
-    )
     async def add_document(
         self,
         document_id: str,
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> bool:
+    ) -> Result[Dict[str, Any], str]:
         """
         Add a document to the index.
 
-        Simplified version - just adds document and tracks nodes.
+        Delegates to the document service for centralized document management.
+
+        Returns:
+            Success with document info, or Failure with error details
         """
-        if not self.index:
-            log_event(
-                "document_add_failed",
-                {"document_id": document_id, "reason": "no_index"},
-                level=logging.ERROR,
-            )
-            return False
-
-        try:
-            # Store full metadata separately (for retrieval by API endpoints)
-            full_metadata = metadata or {}
-            full_metadata["document_id"] = document_id
-
-            # Create minimal metadata for chunks (only what's needed for search/retrieval)
-            chunk_metadata = self._create_minimal_chunk_metadata(full_metadata)
-
-            # Store full metadata in a separate location
-            # For now, we'll store it in the doc_tracker with a special key
-            full_metadata_key = f"{document_id}_full_metadata"
-            async with self._doc_tracker_lock:
-                self.doc_tracker[full_metadata_key] = full_metadata
-            # Save immediately to persist full metadata
-            await self._save_doc_tracker()
-
-            document = Document(
-                text=content,
-                metadata=chunk_metadata,  # Use minimal metadata for chunks
-                id_=document_id,
-            )
-
-            # Insert into index - this creates nodes
+        # Initialize tracker on first use if not already initialized
+        if not self._tracker_initialized:
             try:
-                # Log before insert for debugging
+                await self.doc_tracker.initialize()
+                self._tracker_initialized = True
                 log_event(
-                    "document_insert_attempt",
-                    {
-                        "document_id": document_id,
-                        "content_length": len(content),
-                        "content_preview": content[:100] if content else "empty",
-                        "metadata_keys": list(chunk_metadata.keys()),
-                    },
-                    level=logging.DEBUG,
+                    "tracker_initialized_on_first_use", {"document_id": document_id}
                 )
-
-                # Check if content is empty
-                if not content or not content.strip():
-                    raise ValueError("Document content is empty or whitespace only")
-
-                self.index.insert(document)
-
-                # Log successful insert
+            except Exception as e:
                 log_event(
-                    "document_insert_success",
-                    {
-                        "document_id": document_id,
-                        "content_length": len(content),
-                    },
-                    level=logging.DEBUG,
-                )
-            except Exception as insert_error:
-                # Log the full error with traceback
-                import traceback
-
-                error_details = {
-                    "document_id": document_id,
-                    "error_type": type(insert_error).__name__,
-                    "error_message": str(insert_error),
-                    "content_length": len(content),
-                    "content_preview": content[:100] if content else "empty",
-                    "traceback": traceback.format_exc(),
-                }
-
-                # Print the actual error to console for debugging
-                print(f"\n🔴 DOCUMENT INSERT ERROR for {document_id}:")
-                print(f"   Error Type: {type(insert_error).__name__}")
-                print(f"   Error Message: {str(insert_error)}")
-                print(f"   Content Length: {len(content)}")
-                print(f"   Traceback:\n{traceback.format_exc()}")
-
-                log_event(
-                    "document_insert_failed",
-                    error_details,
+                    "tracker_init_failed",
+                    {"error": str(e), "error_type": type(e).__name__},
                     level=logging.ERROR,
                 )
-                raise
-
-            # Track which nodes belong to this document
-            doc_nodes = []
-            docstore = self.index.storage_context.docstore
-
-            # Debug: Check what's in the docstore
-            print(f"\n🔍 DEBUG: Looking for nodes for document {document_id}")
-            print(f"   Docstore type: {type(docstore).__name__}")
-            print(f"   Has 'docs' attr: {hasattr(docstore, 'docs')}")
-
-            # SimpleDocumentStore uses a 'docs' dictionary to store nodes
-            # After insertion, we need to find the nodes that were created
-            if hasattr(docstore, "docs"):
-                print(f"   Total docs in store: {len(docstore.docs)}")
-                # Iterate through all docs and find ones with our document_id
-                for node_id, node in docstore.docs.items():
-                    # Debug each node
-                    if hasattr(node, "metadata"):
-                        node_doc_id = (
-                            node.metadata.get("document_id") if node.metadata else None
-                        )
-                        if node_doc_id == document_id:
-                            doc_nodes.append(node_id)
-                            print(f"   ✅ Found matching node: {node_id[:20]}...")
-                        # Show first few nodes for debugging
-                        elif len(docstore.docs) <= 5:
-                            print(
-                                f"   ❌ Node {node_id[:20]}... has document_id: {node_doc_id}"
-                            )
-
-            # Log if we couldn't find nodes
-            if not doc_nodes:
-                print(f"\n⚠️ WARNING: No nodes found for document {document_id}")
-                print(
-                    "This means insert() succeeded but nodes weren't created with expected metadata"
-                )
-
-                # Check if there are ANY nodes with our document text
-                if hasattr(docstore, "docs"):
-                    for node_id, node in docstore.docs.items():
-                        if hasattr(node, "text") and content[:50] in node.text:
-                            print(
-                                f"   🔍 Found node with matching text but wrong metadata: {node_id[:20]}..."
-                            )
-                            if hasattr(node, "metadata"):
-                                print(f"      Node metadata: {node.metadata}")
-
-                log_event(
-                    "node_tracking_warning",
-                    {
+                return internal_error(
+                    f"Failed to initialize document tracker: {str(e)}",
+                    context={
                         "document_id": document_id,
-                        "docstore_type": type(docstore).__name__,
-                        "has_docs_attr": hasattr(docstore, "docs"),
-                        "docs_count": (
-                            len(docstore.docs) if hasattr(docstore, "docs") else 0
-                        ),
+                        "error_type": type(e).__name__,
                     },
-                    level=logging.WARNING,
                 )
 
-                # This is the actual problem - insert succeeds but no nodes are created
-                raise RuntimeError(
-                    f"Document insert succeeded but no nodes were created for {document_id}"
-                )
-
-            # Update tracker with thread safety
-            async with self._doc_tracker_lock:
-                self.doc_tracker[document_id] = doc_nodes
-            await self._save_doc_tracker()
-
-            # Persist storage context to disk
-            storage_dir = self.settings.lifearch_home / "llamaindex_storage"
-            try:
-                self.index.storage_context.persist(persist_dir=str(storage_dir))
-            except Exception as persist_error:
-                log_event(
-                    "storage_persist_failed",
-                    {
-                        "document_id": document_id,
-                        "error_type": type(persist_error).__name__,
-                        "error_message": str(persist_error),
-                        "storage_dir": str(storage_dir),
-                    },
-                    level=logging.ERROR,
-                )
-                # Don't raise here - document is already in memory index
-                # Just log the error
-
+        if not self.document_service:
             log_event(
-                "document_added",
+                "document_add_skipped",
                 {
                     "document_id": document_id,
-                    "content_length": len(content),
-                    "nodes_created": len(doc_nodes),
+                    "reason": "no_document_service",
+                    "has_index": self.index is not None,
+                    "has_tracker": self.doc_tracker is not None,
+                },
+                level=logging.ERROR,
+            )
+            return internal_error(
+                "Document service not initialized",
+                context={
+                    "document_id": document_id,
+                    "has_index": self.index is not None,
+                    "has_tracker": self.doc_tracker is not None,
                 },
             )
 
-            return True
-
-        except Exception as e:
-            log_event(
-                "document_add_error",
-                {"document_id": document_id, "error": str(e)},
-                level=logging.ERROR,
-            )
-            return False
+        # Delegate to document service (which now returns Result)
+        return await self.document_service.add_document(document_id, content, metadata)
 
     def _create_minimal_chunk_metadata(
         self, full_metadata: Dict[str, Any]
@@ -509,102 +487,30 @@ class LlamaIndexQdrantService:
         """
         Create minimal metadata for chunks to avoid bloat.
 
-        Only includes fields essential for:
-        - Identifying the source document
-        - Basic filtering during search
-        - Display in search results
+        Delegates to the metadata service for consistent optimization.
         """
+        if self.metadata_service:
+            return self.metadata_service.create_minimal_chunk_metadata(full_metadata)
+
+        # Fallback implementation if metadata service not available
         minimal = {
             "document_id": full_metadata.get("document_id"),
             "title": full_metadata.get("title", ""),
             "mime_type": full_metadata.get("mime_type", ""),
             "status": full_metadata.get("status", "ready"),
         }
-
-        # Add theme information if present (for filtering)
-        if "theme" in full_metadata:
-            theme_data = full_metadata["theme"]
-            if isinstance(theme_data, dict):
-                minimal["theme"] = theme_data.get("theme", "Unclassified")
-                minimal["primary_subtheme"] = theme_data.get("primary_subtheme", "")
-            else:
-                minimal["theme"] = theme_data
-
-        # Add essential dates (keep them short)
-        if "uploaded_at" in full_metadata:
-            # Store just the date part, not full timestamp
-            uploaded = full_metadata["uploaded_at"]
-            if isinstance(uploaded, str) and len(uploaded) > 10:
-                minimal["uploaded_date"] = uploaded[:10]
-
-        # Add file hash (first 8 chars only for dedup checking)
-        if "file_hash" in full_metadata:
-            minimal["file_hash_short"] = full_metadata["file_hash"][:8]
-
-        # Calculate and log the size reduction
-        import json
-
-        full_size = len(json.dumps(full_metadata))
-        minimal_size = len(json.dumps(minimal))
-
-        log_event(
-            "metadata_size_reduction",
-            {
-                "document_id": full_metadata.get("document_id"),
-                "full_metadata_size": full_size,
-                "minimal_metadata_size": minimal_size,
-                "reduction_percent": (
-                    round((1 - minimal_size / full_size) * 100, 1)
-                    if full_size > 0
-                    else 0
-                ),
-                "fields_kept": list(minimal.keys()),
-            },
-            level=logging.DEBUG,
-        )
-
         return minimal
 
     async def get_full_document_metadata(self, document_id: str) -> Dict[str, Any]:
         """
-        Retrieve the full metadata for a document (not just chunk metadata).
+        Retrieve the full metadata for a document.
 
-        This is used by API endpoints to return complete document information.
+        Delegates to the metadata service for centralized metadata management.
         """
-        full_metadata_key = f"{document_id}_full_metadata"
+        if self.metadata_service:
+            return await self.metadata_service.get_full_document_metadata(document_id)
 
-        # First try to get from our stored full metadata
-        if full_metadata_key in self.doc_tracker:
-            metadata = self.doc_tracker[full_metadata_key]
-            # Type guard: ensure it's a dict (full metadata), not a list (node IDs)
-            if isinstance(metadata, dict):
-                return metadata
-            else:
-                raise TypeError("Metadata was a list")
-
-        # Fallback: get from first chunk if full metadata not found
-        # (for backwards compatibility with existing documents)
-        if document_id not in self.doc_tracker:
-            return {}
-
-        node_ids = self.doc_tracker[document_id]
-        if not node_ids:
-            return {}
-
-        docstore = self.index.storage_context.docstore
-        first_node_id = node_ids[0]
-        nodes = docstore.get_document(first_node_id, raise_error=False)
-
-        if not nodes:
-            return {}
-
-        if not isinstance(nodes, list):
-            nodes = [nodes]
-
-        first_node = nodes[0] if nodes else None
-        if first_node and hasattr(first_node, "metadata"):
-            return first_node.metadata or {}
-
+        # Fallback if metadata service not available
         return {}
 
     async def query(
@@ -612,206 +518,118 @@ class LlamaIndexQdrantService:
         question: str,
         similarity_top_k: int = 5,
         response_mode: str = "tree_summarize",
+        filters: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Query the index - simplified version.
+        Query the index using RAG.
+
+        Delegates to the query service for centralized Q&A operations.
         """
-        if not self.query_engine:
-            return {
-                "answer": "Query engine not available",
-                "sources": [],
-                "method": "error",
-            }
-
-        try:
-            # Update similarity_top_k if different
-            if hasattr(self.query_engine, "retriever"):
-                self.query_engine.retriever.similarity_top_k = similarity_top_k
-
-            response = self.query_engine.query(question)
-
-            # Extract sources and full context
-            sources = []
-            full_context_chunks = []
-            if hasattr(response, "source_nodes"):
-                for node in response.source_nodes:
-                    if hasattr(node, "node") and hasattr(node.node, "text"):
-                        full_text = node.node.text
-                        sources.append(
-                            {
-                                "text": full_text[:200],  # Preview for UI
-                                "full_text": full_text,  # Complete chunk text
-                                "score": float(node.score) if node.score else 0.0,
-                                "node_id": (
-                                    node.node.id_ if hasattr(node.node, "id_") else None
-                                ),
-                                "metadata": (
-                                    node.node.metadata
-                                    if hasattr(node.node, "metadata")
-                                    else {}
-                                ),
-                            }
-                        )
-                        full_context_chunks.append(full_text)
-
-            # Log the actual context that was sent to the LLM
-            combined_context = "\n\n---\n\n".join(full_context_chunks)
-            log_event(
-                "query_context_used",
-                {
-                    "question": question[:100],
-                    "num_chunks": len(full_context_chunks),
-                    "total_context_chars": len(combined_context),
-                    "context_preview": (
-                        combined_context[:1000] if combined_context else "No context"
-                    ),
-                },
-                level=logging.INFO,
+        if self.query_service:
+            return await self.query_service.query(
+                question=question,
+                similarity_top_k=similarity_top_k,
+                response_mode=response_mode,
+                filters=filters,
             )
 
-            # Also log the full prompt if you want to see exactly what's sent
-            # Note: This is an approximation since LlamaIndex constructs it internally
-            estimated_prompt = f"""Context information is below.
----------------------
-{combined_context}
----------------------
-Given the context information and not prior knowledge, answer the query.
-Query: {question}
-Answer: """
+        # Fallback if query service not available
+        log_event(
+            "query_skipped",
+            {"reason": "no_query_service"},
+            level=logging.ERROR,
+        )
+        return {
+            "answer": "Query service not available",
+            "sources": [],
+            "method": "error",
+            "error": True,
+        }
 
-            log_event(
-                "estimated_llm_prompt",
-                {
-                    "prompt_length": len(estimated_prompt),
-                    "prompt_preview": estimated_prompt[:500],
-                },
-                level=logging.DEBUG,
+    async def get_document_count(self) -> Result[int, str]:
+        """
+        Get count of indexed documents.
+
+        Delegates to the document service for centralized document counting.
+
+        Returns:
+            Success with document count, or Failure with error details
+        """
+        if not self.document_service:
+            return internal_error(
+                "Document service not initialized",
+                context={"service": "llamaindex_service"},
             )
 
-            return {
-                "answer": str(response.response) if response.response else "",
-                "sources": sources,
-                "method": "llamaindex_rag",
-                "context_used": combined_context,  # Include full context in response
-                "num_chunks_used": len(full_context_chunks),
-            }
-        except Exception as e:
-            log_event(
-                "query_error",
-                {"error": str(e)},
-                level=logging.ERROR,
-            )
-            return {
-                "answer": f"Query failed: {str(e)}",
-                "sources": [],
-                "method": "error",
-            }
+        # Delegate to document service (which now returns Result)
+        return await self.document_service.get_document_count()
 
-    async def get_document_count(self) -> int:
-        """Get count of indexed documents."""
-        # Count only actual documents, not full metadata entries
-        count = 0
-        for key in self.doc_tracker.keys():
-            if not key.endswith("_full_metadata"):
-                count += 1
-        return count
-
-    async def delete_document(self, document_id: str) -> bool:
+    async def delete_document(self, document_id: str) -> Result[Dict[str, Any], str]:
         """
         Delete a document from the index.
 
-        Simplified version - removes from Qdrant and tracker.
+        Delegates to the document service for centralized document deletion.
+
+        Returns:
+            Success with deletion info, or Failure with error details
+        """
+        if not self.document_service:
+            log_event(
+                "document_delete_skipped",
+                {"document_id": document_id, "reason": "no_document_service"},
+                level=logging.WARNING,
+            )
+            return internal_error(
+                "Document service not initialized",
+                context={"document_id": document_id, "service": "llamaindex_service"},
+            )
+
+        # Delegate to document service (which now returns Result)
+        return await self.document_service.delete_document(document_id)
+
+    async def clear_all_data(self) -> Result[Dict[str, Any], str]:
+        """
+        Clear all data and reset the system.
+
+        Delegates to document service and reinitializes all components.
+
+        Returns:
+            Success with clearing statistics, or Failure with error details
         """
         try:
-            if document_id not in self.doc_tracker:
-                return False
+            # Use document service to clear data
+            if not self.document_service:
+                return internal_error(
+                    "Document service not initialized",
+                    context={"service": "llamaindex_service"},
+                )
 
-            # Get nodes for this document
-            node_ids_raw = self.doc_tracker.get(document_id)
-            if not isinstance(node_ids_raw, list):
-                raise TypeError("Node ids weren't in a list")
-            node_ids = node_ids_raw
+            # Delegate to document service (which now returns Result)
+            clear_result = await self.document_service.clear_all_data()
 
-            # Delete from Qdrant by filtering on metadata
-            # Note: This requires Qdrant to have indexed the document_id field
-            from qdrant_client.models import FieldCondition, Filter, MatchValue
+            if clear_result.is_failure():
+                return clear_result  # Propagate the failure
 
-            self.qdrant_client.delete(
-                collection_name="lifearchivist",
-                points_selector=Filter(
-                    must=[
-                        FieldCondition(
-                            key="document_id",
-                            match=MatchValue(value=document_id),
-                        )
-                    ]
-                ),
-            )
-
-            # Remove from tracker with thread safety
-            async with self._doc_tracker_lock:
-                del self.doc_tracker[document_id]
-            await self._save_doc_tracker()
-
-            log_event(
-                "document_deleted",
-                {"document_id": document_id, "nodes_deleted": len(node_ids)},
-            )
-
-            return True
-
-        except Exception as e:
-            log_event(
-                "document_deletion_error",
-                {"document_id": document_id, "error": str(e)},
-                level=logging.ERROR,
-            )
-            return False
-
-    async def clear_all_data(self) -> Dict[str, Any]:
-        """Clear all data - simplified version."""
-        try:
-            # Get counts before clearing
-            doc_count = len(self.doc_tracker)
-
-            # Recreate Qdrant collection
-            self.qdrant_client.delete_collection("lifearchivist")
-            self.qdrant_client.create_collection(
-                collection_name="lifearchivist",
-                vectors_config=VectorParams(
-                    size=384,
-                    distance=Distance.COSINE,
-                ),
-            )
-
-            # Clear tracker with thread safety
-            async with self._doc_tracker_lock:
-                self.doc_tracker = {}
-            await self._save_doc_tracker()
-
+            # Re-initialize all components
             self._setup_index()
             self._setup_query_engine()
+            self._setup_search_service()
+            self._setup_metadata_service()
+            self._setup_document_service()
+            self._setup_query_service()
 
-            log_event(
-                "data_cleared",
-                {"documents_cleared": doc_count},
-            )
-
-            return {
-                "documents_cleared": doc_count,
-                "storage_cleared": True,
-            }
+            return clear_result
 
         except Exception as e:
             log_event(
                 "data_cleanup_error",
-                {"error": str(e)},
+                {"error": str(e), "error_type": type(e).__name__},
                 level=logging.ERROR,
             )
-            return {
-                "error": str(e),
-                "storage_cleared": False,
-            }
+            return internal_error(
+                f"Failed to clear all data: {str(e)}",
+                context={"error_type": type(e).__name__},
+            )
 
     async def update_document_metadata(
         self,
@@ -820,503 +638,50 @@ Answer: """
         merge_mode: str = "update",
     ) -> bool:
         """
-        Update metadata for a document in both Qdrant and docstore.
+        Update metadata for a document.
 
-        Args:
-            document_id: The document to update
-            metadata_updates: New metadata fields
-            merge_mode: "update" to merge, "replace" to overwrite
+        Delegates to the metadata service for centralized metadata management.
         """
-        try:
-            # Check if document exists
-            if document_id not in self.doc_tracker:
-                log_event(
-                    "metadata_update_failed",
-                    {"document_id": document_id, "reason": "document_not_found"},
-                    level=logging.WARNING,
-                )
-                return False
-
-            node_ids_raw = self.doc_tracker.get(document_id)
-            # Type guard: ensure it's a list of node IDs
-            if not isinstance(node_ids_raw, list):
-                raise TypeError("Node ids weren't in a list")
-            node_ids = node_ids_raw
-
-            if not node_ids:
-                return False
-
-            log_event(
-                "metadata_update_started",
-                {
-                    "document_id": document_id,
-                    "node_count": len(node_ids),
-                    "merge_mode": merge_mode,
-                    "update_fields": list(metadata_updates.keys()),
-                },
+        if self.metadata_service:
+            return await self.metadata_service.update_document_metadata(
+                document_id, metadata_updates, merge_mode
             )
 
-            # Update metadata in docstore nodes
-            docstore = self.index.storage_context.docstore
-            updated_nodes = 0
+        # Fallback if metadata service not available
+        log_event(
+            "metadata_update_skipped",
+            {"document_id": document_id, "reason": "no_metadata_service"},
+            level=logging.WARNING,
+        )
+        return False
 
-            for node_id in node_ids:
-                try:
-                    # Get the node using the hash (for SimpleDocumentStore)
-                    nodes = docstore.get_document(node_id, raise_error=False)
-                    if not nodes:
-                        continue
-
-                    # Handle single node or list
-                    if not isinstance(nodes, list):
-                        nodes = [nodes]
-
-                    for node in nodes:
-                        if not hasattr(node, "metadata"):
-                            continue
-
-                        # Update metadata based on merge mode
-                        if merge_mode == "replace":
-                            node.metadata = {
-                                **metadata_updates,
-                                "document_id": document_id,
-                            }
-                        else:
-                            # Merge with existing metadata
-                            current_metadata = node.metadata or {}
-
-                            # Handle special list fields
-                            for key, value in metadata_updates.items():
-                                if key in [
-                                    "content_dates",
-                                    "tags",
-                                    "provenance",
-                                ] and isinstance(value, list):
-                                    existing = current_metadata.get(key, [])
-                                    if isinstance(existing, list):
-                                        # Merge lists without duplicates
-                                        merged = list(set(existing + value))
-                                        current_metadata[key] = merged
-                                    else:
-                                        current_metadata[key] = value
-                                else:
-                                    current_metadata[key] = value
-
-                            node.metadata = current_metadata
-
-                        # Update the node in docstore
-                        docstore.add_documents([node], allow_update=True)
-                        updated_nodes += 1
-
-                except Exception as e:
-                    log_event(
-                        "node_metadata_update_failed",
-                        {"node_id": node_id, "error": str(e)},
-                        level=logging.DEBUG,
-                    )
-                    continue
-
-            # CRITICAL: Also update the full metadata snapshot if it exists
-            full_metadata_key = f"{document_id}_full_metadata"
-            if full_metadata_key in self.doc_tracker:
-                async with self._doc_tracker_lock:
-                    existing_full_metadata = self.doc_tracker.get(full_metadata_key)
-                    if isinstance(existing_full_metadata, dict):
-                        if merge_mode == "replace":
-                            # Replace the full metadata
-                            self.doc_tracker[full_metadata_key] = {
-                                "document_id": document_id,
-                                **metadata_updates,
-                            }
-                        else:
-                            # Merge with existing full metadata
-                            # Handle special list fields
-                            for key, value in metadata_updates.items():
-                                if key in [
-                                    "content_dates",
-                                    "tags",
-                                    "provenance",
-                                ] and isinstance(value, list):
-                                    existing_val = existing_full_metadata.get(key, [])
-                                    if isinstance(existing_val, list):
-                                        # Merge lists without duplicates
-                                        merged = list(set(existing_val + value))
-                                        existing_full_metadata[key] = merged
-                                    else:
-                                        existing_full_metadata[key] = value
-                                else:
-                                    existing_full_metadata[key] = value
-
-                            self.doc_tracker[full_metadata_key] = existing_full_metadata
-
-                # Save the updated full metadata
-                await self._save_doc_tracker()
-
-                log_event(
-                    "full_metadata_updated",
-                    {
-                        "document_id": document_id,
-                        "updated_fields": list(metadata_updates.keys()),
-                    },
-                    level=logging.DEBUG,
-                )
-
-            try:
-                # For now, we'll update the payload when documents are re-indexed
-                # Full Qdrant payload update would require updating each point
-                # This is a simplified approach that maintains consistency
-
-                log_event(
-                    "metadata_update_completed",
-                    {
-                        "document_id": document_id,
-                        "updated_nodes": updated_nodes,
-                        "total_nodes": len(node_ids),
-                    },
-                )
-
-                return updated_nodes > 0
-
-            except Exception as e:
-                log_event(
-                    "qdrant_metadata_update_error",
-                    {"document_id": document_id, "error": str(e)},
-                    level=logging.WARNING,
-                )
-                # Even if Qdrant update fails, docstore update succeeded
-                return updated_nodes > 0
-
-        except Exception as e:
-            log_event(
-                "metadata_update_error",
-                {"document_id": document_id, "error": str(e)},
-                level=logging.ERROR,
-            )
-            return False
-
-    @track(
-        operation="metadata_query",
-        include_args=["limit", "offset"],
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
     async def query_documents_by_metadata(
         self, filters: Dict[str, Any], limit: int = 100, offset: int = 0
     ) -> List[Dict[str, Any]]:
         """
         Query documents based on metadata filters.
 
-        Args:
-            filters: Dictionary of metadata field filters
-            limit: Maximum number of results
-            offset: Pagination offset
+        Delegates to the metadata service for centralized metadata queries.
         """
-        try:
-            if not self.index:
-                log_event(
-                    "metadata_query_empty",
-                    {"reason": "no_index"},
-                    level=logging.DEBUG,
-                )
-                return []
-
-            log_event(
-                "metadata_query_started",
-                {
-                    "filter_keys": list(filters.keys()) if filters else [],
-                    "has_filters": bool(filters),
-                    "limit": limit,
-                    "offset": offset,
-                },
+        if self.metadata_service:
+            return await self.metadata_service.query_documents_by_metadata(
+                filters, limit, offset
             )
 
-            matching_documents = []
-            documents_checked = 0
-            documents_matched = 0
+        # Fallback if metadata service not available
+        return []
 
-            # Get docstore for metadata access
-            docstore = self.index.storage_context.docstore
-
-            # Iterate through tracked documents
-            for document_id, node_ids in self.doc_tracker.items():
-                # Skip full metadata entries (they have "_full_metadata" suffix)
-                if document_id.endswith("_full_metadata"):
-                    continue
-
-                documents_checked += 1
-
-                # Skip if node_ids is not a list (safety check)
-                if not isinstance(node_ids, list):
-                    continue
-
-                if not node_ids:
-                    continue
-
-                try:
-                    # Get first node to check metadata (all nodes from same doc have similar metadata)
-                    first_node_id = node_ids[0]
-                    nodes = docstore.get_document(first_node_id, raise_error=False)
-
-                    if not nodes:
-                        continue
-
-                    # Handle single node or list
-                    if not isinstance(nodes, list):
-                        nodes = [nodes]
-
-                    first_node = nodes[0] if nodes else None
-                    if not first_node or not hasattr(first_node, "metadata"):
-                        continue
-
-                    metadata = first_node.metadata or {}
-
-                    # Check if document matches all filters
-                    matches = True
-                    for key, value in filters.items():
-                        if key not in metadata:
-                            matches = False
-                            break
-
-                        # Handle different filter types
-                        if isinstance(value, list):
-                            # Check if metadata value is in filter list
-                            if metadata[key] not in value:
-                                matches = False
-                                break
-                        elif isinstance(value, dict):
-                            # Handle range queries (e.g., {"$gte": date1, "$lte": date2})
-                            meta_val = metadata[key]
-                            if "$gte" in value and meta_val < value["$gte"]:
-                                matches = False
-                                break
-                            if "$lte" in value and meta_val > value["$lte"]:
-                                matches = False
-                                break
-                            if "$gt" in value and meta_val <= value["$gt"]:
-                                matches = False
-                                break
-                            if "$lt" in value and meta_val >= value["$lt"]:
-                                matches = False
-                                break
-                        else:
-                            # Exact match
-                            if metadata[key] != value:
-                                matches = False
-                                break
-
-                    if matches:
-                        documents_matched += 1
-
-                        # Generate text preview from first node
-                        text_preview = (
-                            first_node.text[:200] + "..."
-                            if len(first_node.text) > 200
-                            else first_node.text
-                        )
-
-                        # Get FULL metadata for API response, not just chunk metadata
-                        full_metadata = await self.get_full_document_metadata(
-                            document_id
-                        )
-
-                        # Use full metadata if available, otherwise fall back to chunk metadata
-                        final_metadata = full_metadata if full_metadata else metadata
-
-                        doc_info = {
-                            "document_id": document_id,
-                            "metadata": final_metadata,
-                            "text_preview": text_preview,
-                            "node_count": len(node_ids),
-                        }
-                        matching_documents.append(doc_info)
-
-                except Exception as e:
-                    log_event(
-                        "metadata_query_doc_error",
-                        {"document_id": document_id, "error": str(e)},
-                        level=logging.DEBUG,
-                    )
-                    continue
-
-            # Apply pagination
-            paginated_results = matching_documents[offset : offset + limit]
-
-            log_event(
-                "metadata_query_completed",
-                {
-                    "total_documents": len(self.doc_tracker),
-                    "documents_checked": documents_checked,
-                    "documents_matched": documents_matched,
-                    "results_returned": len(paginated_results),
-                },
-            )
-
-            return paginated_results
-
-        except Exception as e:
-            log_event(
-                "metadata_query_failed",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
-                level=logging.ERROR,
-            )
-            return []
-
-    @track(
-        operation="document_analysis",
-        include_args=["document_id"],
-        include_result=True,
-        track_performance=True,
-        frequency="low_frequency",
-    )
     async def get_document_analysis(self, document_id: str) -> Dict[str, Any]:
         """
         Get comprehensive analysis of a document.
 
-        Args:
-            document_id: The document to analyze
-
-        Returns:
-            Dictionary with document metrics and statistics
+        Delegates to the metadata service for centralized document analysis.
         """
-        try:
-            if not self.index:
-                log_event(
-                    "document_analysis_skipped",
-                    {"document_id": document_id, "reason": "no_index"},
-                    level=logging.WARNING,
-                )
-                return {"error": "Index not initialized"}
+        if self.metadata_service:
+            return await self.metadata_service.get_document_analysis(document_id)
 
-            # Check if document exists
-            if document_id not in self.doc_tracker:
-                log_event(
-                    "document_analysis_not_found",
-                    {"document_id": document_id},
-                    level=logging.WARNING,
-                )
-                return {"error": f"Document {document_id} not found in index"}
-
-            node_ids = self.doc_tracker[document_id]
-            if not node_ids:
-                return {"error": "No nodes found for document"}
-
-            # Get docstore
-            docstore = self.index.storage_context.docstore
-
-            # Get FULL metadata for this document (not just chunk metadata)
-            full_metadata = await self.get_full_document_metadata(document_id)
-
-            # Collect metrics
-            total_chars = 0
-            total_words = 0
-            chunk_sizes = []
-            word_counts = []
-            chunks_preview = []
-
-            for _, node_id in enumerate(node_ids):
-                try:
-                    # Get the node from docstore
-                    nodes = docstore.get_document(node_id, raise_error=False)
-                    if not nodes:
-                        continue
-
-                    # Handle single node or list
-                    if not isinstance(nodes, list):
-                        nodes = [nodes]
-
-                    for node in nodes:
-                        if not hasattr(node, "text"):
-                            continue
-
-                        text = node.text
-                        text_length = len(text)
-                        word_count = len(text.split())
-
-                        total_chars += text_length
-                        total_words += word_count
-                        chunk_sizes.append(text_length)
-                        word_counts.append(word_count)
-
-                        # Add to preview (first 3 chunks)
-                        if len(chunks_preview) < 3:
-                            chunk_preview = {
-                                "node_id": node_id,
-                                "text": text[:200] + "..." if len(text) > 200 else text,
-                                "text_length": text_length,
-                                "word_count": word_count,
-                            }
-                            chunks_preview.append(chunk_preview)
-
-                except Exception as e:
-                    log_event(
-                        "node_analysis_error",
-                        {"node_id": node_id, "error": str(e)},
-                        level=logging.DEBUG,
-                    )
-                    continue
-
-            # Calculate statistics
-            num_chunks = len(chunk_sizes)
-            avg_chunk_size = sum(chunk_sizes) / num_chunks if num_chunks > 0 else 0
-            avg_word_count = sum(word_counts) / num_chunks if num_chunks > 0 else 0
-            min_chunk_size = min(chunk_sizes) if chunk_sizes else 0
-            max_chunk_size = max(chunk_sizes) if chunk_sizes else 0
-
-            # Get embedding model info
-            embedding_stats = self._get_embedding_stats()
-
-            log_event(
-                "document_analysis_completed",
-                {
-                    "document_id": document_id,
-                    "node_count": num_chunks,
-                    "total_chars": total_chars,
-                    "total_words": total_words,
-                    "avg_chunk_size": avg_chunk_size,
-                },
-            )
-
-            # Return the analysis with FULL metadata
-            return {
-                "document_id": document_id,
-                "status": full_metadata.get("status", "indexed"),
-                "metadata": full_metadata,  # Full metadata with all theme details
-                "processing_info": {
-                    "total_chars": total_chars,
-                    "total_words": total_words,
-                    "num_chunks": num_chunks,
-                    "avg_chunk_size": round(avg_chunk_size, 2),
-                    "min_chunk_size": min_chunk_size,
-                    "max_chunk_size": max_chunk_size,
-                    "avg_word_count": round(avg_word_count, 2),
-                    "embedding_model": embedding_stats.get("model"),
-                    "embedding_dimension": embedding_stats.get("dimension"),
-                },
-                "storage_info": {
-                    "docstore_type": type(docstore).__name__,
-                    "vector_store_type": "QdrantVectorStore",
-                    "text_splitter": "SentenceSplitter",
-                    "chunk_size": 2600,  # Updated to reflect actual chunk size
-                    "chunk_overlap": 200,  # Updated to reflect actual overlap
-                },
-                "chunks_preview": chunks_preview,
-            }
-
-        except Exception as e:
-            log_event(
-                "document_analysis_failed",
-                {
-                    "document_id": document_id,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
-                level=logging.ERROR,
-            )
-            return {"error": str(e)}
+        # Fallback if metadata service not available
+        return {"error": "Metadata service not available"}
 
     def _get_embedding_stats(self) -> Dict[str, Any]:
         """Get embedding model statistics."""
@@ -1330,167 +695,27 @@ Answer: """
         except Exception:
             return {"model": "unknown", "dimension": 384}
 
-    @track(
-        operation="document_chunks_retrieval",
-        include_args=["document_id", "limit", "offset"],
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
     async def get_document_chunks(
         self, document_id: str, limit: int = 100, offset: int = 0
-    ) -> Dict[str, Any]:
+    ) -> Result[Dict[str, Any], str]:
         """
         Get all chunks for a specific document with pagination.
 
-        Args:
-            document_id: The document to get chunks for
-            limit: Maximum number of chunks to return
-            offset: Pagination offset
+        Delegates to the document service for centralized chunk retrieval.
+
+        Returns:
+            Success with chunks data, or Failure with error details
         """
-        try:
-            if not self.index:
-                log_event(
-                    "chunks_retrieval_skipped",
-                    {"document_id": document_id, "reason": "no_index"},
-                    level=logging.DEBUG,
-                )
-                return {"error": "Index not initialized", "chunks": [], "total": 0}
-
-            # Check if document exists
-            if document_id not in self.doc_tracker:
-                log_event(
-                    "chunks_not_found",
-                    {"document_id": document_id},
-                    level=logging.WARNING,
-                )
-                return {
-                    "error": f"No chunks found for document {document_id}",
-                    "chunks": [],
-                    "total": 0,
-                }
-
-            node_ids = self.doc_tracker[document_id]
-            total = len(node_ids)
-
-            # Get docstore
-            docstore = self.index.storage_context.docstore
-
-            # Apply pagination to node IDs
-            paginated_node_ids = node_ids[offset : offset + limit]
-
-            # Retrieve and enrich chunks
-            enriched_chunks = []
-            total_text_length = 0
-            total_word_count = 0
-
-            for i, node_id in enumerate(paginated_node_ids):
-                try:
-                    # Get the node from docstore
-                    nodes = docstore.get_document(node_id, raise_error=False)
-                    if not nodes:
-                        continue
-
-                    # Handle single node or list
-                    if not isinstance(nodes, list):
-                        nodes = [nodes]
-
-                    for node in nodes:
-                        if not hasattr(node, "text"):
-                            continue
-
-                        text = node.text
-                        text_length = len(text)
-                        word_count = len(text.split())
-
-                        total_text_length += text_length
-                        total_word_count += word_count
-
-                        # Get node metadata
-                        metadata = node.metadata if hasattr(node, "metadata") else {}
-
-                        # Get relationships if available
-                        relationships = {}
-                        if hasattr(node, "relationships"):
-                            for rel_type, rel_info in node.relationships.items():
-                                relationships[rel_type] = {
-                                    "node_id": (
-                                        rel_info.node_id
-                                        if hasattr(rel_info, "node_id")
-                                        else None
-                                    ),
-                                }
-
-                        chunk_info = {
-                            "chunk_index": offset + i,
-                            "node_id": node_id,
-                            "text": text,
-                            "text_length": text_length,
-                            "word_count": word_count,
-                            "metadata": metadata,
-                            "relationships": relationships,
-                        }
-
-                        # Add start/end char if available
-                        if hasattr(node, "start_char_idx"):
-                            chunk_info["start_char"] = node.start_char_idx
-                        if hasattr(node, "end_char_idx"):
-                            chunk_info["end_char"] = node.end_char_idx
-
-                        enriched_chunks.append(chunk_info)
-
-                except Exception as e:
-                    log_event(
-                        "chunk_retrieval_error",
-                        {"node_id": node_id, "error": str(e)},
-                        level=logging.DEBUG,
-                    )
-                    continue
-
-            log_event(
-                "chunks_retrieved",
-                {
-                    "document_id": document_id,
-                    "total_chunks": total,
-                    "chunks_returned": len(enriched_chunks),
-                    "avg_chunk_length": (
-                        total_text_length / len(enriched_chunks)
-                        if enriched_chunks
-                        else 0
-                    ),
-                    "avg_word_count": (
-                        total_word_count / len(enriched_chunks)
-                        if enriched_chunks
-                        else 0
-                    ),
-                    "has_more": offset + limit < total,
-                },
+        if not self.document_service:
+            return internal_error(
+                "Document service not initialized",
+                context={"document_id": document_id, "service": "llamaindex_service"},
             )
 
-            return {
-                "document_id": document_id,
-                "chunks": enriched_chunks,
-                "total": total,
-                "limit": limit,
-                "offset": offset,
-                "has_more": offset + limit < total,
-            }
-
-        except Exception as e:
-            log_event(
-                "chunks_retrieval_failed",
-                {
-                    "document_id": document_id,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
-                level=logging.ERROR,
-            )
-            return {
-                "error": str(e),
-                "chunks": [],
-                "total": 0,
-            }
+        # Delegate to document service (which now returns Result)
+        return await self.document_service.get_document_chunks(
+            document_id, limit, offset
+        )
 
     async def get_document_neighbors(
         self, document_id: str, top_k: int = 10
@@ -1498,26 +723,42 @@ Answer: """
         """
         Get semantically similar documents for a given document.
 
-        Args:
-            document_id: The document to find neighbors for
-            top_k: Number of similar documents to return
-
-        Returns:
-            Dictionary with similar documents and their scores
+        Delegates to the search service for neighbor finding.
         """
         try:
-            if not self.index:
-                return {"error": "Index not initialized", "neighbors": []}
+            if not self.search_service:
+                return {"error": "Search service not initialized", "neighbors": []}
 
-            # Check if document exists
-            if document_id not in self.doc_tracker:
-                return {"error": f"Document {document_id} not found", "neighbors": []}
+            # Check if document exists using document service
+            if self.document_service:
+                if not await self.document_service.document_exists(document_id):
+                    return {
+                        "error": f"Document {document_id} not found",
+                        "neighbors": [],
+                    }
 
-            node_ids = self.doc_tracker[document_id]
-            if not node_ids:
-                return {"error": "No nodes found for document", "neighbors": []}
+                node_ids = await self.document_service.get_node_ids(document_id)
+                if not node_ids:
+                    return {"error": "No nodes found for document", "neighbors": []}
+            else:
+                # Fallback to direct access if document service not available
+                if not self.doc_tracker or not await self.doc_tracker.document_exists(
+                    document_id
+                ):
+                    return {
+                        "error": f"Document {document_id} not found",
+                        "neighbors": [],
+                    }
+
+                node_ids = await self.doc_tracker.get_node_ids(document_id)
+                if not node_ids:
+                    return {"error": "No nodes found for document", "neighbors": []}
 
             # Get the first node's text to use as query
+            # This still needs direct index access as it's for reading node content
+            if not self.index or not hasattr(self.index, "storage_context"):
+                return {"error": "Index not available", "neighbors": []}
+
             docstore = self.index.storage_context.docstore
             first_node_id = node_ids[0]
             nodes = docstore.get_document(first_node_id, raise_error=False)
@@ -1532,42 +773,11 @@ Answer: """
             if not first_node or not hasattr(first_node, "text"):
                 return {"error": "Document has no text content", "neighbors": []}
 
-            # Use the document's text as query (truncated to avoid token limits)
-            query_text = first_node.text[:2000]  # Use first 2000 chars as query
-
-            # Retrieve similar documents
-            similar_docs = await self.retrieve_similar(
-                query=query_text,
-                top_k=top_k + 10,  # Get extra to filter out self
-                similarity_threshold=0.3,  # Lower threshold for neighbor search
-            )
-
-            # Filter out the document itself and format results
-            neighbors = []
-            for doc in similar_docs:
-                if doc["document_id"] != document_id:
-                    neighbor_info = {
-                        "document_id": doc["document_id"],
-                        "score": doc["score"],
-                        "text_preview": (
-                            doc["text"][:200] + "..."
-                            if len(doc["text"]) > 200
-                            else doc["text"]
-                        ),
-                        "metadata": doc.get("metadata", {}),
-                    }
-                    neighbors.append(neighbor_info)
-
-                    if len(neighbors) >= top_k:
-                        break
-
-            log_event(
-                "document_neighbors_retrieved",
-                {
-                    "document_id": document_id,
-                    "neighbors_found": len(neighbors),
-                    "top_k_requested": top_k,
-                },
+            # Delegate to search service
+            neighbors = await self.search_service.get_document_neighbors(
+                document_text=first_node.text,
+                document_id=document_id,
+                top_k=top_k,
             )
 
             return {
@@ -1590,105 +800,75 @@ Answer: """
                 "neighbors": [],
             }
 
-    @track(
-        operation="document_retrieval",
-        include_args=["top_k", "similarity_threshold"],
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
     async def retrieve_similar(
         self, query: str, top_k: int = 10, similarity_threshold: float = 0.7
     ) -> List[Dict[str, Any]]:
         """
-        Retrieve similar documents using Qdrant's vector search.
+        Retrieve similar documents using vector search.
 
-        Args:
-            query: Search query text
-            top_k: Number of results to return
-            similarity_threshold: Minimum similarity score (0-1)
+        Delegates to the search service for consistency.
         """
-        try:
-            if not self.index:
-                log_event(
-                    "retrieval_skipped",
-                    {"reason": "no_index"},
-                    level=logging.DEBUG,
-                )
-                return []
-
+        if not self.search_service:
             log_event(
-                "similarity_retrieval_started",
-                {
-                    "query_length": len(query),
-                    "query_preview": query[:50],
-                    "top_k": top_k,
-                    "similarity_threshold": similarity_threshold,
-                },
-            )
-
-            # Use LlamaIndex's retriever which handles embedding and Qdrant search
-            from llama_index.core.retrievers import VectorIndexRetriever
-
-            retriever = VectorIndexRetriever(
-                index=self.index,
-                similarity_top_k=top_k,
-            )
-
-            # Retrieve nodes
-            nodes = retriever.retrieve(query)
-
-            # Filter by similarity threshold and format results
-            results = []
-            nodes_below_threshold = 0
-
-            for node in nodes:
-                # Qdrant returns scores as cosine similarity (0-1 range)
-                score = float(node.score) if node.score else 0.0
-
-                if score >= similarity_threshold:
-                    # Extract metadata and text
-                    metadata = (
-                        node.node.metadata if hasattr(node.node, "metadata") else {}
-                    )
-                    text = node.node.text if hasattr(node.node, "text") else ""
-
-                    # Create result entry
-                    result = {
-                        "document_id": metadata.get("document_id", "unknown"),
-                        "text": text[:500] + "..." if len(text) > 500 else text,
-                        "score": score,
-                        "metadata": metadata,
-                        "node_id": node.node.id_ if hasattr(node.node, "id_") else None,
-                    }
-                    results.append(result)
-                else:
-                    nodes_below_threshold += 1
-
-            log_event(
-                "similarity_retrieval_completed",
-                {
-                    "nodes_retrieved": len(nodes),
-                    "nodes_above_threshold": len(results),
-                    "nodes_below_threshold": nodes_below_threshold,
-                    "threshold": similarity_threshold,
-                    "avg_score": (
-                        sum(r["score"] for r in results) / len(results)
-                        if results
-                        else 0
-                    ),
-                },
-            )
-
-            return results
-
-        except Exception as e:
-            log_event(
-                "similarity_retrieval_failed",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
-                level=logging.ERROR,
+                "retrieval_skipped",
+                {"reason": "no_search_service"},
+                level=logging.DEBUG,
             )
             return []
+
+        # Delegate to search service
+        return await self.search_service.retrieve_similar(
+            query=query,
+            top_k=top_k,
+            similarity_threshold=similarity_threshold,
+        )
+
+    # Additional search methods that delegate to the search service
+    async def semantic_search(
+        self,
+        query: str,
+        top_k: int = 10,
+        similarity_threshold: float = 0.7,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Perform semantic search using the search service."""
+        if not self.search_service:
+            return []
+        return await self.search_service.semantic_search(
+            query=query,
+            top_k=top_k,
+            similarity_threshold=similarity_threshold,
+            filters=filters,
+        )
+
+    async def keyword_search(
+        self,
+        query: str,
+        top_k: int = 10,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Perform keyword search using the search service."""
+        if not self.search_service:
+            return []
+        return await self.search_service.keyword_search(
+            query=query,
+            top_k=top_k,
+            filters=filters,
+        )
+
+    async def hybrid_search(
+        self,
+        query: str,
+        top_k: int = 10,
+        semantic_weight: float = 0.5,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Perform hybrid search using the search service."""
+        if not self.search_service:
+            return []
+        return await self.search_service.hybrid_search(
+            query=query,
+            top_k=top_k,
+            semantic_weight=semantic_weight,
+            filters=filters,
+        )

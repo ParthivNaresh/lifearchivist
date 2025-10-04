@@ -5,7 +5,7 @@ Vault management endpoints.
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from ..dependencies import get_server
 
@@ -17,14 +17,24 @@ async def get_vault_info():
     """Get vault information for development/debugging."""
     server = get_server()
 
+    if not server.vault:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Vault not initialized",
+                "error_type": "ServiceUnavailable",
+            },
+            status_code=503,
+        )
+
     try:
-        if not server.vault:
-            raise HTTPException(status_code=500, detail="Vault not initialized")
         stats = await server.vault.get_vault_statistics()
         return stats
-
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
 
 
 @router.get("/vault/files")
@@ -34,10 +44,18 @@ async def list_vault_files(
     """List files in vault for development/debugging with database record linking."""
     server = get_server()
 
+    vault_path = server.settings.vault_path
+    if not vault_path:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Vault path not configured",
+                "error_type": "ConfigurationError",
+            },
+            status_code=500,
+        )
+
     try:
-        vault_path = server.settings.vault_path
-        if not vault_path:
-            raise HTTPException(status_code=500, detail="Vault path not configured")
         target_dir = vault_path / directory
 
         if not target_dir.exists():
@@ -66,10 +84,15 @@ async def list_vault_files(
                 if server.llamaindex_service:
                     try:
                         # Query LlamaIndex for documents with this file hash
-                        matching_docs = (
+                        matching_docs_result = (
                             await server.llamaindex_service.query_documents_by_metadata(
                                 filters={"file_hash": full_hash}, limit=1
                             )
+                        )
+                        matching_docs = (
+                            matching_docs_result.unwrap()
+                            if matching_docs_result.is_success()
+                            else []
                         )
                         if matching_docs:
                             doc = matching_docs[0]
@@ -115,7 +138,10 @@ async def list_vault_files(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
 
 
 @router.get("/vault/file/{file_hash}")
@@ -163,10 +189,15 @@ async def download_file_from_vault(file_hash: str):
         if server.llamaindex_service:
             try:
                 # Try to get original filename from metadata
-                matching_docs = (
+                matching_docs_result = (
                     await server.llamaindex_service.query_documents_by_metadata(
                         filters={"file_hash": file_hash}, limit=1
                     )
+                )
+                matching_docs = (
+                    matching_docs_result.unwrap()
+                    if matching_docs_result.is_success()
+                    else []
                 )
                 if matching_docs:
                     metadata = matching_docs[0].get("metadata", {})

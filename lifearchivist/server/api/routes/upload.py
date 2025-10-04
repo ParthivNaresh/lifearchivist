@@ -7,7 +7,8 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, UploadFile
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from lifearchivist.models import IngestRequest
@@ -20,41 +21,45 @@ router = APIRouter(prefix="/api", tags=["upload"])
 @router.post("/ingest")
 async def ingest_document(request: IngestRequest):
     """Ingest a document from file path."""
-
     server = get_server()
 
-    # Extract session_id for progress tracking
     params = request.model_dump()
     session_id = params.pop("session_id", None)
 
-    # Add session_id as a direct parameter for progress tracking
     if session_id:
         params["session_id"] = session_id
 
     try:
         result = await server.execute_tool("file.import", params)
 
-        if result["success"]:
-            return result["result"]
-        else:
-            error_msg = result["error"]
-            raise HTTPException(status_code=500, detail=error_msg)
+        if not result["success"]:
+            error_msg = result.get("error", "Import failed")
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": error_msg,
+                    "error_type": "ImportError",
+                },
+                status_code=500,
+            )
+
+        return result["result"]
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
 
 
 @router.post("/upload")
 async def upload_file(
-    file: UploadFile = File(...),  # noqa: B008  # FastAPI dependency injection pattern
-    tags: str = Form("[]"),  # noqa: B008  # FastAPI dependency injection pattern
-    metadata: str = Form("{}"),  # noqa: B008  # FastAPI dependency injection pattern
-    session_id: Optional[str] = Form(
-        None
-    ),  # noqa: B008  # FastAPI dependency injection pattern
+    file: UploadFile = File(...),  # noqa: B008
+    tags: str = Form("[]"),  # noqa: B008
+    metadata: str = Form("{}"),  # noqa: B008
+    session_id: Optional[str] = Form(None),  # noqa: B008
 ):
     """Upload and ingest a file with progress tracking."""
-
     server = get_server()
     temp_file_path = None
 
@@ -64,27 +69,28 @@ async def upload_file(
             tags_list = json.loads(tags)
             metadata_dict = json.loads(metadata)
         except json.JSONDecodeError as e:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid JSON in tags or metadata: {e}"
-            ) from None
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": f"Invalid JSON in tags or metadata: {str(e)}",
+                    "error_type": "ValidationError",
+                },
+                status_code=400,
+            )
 
         # Create temporary file
         with tempfile.NamedTemporaryFile(
             delete=False, suffix=Path(file.filename or "").suffix
         ) as temp_file:
             temp_file_path = temp_file.name
-
-            # Write uploaded content to temp file
             content = await file.read()
             temp_file.write(content)
             temp_file.flush()
-            # Ensure all data is written to disk
+
             import os
 
             os.fsync(temp_file.fileno())
 
-        # File is now closed and fully written, import it
-        # Import the temporary file with progress tracking
         import_params = {
             "path": temp_file_path,
             "tags": tags_list,
@@ -96,22 +102,30 @@ async def upload_file(
         }
         result = await server.execute_tool("file.import", import_params)
 
-        if result["success"]:
-            return result["result"]
-        else:
-            error_msg = result["error"]
-            raise HTTPException(status_code=500, detail=error_msg)
-    except HTTPException:
-        raise
+        if not result["success"]:
+            error_msg = result.get("error", "Upload failed")
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": error_msg,
+                    "error_type": "UploadError",
+                },
+                status_code=500,
+            )
+
+        return result["result"]
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
     finally:
-        # Clean up temp file
         if temp_file_path:
             try:
                 Path(temp_file_path).unlink()
-            except Exception as cleanup_error:
-                raise cleanup_error
+            except Exception:
+                pass
 
 
 class BulkIngestRequest(BaseModel):
@@ -127,16 +141,22 @@ async def bulk_ingest_files(request: BulkIngestRequest):
     folder_path = request.folder_path
 
     if not file_paths:
-        raise HTTPException(status_code=400, detail="No file paths provided")
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "No file paths provided",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
 
     results = []
     successful_count = 0
     failed_count = 0
 
     try:
-        for _, file_path in enumerate(file_paths):
+        for file_path in file_paths:
             try:
-                # Use the file import tool
                 result = await server.execute_tool(
                     "file.import",
                     {
@@ -152,24 +172,21 @@ async def bulk_ingest_files(request: BulkIngestRequest):
                 if result.get("success"):
                     successful_count += 1
                     tool_result = result.get("result", {})
-                    file_id = tool_result.get("file_id")
                     results.append(
                         {
                             "file_path": file_path,
                             "success": True,
-                            "file_id": file_id,
+                            "file_id": tool_result.get("file_id"),
                             "status": tool_result.get("status", "unknown"),
                         }
                     )
                 else:
                     failed_count += 1
-                    error_msg = result.get("error", "Unknown error")
-
                     results.append(
                         {
                             "file_path": file_path,
                             "success": False,
-                            "error": error_msg,
+                            "error": result.get("error", "Unknown error"),
                         }
                     )
 
@@ -189,26 +206,44 @@ async def bulk_ingest_files(request: BulkIngestRequest):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
 
 
 @router.get("/upload/{file_id}/progress")
 async def get_upload_progress(file_id: str):
     """Get upload progress for a specific file."""
     server = get_server()
+
+    if not server.progress_manager:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Progress tracking not available",
+                "error_type": "ServiceUnavailable",
+            },
+            status_code=503,
+        )
+
     try:
-        if not server.progress_manager:
-            raise HTTPException(
-                status_code=503, detail="Progress tracking not available"
+        progress = await server.progress_manager.get_progress(file_id)
+
+        if not progress:
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": "Progress not found",
+                    "error_type": "NotFoundError",
+                },
+                status_code=404,
             )
 
-        progress = await server.progress_manager.get_progress(file_id)
-        if not progress:
-            raise HTTPException(status_code=404, detail="Progress not found")
+        return progress.to_dict()
 
-        progress_dict = progress.to_dict()
-        return progress_dict
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )

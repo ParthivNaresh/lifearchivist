@@ -3,6 +3,7 @@ Debug endpoints for testing.
 """
 
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from ..dependencies import get_server
@@ -33,14 +34,22 @@ async def test_llamaindex_add(request: TestDocumentRequest):
             "source": "debug_endpoint",
         }
 
-        success = await llamaindex_service.add_document(
+        # add_document now returns Result
+        result = await llamaindex_service.add_document(
             document_id=request.document_id, content=request.content, metadata=metadata
         )
 
+        if result.is_failure():
+            # Convert Result to HTTP response
+            return JSONResponse(
+                content=result.to_dict(), status_code=result.status_code
+            )
+
+        doc_info = result.unwrap()
+
         return {
-            "success": success,
-            "document_id": request.document_id,
-            "content_length": len(request.content),
+            "success": True,
+            **doc_info,  # Include all info from Result
             "metadata": metadata,
         }
 
@@ -66,13 +75,20 @@ async def check_llamaindex_status():
                 "error": "LlamaIndex service not available",
             }
 
+        # Get document count (now returns Result)
+        count_result = await llamaindex_service.get_document_count()
+        document_count = count_result.unwrap_or(0)  # Use 0 if failed
+
         # Check various components
         status = {
             "status": "initialized",
             "has_index": llamaindex_service.index is not None,
             "has_query_engine": llamaindex_service.query_engine is not None,
             "has_qdrant_client": hasattr(llamaindex_service, "qdrant_client"),
-            "document_count": await llamaindex_service.get_document_count(),
+            "document_count": document_count,
+            "document_count_error": (
+                count_result.error if count_result.is_failure() else None
+            ),
         }
 
         # Check Qdrant connection

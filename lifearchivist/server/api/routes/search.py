@@ -4,7 +4,8 @@ Search and query endpoints.
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from lifearchivist.models import SearchRequest
 
@@ -17,20 +18,34 @@ router = APIRouter(prefix="/api", tags=["search"])
 async def search_documents_post(request: SearchRequest):
     """Search documents via POST request."""
     server = get_server()
+
+    if not server.llamaindex_service:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Search service not available",
+                "error_type": "ServiceUnavailable",
+            },
+            status_code=503,
+        )
+
     try:
         result = await server.execute_tool("index.search", request.dict())
 
-        if result.get("success"):
-            search_result = result["result"]
-            return search_result
-        else:
-            error = result.get("error", "Search tool returned None")
-            raise HTTPException(status_code=500, detail=error)
+        if not result.get("success"):
+            error = result.get("error", "Search failed")
+            return JSONResponse(
+                content={"success": False, "error": error, "error_type": "SearchError"},
+                status_code=500,
+            )
 
-    except HTTPException:
-        raise
+        return result["result"]
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
 
 
 @router.get("/search")
@@ -50,16 +65,44 @@ async def search_documents_get(
     # Validate parameters
     valid_modes = ["keyword", "semantic", "hybrid"]
     if mode not in valid_modes:
-        raise HTTPException(
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": f"Invalid mode '{mode}'. Must be one of: {', '.join(valid_modes)}",
+                "error_type": "ValidationError",
+            },
             status_code=400,
-            detail=f"Invalid mode '{mode}'. Must be one of: {', '.join(valid_modes)}",
         )
 
     if limit < 1 or limit > 100:
-        raise HTTPException(status_code=400, detail="Limit must be between 1 and 100")
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Limit must be between 1 and 100",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
 
     if offset < 0:
-        raise HTTPException(status_code=400, detail="Offset must be non-negative")
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Offset must be non-negative",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
+
+    if not server.llamaindex_service:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Search service not available",
+                "error_type": "ServiceUnavailable",
+            },
+            status_code=503,
+        )
 
     try:
         # Prepare filters
@@ -69,12 +112,10 @@ async def search_documents_get(
         if status:
             filters["status"] = status
         if tags:
-            # Parse comma-separated tags
             tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
             if tag_list:
                 filters["tags"] = tag_list
 
-        # Execute search using the search tool
         result = await server.execute_tool(
             "index.search",
             {
@@ -87,16 +128,20 @@ async def search_documents_get(
             },
         )
 
-        if result.get("success"):
-            search_result = result["result"]
-            return search_result
-        else:
+        if not result.get("success"):
             error = result.get("error", "Search failed")
-            raise HTTPException(status_code=500, detail=error)
-    except HTTPException:
-        raise
+            return JSONResponse(
+                content={"success": False, "error": error, "error_type": "SearchError"},
+                status_code=500,
+            )
+
+        return result["result"]
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
 
 
 @router.post("/ask")
@@ -108,11 +153,23 @@ async def ask_question(request: Dict[str, Any]):
     context_limit = request.get("context_limit", 5)
 
     if not question:
-        raise HTTPException(status_code=400, detail="Question is required")
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Question is required",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
 
     if len(question) < 3:
-        raise HTTPException(
-            status_code=400, detail="Question must be at least 3 characters long"
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Question must be at least 3 characters long",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
         )
 
     # Convert and validate context_limit
@@ -120,17 +177,36 @@ async def ask_question(request: Dict[str, Any]):
         try:
             context_limit = int(context_limit)
         except ValueError:
-            raise HTTPException(
-                status_code=400, detail="context_limit must be a number"
-            ) from None
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": "context_limit must be a number",
+                    "error_type": "ValidationError",
+                },
+                status_code=400,
+            )
 
     if context_limit < 1 or context_limit > 20:
-        raise HTTPException(
-            status_code=400, detail="context_limit must be between 1 and 20"
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "context_limit must be between 1 and 20",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
+
+    if not server.llamaindex_service:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Q&A service not available",
+                "error_type": "ServiceUnavailable",
+            },
+            status_code=503,
         )
 
     try:
-        # Use the llamaindex.query tool directly instead of query_agent
         result = await server.execute_tool(
             "llamaindex.query",
             {
@@ -140,39 +216,42 @@ async def ask_question(request: Dict[str, Any]):
             },
         )
 
-        if result.get("success"):
-            # Transform the result to match the expected format for the UI
-            tool_result = result["result"]
-            answer = tool_result.get("answer", "")
-            confidence = tool_result.get("confidence", 0.0)
-            sources = tool_result.get("sources", [])
-
-            # Create citations with proper validation
-            citations = []
-            for source in sources:
-                snippet = source.get("text", "")[:200] if source.get("text") else ""
-                citations.append(
-                    {
-                        "doc_id": source.get("document_id", ""),
-                        "title": source.get("title", "Unknown Document"),
-                        "snippet": snippet,
-                        "score": source.get("score", 0.0),
-                    }
-                )
-
-            final_response = {
-                "answer": answer,
-                "confidence": confidence,
-                "citations": citations,
-                "method": tool_result.get("method", "llamaindex_tool"),
-                "context_length": len(citations),
-            }
-            return final_response
-        else:
+        if not result.get("success"):
             error = result.get("error", "Q&A tool failed")
-            raise HTTPException(status_code=500, detail=error)
+            return JSONResponse(
+                content={"success": False, "error": error, "error_type": "QueryError"},
+                status_code=500,
+            )
 
-    except HTTPException:
-        raise
+        # Transform the result to match the expected format for the UI
+        tool_result = result["result"]
+        answer = tool_result.get("answer", "")
+        confidence = tool_result.get("confidence", 0.0)
+        sources = tool_result.get("sources", [])
+
+        # Create citations with proper validation
+        citations = []
+        for source in sources:
+            snippet = source.get("text", "")[:200] if source.get("text") else ""
+            citations.append(
+                {
+                    "doc_id": source.get("document_id", ""),
+                    "title": source.get("title", "Unknown Document"),
+                    "snippet": snippet,
+                    "score": source.get("score", 0.0),
+                }
+            )
+
+        return {
+            "answer": answer,
+            "confidence": confidence,
+            "citations": citations,
+            "method": tool_result.get("method", "llamaindex_tool"),
+            "context_length": len(citations),
+        }
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )

@@ -5,6 +5,7 @@ Document management endpoints.
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 
 from ..dependencies import get_server
 
@@ -43,14 +44,24 @@ async def list_documents(
         if count_only:
             # For now, we'll need to query all to get count
             # TODO: Implement proper count method in LlamaIndex service
-            all_docs = await server.llamaindex_service.query_documents_by_metadata(
-                filters=filters, limit=10000, offset=0
+            all_docs_result = (
+                await server.llamaindex_service.query_documents_by_metadata(
+                    filters=filters, limit=10000, offset=0
+                )
             )
+            if all_docs_result.is_failure():
+                raise HTTPException(status_code=500, detail=all_docs_result.error)
+            all_docs = all_docs_result.unwrap()
             return {"total": len(all_docs), "filters": filters}
 
-        raw_documents = await server.llamaindex_service.query_documents_by_metadata(
-            filters=filters, limit=limit, offset=offset
+        raw_documents_result = (
+            await server.llamaindex_service.query_documents_by_metadata(
+                filters=filters, limit=limit, offset=offset
+            )
         )
+        if raw_documents_result.is_failure():
+            raise HTTPException(status_code=500, detail=raw_documents_result.error)
+        raw_documents = raw_documents_result.unwrap()
 
         formatted_documents = []
         for doc in raw_documents:
@@ -121,10 +132,14 @@ async def delete_document(document_id: str):
             )
 
         # Get document metadata first
-        documents = await server.llamaindex_service.query_documents_by_metadata(
+        documents_result = await server.llamaindex_service.query_documents_by_metadata(
             filters={"document_id": document_id}, limit=1
         )
 
+        if documents_result.is_failure():
+            raise HTTPException(status_code=500, detail=documents_result.error)
+
+        documents = documents_result.unwrap()
         if not documents:
             raise HTTPException(
                 status_code=404, detail=f"Document {document_id} not found"
@@ -133,23 +148,29 @@ async def delete_document(document_id: str):
         document_metadata = documents[0].get("metadata", {})
         file_hash = document_metadata.get("file_hash")
 
-        # Step 2: Delete from LlamaIndex
-        delete_success = await server.llamaindex_service.delete_document(document_id)
+        # Step 2: Delete from LlamaIndex (now returns Result)
+        delete_result = await server.llamaindex_service.delete_document(document_id)
 
-        if not delete_success:
-            raise HTTPException(
-                status_code=500, detail="Failed to delete document from index"
+        if delete_result.is_failure():
+            # Convert Result to HTTP response
+            return JSONResponse(
+                content=delete_result.to_dict(), status_code=delete_result.status_code
             )
+
+        delete_info = delete_result.unwrap()
 
         # Step 3: Delete from vault if we have the file hash
         vault_deleted = False
         if file_hash and server.vault:
             try:
                 # Check if any other documents use this file (deduplication check)
-                other_docs = (
+                other_docs_result = (
                     await server.llamaindex_service.query_documents_by_metadata(
                         filters={"file_hash": file_hash}, limit=2
                     )
+                )
+                other_docs = (
+                    other_docs_result.unwrap() if other_docs_result.is_success() else []
                 )
 
                 # Only delete from vault if this is the only document using this file
@@ -167,7 +188,7 @@ async def delete_document(document_id: str):
 
         return {
             "success": True,
-            "document_id": document_id,
+            **delete_info,  # Include info from Result
             "index_deleted": True,
             "vault_deleted": vault_deleted,
             "file_hash": file_hash,
@@ -218,11 +239,17 @@ async def clear_all_documents():
     server = get_server()
 
     try:
+        # Step 1: Clear LlamaIndex data (now returns Result)
         if server.llamaindex_service:
-            try:
-                llamaindex_metrics = await server.llamaindex_service.clear_all_data()
-            except Exception as llamaindex_error:
-                llamaindex_metrics = {"error": str(llamaindex_error)}
+            clear_result = await server.llamaindex_service.clear_all_data()
+
+            if clear_result.is_failure():
+                # Convert Result to HTTP response
+                return JSONResponse(
+                    content=clear_result.to_dict(), status_code=clear_result.status_code
+                )
+
+            llamaindex_metrics = clear_result.unwrap()
         else:
             llamaindex_metrics = {"skipped": True}
 
@@ -318,16 +345,20 @@ async def get_llamaindex_document_chunks(
         if offset < 0:
             raise HTTPException(status_code=400, detail="Offset must be non-negative")
 
+        # get_document_chunks now returns Result
         result = await server.llamaindex_service.get_document_chunks(
             document_id=document_id, limit=limit, offset=offset
         )
 
-        if "error" in result:
-            if "not found" in result["error"].lower():
-                raise HTTPException(status_code=404, detail=result["error"])
-            else:
-                raise HTTPException(status_code=500, detail=result["error"])
-        return result
+        if result.is_failure():
+            # Convert Result to HTTP response
+            return JSONResponse(
+                content=result.to_dict(), status_code=result.status_code
+            )
+
+        # Return the success data
+        return result.unwrap()
+
     except HTTPException:
         raise
     except Exception as e:

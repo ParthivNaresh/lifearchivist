@@ -1,5 +1,9 @@
 """
-Search tool for document retrieval using LlamaIndex.
+Search tool for document retrieval using SearchService.
+
+This tool provides a high-level interface for document search operations,
+delegating the actual search logic to the SearchService for better
+separation of concerns and maintainability.
 """
 
 import logging
@@ -10,11 +14,26 @@ from lifearchivist.utils.logging import log_event, track
 
 
 class IndexSearchTool(BaseTool):
-    """Tool for searching documents in the index."""
+    """
+    Tool for searching documents in the index.
+
+    This tool acts as a bridge between the MCP server and the search service,
+    providing a standardized interface for search operations while delegating
+    the actual search logic to the appropriate service.
+    """
 
     def __init__(self, llamaindex_service=None):
+        """
+        Initialize the search tool.
+
+        Args:
+            llamaindex_service: The LlamaIndex service instance that contains
+                               the search service for performing searches.
+        """
         super().__init__()
         self.llamaindex_service = llamaindex_service
+        # Cache the search service reference for direct access
+        self._search_service = None
 
     def _get_metadata(self) -> ToolMetadata:
         return ToolMetadata(
@@ -89,6 +108,18 @@ class IndexSearchTool(BaseTool):
             idempotent=True,
         )
 
+    def _get_search_service(self):
+        """
+        Get the search service instance.
+
+        Returns the cached search service or retrieves it from the llamaindex service.
+        """
+        if self._search_service is None and self.llamaindex_service:
+            self._search_service = getattr(
+                self.llamaindex_service, "search_service", None
+            )
+        return self._search_service
+
     @track(
         operation="index_search",
         include_args=["mode", "limit", "offset", "include_content"],
@@ -108,8 +139,12 @@ class IndexSearchTool(BaseTool):
         if not query:
             return self._empty_search_result("Query cannot be empty")
 
-        if not self.llamaindex_service:
-            return self._empty_search_result("Search service not available")
+        # Check if search service is available
+        search_service = self._get_search_service()
+        if not search_service:
+            # Fallback to llamaindex_service if search_service not available
+            if not self.llamaindex_service:
+                return self._empty_search_result("Search service not available")
 
         # Log search request with context
         log_event(
@@ -188,18 +223,40 @@ class IndexSearchTool(BaseTool):
     async def _semantic_search(
         self, query: str, limit: int, offset: int, filters: Dict, include_content: bool
     ) -> Dict[str, Any]:
-        """Perform semantic search using LlamaIndex retriever."""
+        """
+        Perform semantic search using SearchService.
+
+        This method delegates to the SearchService for actual search execution,
+        then processes and formats the results for the tool's output format.
+        """
         import time
 
         start_time = time.time()
 
-        # Use retrieve_similar method for semantic search
+        # Get search service
+        search_service = self._get_search_service()
+
+        # Use SearchService if available, otherwise fall back to llamaindex_service
         similarity_threshold = 0.3  # Lower threshold for broader results
-        retrieved_nodes = await self.llamaindex_service.retrieve_similar(
-            query=query,
-            top_k=min(limit * 2, 50),  # Get more results to filter
-            similarity_threshold=similarity_threshold,
-        )
+
+        if search_service:
+            # Use the new SearchService
+            retrieved_nodes = await search_service.semantic_search(
+                query=query,
+                top_k=min(limit * 2, 50),  # Get more results to filter
+                similarity_threshold=similarity_threshold,
+                filters=filters,  # Pass filters directly to search service
+            )
+        else:
+            # Fallback to llamaindex_service for backward compatibility
+            retrieved_nodes = await self.llamaindex_service.retrieve_similar(
+                query=query,
+                top_k=min(limit * 2, 50),
+                similarity_threshold=similarity_threshold,
+            )
+            # Apply filters manually if using fallback
+            if filters:
+                retrieved_nodes = self._apply_filters(retrieved_nodes, filters)
 
         # Log retrieval metrics
         log_event(
@@ -213,12 +270,11 @@ class IndexSearchTool(BaseTool):
             level=logging.DEBUG,
         )
 
-        # Apply metadata filters if provided
-        nodes_before_filter = len(retrieved_nodes)
-        if filters:
-            retrieved_nodes = self._apply_filters(retrieved_nodes, filters)
-
-            # Log filtering impact
+        # Note: When using SearchService, filters are already applied
+        # This block is only needed for backward compatibility logging
+        if not search_service and filters:
+            nodes_before_filter = len(retrieved_nodes)
+            # Filters were already applied above in the fallback case
             if nodes_before_filter != len(retrieved_nodes):
                 log_event(
                     "search_filters_applied",
@@ -269,11 +325,45 @@ class IndexSearchTool(BaseTool):
     async def _keyword_search(
         self, query: str, limit: int, offset: int, filters: Dict, include_content: bool
     ) -> Dict[str, Any]:
-        """Perform keyword search by querying documents with metadata filters."""
+        """
+        Perform keyword search using SearchService.
+
+        This method delegates to the SearchService for keyword-based search,
+        or falls back to a simple implementation if SearchService is not available.
+        """
         import time
 
         start_time = time.time()
 
+        # Get search service
+        search_service = self._get_search_service()
+
+        if search_service:
+            # Use the SearchService for keyword search
+            retrieved_nodes = await search_service.keyword_search(
+                query=query,
+                top_k=min(limit * 2, 50),
+                filters=filters,
+            )
+
+            # Convert to search result format
+            results = self._convert_nodes_to_search_results(
+                retrieved_nodes, query, "keyword", include_content
+            )
+
+            # Apply pagination
+            total = len(results)
+            paginated_results = results[offset : offset + limit]
+
+            query_time_ms = (time.time() - start_time) * 1000
+
+            return {
+                "results": paginated_results,
+                "total": total,
+                "query_time_ms": round(query_time_ms, 2),
+            }
+
+        # Fallback implementation for backward compatibility
         # For keyword search, we'll query documents by metadata and then score by text similarity
         all_docs = await self.llamaindex_service.query_documents_by_metadata(
             filters=filters, limit=200  # Get more for scoring
@@ -372,12 +462,58 @@ class IndexSearchTool(BaseTool):
     async def _hybrid_search(
         self, query: str, limit: int, offset: int, filters: Dict, include_content: bool
     ) -> Dict[str, Any]:
-        """Perform hybrid search combining semantic and keyword approaches."""
+        """
+        Perform hybrid search using SearchService.
+
+        This method delegates to the SearchService for hybrid search,
+        or combines semantic and keyword results if SearchService is not available.
+        """
         import time
 
         start_time = time.time()
 
-        # Get results from both methods in parallel for performance
+        # Get search service
+        search_service = self._get_search_service()
+
+        if search_service:
+            # Use the SearchService for hybrid search
+            retrieved_nodes = await search_service.hybrid_search(
+                query=query,
+                top_k=min(limit * 2, 50),
+                semantic_weight=0.6,  # Slightly favor semantic search
+                filters=filters,
+            )
+
+            # Convert to search result format
+            results = self._convert_nodes_to_search_results(
+                retrieved_nodes, query, "hybrid", include_content
+            )
+
+            # Apply pagination
+            total = len(results)
+            paginated_results = results[offset : offset + limit]
+
+            query_time_ms = (time.time() - start_time) * 1000
+
+            # Log slow searches
+            if query_time_ms > 2000:  # More than 2 seconds for hybrid
+                log_event(
+                    "slow_hybrid_search",
+                    {
+                        "query_preview": query[:50],
+                        "query_time_ms": round(query_time_ms, 2),
+                        "total_results": total,
+                    },
+                    level=logging.WARNING,
+                )
+
+            return {
+                "results": paginated_results,
+                "total": total,
+                "query_time_ms": round(query_time_ms, 2),
+            }
+
+        # Fallback: Get results from both methods in parallel for performance
         import asyncio
 
         semantic_results, keyword_results = await asyncio.gather(
