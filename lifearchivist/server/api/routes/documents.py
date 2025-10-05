@@ -315,9 +315,14 @@ async def get_llamaindex_document_analysis(document_id: str):
 
         result = await server.llamaindex_service.get_document_analysis(document_id)
 
-        if "error" in result:
-            raise HTTPException(status_code=404, detail=result["error"])
-        return result
+        if result.is_failure():
+            # Convert Result to HTTP response
+            return JSONResponse(
+                content=result.to_dict(), status_code=result.status_code
+            )
+
+        # Return the success data
+        return result.unwrap()
 
     except HTTPException:
         raise

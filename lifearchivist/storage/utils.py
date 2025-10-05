@@ -5,7 +5,11 @@ This module provides common functionality used across multiple storage services,
 following DRY principles and ensuring consistency.
 """
 
+import json
+import logging
 from typing import Any, Dict, List, Optional
+
+from lifearchivist.utils.logging import log_event
 
 
 class MetadataFilterUtils:
@@ -99,6 +103,71 @@ class MetadataFilterUtils:
                 )
 
         return True
+
+
+class QdrantNodeUtils:
+    """Utility class for extracting data from Qdrant nodes."""
+
+    @staticmethod
+    def extract_text_from_node(node_payload: Dict[str, Any]) -> Optional[str]:
+        """
+        Extract text content from a Qdrant node payload.
+
+        Qdrant stores LlamaIndex nodes with text in the _node_content field
+        as a JSON string. This method extracts and parses it.
+
+        Args:
+            node_payload: The payload dict from a Qdrant point
+
+        Returns:
+            The text content, or None if not found
+        """
+        try:
+            # Check if _node_content exists
+            node_content_str = node_payload.get("_node_content")
+            if not node_content_str:
+                return None
+
+            # Parse the JSON string
+            node_data = json.loads(node_content_str)
+
+            # Extract text field
+            text = node_data.get("text", "")
+            return text if text else None
+
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            log_event(
+                "qdrant_text_extraction_failed",
+                {
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "has_node_content": "_node_content" in node_payload,
+                },
+                level=logging.WARNING,
+            )
+            return None
+
+    @staticmethod
+    def extract_text_preview(
+        node_payload: Dict[str, Any], max_length: int = 200
+    ) -> str:
+        """
+        Extract a text preview from a Qdrant node payload.
+
+        Args:
+            node_payload: The payload dict from a Qdrant point
+            max_length: Maximum length of preview
+
+        Returns:
+            Text preview (truncated if needed), or empty string
+        """
+        text = QdrantNodeUtils.extract_text_from_node(node_payload)
+        if not text:
+            return ""
+
+        if len(text) > max_length:
+            return text[:max_length] + "..."
+        return text
 
 
 class ChunkUtils:

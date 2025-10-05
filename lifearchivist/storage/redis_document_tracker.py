@@ -141,7 +141,7 @@ class RedisDocumentTracker(DocumentTracker):
         3. Logs cleanup metrics
         """
         if self.redis_client:
-            await self.redis_client.close()
+            await self.redis_client.aclose()
             self._initialized = False
 
             log_event(
@@ -477,15 +477,18 @@ class RedisDocumentTracker(DocumentTracker):
                 ):
                     existing = merged.get(key, [])
                     if isinstance(existing, list):
-                        merged[key] = list(set(existing + value))
+                        if key == "tags":
+                            merged[key] = list(set(existing + value))
+                        else:
+                            merged[key] = existing + value
                     else:
                         merged[key] = value
                 else:
                     merged[key] = value
 
             serialized = {
-                k: self._serialize_metadata_value(v)
-                for k, v in metadata_updates.items()
+                k: self._serialize_metadata_value(merged[k])
+                for k in metadata_updates.keys()
             }
 
             if serialized:

@@ -254,9 +254,6 @@ class LlamaIndexDocumentService(DocumentService):
 
             nodes_created = insert_result.unwrap()
 
-            # Persist storage context to disk
-            await self._persist_storage()
-
             # Calculate statistics
             word_count = len(content.split())
 
@@ -418,97 +415,69 @@ class LlamaIndexDocumentService(DocumentService):
 
     async def _find_document_nodes(self, document_id: str) -> List[str]:
         """
-        Find all nodes belonging to a document after insertion.
+        Find all nodes belonging to a document after insertion using Qdrant.
+
+        This replaces the old O(N) docstore iteration with an O(k) Qdrant query,
+        where k = number of nodes for this document (typically 1-10).
 
         Returns list of node IDs.
         """
         doc_nodes = []
 
-        if not self.index or not hasattr(self.index, "storage_context"):
+        if not self.qdrant_client:
+            log_event(
+                "find_nodes_no_qdrant",
+                {"document_id": document_id},
+                level=logging.WARNING,
+            )
             return doc_nodes
 
-        docstore = self.index.storage_context.docstore
+        try:
+            from qdrant_client.models import FieldCondition, Filter, MatchValue
 
-        # Try different ways to access the docstore
-        docs_dict = None
-
-        # Method 1: Direct docs attribute (in-memory SimpleDocumentStore)
-        if hasattr(docstore, "docs"):
-            docs_dict = docstore.docs
-            log_event(
-                "find_nodes_method",
-                {
-                    "method": "docs_attribute",
-                    "count": len(docs_dict) if docs_dict else 0,
-                },
-                level=logging.DEBUG,
-            )
-        # Method 2: Try to get the internal kvstore docs (for loaded docstore)
-        elif hasattr(docstore, "_kvstore") and hasattr(docstore._kvstore, "data"):
-            docs_dict = docstore._kvstore.data
-            log_event(
-                "find_nodes_method",
-                {"method": "kvstore_data", "count": len(docs_dict) if docs_dict else 0},
-                level=logging.DEBUG,
-            )
-        # Method 3: Try the get_all_document_hashes method
-        elif hasattr(docstore, "get_all_document_hashes"):
-            log_event(
-                "find_nodes_method",
-                {"method": "get_all_document_hashes"},
-                level=logging.DEBUG,
-            )
-            # This returns a dict of doc_id -> hash, we need to get the actual docs
-            doc_hashes = docstore.get_all_document_hashes()
-            for doc_hash_id in doc_hashes:
-                try:
-                    node = docstore.get_document(doc_hash_id, raise_error=False)
-                    if node and hasattr(node, "metadata"):
-                        node_doc_id = (
-                            node.metadata.get("document_id") if node.metadata else None
+            # Query Qdrant for all points with this document_id
+            # This is O(k) where k = nodes for this document, not O(N) like docstore!
+            scroll_result = self.qdrant_client.scroll(
+                collection_name="lifearchivist",
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="document_id",
+                            match=MatchValue(value=document_id),
                         )
-                        if node_doc_id == document_id:
-                            doc_nodes.append(doc_hash_id)
-                except Exception as e:
-                    log_event(
-                        "node_retrieval_error",
-                        {"node_id": doc_hash_id, "error": str(e)},
-                        level=logging.DEBUG,
-                    )
-                    continue
+                    ]
+                ),
+                limit=1000,  # Max nodes per document (should be plenty)
+                with_payload=False,  # We only need IDs, not payload
+                with_vectors=False,  # We don't need vectors
+            )
+
+            # Extract node IDs from scroll result
+            points, _ = scroll_result  # scroll returns (points, next_page_offset)
+            doc_nodes = [str(point.id) for point in points]
 
             log_event(
                 "find_nodes_result",
                 {
                     "document_id": document_id,
-                    "method": "get_all_document_hashes",
+                    "method": "qdrant_scroll",
                     "nodes_found": len(doc_nodes),
-                    "total_hashes": len(doc_hashes),
                 },
                 level=logging.DEBUG,
             )
-            return doc_nodes  # Early return for this method
 
-        # If we have a docs dict, iterate through it
-        if docs_dict:
-            for node_id, node in docs_dict.items():
-                if hasattr(node, "metadata"):
-                    node_doc_id = (
-                        node.metadata.get("document_id") if node.metadata else None
-                    )
-                    if node_doc_id == document_id:
-                        doc_nodes.append(node_id)
-
+        except Exception as e:
             log_event(
-                "find_nodes_result",
+                "find_nodes_error",
                 {
                     "document_id": document_id,
-                    "method": "docs_dict_iteration",
-                    "nodes_found": len(doc_nodes),
-                    "total_docs": len(docs_dict),
+                    "error": str(e),
+                    "error_type": type(e).__name__,
                 },
-                level=logging.DEBUG,
+                level=logging.ERROR,
             )
+            # Return empty list on error
+            return []
 
         # Log if no nodes found
         if not doc_nodes:
@@ -516,37 +485,12 @@ class LlamaIndexDocumentService(DocumentService):
                 "find_document_nodes_empty",
                 {
                     "document_id": document_id,
-                    "has_docs": docs_dict is not None,
-                    "docs_count": len(docs_dict) if docs_dict else 0,
-                    "docstore_type": type(docstore).__name__,
-                    "docstore_attrs": [
-                        attr for attr in dir(docstore) if not attr.startswith("_")
-                    ],
+                    "warning": "No nodes found in Qdrant after insertion",
                 },
                 level=logging.WARNING,
             )
 
         return doc_nodes
-
-    async def _persist_storage(self) -> None:
-        """Persist storage context to disk."""
-        if not self.settings or not self.index:
-            return
-
-        storage_dir = self.settings.lifearch_home / "llamaindex_storage"
-        try:
-            self.index.storage_context.persist(persist_dir=str(storage_dir))
-        except Exception as e:
-            log_event(
-                "storage_persist_failed",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "storage_dir": str(storage_dir),
-                },
-                level=logging.ERROR,
-            )
-            # Don't raise here - document is already in memory index
 
     def _create_minimal_chunk_metadata_fallback(
         self,
@@ -982,83 +926,147 @@ class LlamaIndexDocumentService(DocumentService):
         offset: int,
     ) -> List[Dict[str, Any]]:
         """
-        Retrieve and enrich chunk information.
+        Retrieve and enrich chunk information using Qdrant batch retrieval.
+
+        This replaces N docstore queries with 1 Qdrant batch query.
 
         Returns list of enriched chunk dictionaries.
         """
-        if not self.index or not hasattr(self.index, "storage_context"):
+        if not self.qdrant_client:
+            log_event(
+                "chunks_retrieval_no_qdrant",
+                {"node_count": len(node_ids)},
+                level=logging.WARNING,
+            )
             return []
 
-        docstore = self.index.storage_context.docstore
         enriched_chunks = []
 
-        for i, node_id in enumerate(node_ids):
-            try:
-                # Get the node from docstore
-                nodes = docstore.get_document(node_id, raise_error=False)
-                if not nodes:
-                    continue
+        try:
+            from lifearchivist.storage.utils import QdrantNodeUtils
 
-                # Handle single node or list
-                if not isinstance(nodes, list):
-                    nodes = [nodes]
+            # Batch retrieve all nodes from Qdrant in one call
+            # This is much faster than N individual docstore queries
+            points = self.qdrant_client.retrieve(
+                collection_name="lifearchivist",
+                ids=node_ids,
+                with_payload=True,
+                with_vectors=False,
+            )
 
-                for node in nodes:
-                    if not hasattr(node, "text"):
+            # Process each point
+            for i, point in enumerate(points):
+                try:
+                    # Extract text from Qdrant payload
+                    text = QdrantNodeUtils.extract_text_from_node(point.payload)
+                    if not text:
+                        log_event(
+                            "chunk_text_missing",
+                            {"node_id": str(point.id)},
+                            level=logging.DEBUG,
+                        )
                         continue
 
-                    chunk_info = self._create_chunk_info(node, node_id, offset + i)
+                    # Create enriched chunk info
+                    chunk_info = self._create_chunk_info_from_qdrant(
+                        point, text, offset + i
+                    )
                     enriched_chunks.append(chunk_info)
 
-            except Exception as e:
-                log_event(
-                    "chunk_retrieval_error",
-                    {"node_id": node_id, "error": str(e)},
-                    level=logging.DEBUG,
-                )
-                continue
+                except Exception as e:
+                    log_event(
+                        "chunk_enrichment_error",
+                        {"node_id": str(point.id), "error": str(e)},
+                        level=logging.DEBUG,
+                    )
+                    continue
+
+        except Exception as e:
+            log_event(
+                "chunks_batch_retrieval_error",
+                {
+                    "node_count": len(node_ids),
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                level=logging.ERROR,
+            )
+            return []
 
         return enriched_chunks
 
-    def _create_chunk_info(
+    def _create_chunk_info_from_qdrant(
         self,
-        node,
-        node_id: str,
+        point,
+        text: str,
         chunk_index: int,
     ) -> Dict[str, Any]:
-        """Create enriched chunk information dictionary."""
-        text = node.text
+        """
+        Create enriched chunk information dictionary from Qdrant point.
+
+        This replaces the old docstore-based method.
+        """
         text_length = len(text)
         word_count = len(text.split())
 
-        # Get node metadata
-        metadata = node.metadata if hasattr(node, "metadata") else {}
+        # Get metadata from Qdrant payload (minimal metadata)
+        metadata = {}
+        for key in [
+            "document_id",
+            "title",
+            "mime_type",
+            "status",
+            "theme",
+            "uploaded_date",
+            "file_hash_short",
+        ]:
+            if key in point.payload:
+                metadata[key] = point.payload[key]
 
-        # Get relationships if available
-        relationships = {}
-        if hasattr(node, "relationships"):
-            for rel_type, rel_info in node.relationships.items():
-                relationships[rel_type] = {
-                    "node_id": (
-                        rel_info.node_id if hasattr(rel_info, "node_id") else None
-                    ),
-                }
+        # Parse _node_content for additional info if available
+        try:
+            import json
+
+            if "_node_content" in point.payload:
+                node_data = json.loads(point.payload["_node_content"])
+
+                # Extract start/end char indices if available
+                start_char = node_data.get("start_char_idx")
+                end_char = node_data.get("end_char_idx")
+
+                # Extract relationships if available
+                relationships = {}
+                if "relationships" in node_data:
+                    for rel_type, rel_info in node_data["relationships"].items():
+                        if isinstance(rel_info, dict):
+                            relationships[rel_type] = {
+                                "node_id": rel_info.get("node_id"),
+                            }
+        except Exception as e:
+            log_event(
+                "node_content_parse_error",
+                {"node_id": str(point.id), "error": str(e)},
+                level=logging.DEBUG,
+            )
+            start_char = None
+            end_char = None
+            relationships = {}
 
         chunk_info = {
             "chunk_index": chunk_index,
-            "node_id": node_id,
+            "node_id": str(point.id),
             "text": text,
             "text_length": text_length,
             "word_count": word_count,
             "metadata": metadata,
-            "relationships": relationships,
+            "relationships": relationships if relationships else {},
         }
 
         # Add start/end char if available
-        if hasattr(node, "start_char_idx"):
-            chunk_info["start_char"] = node.start_char_idx
-        if hasattr(node, "end_char_idx"):
-            chunk_info["end_char"] = node.end_char_idx
+        if start_char is not None:
+            chunk_info["start_char"] = start_char
+        if end_char is not None:
+            chunk_info["end_char"] = end_char
 
         return chunk_info
 

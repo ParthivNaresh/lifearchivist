@@ -17,8 +17,6 @@ from llama_index.core import (
     VectorStoreIndex,
 )
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.storage.docstore import SimpleDocumentStore
-from llama_index.core.storage.index_store import SimpleIndexStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.qdrant import QdrantVectorStore
@@ -27,9 +25,9 @@ from qdrant_client.models import Distance, VectorParams
 
 from lifearchivist.config import get_settings
 from lifearchivist.storage.document_service import LlamaIndexDocumentService
-from lifearchivist.storage.document_tracker import JSONDocumentTracker
 from lifearchivist.storage.metadata_service import LlamaIndexMetadataService
 from lifearchivist.storage.query_service import LlamaIndexQueryService
+from lifearchivist.storage.redis_document_tracker import RedisDocumentTracker
 from lifearchivist.storage.search_service import LlamaIndexSearchService
 from lifearchivist.storage.utils import StorageConstants
 from lifearchivist.utils.logging import log_event, track
@@ -43,11 +41,11 @@ class LlamaIndexQdrantService:
     """
     Simplified LlamaIndex service using Qdrant for vector storage.
 
-    Key differences from original:
-    - Uses Qdrant for vectors only
-    - Simple JSON document tracking
-    - No complex metadata operations (initially)
-    - Clean separation of concerns
+    Key features:
+    - Uses Qdrant for vector storage
+    - Redis-based document tracking for production scalability
+    - Service-oriented architecture with clean separation of concerns
+    - Async initialization for proper resource management
     """
 
     def __init__(self, database=None, vault=None):
@@ -64,14 +62,11 @@ class LlamaIndexQdrantService:
         self.query_service = None
         self.qdrant_client = None
 
-        # Initialize document tracker with the same path as before for compatibility
-        tracker_path = (
-            self.settings.lifearch_home / "llamaindex_storage" / "doc_tracker.json"
-        )
-        self.doc_tracker = JSONDocumentTracker(storage_path=tracker_path)
+        # Initialize Redis document tracker for production-grade scalability
+        self.doc_tracker = RedisDocumentTracker(redis_url=self.settings.redis_url)
 
         # Mark that tracker needs async initialization
-        # This will be done on first use to avoid event loop issues
+        # This will be done during setup to ensure proper initialization
         self._tracker_initialized = False
 
         self.setup()
@@ -99,6 +94,7 @@ class LlamaIndexQdrantService:
                     "has_search_service": self.search_service is not None,
                     "has_query_service": self.query_service is not None,
                     "tracker_initialized": self._tracker_initialized,
+                    "tracker_init_deferred": "Will initialize on first async operation",
                 },
             )
         except Exception as e:
@@ -129,11 +125,17 @@ class LlamaIndexQdrantService:
         """Initialize the metadata service with the index and tracker."""
         if self.index is not None and self.doc_tracker is not None:
             self.metadata_service = LlamaIndexMetadataService(
-                index=self.index, doc_tracker=self.doc_tracker
+                index=self.index,
+                doc_tracker=self.doc_tracker,
+                qdrant_client=self.qdrant_client,
             )
             log_event(
                 "metadata_service_initialized",
-                {"has_index": True, "has_tracker": True},
+                {
+                    "has_index": True,
+                    "has_tracker": True,
+                    "has_qdrant_client": self.qdrant_client is not None,
+                },
             )
         else:
             self.metadata_service = None
@@ -328,10 +330,13 @@ class LlamaIndexQdrantService:
         frequency="low_frequency",
     )
     def _setup_index(self):
-        """Setup the vector store index with Qdrant."""
-        storage_dir = self.settings.lifearch_home / "llamaindex_storage"
-        storage_dir.mkdir(exist_ok=True)
+        """
+        Setup the vector store index with Qdrant.
 
+        Note: We only use Qdrant for storage. LlamaIndex internally creates
+        docstore/index_store but we don't rely on them for any operations.
+        All text retrieval is done directly from Qdrant.
+        """
         try:
             # Create Qdrant vector store
             vector_store = QdrantVectorStore(
@@ -339,67 +344,25 @@ class LlamaIndexQdrantService:
                 collection_name="lifearchivist",
             )
 
-            # Try to load existing storage context
-            docstore_path = storage_dir / "docstore.json"
-            index_store_path = storage_dir / "index_store.json"
+            # Create storage context with only vector store
+            # LlamaIndex will create in-memory docstore/index_store internally
+            storage_context = StorageContext.from_defaults(
+                vector_store=vector_store,
+            )
 
-            if docstore_path.exists() and index_store_path.exists():
-                # Load existing storage context
-                try:
-                    storage_context = StorageContext.from_defaults(
-                        vector_store=vector_store,
-                        persist_dir=str(storage_dir),
-                    )
-                    log_event(
-                        "storage_context_loaded",
-                        {
-                            "docstore_path": str(docstore_path),
-                            "index_store_path": str(index_store_path),
-                        },
-                    )
-                except Exception as e:
-                    log_event(
-                        "storage_context_load_failed",
-                        {"error": str(e)},
-                        level=logging.WARNING,
-                    )
-                    # Fall back to creating new storage context
-                    storage_context = StorageContext.from_defaults(
-                        vector_store=vector_store,
-                        docstore=SimpleDocumentStore(),
-                        index_store=SimpleIndexStore(),
-                    )
-            else:
-                # Create new storage context
-                storage_context = StorageContext.from_defaults(
-                    vector_store=vector_store,
-                    docstore=SimpleDocumentStore(),
-                    index_store=SimpleIndexStore(),
-                )
-                log_event(
-                    "storage_context_created",
-                    {
-                        "reason": "no_existing_storage",
-                    },
-                )
-
-            # Create or load index
+            # Create index
             self.index = VectorStoreIndex(
                 [],
                 storage_context=storage_context,
                 store_nodes_override=True,
             )
 
-            # Persist storage context
-            storage_context.persist(persist_dir=str(storage_dir))
-
             log_event(
                 "index_initialized",
                 {
                     "vector_store": "QdrantVectorStore",
-                    "docstore": "SimpleDocumentStore",
-                    "index_store": "SimpleIndexStore",
-                    "storage_dir": str(storage_dir),
+                    "storage_mode": "qdrant_only",
+                    "note": "Text retrieval uses Qdrant directly",
                 },
             )
 
@@ -663,6 +626,21 @@ class LlamaIndexQdrantService:
 
         Delegates to the metadata service for centralized metadata queries.
         """
+        # Initialize tracker on first use if not already initialized
+        if not self._tracker_initialized:
+            try:
+                await self.doc_tracker.initialize()
+                self._tracker_initialized = True
+                log_event("tracker_initialized_on_query", {"filters": filters})
+            except Exception as e:
+                log_event(
+                    "tracker_init_failed_on_query",
+                    {"error": str(e), "error_type": type(e).__name__},
+                    level=logging.ERROR,
+                )
+                # Return empty list on initialization failure
+                return []
+
         if self.metadata_service:
             return await self.metadata_service.query_documents_by_metadata(
                 filters, limit, offset
@@ -754,28 +732,77 @@ class LlamaIndexQdrantService:
                 if not node_ids:
                     return {"error": "No nodes found for document", "neighbors": []}
 
-            # Get the first node's text to use as query
-            # This still needs direct index access as it's for reading node content
-            if not self.index or not hasattr(self.index, "storage_context"):
-                return {"error": "Index not available", "neighbors": []}
+            # Get the first node's text from Qdrant directly
+            if not self.qdrant_client:
+                return {"error": "Qdrant client not available", "neighbors": []}
 
-            docstore = self.index.storage_context.docstore
             first_node_id = node_ids[0]
-            nodes = docstore.get_document(first_node_id, raise_error=False)
 
-            if not nodes:
-                return {"error": "Could not retrieve document content", "neighbors": []}
+            # Query Qdrant for the node payload
+            try:
+                from lifearchivist.storage.utils import QdrantNodeUtils
 
-            if not isinstance(nodes, list):
-                nodes = [nodes]
+                points = self.qdrant_client.retrieve(
+                    collection_name="lifearchivist",
+                    ids=[first_node_id],
+                    with_payload=True,
+                    with_vectors=False,
+                )
 
-            first_node = nodes[0] if nodes else None
-            if not first_node or not hasattr(first_node, "text"):
-                return {"error": "Document has no text content", "neighbors": []}
+                if not points or len(points) == 0:
+                    log_event(
+                        "qdrant_node_not_found",
+                        {
+                            "document_id": document_id,
+                            "node_id": first_node_id,
+                            "total_nodes_in_redis": len(node_ids),
+                        },
+                        level=logging.WARNING,
+                    )
+                    return {
+                        "document_id": document_id,
+                        "neighbors": [],
+                        "total": 0,
+                        "warning": "Document node not found in Qdrant",
+                    }
 
-            # Delegate to search service
+                # Extract text from Qdrant payload
+                node_payload = points[0].payload
+                document_text = QdrantNodeUtils.extract_text_from_node(node_payload)
+
+                if not document_text:
+                    log_event(
+                        "node_text_extraction_failed",
+                        {"document_id": document_id, "node_id": first_node_id},
+                        level=logging.WARNING,
+                    )
+                    return {
+                        "document_id": document_id,
+                        "neighbors": [],
+                        "total": 0,
+                        "warning": "Could not extract text from node",
+                    }
+
+            except Exception as e:
+                log_event(
+                    "qdrant_retrieval_error",
+                    {
+                        "document_id": document_id,
+                        "node_id": first_node_id,
+                        "error": str(e),
+                    },
+                    level=logging.ERROR,
+                )
+                return {
+                    "document_id": document_id,
+                    "neighbors": [],
+                    "total": 0,
+                    "error": f"Failed to retrieve node from Qdrant: {str(e)}",
+                }
+
+            # Delegate to search service with the extracted text
             neighbors = await self.search_service.get_document_neighbors(
-                document_text=first_node.text,
+                document_text=document_text,
                 document_id=document_id,
                 top_k=top_k,
             )
@@ -872,3 +899,25 @@ class LlamaIndexQdrantService:
             semantic_weight=semantic_weight,
             filters=filters,
         )
+
+    async def cleanup(self) -> None:
+        """
+        Cleanup resources and close connections.
+
+        This method should be called when shutting down the service to ensure
+        proper cleanup of Redis connections and other resources.
+        """
+        try:
+            if self.doc_tracker and self._tracker_initialized:
+                await self.doc_tracker.close()
+                self._tracker_initialized = False
+                log_event(
+                    "llamaindex_service_cleanup",
+                    {"tracker_closed": True},
+                )
+        except Exception as e:
+            log_event(
+                "llamaindex_service_cleanup_error",
+                {"error": str(e), "error_type": type(e).__name__},
+                level=logging.ERROR,
+            )

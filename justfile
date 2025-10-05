@@ -201,6 +201,27 @@ stop-all: services-stop
     pkill -f "uvicorn" || true
     @echo "✅ All processes stopped"
 
+# Clean all data (WARNING: Deletes all documents, vectors, and cached data)
+clean-data:
+    @echo "⚠️  WARNING: This will delete ALL data including:"
+    @echo "   - All documents and files in vault"
+    @echo "   - All vector embeddings in Qdrant"
+    @echo "   - All document metadata in Redis"
+    @echo "   - All cached models and storage"
+    @echo ""
+    @read -p "Are you sure? Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ] || (echo "Cancelled" && exit 1)
+    @echo "🧹 Cleaning all data..."
+    @echo "🛑 Stopping services..."
+    docker-compose down
+    @echo "🗑️  Removing Docker volumes..."
+    docker volume rm lifearchivist_redis_data 2>/dev/null || true
+    docker volume rm lifearchivist_qdrant_data 2>/dev/null || true
+    @echo "🗑️  Removing local data..."
+    rm -rf ~/.lifearchivist/data
+    rm -rf ~/.lifearchivist/vault
+    rm -rf ~/.lifearchivist/llamaindex_storage
+    @echo "✅ All data cleaned! Run 'just fullstack' to start fresh"
+
 # Check everything is working
 verify: check-docker test-cli health
     @echo "✅ All systems operational!"

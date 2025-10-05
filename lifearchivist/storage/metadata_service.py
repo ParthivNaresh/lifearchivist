@@ -107,16 +107,18 @@ class LlamaIndexMetadataService(MetadataService):
     updates, queries, and retrieval of document metadata.
     """
 
-    def __init__(self, index=None, doc_tracker=None):
+    def __init__(self, index=None, doc_tracker=None, qdrant_client=None):
         """
         Initialize the metadata service.
 
         Args:
             index: LlamaIndex VectorStoreIndex instance
             doc_tracker: Document tracker for metadata storage
+            qdrant_client: Qdrant client for direct queries (optional)
         """
         self.index = index
         self.doc_tracker = doc_tracker
+        self.qdrant_client = qdrant_client
 
     @track(
         operation="update_document_metadata",
@@ -132,11 +134,13 @@ class LlamaIndexMetadataService(MetadataService):
         merge_mode: str = "update",
     ) -> Result[Dict[str, Any], str]:
         """
-        Update metadata for a document in both vector store and docstore.
+        Update metadata for a document in Redis (full) and Qdrant (minimal).
 
-        This method updates metadata across all storage layers to maintain
-        consistency. It handles both merge and replace modes for flexible
-        metadata management.
+        This method updates metadata in the two authoritative stores:
+        - Redis: Full metadata for retrieval
+        - Qdrant: Minimal metadata for filtering (if fields are filterable)
+
+        Note: We no longer update docstore as it's not used for queries.
         """
         try:
             # Check if document exists
@@ -165,25 +169,24 @@ class LlamaIndexMetadataService(MetadataService):
                 },
             )
 
-            # Update metadata in docstore nodes
-            if self.index and hasattr(self.index, "storage_context"):
-                docstore = self.index.storage_context.docstore
-                updated_nodes = await self._update_docstore_metadata(
-                    docstore, node_ids, document_id, metadata_updates, merge_mode
-                )
-            else:
-                updated_nodes = 0
-
-            # Update the full metadata snapshot
+            # Update the full metadata in Redis (source of truth)
             await self.doc_tracker.update_full_metadata(
                 document_id, metadata_updates, merge_mode
             )
+
+            # Update minimal metadata in Qdrant if updating filterable fields
+            updated_nodes = 0
+            if self.qdrant_client:
+                updated_nodes = await self._update_qdrant_metadata(
+                    node_ids, document_id, metadata_updates, merge_mode
+                )
 
             log_event(
                 "metadata_update_completed",
                 {
                     "document_id": document_id,
-                    "updated_nodes": updated_nodes,
+                    "redis_updated": True,
+                    "qdrant_nodes_updated": updated_nodes,
                     "total_nodes": len(node_ids),
                 },
             )
@@ -213,76 +216,100 @@ class LlamaIndexMetadataService(MetadataService):
                 context={"document_id": document_id, "error_type": type(e).__name__},
             )
 
-    async def _update_docstore_metadata(
+    async def _update_qdrant_metadata(
         self,
-        docstore,
         node_ids: List[str],
         document_id: str,
         metadata_updates: Dict[str, Any],
         merge_mode: str,
     ) -> int:
         """
-        Update metadata in docstore nodes.
+        Update minimal metadata in Qdrant for filterable fields.
+
+        Only updates fields that are stored in Qdrant's minimal metadata:
+        - document_id, title, mime_type, status
+        - theme, primary_subtheme
+        - uploaded_date, file_hash_short
 
         Returns the number of successfully updated nodes.
         """
+        # Define which fields are stored in Qdrant minimal metadata
+        QDRANT_FIELDS = {
+            "document_id",
+            "title",
+            "mime_type",
+            "status",
+            "theme",
+            "primary_subtheme",
+            "uploaded_date",
+            "file_hash_short",
+        }
+
+        # Check if any updated fields are in Qdrant
+        updated_fields = set(metadata_updates.keys())
+        qdrant_updates = updated_fields.intersection(QDRANT_FIELDS)
+
+        if not qdrant_updates:
+            # No filterable fields to update in Qdrant
+            log_event(
+                "qdrant_metadata_update_skipped",
+                {
+                    "document_id": document_id,
+                    "reason": "no_filterable_fields",
+                    "updated_fields": list(updated_fields),
+                },
+                level=logging.DEBUG,
+            )
+            return 0
+
         updated_nodes = 0
 
-        for node_id in node_ids:
-            try:
-                # Get the node from docstore
-                nodes = docstore.get_document(node_id, raise_error=False)
-                if not nodes:
-                    continue
+        try:
 
-                # Handle single node or list
-                if not isinstance(nodes, list):
-                    nodes = [nodes]
+            # Prepare payload updates
+            payload_updates = {}
+            for field in qdrant_updates:
+                payload_updates[field] = metadata_updates[field]
 
-                for node in nodes:
-                    if not hasattr(node, "metadata"):
-                        continue
+            # Update all nodes for this document in batch
+            from qdrant_client.models import FieldCondition, Filter, MatchValue
 
-                    # Update metadata based on merge mode
-                    if merge_mode == "replace":
-                        node.metadata = {
-                            **metadata_updates,
-                            "document_id": document_id,
-                        }
-                    else:
-                        # Merge with existing metadata
-                        current_metadata = node.metadata or {}
+            self.qdrant_client.set_payload(
+                collection_name="lifearchivist",
+                payload=payload_updates,
+                points=Filter(
+                    must=[
+                        FieldCondition(
+                            key="document_id",
+                            match=MatchValue(value=document_id),
+                        )
+                    ]
+                ),
+            )
 
-                        # Handle special list fields
-                        for key, value in metadata_updates.items():
-                            if key in [
-                                "content_dates",
-                                "tags",
-                                "provenance",
-                            ] and isinstance(value, list):
-                                existing = current_metadata.get(key, [])
-                                if isinstance(existing, list):
-                                    # Merge lists without duplicates
-                                    merged = list(set(existing + value))
-                                    current_metadata[key] = merged
-                                else:
-                                    current_metadata[key] = value
-                            else:
-                                current_metadata[key] = value
+            updated_nodes = len(node_ids)
 
-                        node.metadata = current_metadata
+            log_event(
+                "qdrant_metadata_updated",
+                {
+                    "document_id": document_id,
+                    "nodes_updated": updated_nodes,
+                    "fields_updated": list(qdrant_updates),
+                },
+            )
 
-                    # Update the node in docstore
-                    docstore.add_documents([node], allow_update=True)
-                    updated_nodes += 1
-
-            except Exception as e:
-                log_event(
-                    "node_metadata_update_failed",
-                    {"node_id": node_id, "error": str(e)},
-                    level=logging.DEBUG,
-                )
-                continue
+        except Exception as e:
+            log_event(
+                "qdrant_metadata_update_failed",
+                {
+                    "document_id": document_id,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                level=logging.WARNING,
+            )
+            # Don't fail the whole operation if Qdrant update fails
+            # Redis is the source of truth
 
         return updated_nodes
 
@@ -415,7 +442,7 @@ class LlamaIndexMetadataService(MetadataService):
 
         Args:
             document_id: Document to build info for
-            docstore: Docstore for text preview
+            docstore: Docstore for text preview (deprecated, uses Qdrant now)
 
         Returns:
             Document info dictionary or None if document can't be loaded
@@ -432,8 +459,8 @@ class LlamaIndexMetadataService(MetadataService):
 
         full_metadata = full_metadata_result.unwrap()
 
-        # Generate text preview from first node
-        text_preview = self._get_text_preview(docstore, node_ids[0])
+        # Generate text preview from first node using Qdrant
+        text_preview = await self._get_text_preview_from_qdrant(node_ids[0])
 
         return {
             "document_id": document_id,
@@ -445,25 +472,41 @@ class LlamaIndexMetadataService(MetadataService):
     # Filter matching now uses shared utility
     # Removed _metadata_matches_filter method - using MetadataFilterUtils.matches_filters instead
 
-    def _get_text_preview(self, docstore, node_id: str, max_length: int = 200) -> str:
-        """Get a text preview from a node."""
+    async def _get_text_preview_from_qdrant(
+        self, node_id: str, max_length: int = 200
+    ) -> str:
+        """
+        Get a text preview from a node using Qdrant directly.
+
+        This replaces the old docstore-based method.
+        """
         try:
-            nodes = docstore.get_document(node_id, raise_error=False)
-            if not nodes:
+            if not self.qdrant_client:
                 return ""
 
-            if not isinstance(nodes, list):
-                nodes = [nodes]
+            from lifearchivist.storage.utils import QdrantNodeUtils
 
-            first_node = nodes[0] if nodes else None
-            if first_node and hasattr(first_node, "text"):
-                text = first_node.text
-                if len(text) > max_length:
-                    return text[:max_length] + "..."
-                return text
+            # Retrieve node from Qdrant
+            points = self.qdrant_client.retrieve(
+                collection_name="lifearchivist",
+                ids=[node_id],
+                with_payload=True,
+                with_vectors=False,
+            )
 
-            return ""
-        except Exception:
+            if not points or len(points) == 0:
+                return ""
+
+            # Extract text using utility
+            node_payload = points[0].payload
+            return QdrantNodeUtils.extract_text_preview(node_payload, max_length)
+
+        except Exception as e:
+            log_event(
+                "text_preview_extraction_failed",
+                {"node_id": node_id, "error": str(e)},
+                level=logging.DEBUG,
+            )
             return ""
 
     @track(
@@ -478,42 +521,40 @@ class LlamaIndexMetadataService(MetadataService):
         document_id: str,
     ) -> Result[Dict[str, Any], str]:
         """
-        Retrieve the full metadata for a document.
+        Retrieve the full metadata for a document from Redis.
 
-        This method first tries to get metadata from the dedicated metadata
-        storage, then falls back to extracting from the first chunk if needed
-        for backward compatibility.
+        Redis is the single source of truth for full document metadata.
         """
         try:
-            # First try to get from stored full metadata
-            if self.doc_tracker:
-                full_metadata = await self.doc_tracker.get_full_metadata(document_id)
-                if full_metadata:
-                    return Success(full_metadata)
+            if not self.doc_tracker:
+                return internal_error(
+                    "Document tracker not initialized",
+                    context={"document_id": document_id},
+                )
 
-                # Fallback: get from first chunk if full metadata not found
-                node_ids = await self.doc_tracker.get_node_ids(document_id)
-                if not node_ids:
-                    return not_found_error(
-                        f"No nodes found for document '{document_id}'",
-                        context={"document_id": document_id},
-                    )
+            # Get full metadata from Redis (source of truth)
+            full_metadata = await self.doc_tracker.get_full_metadata(document_id)
 
-                if self.index and hasattr(self.index, "storage_context"):
-                    docstore = self.index.storage_context.docstore
-                    first_node_id = node_ids[0]
-                    nodes = docstore.get_document(first_node_id, raise_error=False)
+            if full_metadata:
+                return Success(full_metadata)
 
-                    if nodes:
-                        if not isinstance(nodes, list):
-                            nodes = [nodes]
-                        first_node = nodes[0] if nodes else None
-                        if first_node and hasattr(first_node, "metadata"):
-                            return Success(first_node.metadata or {})
+            # If not found, check if document exists at all
+            if not await self.doc_tracker.document_exists(document_id):
+                return not_found_error(
+                    f"Document '{document_id}' not found",
+                    context={"document_id": document_id},
+                )
+
+            # Document exists but has no metadata (shouldn't happen)
+            log_event(
+                "metadata_missing_for_existing_document",
+                {"document_id": document_id},
+                level=logging.WARNING,
+            )
 
             return not_found_error(
                 f"Metadata not found for document '{document_id}'",
-                context={"document_id": document_id},
+                context={"document_id": document_id, "reason": "metadata_missing"},
             )
 
         except Exception as e:
@@ -624,49 +665,100 @@ class LlamaIndexMetadataService(MetadataService):
         docstore,
         node_ids: List[str],
     ) -> Dict[str, Any]:
-        """Collect metrics for document analysis."""
+        """
+        Collect metrics for document analysis using Qdrant.
+
+        Args:
+            docstore: Deprecated parameter, kept for backward compatibility
+            node_ids: List of node IDs to analyze
+        """
         total_chars = 0
         total_words = 0
         chunk_sizes = []
         word_counts = []
         chunks_preview = []
 
-        for _, node_id in enumerate(node_ids):
+        if not self.qdrant_client:
+            # Fallback to empty metrics if Qdrant not available
+            return {
+                "total_chars": 0,
+                "total_words": 0,
+                "num_chunks": 0,
+                "chunks_preview": [],
+                "processing_info": {
+                    "total_chars": 0,
+                    "total_words": 0,
+                    "num_chunks": 0,
+                    "avg_chunk_size": 0,
+                    "min_chunk_size": 0,
+                    "max_chunk_size": 0,
+                    "avg_word_count": 0,
+                },
+            }
+
+        from lifearchivist.storage.utils import QdrantNodeUtils
+
+        # Retrieve all nodes from Qdrant in batch
+        try:
+            points = self.qdrant_client.retrieve(
+                collection_name="lifearchivist",
+                ids=node_ids,
+                with_payload=True,
+                with_vectors=False,
+            )
+        except Exception as e:
+            log_event(
+                "qdrant_batch_retrieval_error",
+                {"node_count": len(node_ids), "error": str(e)},
+                level=logging.ERROR,
+            )
+            # Return empty metrics on error
+            return {
+                "total_chars": 0,
+                "total_words": 0,
+                "num_chunks": 0,
+                "chunks_preview": [],
+                "processing_info": {
+                    "total_chars": 0,
+                    "total_words": 0,
+                    "num_chunks": 0,
+                    "avg_chunk_size": 0,
+                    "min_chunk_size": 0,
+                    "max_chunk_size": 0,
+                    "avg_word_count": 0,
+                },
+            }
+
+        # Process each point
+        for point in points:
             try:
-                nodes = docstore.get_document(node_id, raise_error=False)
-                if not nodes:
+                # Extract text from Qdrant payload
+                text = QdrantNodeUtils.extract_text_from_node(point.payload)
+                if not text:
                     continue
 
-                if not isinstance(nodes, list):
-                    nodes = [nodes]
+                text_length = len(text)
+                word_count = len(text.split())
 
-                for node in nodes:
-                    if not hasattr(node, "text"):
-                        continue
+                total_chars += text_length
+                total_words += word_count
+                chunk_sizes.append(text_length)
+                word_counts.append(word_count)
 
-                    text = node.text
-                    text_length = len(text)
-                    word_count = len(text.split())
-
-                    total_chars += text_length
-                    total_words += word_count
-                    chunk_sizes.append(text_length)
-                    word_counts.append(word_count)
-
-                    # Add to preview (first 3 chunks)
-                    if len(chunks_preview) < 3:
-                        chunk_preview = {
-                            "node_id": node_id,
-                            "text": text[:200] + "..." if len(text) > 200 else text,
-                            "text_length": text_length,
-                            "word_count": word_count,
-                        }
-                        chunks_preview.append(chunk_preview)
+                # Add to preview (first 3 chunks)
+                if len(chunks_preview) < 3:
+                    chunk_preview = {
+                        "node_id": str(point.id),
+                        "text": text[:200] + "..." if len(text) > 200 else text,
+                        "text_length": text_length,
+                        "word_count": word_count,
+                    }
+                    chunks_preview.append(chunk_preview)
 
             except Exception as e:
                 log_event(
                     "node_analysis_error",
-                    {"node_id": node_id, "error": str(e)},
+                    {"node_id": str(point.id), "error": str(e)},
                     level=logging.DEBUG,
                 )
                 continue
