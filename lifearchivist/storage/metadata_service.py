@@ -362,9 +362,9 @@ class LlamaIndexMetadataService(MetadataService):
             # Build document info in parallel with concurrency limit
             # This prevents overwhelming Redis/Qdrant with too many concurrent requests
             import asyncio
-            
+
             semaphore = asyncio.Semaphore(10)  # Max 10 concurrent operations
-            
+
             async def build_with_limit(doc_id: str):
                 async with semaphore:
                     try:
@@ -376,14 +376,15 @@ class LlamaIndexMetadataService(MetadataService):
                             level=logging.DEBUG,
                         )
                         return None
-            
+
             # Execute all builds in parallel (with concurrency limit)
             tasks = [build_with_limit(doc_id) for doc_id in paginated_doc_ids]
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             # Filter out None values and exceptions
             paginated_results = [
-                doc for doc in results 
+                doc
+                for doc in results
                 if doc is not None and not isinstance(doc, Exception)
             ]
 
@@ -430,7 +431,7 @@ class LlamaIndexMetadataService(MetadataService):
         # Use Redis indexed queries
         if hasattr(self.doc_tracker, "query_by_multiple_filters"):
             return await self.doc_tracker.query_by_multiple_filters(filters)
-        
+
         # Fallback: iterate through all documents (shouldn't happen with Redis)
         matching_ids = []
         all_doc_ids = await self.doc_tracker.get_all_document_ids()

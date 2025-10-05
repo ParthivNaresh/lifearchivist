@@ -24,11 +24,10 @@ RETIREMENT_401K = SubthemeRule(
         # Core 401(k) identifiers
         (
             r"401\s*\(?\s*k\s*\)?(?:\s*(?:plan|account|statement))?",
-            0.95,
+            0.85,
             "401k_identifier",
         ),
-        (r"employer\s*(?:match|matching|contribution)", 0.92, "employer_match"),
-        (r"vested\s*(?:balance|percentage|amount)", 0.90, "vested_balance"),
+        (r"employer\s*(?:match|matching|contribution)", 0.85, "employer_match"),
         (r"participant\s*(?:name|id|number)", 0.88, "participant_info"),
         # Contribution patterns
         (

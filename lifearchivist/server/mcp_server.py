@@ -134,32 +134,32 @@ class MCPServer:
     async def _run_startup_reconciliation(self):
         """
         Run vault reconciliation on startup to ensure data consistency.
-        
+
         This handles the case where users manually delete vault files,
         ensuring Redis/Qdrant metadata stays in sync with actual files.
         """
         try:
             from ..storage.vault_reconciliation import VaultReconciliationService
-            
+
             if not self.vault or not self.llamaindex_service:
                 return
-            
+
             doc_tracker = self.llamaindex_service.doc_tracker
             qdrant_client = self.llamaindex_service.qdrant_client
-            
+
             if not doc_tracker or not qdrant_client:
                 return
-            
+
             # Create reconciliation service
             reconciliation_service = VaultReconciliationService(
                 vault=self.vault,
                 doc_tracker=doc_tracker,
                 qdrant_client=qdrant_client,
             )
-            
+
             # Run reconciliation
             result = await reconciliation_service.reconcile()
-            
+
             # Log results
             if result["cleaned"] > 0:
                 log_event(
@@ -179,7 +179,7 @@ class MCPServer:
                         "status": "consistent",
                     },
                 )
-                
+
         except Exception as e:
             log_event(
                 "startup_reconciliation_failed",

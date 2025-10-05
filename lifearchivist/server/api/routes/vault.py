@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
 from lifearchivist.storage.vault_reconciliation import VaultReconciliationService
+
 from ..dependencies import get_server
 
 router = APIRouter(prefix="/api", tags=["vault"])
@@ -149,10 +150,10 @@ async def list_vault_files(
 async def reconcile_vault():
     """
     Reconcile vault files with metadata stores.
-    
+
     Checks all documents in Redis and removes metadata for any documents
     whose vault files are missing. This ensures data consistency.
-    
+
     Called by the UI refresh button to sync state after manual file operations.
     """
     server = get_server()

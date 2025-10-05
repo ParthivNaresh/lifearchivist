@@ -607,30 +607,30 @@ class Vault:
     async def file_exists(self, file_hash: str) -> bool:
         """
         Check if a file with the given hash exists in the vault.
-        
+
         This checks for any file with the hash, regardless of extension.
         Used for consistency checks and validation.
-        
+
         Args:
             file_hash: SHA256 hash of the file
-            
+
         Returns:
             True if file exists, False otherwise
         """
         if len(file_hash) < 4:
             return False
-        
+
         # Build the directory path where the file should be
         # Files are stored as: content/XX/YY/ZZZZ.ext
         dir1 = file_hash[:2]
         dir2 = file_hash[2:4]
         file_stem = file_hash[4:]
-        
+
         file_dir = self.content_dir / dir1 / dir2
-        
+
         if not file_dir.exists():
             return False
-        
+
         # Check if any file with this hash exists (any extension)
         matching_files = list(file_dir.glob(f"{file_stem}.*"))
         return len(matching_files) > 0

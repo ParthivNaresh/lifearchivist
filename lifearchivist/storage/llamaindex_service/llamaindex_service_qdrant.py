@@ -73,7 +73,7 @@ class LlamaIndexQdrantService:
     async def __aenter__(self):
         """
         Async context manager entry - ensures initialization.
-        
+
         Usage:
             async with LlamaIndexQdrantService(vault=vault) as service:
                 await service.add_document(...)
@@ -89,11 +89,11 @@ class LlamaIndexQdrantService:
     async def ensure_initialized(self):
         """
         Explicitly initialize async resources.
-        
+
         This method ensures the document tracker is initialized before use.
         It's called automatically by the context manager, but can also be
         called explicitly for long-lived instances.
-        
+
         Usage:
             service = LlamaIndexQdrantService(vault=vault)
             await service.ensure_initialized()
@@ -659,7 +659,7 @@ class LlamaIndexQdrantService:
         Query documents based on metadata filters.
 
         Delegates to the metadata service for centralized metadata queries.
-        
+
         Note: Call ensure_initialized() before using this method, or use the
         async context manager pattern.
         """
