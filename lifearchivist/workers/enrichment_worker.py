@@ -46,6 +46,7 @@ class EnrichmentWorker:
 
         if not self.llamaindex_service:
             self.llamaindex_service = LlamaIndexService(vault=self.vault)
+            await self.llamaindex_service.ensure_initialized()
 
         self.ollama_tool = OllamaTool()
 

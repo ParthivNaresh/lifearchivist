@@ -329,9 +329,7 @@ class LlamaIndexMetadataService(MetadataService):
         """
         Query documents based on metadata filters.
 
-        This method efficiently queries documents using the tracker's query
-        capabilities (Redis indexes for RedisDocumentTracker, or iteration
-        for JSONDocumentTracker).
+        Uses Redis indexed queries for efficient O(k) filtering where k = matching documents.
         """
         try:
             if not self.index or not self.doc_tracker:
@@ -347,10 +345,7 @@ class LlamaIndexMetadataService(MetadataService):
                 },
             )
 
-            # Get docstore for text previews
-            docstore = self.index.storage_context.docstore
-
-            # Use tracker's query capability if available (Redis), otherwise iterate
+            # Get matching document IDs from Redis
             matching_doc_ids = await self._get_matching_document_ids(filters)
 
             log_event(
@@ -361,23 +356,36 @@ class LlamaIndexMetadataService(MetadataService):
                 },
             )
 
-            # Build full document info for matching documents
-            matching_documents = []
-            for document_id in matching_doc_ids:
-                try:
-                    doc_info = await self._build_document_info(document_id, docstore)
-                    if doc_info:
-                        matching_documents.append(doc_info)
-                except Exception as e:
-                    log_event(
-                        "document_info_build_failed",
-                        {"document_id": document_id, "error": str(e)},
-                        level=logging.DEBUG,
-                    )
-                    continue
+            # Paginate FIRST to avoid building unnecessary documents
+            paginated_doc_ids = matching_doc_ids[offset : offset + limit]
 
-            # Apply pagination
-            paginated_results = matching_documents[offset : offset + limit]
+            # Build document info in parallel with concurrency limit
+            # This prevents overwhelming Redis/Qdrant with too many concurrent requests
+            import asyncio
+            
+            semaphore = asyncio.Semaphore(10)  # Max 10 concurrent operations
+            
+            async def build_with_limit(doc_id: str):
+                async with semaphore:
+                    try:
+                        return await self._build_document_info(doc_id)
+                    except Exception as e:
+                        log_event(
+                            "document_info_build_failed",
+                            {"document_id": doc_id, "error": str(e)},
+                            level=logging.DEBUG,
+                        )
+                        return None
+            
+            # Execute all builds in parallel (with concurrency limit)
+            tasks = [build_with_limit(doc_id) for doc_id in paginated_doc_ids]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # Filter out None values and exceptions
+            paginated_results = [
+                doc for doc in results 
+                if doc is not None and not isinstance(doc, Exception)
+            ]
 
             # Get total document count for logging
             total_docs = await self.doc_tracker.get_document_count()
@@ -386,8 +394,14 @@ class LlamaIndexMetadataService(MetadataService):
                 "metadata_query_completed",
                 {
                     "total_documents": total_docs,
-                    "documents_matched": len(matching_documents),
+                    "documents_matched": len(matching_doc_ids),
                     "results_returned": len(paginated_results),
+                    "pagination": {
+                        "offset": offset,
+                        "limit": limit,
+                        "requested": len(paginated_doc_ids),
+                        "returned": len(paginated_results),
+                    },
                 },
             )
 
@@ -409,23 +423,19 @@ class LlamaIndexMetadataService(MetadataService):
 
     async def _get_matching_document_ids(self, filters: Dict[str, Any]) -> List[str]:
         """
-        Get document IDs matching filters using tracker's query capabilities.
+        Get document IDs matching filters using Redis indexed queries.
 
-        For RedisDocumentTracker: Uses indexed queries (O(k) where k = matches)
-        For JSONDocumentTracker: Falls back to iteration (O(n) where n = total docs)
+        Uses O(k) indexed queries where k = number of matching documents.
         """
-        # Check if tracker has query_by_multiple_filters (Redis implementation)
+        # Use Redis indexed queries
         if hasattr(self.doc_tracker, "query_by_multiple_filters"):
-            # Use Redis indexed queries - much faster!
             return await self.doc_tracker.query_by_multiple_filters(filters)
-
-        # Fallback for JSONDocumentTracker - iterate through all documents
-        # This is the old O(n) approach, but necessary for JSON tracker
+        
+        # Fallback: iterate through all documents (shouldn't happen with Redis)
         matching_ids = []
         all_doc_ids = await self.doc_tracker.get_all_document_ids()
 
         for document_id in all_doc_ids:
-            # Get metadata and check filters
             metadata = await self.doc_tracker.get_full_metadata(document_id)
             if metadata and MetadataFilterUtils.matches_filters(metadata, filters):
                 matching_ids.append(document_id)
@@ -435,14 +445,12 @@ class LlamaIndexMetadataService(MetadataService):
     async def _build_document_info(
         self,
         document_id: str,
-        docstore,
     ) -> Optional[Dict[str, Any]]:
         """
         Build complete document info for API response.
 
         Args:
             document_id: Document to build info for
-            docstore: Docstore for text preview (deprecated, uses Qdrant now)
 
         Returns:
             Document info dictionary or None if document can't be loaded
@@ -610,9 +618,6 @@ class LlamaIndexMetadataService(MetadataService):
                     context={"document_id": document_id},
                 )
 
-            # Get docstore
-            docstore = self.index.storage_context.docstore
-
             # Get FULL metadata for this document
             metadata_result = await self.get_full_document_metadata(document_id)
             if metadata_result.is_failure():
@@ -620,8 +625,8 @@ class LlamaIndexMetadataService(MetadataService):
 
             full_metadata = metadata_result.value
 
-            # Collect metrics
-            analysis = await self._collect_document_metrics(docstore, node_ids)
+            # Collect metrics from Qdrant
+            analysis = await self._collect_document_metrics(node_ids)
 
             log_event(
                 "document_analysis_completed",
@@ -662,14 +667,12 @@ class LlamaIndexMetadataService(MetadataService):
 
     async def _collect_document_metrics(
         self,
-        docstore,
         node_ids: List[str],
     ) -> Dict[str, Any]:
         """
         Collect metrics for document analysis using Qdrant.
 
         Args:
-            docstore: Deprecated parameter, kept for backward compatibility
             node_ids: List of node IDs to analyze
         """
         total_chars = 0
@@ -789,8 +792,9 @@ class LlamaIndexMetadataService(MetadataService):
     def _get_storage_info(self) -> Dict[str, Any]:
         """Get storage information for document analysis."""
         return {
-            "docstore_type": "SimpleDocumentStore",
-            "vector_store_type": "QdrantVectorStore",
+            "metadata_store": "Redis",
+            "vector_store": "Qdrant",
+            "file_store": "Vault",
             "text_splitter": "SentenceSplitter",
             "chunk_size": StorageConstants.DEFAULT_CHUNK_SIZE,
             "chunk_overlap": StorageConstants.DEFAULT_CHUNK_OVERLAP,

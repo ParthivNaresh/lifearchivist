@@ -217,7 +217,6 @@ clean-data:
     docker volume rm lifearchivist_redis_data 2>/dev/null || true
     docker volume rm lifearchivist_qdrant_data 2>/dev/null || true
     @echo "🗑️  Removing local data..."
-    rm -rf ~/.lifearchivist/data
     rm -rf ~/.lifearchivist/vault
     rm -rf ~/.lifearchivist/llamaindex_storage
     @echo "✅ All data cleaned! Run 'just fullstack' to start fresh"

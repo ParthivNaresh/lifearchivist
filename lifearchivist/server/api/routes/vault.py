@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
+from lifearchivist.storage.vault_reconciliation import VaultReconciliationService
 from ..dependencies import get_server
 
 router = APIRouter(prefix="/api", tags=["vault"])
@@ -140,6 +141,65 @@ async def list_vault_files(
     except Exception as e:
         return JSONResponse(
             content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
+
+
+@router.post("/vault/reconcile")
+async def reconcile_vault():
+    """
+    Reconcile vault files with metadata stores.
+    
+    Checks all documents in Redis and removes metadata for any documents
+    whose vault files are missing. This ensures data consistency.
+    
+    Called by the UI refresh button to sync state after manual file operations.
+    """
+    server = get_server()
+
+    if not server.vault:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Vault not initialized",
+                "error_type": "ServiceUnavailable",
+            },
+            status_code=503,
+        )
+
+    if not server.llamaindex_service:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "LlamaIndex service not initialized",
+                "error_type": "ServiceUnavailable",
+            },
+            status_code=503,
+        )
+
+    try:
+        # Create reconciliation service
+        reconciliation_service = VaultReconciliationService(
+            vault=server.vault,
+            doc_tracker=server.llamaindex_service.doc_tracker,
+            qdrant_client=server.llamaindex_service.qdrant_client,
+        )
+
+        # Run reconciliation
+        result = await reconciliation_service.reconcile()
+
+        return {
+            "success": True,
+            "reconciliation": result,
+        }
+
+    except Exception as e:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
             status_code=500,
         )
 

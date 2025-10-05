@@ -423,6 +423,9 @@ export const useVaultActions = (manualRefresh: () => Promise<void>, resetPath: (
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
+      // Run reconciliation first to clean up any orphaned metadata
+      await api.reconcileVault();
+      // Then refresh the data
       await manualRefresh();
     } catch (err) {
       console.error('Failed to refresh vault data:', err);

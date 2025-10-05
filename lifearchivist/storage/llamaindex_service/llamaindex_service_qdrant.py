@@ -66,10 +66,56 @@ class LlamaIndexQdrantService:
         self.doc_tracker = RedisDocumentTracker(redis_url=self.settings.redis_url)
 
         # Mark that tracker needs async initialization
-        # This will be done during setup to ensure proper initialization
-        self._tracker_initialized = False
+        self._initialized = False
 
         self.setup()
+
+    async def __aenter__(self):
+        """
+        Async context manager entry - ensures initialization.
+        
+        Usage:
+            async with LlamaIndexQdrantService(vault=vault) as service:
+                await service.add_document(...)
+        """
+        await self.ensure_initialized()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit - cleanup resources."""
+        await self.cleanup()
+        return False  # Don't suppress exceptions
+
+    async def ensure_initialized(self):
+        """
+        Explicitly initialize async resources.
+        
+        This method ensures the document tracker is initialized before use.
+        It's called automatically by the context manager, but can also be
+        called explicitly for long-lived instances.
+        
+        Usage:
+            service = LlamaIndexQdrantService(vault=vault)
+            await service.ensure_initialized()
+            await service.add_document(...)
+        """
+        if not self._initialized:
+            try:
+                await self.doc_tracker.initialize()
+                self._initialized = True
+                log_event(
+                    "llamaindex_service_initialized",
+                    {"tracker_initialized": True},
+                )
+            except Exception as e:
+                log_event(
+                    "llamaindex_service_init_failed",
+                    {"error": str(e), "error_type": type(e).__name__},
+                    level=logging.ERROR,
+                )
+                raise RuntimeError(
+                    f"Failed to initialize LlamaIndex service: {str(e)}"
+                ) from e
 
     def setup(self):
         """Setup functions for LlamaIndex with Qdrant."""
@@ -93,8 +139,8 @@ class LlamaIndexQdrantService:
                     "has_metadata_service": self.metadata_service is not None,
                     "has_search_service": self.search_service is not None,
                     "has_query_service": self.query_service is not None,
-                    "tracker_initialized": self._tracker_initialized,
-                    "tracker_init_deferred": "Will initialize on first async operation",
+                    "tracker_initialized": self._initialized,
+                    "tracker_init_deferred": "Call ensure_initialized() or use context manager",
                 },
             )
         except Exception as e:
@@ -396,30 +442,18 @@ class LlamaIndexQdrantService:
 
         Delegates to the document service for centralized document management.
 
+        Note: Call ensure_initialized() before using this method, or use the
+        async context manager pattern.
+
         Returns:
             Success with document info, or Failure with error details
         """
-        # Initialize tracker on first use if not already initialized
-        if not self._tracker_initialized:
-            try:
-                await self.doc_tracker.initialize()
-                self._tracker_initialized = True
-                log_event(
-                    "tracker_initialized_on_first_use", {"document_id": document_id}
-                )
-            except Exception as e:
-                log_event(
-                    "tracker_init_failed",
-                    {"error": str(e), "error_type": type(e).__name__},
-                    level=logging.ERROR,
-                )
-                return internal_error(
-                    f"Failed to initialize document tracker: {str(e)}",
-                    context={
-                        "document_id": document_id,
-                        "error_type": type(e).__name__,
-                    },
-                )
+        # Check if initialized
+        if not self._initialized:
+            return internal_error(
+                "Service not initialized. Call ensure_initialized() first or use async context manager.",
+                context={"document_id": document_id},
+            )
 
         if not self.document_service:
             log_event(
@@ -625,21 +659,18 @@ class LlamaIndexQdrantService:
         Query documents based on metadata filters.
 
         Delegates to the metadata service for centralized metadata queries.
+        
+        Note: Call ensure_initialized() before using this method, or use the
+        async context manager pattern.
         """
-        # Initialize tracker on first use if not already initialized
-        if not self._tracker_initialized:
-            try:
-                await self.doc_tracker.initialize()
-                self._tracker_initialized = True
-                log_event("tracker_initialized_on_query", {"filters": filters})
-            except Exception as e:
-                log_event(
-                    "tracker_init_failed_on_query",
-                    {"error": str(e), "error_type": type(e).__name__},
-                    level=logging.ERROR,
-                )
-                # Return empty list on initialization failure
-                return []
+        # Check if initialized
+        if not self._initialized:
+            log_event(
+                "query_skipped_not_initialized",
+                {"filters": filters},
+                level=logging.WARNING,
+            )
+            return []
 
         if self.metadata_service:
             return await self.metadata_service.query_documents_by_metadata(
@@ -908,9 +939,9 @@ class LlamaIndexQdrantService:
         proper cleanup of Redis connections and other resources.
         """
         try:
-            if self.doc_tracker and self._tracker_initialized:
+            if self.doc_tracker and self._initialized:
                 await self.doc_tracker.close()
-                self._tracker_initialized = False
+                self._initialized = False
                 log_event(
                     "llamaindex_service_cleanup",
                     {"tracker_closed": True},

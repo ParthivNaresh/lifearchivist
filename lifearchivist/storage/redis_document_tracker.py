@@ -15,11 +15,10 @@ from typing import Any, Dict, List, Optional
 
 import redis.asyncio as redis
 
-from lifearchivist.storage.document_tracker import DocumentTracker
 from lifearchivist.utils.logging import log_event, track
 
 
-class RedisDocumentTracker(DocumentTracker):
+class RedisDocumentTracker:
     """
     Production-grade Redis-based document tracker.
 

@@ -70,6 +70,10 @@ class MCPServer:
 
         # Initialize LlamaIndex service
         self.llamaindex_service = LlamaIndexService(vault=self.vault)
+        await self.llamaindex_service.ensure_initialized()
+
+        # Run vault reconciliation on startup
+        await self._run_startup_reconciliation()
 
         # Initialize progress manager only if websockets enabled
         # if self.settings.enable_websockets:
@@ -126,6 +130,63 @@ class MCPServer:
                 llamaindex_service=self.llamaindex_service,
                 tool_registry=self.tool_registry,
             )
+
+    async def _run_startup_reconciliation(self):
+        """
+        Run vault reconciliation on startup to ensure data consistency.
+        
+        This handles the case where users manually delete vault files,
+        ensuring Redis/Qdrant metadata stays in sync with actual files.
+        """
+        try:
+            from ..storage.vault_reconciliation import VaultReconciliationService
+            
+            if not self.vault or not self.llamaindex_service:
+                return
+            
+            doc_tracker = self.llamaindex_service.doc_tracker
+            qdrant_client = self.llamaindex_service.qdrant_client
+            
+            if not doc_tracker or not qdrant_client:
+                return
+            
+            # Create reconciliation service
+            reconciliation_service = VaultReconciliationService(
+                vault=self.vault,
+                doc_tracker=doc_tracker,
+                qdrant_client=qdrant_client,
+            )
+            
+            # Run reconciliation
+            result = await reconciliation_service.reconcile()
+            
+            # Log results
+            if result["cleaned"] > 0:
+                log_event(
+                    "startup_reconciliation_cleanup",
+                    {
+                        "checked": result["checked"],
+                        "cleaned": result["cleaned"],
+                        "errors": result["errors"],
+                    },
+                    level=logging.WARNING,
+                )
+            else:
+                log_event(
+                    "startup_reconciliation_complete",
+                    {
+                        "checked": result["checked"],
+                        "status": "consistent",
+                    },
+                )
+                
+        except Exception as e:
+            log_event(
+                "startup_reconciliation_failed",
+                {"error": str(e), "error_type": type(e).__name__},
+                level=logging.ERROR,
+            )
+            # Don't fail startup if reconciliation fails
 
     async def execute_tool(
         self, tool_name: str, params: Dict[str, Any]

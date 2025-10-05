@@ -36,3 +36,13 @@ export const fetchDocuments = async (limit: number = 500): Promise<Document[]> =
 export const clearVault = async (): Promise<void> => {
   await axios.delete(`${API_BASE_URL}/documents`);
 };
+
+/**
+ * Reconcile vault files with metadata stores
+ * 
+ * Checks all documents in Redis and removes metadata for any documents
+ * whose vault files are missing. Ensures data consistency.
+ */
+export const reconcileVault = async (): Promise<void> => {
+  await axios.post(`${API_BASE_URL}/vault/reconcile`);
+};
