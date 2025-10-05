@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../utils/cn';
 import UploadQueue from './upload/UploadQueue';
 import UploadQueueTrigger from './upload/UploadQueueTrigger';
+import { useUploadQueue } from '../contexts/UploadQueueContext';
 import { 
   Inbox, 
   Search, 
@@ -12,7 +13,7 @@ import {
   HardDrive,
   Activity,
   MessageCircle,
-  Calendar
+  DollarSign
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -21,11 +22,17 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const { state: uploadQueueState } = useUploadQueue();
+  
+  // Only show the floating upload queue on non-inbox pages or when there are completed/error batches
+  const showFloatingQueue = location.pathname !== '/' || 
+    uploadQueueState.batches.some(b => 
+      b.status === 'error' || 
+      (b.status !== 'active' && b.createdAt < Date.now() - 60000) // Older completed batches
+    );
 
   const navigation = [
     { name: 'Inbox', href: '/', icon: Inbox },
-    { name: 'Documents', href: '/documents', icon: FileText },
-    { name: 'Timeline', href: '/timeline', icon: Calendar },
     { name: 'Vault', href: '/vault', icon: HardDrive },
     { name: 'Q&A', href: '/qa', icon: MessageCircle },
     { name: 'Search', href: '/search', icon: Search },
@@ -84,9 +91,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </main>
       </div>
 
-      {/* Upload Queue Components */}
-      <UploadQueue />
-      <UploadQueueTrigger />
+      {/* Upload Queue Components - Only show on non-inbox pages or for history */}
+      {showFloatingQueue && (
+        <>
+          <UploadQueue />
+          <UploadQueueTrigger />
+        </>
+      )}
     </div>
   );
 };

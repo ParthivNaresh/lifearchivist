@@ -1,0 +1,12 @@
+/**
+ * InboxHeader component - displays page title
+ */
+
+import React from 'react';
+import { UI_TEXT } from '../constants';
+
+export const InboxHeader: React.FC = () => {
+  return (
+    <h1 className="text-2xl font-bold mb-6">{UI_TEXT.PAGE_TITLE}</h1>
+  );
+};

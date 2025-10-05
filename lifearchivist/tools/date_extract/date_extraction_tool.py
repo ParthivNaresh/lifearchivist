@@ -79,7 +79,6 @@ class ContentDateExtractionTool(BaseTool):
             max_tokens=1000,
         )
 
-        # Log the raw LLM response for debugging
         log_event(
             "llm_response_received",
             {
@@ -95,7 +94,7 @@ class ContentDateExtractionTool(BaseTool):
         operation="date_metadata_storage",
         include_args=["document_id"],
         track_performance=True,
-        emit_events=False,  # Silent operation - metadata updates are logged by LlamaIndex service
+        emit_events=False,
     )
     async def store_extracted_date(self, document_id: str, extracted_date: str):
         """Store extracted dates in LlamaIndex metadata."""

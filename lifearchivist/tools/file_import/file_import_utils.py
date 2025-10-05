@@ -8,9 +8,15 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 SUPPORTED_TEXT_EXTRACTION_TYPES = [
-    "text/",  # All text/* types
+    "text/",  # All text/* types (includes text/csv)
     "application/pdf",  # PDF documents
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # Word documents
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # Excel .xlsx
+    "application/vnd.ms-excel",  # Excel .xls
+    "application/excel",  # Alternative Excel MIME type
+    "application/x-excel",  # Alternative Excel MIME type
+    "application/x-msexcel",  # Alternative Excel MIME type
+    "image/",  # All image/* types for OCR extraction
 ]
 
 MIN_TEXT_LENGTH_FOR_EMBEDDINGS = 100
@@ -123,6 +129,15 @@ def create_document_metadata(
         "mime_type": mime_type,
         "size_bytes": stat.st_size,
         "status": "processing",  # Will be updated to "ready" later
+        # Time tracking
+        "uploaded_at": datetime.now().isoformat(),  # When uploaded to Life Archivist
+        "file_created_at": datetime.fromtimestamp(
+            stat.st_ctime
+        ).isoformat(),  # Original file creation
+        "file_modified_at": (
+            datetime.fromtimestamp(stat.st_mtime).isoformat() if stat.st_mtime else None
+        ),  # Original file modification
+        # Legacy fields for compatibility
         "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
         "modified_at": (
             datetime.fromtimestamp(stat.st_mtime).isoformat() if stat.st_mtime else None
@@ -156,6 +171,9 @@ def create_document_metadata(
             "mime_type",
             "size_bytes",
             "status",
+            "uploaded_at",
+            "file_created_at",
+            "file_modified_at",
             "created_at",
             "modified_at",
             "word_count",

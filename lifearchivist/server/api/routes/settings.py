@@ -5,6 +5,7 @@ Settings management endpoints.
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from ..dependencies import get_server
@@ -99,24 +100,18 @@ async def get_settings():
     try:
         settings = server.settings
 
-        # Map backend settings to frontend-friendly format
         response = SettingsResponse(
-            # Document Processing
-            auto_extract_dates=True,  # Default enabled, could be configurable later
-            generate_text_previews=True,  # Default enabled
+            auto_extract_dates=True,
+            generate_text_previews=True,
             max_file_size_mb=settings.max_file_size_mb,
-            # Search & AI
             llm_model=settings.llm_model,
             embedding_model=settings.embedding_model,
-            search_results_limit=25,  # Default value, could be made configurable
-            # File Management
-            auto_organize_by_date=False,  # Future feature
-            duplicate_detection=True,  # Currently always enabled
-            default_import_location="~/Documents",  # Default value
-            # Appearance
+            search_results_limit=25,
+            auto_organize_by_date=False,
+            duplicate_detection=True,
+            default_import_location="~/Documents",
             theme=settings.theme,
-            interface_density="comfortable",  # Default value
-            # System Info
+            interface_density="comfortable",
             vault_path=str(settings.vault_path),
             lifearch_home=str(settings.lifearch_home),
         )
@@ -124,7 +119,10 @@ async def get_settings():
         return response
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={"success": False, "error": str(e), "error_type": type(e).__name__},
+            status_code=500,
+        )
 
 
 @router.put("/settings")

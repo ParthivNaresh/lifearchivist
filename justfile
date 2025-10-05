@@ -37,9 +37,7 @@ setup: install services init-models
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🐳 Docker Services Management
-# ────────────────────────────────────────────────────────────────────────────────
-
-# Start development services (Qdrant, Redis, Ollama)
+# ───────────────────────────────────────────────────────────────────────# Start development services (Qdrant, Redis, Ollama)
 services:
     docker-compose up -d ollama
     docker exec -it lifearchivist-ollama-1 ollama pull llama3.2:1b
@@ -62,6 +60,7 @@ check-docker:
     @echo "Qdrant:" && curl -s http://localhost:6333 | python -c "import sys,json; print('✅ Running' if 'qdrant' in json.load(sys.stdin).get('title','').lower() else '❌ Error')" || echo "❌ Not responding"
     @echo "Redis:" && redis-cli -h localhost -p 6379 ping || echo "❌ Not responding" 
     @echo "Ollama:" && curl -s http://localhost:11434/api/version || echo "❌ Not responding"
+    @echo "PaddleOCR:" && curl -s http://localhost:8080/health | python -c "import sys,json; print('✅ Running' if json.load(sys.stdin).get('status')=='healthy' else '❌ Error')" || echo "❌ Not responding"
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🖥️  Backend Server
@@ -157,6 +156,8 @@ fullstack: services
     lsof -ti:3000 | xargs kill -9 2>/dev/null || true
     sleep 1
     echo "📱 Starting MCP server..."
+    # Disable tokenizer parallelism to avoid warnings with OCR forking
+    export TOKENIZERS_PARALLELISM=false
     poetry run uvicorn lifearchivist.server.main:create_app --host localhost --port 8000 --reload --factory &
     SERVER_PID=$!
     echo "⏳ Waiting for MCP server to start..."
@@ -200,6 +201,26 @@ stop-all: services-stop
     pkill -f "uvicorn" || true
     @echo "✅ All processes stopped"
 
+# Clean all data (WARNING: Deletes all documents, vectors, and cached data)
+clean-data:
+    @echo "⚠️  WARNING: This will delete ALL data including:"
+    @echo "   - All documents and files in vault"
+    @echo "   - All vector embeddings in Qdrant"
+    @echo "   - All document metadata in Redis"
+    @echo "   - All cached models and storage"
+    @echo ""
+    @read -p "Are you sure? Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ] || (echo "Cancelled" && exit 1)
+    @echo "🧹 Cleaning all data..."
+    @echo "🛑 Stopping services..."
+    docker-compose down
+    @echo "🗑️  Removing Docker volumes..."
+    docker volume rm lifearchivist_redis_data 2>/dev/null || true
+    docker volume rm lifearchivist_qdrant_data 2>/dev/null || true
+    @echo "🗑️  Removing local data..."
+    rm -rf ~/.lifearchivist/vault
+    rm -rf ~/.lifearchivist/llamaindex_storage
+    @echo "✅ All data cleaned! Run 'just fullstack' to start fresh"
+
 # Check everything is working
 verify: check-docker test-cli health
     @echo "✅ All systems operational!"
@@ -208,6 +229,40 @@ verify: check-docker test-cli health
 reset: services-stop clean
     docker-compose down -v
     @echo "🧹 Environment reset complete"
+
+# ────────────────────────────────────────────────────────────────────────────────
+# 🔍 OCR Testing
+# ────────────────────────────────────────────────────────────────────────────────
+
+# Start PaddleOCR service only
+ocr-start:
+    docker-compose up -d paddleocr
+    @echo "⏳ Waiting for PaddleOCR to start..."
+    @sleep 5
+    @echo "✅ PaddleOCR service ready at http://localhost:8080"
+
+# Test OCR with a file
+ocr-test file="":
+    #!/usr/bin/env bash
+    if [ -z "{{file}}" ]; then
+        echo "Testing with default invoice..."
+        poetry run python test_ocr_docker.py /Users/parthiv.naresh/Documents/turning_green/Invoice_num_83529.pdf
+    else
+        poetry run python test_ocr_docker.py "{{file}}"
+    fi
+
+# Check OCR service health
+ocr-health:
+    curl -s http://localhost:8080/health | python -m json.tool
+
+# View OCR logs
+ocr-logs:
+    docker-compose logs -f paddleocr
+
+# Rebuild OCR service (after changes)
+ocr-rebuild:
+    docker-compose build paddleocr
+    docker-compose up -d paddleocr
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🧪 Testing & Debugging

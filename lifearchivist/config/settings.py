@@ -84,13 +84,15 @@ class Settings(BaseSettings):
         if self.vault_path is None:
             self.vault_path = self.lifearch_home / "vault"
 
+        # Note: database_url is kept for potential future use but not actively used
+        # Current data stores: Redis (metadata), Qdrant (vectors), Vault (files)
         if self.database_url is None:
             self.database_url = f"sqlite:///{self.lifearch_home}/data/lifearch.db"
 
         # Ensure directories exist
         self.lifearch_home.mkdir(parents=True, exist_ok=True)
         self.vault_path.mkdir(parents=True, exist_ok=True)
-        (self.lifearch_home / "data").mkdir(parents=True, exist_ok=True)
+        # Note: data/ directory not created since SQLite database is not currently used
 
 
 def configure_logging(level: str = "INFO") -> None:

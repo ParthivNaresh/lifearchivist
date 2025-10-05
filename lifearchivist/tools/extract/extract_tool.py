@@ -1,5 +1,5 @@
 """
-Content extraction tools.
+Content extraction tool.
 """
 
 import mimetypes

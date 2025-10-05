@@ -41,7 +41,16 @@ export const useUploadManager = () => {
       if (update.error) {
         updateItemStatus(itemId, 'error', update.error);
       } else if (update.stage === 'complete' && update.progress >= 100) {
-        updateItemStatus(itemId, 'completed', undefined, update.metadata);
+        // Check if this is a duplicate from the metadata
+        if (update.metadata?.status === 'duplicate') {
+          updateItemStatus(itemId, 'duplicate', undefined, {
+            ...update.metadata,
+            isDuplicate: true,
+            message: update.metadata.message || 'File already exists in archive'
+          });
+        } else {
+          updateItemStatus(itemId, 'completed', undefined, update.metadata);
+        }
       } else if (update.progress > 0) {
         updateItemStatus(itemId, 'processing');
       }
@@ -207,8 +216,9 @@ export const useUploadManager = () => {
     
     const results: UploadResult[] = [];
 
-    // Upload files concurrently (but limit concurrency to prevent overwhelming the server)
-    const concurrencyLimit = 3;
+    // Upload files concurrently (limited by browser WebSocket connection limit)
+    // Most browsers allow 6-10 WebSocket connections per domain
+    const concurrencyLimit = 6;
     
     for (let i = 0; i < files.length; i += concurrencyLimit) {
       const batchFiles = files.slice(i, i + concurrencyLimit);
@@ -221,13 +231,23 @@ export const useUploadManager = () => {
 
       const batchResults = await Promise.allSettled(batchPromises);
       
-      batchResults.forEach((result) => {
+      batchResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           results.push(result.value);
         } else {
+          const failedFile = batchFiles[index];
+          const fileName = failedFile instanceof File ? failedFile.name : failedFile.path || 'unknown';
+          const errorMsg = result.reason?.message || 'Upload failed';
+          
+          console.error(`❌ File failed before request: ${fileName}`, {
+            error: errorMsg,
+            reason: result.reason,
+            stack: result.reason?.stack
+          });
+          
           results.push({
             success: false,
-            error: result.reason?.message || 'Upload failed',
+            error: errorMsg,
           });
         }
       });
