@@ -24,6 +24,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
 from lifearchivist.config import get_settings
+from lifearchivist.storage.bm25_index_service import BM25IndexService
 from lifearchivist.storage.document_service import LlamaIndexDocumentService
 from lifearchivist.storage.metadata_service import LlamaIndexMetadataService
 from lifearchivist.storage.query_service import LlamaIndexQueryService
@@ -65,7 +66,14 @@ class LlamaIndexQdrantService:
         # Initialize Redis document tracker for production-grade scalability
         self.doc_tracker = RedisDocumentTracker(redis_url=self.settings.redis_url)
 
-        # Mark that tracker needs async initialization
+        # Initialize BM25 service for keyword search
+        self.bm25_service = BM25IndexService(
+            redis_url=self.settings.redis_url,
+            use_stemming=False,  # Can enable if nltk is installed
+            remove_stop_words=True,
+        )
+
+        # Mark that services need async initialization
         self._initialized = False
 
         self.setup()
@@ -90,7 +98,7 @@ class LlamaIndexQdrantService:
         """
         Explicitly initialize async resources.
 
-        This method ensures the document tracker is initialized before use.
+        This method ensures the document tracker and BM25 service are initialized before use.
         It's called automatically by the context manager, but can also be
         called explicitly for long-lived instances.
 
@@ -101,11 +109,19 @@ class LlamaIndexQdrantService:
         """
         if not self._initialized:
             try:
+                # Initialize document tracker
                 await self.doc_tracker.initialize()
+
+                # Initialize BM25 service
+                await self.bm25_service.initialize()
+
                 self._initialized = True
                 log_event(
                     "llamaindex_service_initialized",
-                    {"tracker_initialized": True},
+                    {
+                        "tracker_initialized": True,
+                        "bm25_initialized": True,
+                    },
                 )
             except Exception as e:
                 log_event(
@@ -152,12 +168,20 @@ class LlamaIndexQdrantService:
             # Don't raise, let individual operations fail gracefully
 
     def _setup_search_service(self):
-        """Initialize the search service with the index."""
+        """Initialize the search service with the index, BM25, and doc tracker."""
         if self.index:
-            self.search_service = LlamaIndexSearchService(self.index)
+            self.search_service = LlamaIndexSearchService(
+                index=self.index,
+                bm25_service=self.bm25_service,
+                doc_tracker=self.doc_tracker,
+            )
             log_event(
                 "search_service_initialized",
-                {"has_index": True},
+                {
+                    "has_index": True,
+                    "has_bm25": self.bm25_service is not None,
+                    "has_doc_tracker": self.doc_tracker is not None,
+                },
             )
         else:
             self.search_service = None
@@ -219,6 +243,7 @@ class LlamaIndexQdrantService:
                     metadata_service=self.metadata_service,
                     qdrant_client=self.qdrant_client,
                     settings=self.settings,
+                    bm25_service=self.bm25_service,
                 )
                 log_event(
                     "document_service_initialized",
@@ -227,6 +252,7 @@ class LlamaIndexQdrantService:
                         "has_tracker": True,
                         "has_metadata_service": self.metadata_service is not None,
                         "has_qdrant_client": self.qdrant_client is not None,
+                        "has_bm25_service": self.bm25_service is not None,
                     },
                 )
             else:
@@ -939,12 +965,22 @@ class LlamaIndexQdrantService:
         proper cleanup of Redis connections and other resources.
         """
         try:
-            if self.doc_tracker and self._initialized:
-                await self.doc_tracker.close()
+            if self._initialized:
+                # Close document tracker
+                if self.doc_tracker:
+                    await self.doc_tracker.close()
+
+                # Close BM25 service
+                if self.bm25_service:
+                    await self.bm25_service.close()
+
                 self._initialized = False
                 log_event(
                     "llamaindex_service_cleanup",
-                    {"tracker_closed": True},
+                    {
+                        "tracker_closed": True,
+                        "bm25_closed": True,
+                    },
                 )
         except Exception as e:
             log_event(

@@ -112,14 +112,23 @@ class LlamaIndexSearchService(SearchService):
     keyword, and hybrid search using the LlamaIndex framework.
     """
 
-    def __init__(self, index: Optional[VectorStoreIndex] = None):
+    def __init__(
+        self,
+        index: Optional[VectorStoreIndex] = None,
+        bm25_service=None,
+        doc_tracker=None,
+    ):
         """
         Initialize the search service.
 
         Args:
             index: LlamaIndex VectorStoreIndex instance
+            bm25_service: BM25IndexService for keyword search
+            doc_tracker: Document tracker for metadata enrichment
         """
         self.index = index
+        self.bm25_service = bm25_service
+        self.doc_tracker = doc_tracker
         self._setup_retrievers()
 
     def _setup_retrievers(self):
@@ -130,10 +139,6 @@ class LlamaIndexSearchService(SearchService):
                 index=self.index,
                 similarity_top_k=10,
             )
-
-            # We'll add more retrievers as needed
-            # For now, LlamaIndex primarily supports semantic search
-            # Keyword search would require additional setup with BM25 or similar
 
     @track(
         operation="semantic_search",
@@ -257,12 +262,18 @@ class LlamaIndexSearchService(SearchService):
         filters: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Perform keyword-based search.
+        Perform keyword-based search using BM25.
 
-        Note: This is a simplified implementation. For production use,
-        consider integrating BM25 or other keyword search algorithms.
-        Currently falls back to semantic search with a note.
+        Uses BM25 ranking algorithm for keyword-based document retrieval.
         """
+        if not self.bm25_service:
+            log_event(
+                "keyword_search_no_bm25",
+                {"reason": "BM25 service not available"},
+                level=logging.ERROR,
+            )
+            return []
+
         log_event(
             "keyword_search_started",
             {
@@ -272,34 +283,158 @@ class LlamaIndexSearchService(SearchService):
             },
         )
 
-        # TODO: Implement proper keyword search with BM25 or similar
-        # For now, we'll use semantic search as a fallback
-        # In a real implementation, you'd want to:
-        # 1. Tokenize the query
-        # 2. Use inverted index or BM25 scoring
-        # 3. Return results based on term frequency
+        try:
+            # Get BM25 results (document_id, score pairs)
+            bm25_results = await self.bm25_service.search(
+                query=query,
+                top_k=top_k * 3,  # Get more for filtering
+                min_score=0.0,
+            )
 
-        log_event(
-            "keyword_search_fallback",
-            {
-                "reason": "Not implemented, using semantic search",
-            },
-            level=logging.WARNING,
-        )
+            if not bm25_results:
+                log_event(
+                    "keyword_search_no_results",
+                    {"query": query[:50]},
+                    level=logging.DEBUG,
+                )
+                return []
 
-        # Use semantic search as fallback
-        results = await self.semantic_search(
-            query=query,
-            top_k=top_k,
-            similarity_threshold=0.5,  # Lower threshold for keyword-like matching
-            filters=filters,
-        )
+            # Enrich results with metadata and text
+            enriched_results = await self._enrich_bm25_results(bm25_results, filters)
 
-        # Mark results as keyword search
-        for result in results:
-            result["search_type"] = "keyword_fallback"
+            # Apply pagination
+            final_results = enriched_results[:top_k]
 
-        return results
+            log_event(
+                "keyword_search_completed",
+                {
+                    "bm25_results": len(bm25_results),
+                    "after_filters": len(enriched_results),
+                    "returned": len(final_results),
+                },
+            )
+
+            return final_results
+
+        except Exception as e:
+            log_event(
+                "keyword_search_failed",
+                {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
+            return []
+
+    async def _enrich_bm25_results(
+        self,
+        bm25_results: List[tuple],
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Enrich BM25 results with metadata and text from Qdrant.
+
+        Args:
+            bm25_results: List of (document_id, score) tuples from BM25
+            filters: Optional metadata filters to apply
+
+        Returns:
+            List of enriched result dictionaries
+        """
+        enriched = []
+
+        for document_id, score in bm25_results:
+            try:
+                # Get full metadata from doc_tracker
+                if self.doc_tracker:
+                    metadata = await self.doc_tracker.get_full_metadata(document_id)
+                    if not metadata:
+                        continue
+
+                    # Apply filters if provided
+                    if filters and not MetadataFilterUtils.matches_filters(
+                        metadata, filters
+                    ):
+                        continue
+
+                    # Get text preview from first node
+                    node_ids = await self.doc_tracker.get_node_ids(document_id)
+                    text_preview = ""
+                    if node_ids and self.index:
+                        # Get text from first chunk
+                        text_preview = await self._get_text_from_node(node_ids[0])
+
+                    enriched.append(
+                        {
+                            "document_id": document_id,
+                            "text": (
+                                text_preview[:500] + "..."
+                                if len(text_preview) > 500
+                                else text_preview
+                            ),
+                            "score": score,
+                            "metadata": metadata,
+                            "node_id": node_ids[0] if node_ids else None,
+                            "search_type": "keyword",
+                        }
+                    )
+
+            except Exception as e:
+                log_event(
+                    "bm25_result_enrichment_failed",
+                    {
+                        "document_id": document_id,
+                        "error": str(e),
+                    },
+                    level=logging.DEBUG,
+                )
+                continue
+
+        return enriched
+
+    async def _get_text_from_node(self, node_id: str) -> str:
+        """
+        Get text content from a node using Qdrant.
+
+        Args:
+            node_id: Node ID to retrieve
+
+        Returns:
+            Text content of the node
+        """
+        try:
+            # Access Qdrant client through index
+            if not self.index or not hasattr(self.index, "_vector_store"):
+                return ""
+
+            vector_store = self.index._vector_store
+            if not hasattr(vector_store, "_client"):
+                return ""
+
+            qdrant_client = vector_store._client
+
+            # Retrieve node from Qdrant
+            from lifearchivist.storage.utils import QdrantNodeUtils
+
+            points = qdrant_client.retrieve(
+                collection_name="lifearchivist",
+                ids=[node_id],
+                with_payload=True,
+                with_vectors=False,
+            )
+
+            if points and len(points) > 0:
+                return QdrantNodeUtils.extract_text_from_node(points[0].payload)
+
+        except Exception as e:
+            log_event(
+                "node_text_retrieval_failed",
+                {"node_id": node_id, "error": str(e)},
+                level=logging.DEBUG,
+            )
+
+        return ""
 
     @track(
         operation="hybrid_search",

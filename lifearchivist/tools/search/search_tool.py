@@ -328,8 +328,7 @@ class IndexSearchTool(BaseTool):
         """
         Perform keyword search using SearchService.
 
-        This method delegates to the SearchService for keyword-based search,
-        or falls back to a simple implementation if SearchService is not available.
+        Delegates entirely to SearchService for BM25-based keyword search.
         """
         import time
 
@@ -338,103 +337,31 @@ class IndexSearchTool(BaseTool):
         # Get search service
         search_service = self._get_search_service()
 
-        if search_service:
-            # Use the SearchService for keyword search
-            retrieved_nodes = await search_service.keyword_search(
-                query=query,
-                top_k=min(limit * 2, 50),
-                filters=filters,
+        if not search_service:
+            log_event(
+                "keyword_search_failed",
+                {"reason": "search_service_not_available"},
+                level=logging.ERROR,
             )
+            return self._empty_search_result("Search service not available")
 
-            # Convert to search result format
-            results = self._convert_nodes_to_search_results(
-                retrieved_nodes, query, "keyword", include_content
-            )
-
-            # Apply pagination
-            total = len(results)
-            paginated_results = results[offset : offset + limit]
-
-            query_time_ms = (time.time() - start_time) * 1000
-
-            return {
-                "results": paginated_results,
-                "total": total,
-                "query_time_ms": round(query_time_ms, 2),
-            }
-
-        # Fallback implementation for backward compatibility
-        # For keyword search, we'll query documents by metadata and then score by text similarity
-        all_docs = await self.llamaindex_service.query_documents_by_metadata(
-            filters=filters, limit=200  # Get more for scoring
+        # Use the SearchService for keyword search
+        retrieved_nodes = await search_service.keyword_search(
+            query=query,
+            top_k=min(limit * 2, 50),
+            filters=filters,
         )
 
-        log_event(
-            "keyword_search_docs_retrieved",
-            {
-                "query_preview": query[:50],
-                "docs_retrieved": len(all_docs),
-                "has_filters": bool(filters),
-            },
-            level=logging.DEBUG,
+        # Convert to search result format
+        results = self._convert_nodes_to_search_results(
+            retrieved_nodes, query, "keyword", include_content
         )
-
-        # Score documents based on keyword matching
-        keyword_results = []
-        query_words = set(query.lower().split())
-
-        for doc in all_docs:
-            # Calculate keyword score based on text preview and title
-            text_content = (
-                doc.get("text_preview", "") + " " + doc.get("title", "")
-            ).lower()
-
-            # Simple keyword scoring
-            matches = sum(1 for word in query_words if word in text_content)
-            if matches > 0:
-                score = matches / len(query_words)  # Percentage of query words found
-
-                keyword_results.append(
-                    {
-                        "document_id": doc.get("document_id"),
-                        "title": doc.get("title", "Untitled"),
-                        "snippet": doc.get("text_preview", "")[:300],
-                        "content": (
-                            doc.get("text_preview", "") if include_content else None
-                        ),
-                        "score": score,
-                        "mime_type": doc.get("metadata", {}).get(
-                            "mime_type", "unknown"
-                        ),
-                        "size_bytes": doc.get("metadata", {}).get("size_bytes", 0),
-                        "match_type": "keyword",
-                        "created_at": doc.get("metadata", {}).get("created_at"),
-                        "ingested_at": doc.get("metadata", {}).get("ingested_at")
-                        or doc.get("metadata", {}).get("created_at"),
-                        "word_count": doc.get("metadata", {}).get("word_count"),
-                        "tags": doc.get("metadata", {}).get("tags", []),
-                    }
-                )
-
-        # Sort by score
-        keyword_results.sort(key=lambda x: x["score"], reverse=True)
 
         # Apply pagination
-        total = len(keyword_results)
-        paginated_results = keyword_results[offset : offset + limit]
+        total = len(results)
+        paginated_results = results[offset : offset + limit]
 
         query_time_ms = (time.time() - start_time) * 1000
-
-        # Log keyword search metrics
-        log_event(
-            "keyword_search_scored",
-            {
-                "query_words": len(query_words),
-                "docs_with_matches": len(keyword_results),
-                "match_rate": len(keyword_results) / len(all_docs) if all_docs else 0,
-            },
-            level=logging.DEBUG,
-        )
 
         # Log slow searches
         if query_time_ms > 1000:
@@ -443,7 +370,7 @@ class IndexSearchTool(BaseTool):
                 {
                     "query_preview": query[:50],
                     "query_time_ms": round(query_time_ms, 2),
-                    "docs_processed": len(all_docs),
+                    "total_results": total,
                 },
                 level=logging.WARNING,
             )

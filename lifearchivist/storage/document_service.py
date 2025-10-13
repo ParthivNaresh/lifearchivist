@@ -127,6 +127,7 @@ class LlamaIndexDocumentService(DocumentService):
         metadata_service=None,
         qdrant_client=None,
         settings=None,
+        bm25_service=None,
     ):
         """
         Initialize the document service.
@@ -137,12 +138,14 @@ class LlamaIndexDocumentService(DocumentService):
             metadata_service: Metadata service for metadata operations
             qdrant_client: Qdrant client for vector operations
             settings: Application settings
+            bm25_service: BM25 index service for keyword search
         """
         self.index = index
         self.doc_tracker = doc_tracker
         self.metadata_service = metadata_service
         self.qdrant_client = qdrant_client
         self.settings = settings
+        self.bm25_service = bm25_service
 
     @track(
         operation="document_addition",
@@ -257,6 +260,27 @@ class LlamaIndexDocumentService(DocumentService):
             # Calculate statistics
             word_count = len(content.split())
 
+            # Add to BM25 index for keyword search
+            if self.bm25_service:
+                try:
+                    await self.bm25_service.add_document(document_id, content)
+                    log_event(
+                        "bm25_document_indexed",
+                        {"document_id": document_id},
+                        level=logging.DEBUG,
+                    )
+                except Exception as e:
+                    log_event(
+                        "bm25_indexing_failed",
+                        {
+                            "document_id": document_id,
+                            "error": str(e),
+                            "error_type": type(e).__name__,
+                        },
+                        level=logging.WARNING,
+                    )
+                    # Don't fail the whole operation if BM25 indexing fails
+
             log_event(
                 "document_added",
                 {
@@ -264,6 +288,7 @@ class LlamaIndexDocumentService(DocumentService):
                     "content_length": len(content),
                     "word_count": word_count,
                     "nodes_created": len(nodes_created),
+                    "bm25_indexed": self.bm25_service is not None,
                 },
             )
 
@@ -599,9 +624,34 @@ class LlamaIndexDocumentService(DocumentService):
                     },
                 )
 
+            # Remove from BM25 index
+            if self.bm25_service:
+                try:
+                    await self.bm25_service.remove_document(document_id)
+                    log_event(
+                        "bm25_document_removed",
+                        {"document_id": document_id},
+                        level=logging.DEBUG,
+                    )
+                except Exception as e:
+                    log_event(
+                        "bm25_removal_failed",
+                        {
+                            "document_id": document_id,
+                            "error": str(e),
+                            "error_type": type(e).__name__,
+                        },
+                        level=logging.WARNING,
+                    )
+                    # Don't fail the whole operation if BM25 removal fails
+
             log_event(
                 "document_deleted",
-                {"document_id": document_id, "nodes_deleted": nodes_count},
+                {
+                    "document_id": document_id,
+                    "nodes_deleted": nodes_count,
+                    "bm25_removed": self.bm25_service is not None,
+                },
             )
 
             return Success(
@@ -737,10 +787,30 @@ class LlamaIndexDocumentService(DocumentService):
                         context={"error_type": type(e).__name__},
                     )
 
+            # Clear BM25 index
+            if self.bm25_service:
+                try:
+                    await self.bm25_service.clear_index()
+                    log_event(
+                        "bm25_index_cleared",
+                        level=logging.DEBUG,
+                    )
+                except Exception as e:
+                    log_event(
+                        "bm25_clear_failed",
+                        {
+                            "error": str(e),
+                            "error_type": type(e).__name__,
+                        },
+                        level=logging.WARNING,
+                    )
+                    # Don't fail the whole operation if BM25 clear fails
+
             log_event(
                 "data_cleared",
                 {
                     "documents_cleared": doc_count,
+                    "bm25_cleared": self.bm25_service is not None,
                     **clear_stats,
                 },
             )
