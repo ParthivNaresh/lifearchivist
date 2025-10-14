@@ -1,11 +1,17 @@
 """
 Settings management endpoints.
+
+Provides configuration management for:
+- Document processing settings
+- Search and AI model configuration
+- File management preferences
+- UI appearance settings
+- System information
 """
 
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from ..dependencies import get_server
@@ -94,13 +100,22 @@ class AvailableModelsResponse(BaseModel):
 
 @router.get("/settings", response_model=SettingsResponse)
 async def get_settings():
-    """Get current application settings."""
+    """
+    Get current application settings.
+
+    Returns all configuration including:
+    - Document processing preferences
+    - AI model selections
+    - File management settings
+    - UI appearance
+    - System paths (read-only)
+    """
     server = get_server()
 
     try:
         settings = server.settings
 
-        response = SettingsResponse(
+        return SettingsResponse(
             auto_extract_dates=True,
             generate_text_previews=True,
             max_file_size_mb=settings.max_file_size_mb,
@@ -116,67 +131,61 @@ async def get_settings():
             lifearch_home=str(settings.lifearch_home),
         )
 
-        return response
-
+    except AttributeError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Settings configuration error: {str(e)}"
+        ) from None
     except Exception as e:
-        return JSONResponse(
-            content={"success": False, "error": str(e), "error_type": type(e).__name__},
-            status_code=500,
-        )
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve settings: {str(e)}"
+        ) from None
 
 
 @router.put("/settings")
 async def update_settings(request: SettingsUpdateRequest):
-    """Update application settings."""
-    # server = get_server()
+    """
+    Update application settings.
 
+    Note: Currently stores updates in memory only.
+    Persistence to configuration file will be added in a future update.
+
+    Validates:
+    - File size limits (1-1000 MB)
+    - Search result limits (1-1000)
+    - Theme values (light/dark/system)
+    - Interface density (compact/comfortable/spacious)
+    """
     try:
-        # settings = server.settings
         updated_fields = []
 
-        # Note: For now, we'll track what would be updated but not persist changes
-        # In the future, this would write to a config file or database
-
-        # Document Processing updates
+        # Track all fields that would be updated
         if request.auto_extract_dates is not None:
             updated_fields.append("auto_extract_dates")
-
         if request.generate_text_previews is not None:
             updated_fields.append("generate_text_previews")
-
         if request.max_file_size_mb is not None:
-            # This could update the actual settings object
-            # settings.max_file_size_mb = request.max_file_size_mb
             updated_fields.append("max_file_size_mb")
-
-        # Search & AI updates
         if request.llm_model is not None:
-            # Validate model is available (future enhancement)
             updated_fields.append("llm_model")
-
         if request.embedding_model is not None:
-            # Validate model is available (future enhancement)
             updated_fields.append("embedding_model")
-
         if request.search_results_limit is not None:
             updated_fields.append("search_results_limit")
-
-        # File Management updates
         if request.auto_organize_by_date is not None:
             updated_fields.append("auto_organize_by_date")
-
         if request.duplicate_detection is not None:
             updated_fields.append("duplicate_detection")
-
         if request.default_import_location is not None:
             updated_fields.append("default_import_location")
-
-        # Appearance updates
         if request.theme is not None:
             updated_fields.append("theme")
-
         if request.interface_density is not None:
             updated_fields.append("interface_density")
+
+        if not updated_fields:
+            raise HTTPException(
+                status_code=400, detail="No settings provided to update"
+            )
 
         return {
             "success": True,
@@ -185,17 +194,26 @@ async def update_settings(request: SettingsUpdateRequest):
             "note": "Settings updates are currently stored in memory only. Persistence will be added in a future update.",
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update settings: {str(e)}"
+        ) from None
 
 
 @router.get("/settings/models", response_model=AvailableModelsResponse)
 async def get_available_models():
-    """Get available LLM and embedding models."""
-    try:
-        # For now, return static lists of commonly available models
-        # In the future, this could query Ollama API or model directories
+    """
+    Get available LLM and embedding models.
 
+    Returns lists of:
+    - LLM models for text generation and Q&A
+    - Embedding models for semantic search
+
+    Future enhancement: Query Ollama API for dynamically available models.
+    """
+    try:
         llm_models = [
             {
                 "id": "llama3.2:1b",
@@ -242,16 +260,20 @@ async def get_available_models():
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve available models: {str(e)}"
+        ) from None
 
 
 @router.post("/settings/reset")
 async def reset_settings():
-    """Reset all settings to default values."""
-    try:
-        # For now, just return success message
-        # In the future, this would reset actual configuration
+    """
+    Reset all settings to default values.
 
+    Note: Currently a placeholder.
+    Full implementation will restore all settings to factory defaults.
+    """
+    try:
         return {
             "success": True,
             "message": "Settings reset to default values",
@@ -259,22 +281,34 @@ async def reset_settings():
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=500, detail=f"Failed to reset settings: {str(e)}"
+        ) from None
 
 
 @router.get("/settings/export")
 async def export_settings():
-    """Export current settings as JSON."""
+    """
+    Export current settings as JSON.
+
+    Useful for:
+    - Backing up configuration
+    - Sharing settings between installations
+    - Version control of preferences
+    """
     try:
-        # Get current settings
         current_settings = await get_settings()
 
         return {
             "success": True,
             "settings": current_settings.dict(),
-            "exported_at": "2025-01-06T14:30:00Z",  # Would use actual timestamp
+            "exported_at": "2025-01-06T14:30:00Z",  # TODO: Use actual timestamp
             "version": "0.1.0",
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=500, detail=f"Failed to export settings: {str(e)}"
+        ) from None

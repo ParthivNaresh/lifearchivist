@@ -1,8 +1,15 @@
 """
-Document management endpoints.
+Document management endpoints with Result type unwrapping.
+
+Provides CRUD operations for documents including:
+- Listing and filtering documents
+- Deleting documents from index and vault
+- Updating document metadata
+- Analyzing document structure and chunks
+- Finding similar documents
 """
 
-from typing import Optional
+from typing import Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
@@ -12,107 +19,140 @@ from ..dependencies import get_server
 router = APIRouter(prefix="/api", tags=["documents"])
 
 
+def _format_document_for_ui(doc: Dict) -> Dict:
+    """
+    Format a document for UI consumption.
+
+    Extracts and flattens metadata for easier frontend access.
+    """
+    metadata = doc.get("metadata", {})
+    theme_metadata = metadata.get("classifications", {})
+
+    return {
+        "id": doc.get("document_id") or metadata.get("document_id"),
+        "file_hash": metadata.get("file_hash", ""),
+        "original_path": metadata.get("original_path", ""),
+        "mime_type": metadata.get("mime_type"),
+        "size_bytes": metadata.get("size_bytes", 0),
+        "created_at": metadata.get("created_at", ""),
+        "modified_at": metadata.get("modified_at"),
+        "ingested_at": metadata.get("created_at", ""),
+        "status": metadata.get("status", "unknown"),
+        "error_message": metadata.get("error_message"),
+        "word_count": metadata.get("word_count"),
+        "language": metadata.get("language"),
+        "extraction_method": metadata.get("extraction_method"),
+        "text_preview": doc.get("text_preview", ""),
+        "has_content": metadata.get("has_content", False),
+        "tags": metadata.get("tags", []),
+        "tag_count": len(metadata.get("tags", [])),
+        # Theme data
+        "theme": theme_metadata.get("theme"),
+        "theme_confidence": theme_metadata.get("confidence"),
+        "confidence_level": theme_metadata.get("confidence_level"),
+        "classification": theme_metadata.get("match_tier"),
+        "pattern_or_phrase": theme_metadata.get("match_pattern"),
+        # Subtheme level
+        "subthemes": theme_metadata.get("subthemes", []),
+        "primary_subtheme": theme_metadata.get("primary_subtheme"),
+        # Subclassification level
+        "subclassifications": theme_metadata.get("subclassifications", []),
+        "primary_subclassification": theme_metadata.get("primary_subclassification"),
+        "subclassification_confidence": theme_metadata.get(
+            "subclassification_confidence"
+        ),
+        # Category mapping
+        "category_mapping": theme_metadata.get("category_mapping", {}),
+    }
+
+
+def _validate_pagination(limit: int, offset: int) -> tuple[int, int]:
+    """
+    Validate and normalize pagination parameters.
+
+    Returns normalized (limit, offset) tuple.
+    """
+    # Clamp limit to reasonable bounds
+    if limit > 500:
+        limit = 500
+    elif limit < 1:
+        limit = 50
+
+    # Ensure offset is non-negative
+    if offset < 0:
+        offset = 0
+
+    return limit, offset
+
+
 @router.get("/documents")
 async def list_documents(
     status: Optional[str] = None,
-    limit: int = 50,  # Reduced default limit for better performance
+    limit: int = 50,
     offset: int = 0,
-    count_only: bool = False,  # Option to get count only
+    count_only: bool = False,
 ):
-    """List documents from LlamaIndex service with UI-compatible formatting."""
+    """
+    List documents from LlamaIndex service with UI-compatible formatting.
+
+    Supports filtering by status and pagination.
+    """
     server = get_server()
 
+    if not server.llamaindex_service:
+        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+
     try:
-        if not server.llamaindex_service:
-            raise HTTPException(
-                status_code=503, detail="LlamaIndex service not available"
-            )
+        # Validate and normalize pagination
+        limit, offset = _validate_pagination(limit, offset)
 
-        # Validate pagination parameters
-        if limit > 500:  # Max limit to prevent performance issues
-            limit = 500
-        if limit < 1:
-            limit = 50
-        if offset < 0:
-            offset = 0
-
+        # Build filters
         filters = {}
         if status:
             filters["status"] = status
 
-        # If only count is requested, return early
+        # Handle count-only request
         if count_only:
-            # For now, we'll need to query all to get count
-            # TODO: Implement proper count method in LlamaIndex service
+            # TODO: Implement proper count method in metadata service
             all_docs_result = (
                 await server.llamaindex_service.query_documents_by_metadata(
                     filters=filters, limit=10000, offset=0
                 )
             )
             if all_docs_result.is_failure():
-                raise HTTPException(status_code=500, detail=all_docs_result.error)
-            all_docs = all_docs_result.unwrap()
+                return JSONResponse(
+                    content=all_docs_result.to_dict(),
+                    status_code=all_docs_result.status_code,
+                )
+            all_docs = all_docs_result.value
             return {"total": len(all_docs), "filters": filters}
 
+        # Query documents
         raw_documents_result = (
             await server.llamaindex_service.query_documents_by_metadata(
                 filters=filters, limit=limit, offset=offset
             )
         )
-        if raw_documents_result.is_failure():
-            raise HTTPException(status_code=500, detail=raw_documents_result.error)
-        raw_documents = raw_documents_result.unwrap()
 
-        formatted_documents = []
-        for doc in raw_documents:
-            metadata = doc.get("metadata", {})
-            theme_metadata = metadata.get("classifications", {})
-            formatted_doc = {
-                "id": doc.get("document_id") or metadata.get("document_id"),
-                "file_hash": metadata.get("file_hash", ""),
-                "original_path": metadata.get("original_path", ""),
-                "mime_type": metadata.get("mime_type"),
-                "size_bytes": metadata.get("size_bytes", 0),
-                "created_at": metadata.get("created_at", ""),
-                "modified_at": metadata.get("modified_at"),
-                "ingested_at": metadata.get("created_at", ""),
-                "status": metadata.get("status", "unknown"),
-                "error_message": metadata.get("error_message"),
-                "word_count": metadata.get("word_count"),
-                "language": metadata.get("language"),
-                "extraction_method": metadata.get("extraction_method"),
-                "text_preview": doc.get("text_preview", ""),
-                "has_content": metadata.get("has_content", False),
-                "tags": metadata.get("tags", []),
-                "tag_count": len(metadata.get("tags", [])),
-                # Handle theme data - it might be a dict (full metadata) or string (minimal metadata)
-                "theme": theme_metadata.get("theme"),
-                "theme_confidence": theme_metadata.get("confidence"),
-                "confidence_level": theme_metadata.get("confidence_level"),
-                "classification": theme_metadata.get("match_tier"),
-                "pattern_or_phrase": theme_metadata.get("match_pattern"),
-                # Subtheme level (e.g., Banking, Investment, Insurance)
-                "subthemes": theme_metadata.get("subthemes", []),
-                "primary_subtheme": theme_metadata.get("primary_subtheme"),
-                # Subclassification level (e.g., Bank Statement, Brokerage Statement)
-                "subclassifications": theme_metadata.get("subclassifications", []),
-                "primary_subclassification": theme_metadata.get(
-                    "primary_subclassification"
-                ),
-                "subclassification_confidence": theme_metadata.get(
-                    "subclassification_confidence"
-                ),
-                # Category mapping for UI
-                "category_mapping": theme_metadata.get("category_mapping", {}),
-            }
-            formatted_documents.append(formatted_doc)
+        if raw_documents_result.is_failure():
+            return JSONResponse(
+                content=raw_documents_result.to_dict(),
+                status_code=raw_documents_result.status_code,
+            )
+
+        raw_documents = raw_documents_result.value
+
+        # Format documents for UI using helper
+        formatted_documents = [_format_document_for_ui(doc) for doc in raw_documents]
 
         return {
+            "success": True,
             "documents": formatted_documents,
             "total": len(formatted_documents),
             "limit": limit,
             "offset": offset,
         }
+
     except HTTPException:
         raise
     except Exception as e:
@@ -121,25 +161,29 @@ async def list_documents(
 
 @router.delete("/documents/{document_id}")
 async def delete_document(document_id: str):
-    """Delete a specific document from both LlamaIndex and vault."""
+    """
+    Delete a specific document from both LlamaIndex and vault.
+
+    Handles deduplication - only deletes from vault if no other documents use the same file.
+    """
     server = get_server()
+
+    if not server.llamaindex_service:
+        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
 
     try:
         # Step 1: Get document metadata to find file hash
-        if not server.llamaindex_service:
-            raise HTTPException(
-                status_code=503, detail="LlamaIndex service not available"
-            )
-
-        # Get document metadata first
         documents_result = await server.llamaindex_service.query_documents_by_metadata(
             filters={"document_id": document_id}, limit=1
         )
 
         if documents_result.is_failure():
-            raise HTTPException(status_code=500, detail=documents_result.error)
+            return JSONResponse(
+                content=documents_result.to_dict(),
+                status_code=documents_result.status_code,
+            )
 
-        documents = documents_result.unwrap()
+        documents = documents_result.value
         if not documents:
             raise HTTPException(
                 status_code=404, detail=f"Document {document_id} not found"
@@ -148,16 +192,16 @@ async def delete_document(document_id: str):
         document_metadata = documents[0].get("metadata", {})
         file_hash = document_metadata.get("file_hash")
 
-        # Step 2: Delete from LlamaIndex (now returns Result)
+        # Step 2: Delete from LlamaIndex
         delete_result = await server.llamaindex_service.delete_document(document_id)
 
         if delete_result.is_failure():
-            # Convert Result to HTTP response
             return JSONResponse(
-                content=delete_result.to_dict(), status_code=delete_result.status_code
+                content=delete_result.to_dict(),
+                status_code=delete_result.status_code,
             )
 
-        delete_info = delete_result.unwrap()
+        delete_info = delete_result.value
 
         # Step 3: Delete from vault if we have the file hash
         vault_deleted = False
@@ -170,15 +214,13 @@ async def delete_document(document_id: str):
                     )
                 )
                 other_docs = (
-                    other_docs_result.unwrap() if other_docs_result.is_success() else []
+                    other_docs_result.value if other_docs_result.is_success() else []
                 )
 
                 # Only delete from vault if this is the only document using this file
                 if (
                     len(other_docs) <= 1
                 ):  # 1 or 0 because we might have already deleted from index
-                    # Use the public method that finds files by hash pattern
-                    # This is better because it doesn't require knowing the extension
                     metrics = {"files_deleted": 0, "bytes_reclaimed": 0, "errors": []}
                     await server.vault.delete_file_by_hash(file_hash, metrics)
                     vault_deleted = metrics["files_deleted"] > 0
@@ -188,7 +230,7 @@ async def delete_document(document_id: str):
 
         return {
             "success": True,
-            **delete_info,  # Include info from Result
+            **delete_info,
             "index_deleted": True,
             "vault_deleted": vault_deleted,
             "file_hash": file_hash,
@@ -202,30 +244,36 @@ async def delete_document(document_id: str):
 
 @router.patch("/documents/{document_id}/subtheme")
 async def update_document_subtheme(document_id: str, subtheme_data: dict):
-    """Update document subtheme metadata."""
+    """
+    Update document subtheme metadata.
+
+    Allows updating classification, theme, and subtheme information.
+    """
     server = get_server()
 
-    try:
-        if not server.llamaindex_service:
-            raise HTTPException(
-                status_code=503, detail="LlamaIndex service not available"
-            )
+    if not server.llamaindex_service:
+        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
 
-        # Update document metadata with subtheme information
-        success = await server.llamaindex_service.update_document_metadata(
+    try:
+        # Update document metadata with subtheme information (returns Result)
+        result = await server.llamaindex_service.update_document_metadata(
             document_id=document_id, metadata_updates=subtheme_data, merge_mode="update"
         )
 
-        if success:
-            return {
-                "success": True,
-                "document_id": document_id,
-                "updated_fields": list(subtheme_data.keys()),
-            }
-        else:
-            raise HTTPException(
-                status_code=500, detail="Failed to update document metadata"
+        if result.is_failure():
+            return JSONResponse(
+                content=result.to_dict(),
+                status_code=result.status_code,
             )
+
+        update_info = result.value
+
+        return {
+            "success": True,
+            "document_id": document_id,
+            "updated_fields": list(subtheme_data.keys()),
+            **update_info,
+        }
 
     except HTTPException:
         raise
@@ -235,28 +283,35 @@ async def update_document_subtheme(document_id: str, subtheme_data: dict):
 
 @router.delete("/documents")
 async def clear_all_documents():
-    """Comprehensive clear all documents operation with progress tracking."""
+    """
+    Comprehensive clear all documents operation with progress tracking.
+
+    Clears data from:
+    - LlamaIndex (vectors, metadata, docstore)
+    - Vault (files)
+    - Progress tracking
+    """
     server = get_server()
 
     try:
-        # Step 1: Clear LlamaIndex data (now returns Result)
+        # Step 1: Clear LlamaIndex data
         if server.llamaindex_service:
             clear_result = await server.llamaindex_service.clear_all_data()
 
             if clear_result.is_failure():
-                # Convert Result to HTTP response
                 return JSONResponse(
-                    content=clear_result.to_dict(), status_code=clear_result.status_code
+                    content=clear_result.to_dict(),
+                    status_code=clear_result.status_code,
                 )
 
-            llamaindex_metrics = clear_result.unwrap()
+            llamaindex_metrics = clear_result.value
         else:
             llamaindex_metrics = {"skipped": True}
 
         # Step 2: Clear vault files
         if not server.vault:
             raise HTTPException(status_code=500, detail="Vault not initialized")
-        vault_metrics = await server.vault.clear_all_files([])  # Empty list = clear all
+        vault_metrics = await server.vault.clear_all_files([])
 
         # Step 3: Clear progress tracking data
         if server.progress_manager:
@@ -281,7 +336,7 @@ async def clear_all_documents():
             "storage_bytes_reclaimed", 0
         )
 
-        result = {
+        return {
             "success": True,
             "operation": "comprehensive_clear_all",
             "summary": {
@@ -298,31 +353,35 @@ async def clear_all_documents():
                 + progress_metrics.get("errors", [])
             ),
         }
-        return result
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from None
 
 
 @router.get("/documents/{document_id}/llamaindex-analysis")
 async def get_llamaindex_document_analysis(document_id: str):
-    """Get comprehensive LlamaIndex analysis for a document."""
-    server = get_server()
-    try:
-        if not server.llamaindex_service:
-            raise HTTPException(
-                status_code=503, detail="LlamaIndex service not available"
-            )
+    """
+    Get comprehensive LlamaIndex analysis for a document.
 
+    Returns chunk statistics, processing info, and storage details.
+    """
+    server = get_server()
+
+    if not server.llamaindex_service:
+        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+
+    try:
         result = await server.llamaindex_service.get_document_analysis(document_id)
 
         if result.is_failure():
-            # Convert Result to HTTP response
             return JSONResponse(
-                content=result.to_dict(), status_code=result.status_code
+                content=result.to_dict(),
+                status_code=result.status_code,
             )
 
-        # Return the success data
-        return result.unwrap()
+        return result.value
 
     except HTTPException:
         raise
@@ -334,35 +393,34 @@ async def get_llamaindex_document_analysis(document_id: str):
 async def get_llamaindex_document_chunks(
     document_id: str, limit: int = 100, offset: int = 0
 ):
-    """Get paginated chunks for a document from LlamaIndex."""
+    """
+    Get paginated chunks for a document from LlamaIndex.
+
+    Returns the text chunks with their metadata and embeddings info.
+    """
     server = get_server()
 
+    if not server.llamaindex_service:
+        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+
+    # Validate pagination
+    if limit < 1 or limit > 1000:
+        raise HTTPException(status_code=400, detail="Limit must be between 1 and 1000")
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="Offset must be non-negative")
+
     try:
-        if not server.llamaindex_service:
-            raise HTTPException(
-                status_code=503, detail="LlamaIndex service not available"
-            )
-
-        if limit < 1 or limit > 1000:
-            raise HTTPException(
-                status_code=400, detail="Limit must be between 1 and 1000"
-            )
-        if offset < 0:
-            raise HTTPException(status_code=400, detail="Offset must be non-negative")
-
-        # get_document_chunks now returns Result
         result = await server.llamaindex_service.get_document_chunks(
             document_id=document_id, limit=limit, offset=offset
         )
 
         if result.is_failure():
-            # Convert Result to HTTP response
             return JSONResponse(
-                content=result.to_dict(), status_code=result.status_code
+                content=result.to_dict(),
+                status_code=result.status_code,
             )
 
-        # Return the success data
-        return result.unwrap()
+        return result.value
 
     except HTTPException:
         raise
@@ -372,30 +430,45 @@ async def get_llamaindex_document_chunks(
 
 @router.get("/documents/{document_id}/llamaindex-neighbors")
 async def get_llamaindex_document_neighbors(document_id: str, top_k: int = 10):
-    """Get semantically similar documents for a given document."""
+    """
+    Get semantically similar documents for a given document.
+
+    Uses vector similarity to find related documents.
+    """
     server = get_server()
+
+    if not server.llamaindex_service:
+        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+
+    # Validate parameters
+    if top_k < 1 or top_k > 100:
+        raise HTTPException(status_code=400, detail="top_k must be between 1 and 100")
+
     try:
-        if not server.llamaindex_service:
-            raise HTTPException(
-                status_code=503, detail="LlamaIndex service not available"
-            )
-
-        # Validate parameters
-        if top_k < 1 or top_k > 100:
-            raise HTTPException(
-                status_code=400, detail="top_k must be between 1 and 100"
-            )
-
+        # Note: get_document_neighbors returns Result
         result = await server.llamaindex_service.get_document_neighbors(
             document_id=document_id, top_k=top_k
         )
 
-        if "error" in result:
+        # Handle Result type if it returns one, otherwise handle dict
+        if hasattr(result, "is_failure"):
+            if result.is_failure():
+                return JSONResponse(
+                    content=result.to_dict(),
+                    status_code=result.status_code,
+                )
+            return result.value
+
+        # Legacy dict-based error handling (if service doesn't return Result yet)
+        if isinstance(result, dict) and "error" in result:
             if "not found" in result["error"].lower():
                 raise HTTPException(status_code=404, detail=result["error"])
             else:
                 raise HTTPException(status_code=500, detail=result["error"])
+
         return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from None

@@ -3,6 +3,8 @@ Search service for document retrieval operations.
 
 This module provides a clean interface for all search-related functionality,
 including semantic, keyword, and hybrid search capabilities.
+
+All methods return Result types for explicit error handling.
 """
 
 import logging
@@ -14,10 +16,16 @@ from llama_index.core.retrievers import VectorIndexRetriever
 
 from lifearchivist.storage.utils import MetadataFilterUtils
 from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.result import (
+    Result,
+    Success,
+    internal_error,
+    service_unavailable,
+)
 
 
 class SearchService(ABC):
-    """Abstract base class for search services."""
+    """Abstract base class for search services with Result types."""
 
     @abstractmethod
     async def semantic_search(
@@ -26,7 +34,7 @@ class SearchService(ABC):
         top_k: int = 10,
         similarity_threshold: float = 0.7,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Perform semantic search using vector similarity.
 
@@ -37,7 +45,7 @@ class SearchService(ABC):
             filters: Optional metadata filters
 
         Returns:
-            List of search results with scores and metadata
+            Success with list of search results, or Failure with error
         """
         pass
 
@@ -47,7 +55,7 @@ class SearchService(ABC):
         query: str,
         top_k: int = 10,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Perform keyword-based search.
 
@@ -57,7 +65,7 @@ class SearchService(ABC):
             filters: Optional metadata filters
 
         Returns:
-            List of search results with scores and metadata
+            Success with list of search results, or Failure with error
         """
         pass
 
@@ -68,7 +76,7 @@ class SearchService(ABC):
         top_k: int = 10,
         semantic_weight: float = 0.5,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Perform hybrid search combining semantic and keyword search.
 
@@ -79,7 +87,7 @@ class SearchService(ABC):
             filters: Optional metadata filters
 
         Returns:
-            List of search results with combined scores
+            Success with list of combined results, or Failure with error
         """
         pass
 
@@ -89,7 +97,7 @@ class SearchService(ABC):
         query: str,
         top_k: int = 10,
         similarity_threshold: float = 0.7,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Retrieve similar documents using vector search.
 
@@ -99,7 +107,7 @@ class SearchService(ABC):
             similarity_threshold: Minimum similarity score (0-1)
 
         Returns:
-            List of similar documents with scores
+            Success with list of similar documents, or Failure with error
         """
         pass
 
@@ -153,11 +161,14 @@ class LlamaIndexSearchService(SearchService):
         top_k: int = 10,
         similarity_threshold: float = 0.7,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Perform semantic search using vector similarity.
 
         Uses embeddings to find semantically similar documents.
+
+        Returns:
+            Success with list of search results, or Failure with error
         """
         if not self.index:
             log_event(
@@ -165,7 +176,9 @@ class LlamaIndexSearchService(SearchService):
                 {"reason": "no_index"},
                 level=logging.DEBUG,
             )
-            return []
+            return service_unavailable(
+                "Search index not available", context={"service": "semantic_search"}
+            )
 
         try:
             log_event(
@@ -235,7 +248,7 @@ class LlamaIndexSearchService(SearchService):
                 },
             )
 
-            return results
+            return Success(results)
 
         except Exception as e:
             log_event(
@@ -246,7 +259,13 @@ class LlamaIndexSearchService(SearchService):
                 },
                 level=logging.ERROR,
             )
-            return []
+            return internal_error(
+                f"Semantic search failed: {str(e)}",
+                context={
+                    "query": query[:50],
+                    "error_type": type(e).__name__,
+                },
+            )
 
     @track(
         operation="keyword_search",
@@ -260,11 +279,14 @@ class LlamaIndexSearchService(SearchService):
         query: str,
         top_k: int = 10,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Perform keyword-based search using BM25.
 
         Uses BM25 ranking algorithm for keyword-based document retrieval.
+
+        Returns:
+            Success with list of search results, or Failure with error
         """
         if not self.bm25_service:
             log_event(
@@ -272,7 +294,10 @@ class LlamaIndexSearchService(SearchService):
                 {"reason": "BM25 service not available"},
                 level=logging.ERROR,
             )
-            return []
+            return service_unavailable(
+                "BM25 search service not available",
+                context={"service": "keyword_search"},
+            )
 
         log_event(
             "keyword_search_started",
@@ -297,7 +322,7 @@ class LlamaIndexSearchService(SearchService):
                     {"query": query[:50]},
                     level=logging.DEBUG,
                 )
-                return []
+                return Success([])
 
             # Enrich results with metadata and text
             enriched_results = await self._enrich_bm25_results(bm25_results, filters)
@@ -314,7 +339,7 @@ class LlamaIndexSearchService(SearchService):
                 },
             )
 
-            return final_results
+            return Success(final_results)
 
         except Exception as e:
             log_event(
@@ -325,7 +350,13 @@ class LlamaIndexSearchService(SearchService):
                 },
                 level=logging.ERROR,
             )
-            return []
+            return internal_error(
+                f"Keyword search failed: {str(e)}",
+                context={
+                    "query": query[:50],
+                    "error_type": type(e).__name__,
+                },
+            )
 
     async def _enrich_bm25_results(
         self,
@@ -449,14 +480,20 @@ class LlamaIndexSearchService(SearchService):
         top_k: int = 10,
         semantic_weight: float = 0.5,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Perform hybrid search combining semantic and keyword search.
 
         Combines results from both search methods using weighted scoring.
+
+        Returns:
+            Success with list of combined results, or Failure with error
         """
         if not 0 <= semantic_weight <= 1:
-            raise ValueError("semantic_weight must be between 0 and 1")
+            return internal_error(
+                "semantic_weight must be between 0 and 1",
+                context={"semantic_weight": semantic_weight},
+            )
 
         log_event(
             "hybrid_search_started",
@@ -470,20 +507,31 @@ class LlamaIndexSearchService(SearchService):
         )
 
         try:
-            # Get results from both search methods
-            # Use 2x top_k to have enough results after merging
-            semantic_results = await self.semantic_search(
+            # Get results from both search methods (both return Result now)
+            semantic_result = await self.semantic_search(
                 query=query,
                 top_k=top_k * 2,
                 similarity_threshold=0.3,  # Lower threshold to get more candidates
                 filters=filters,
             )
 
-            keyword_results = await self.keyword_search(
+            # If semantic search failed, return the failure
+            if semantic_result.is_failure():
+                return semantic_result
+
+            keyword_result = await self.keyword_search(
                 query=query,
                 top_k=top_k * 2,
                 filters=filters,
             )
+
+            # If keyword search failed, return the failure
+            if keyword_result.is_failure():
+                return keyword_result
+
+            # Unwrap successful results
+            semantic_results = semantic_result.value
+            keyword_results = keyword_result.value
 
             # Combine and re-score results
             combined_results = self._combine_search_results(
@@ -506,7 +554,7 @@ class LlamaIndexSearchService(SearchService):
                 },
             )
 
-            return final_results
+            return Success(final_results)
 
         except Exception as e:
             log_event(
@@ -517,7 +565,13 @@ class LlamaIndexSearchService(SearchService):
                 },
                 level=logging.ERROR,
             )
-            return []
+            return internal_error(
+                f"Hybrid search failed: {str(e)}",
+                context={
+                    "query": query[:50],
+                    "error_type": type(e).__name__,
+                },
+            )
 
     @track(
         operation="retrieve_similar",
@@ -531,12 +585,15 @@ class LlamaIndexSearchService(SearchService):
         query: str,
         top_k: int = 10,
         similarity_threshold: float = 0.7,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Retrieve similar documents using vector search.
 
         This is essentially semantic search without additional filters.
         Maintained for backward compatibility.
+
+        Returns:
+            Success with list of similar documents, or Failure with error
         """
         return await self.semantic_search(
             query=query,
@@ -602,7 +659,7 @@ class LlamaIndexSearchService(SearchService):
         document_text: str,
         document_id: str,
         top_k: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Get semantically similar documents for a given document.
 
@@ -612,18 +669,25 @@ class LlamaIndexSearchService(SearchService):
             top_k: Number of similar documents to return
 
         Returns:
-            List of similar documents with scores
+            Success with list of similar documents, or Failure with error
         """
         try:
             # Use the document's text as query (truncated to avoid token limits)
             query_text = document_text[:2000]  # Use first 2000 chars as query
 
             # Retrieve similar documents with lower threshold
-            similar_docs = await self.semantic_search(
+            similar_result = await self.semantic_search(
                 query=query_text,
                 top_k=top_k + 10,  # Get extra to filter out self
                 similarity_threshold=0.3,  # Lower threshold for neighbor search
             )
+
+            # If search failed, return the failure
+            if similar_result.is_failure():
+                return similar_result
+
+            # Unwrap successful result
+            similar_docs = similar_result.value
 
             # Filter out the document itself and format results
             neighbors = []
@@ -642,7 +706,7 @@ class LlamaIndexSearchService(SearchService):
                 },
             )
 
-            return neighbors
+            return Success(neighbors)
 
         except Exception as e:
             log_event(
@@ -653,4 +717,10 @@ class LlamaIndexSearchService(SearchService):
                 },
                 level=logging.ERROR,
             )
-            return []
+            return internal_error(
+                f"Failed to get document neighbors: {str(e)}",
+                context={
+                    "document_id": document_id,
+                    "error_type": type(e).__name__,
+                },
+            )

@@ -14,7 +14,7 @@ from ..config import get_settings
 from ..config.settings import configure_logging
 from .api.dependencies import set_server_instance
 from .api.router import get_api_router
-from .mcp_server import MCPServer
+from .application_server import ApplicationServer
 
 # Set tokenizer parallelism to false to avoid warnings when forking processes
 # This must be done before any HuggingFace tokenizers are loaded
@@ -38,7 +38,7 @@ class ToolExecutionResult(BaseModel):
 
 
 # Global server instance
-server = MCPServer()
+server = ApplicationServer()
 
 
 @asynccontextmanager
@@ -50,10 +50,7 @@ async def lifespan(app: FastAPI):
     set_server_instance(server)
     yield
     # Shutdown
-    if server.background_tasks:
-        await server.background_tasks.stop()
-    if server.enrichment_queue:
-        await server.enrichment_queue.cleanup()
+    await server.cleanup()
 
 
 def create_app() -> FastAPI:

@@ -3,11 +3,13 @@ Query service for Q&A and RAG functionality.
 
 This module provides a centralized interface for question-answering operations,
 including context building, response generation, and source management.
+
+All methods return Result types for explicit error handling.
 """
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from llama_index.core import QueryBundle
 from llama_index.core.base.response.schema import Response
@@ -20,10 +22,16 @@ from lifearchivist.storage.utils import (
     MetadataFilterUtils,
 )
 from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.result import (
+    Result,
+    Success,
+    internal_error,
+    service_unavailable,
+)
 
 
 class QueryService(ABC):
-    """Abstract base class for query services."""
+    """Abstract base class for query services with Result types."""
 
     @abstractmethod
     async def query(
@@ -32,7 +40,7 @@ class QueryService(ABC):
         similarity_top_k: int = 5,
         response_mode: str = "tree_summarize",
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Result[Dict[str, Any], str]:
         """
         Execute a query and generate a response.
 
@@ -43,7 +51,7 @@ class QueryService(ABC):
             filters: Optional metadata filters for retrieval
 
         Returns:
-            Dictionary containing answer, sources, and metadata
+            Success with response dict (answer, sources, metadata), or Failure with error
         """
         pass
 
@@ -53,7 +61,7 @@ class QueryService(ABC):
         question: str,
         top_k: int = 5,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[str, List[Dict[str, Any]]]:
+    ) -> Result[Tuple[str, List[Dict[str, Any]]], str]:
         """
         Build context for a question by retrieving relevant documents.
 
@@ -63,7 +71,7 @@ class QueryService(ABC):
             filters: Optional metadata filters
 
         Returns:
-            Tuple of (combined_context, source_chunks)
+            Success with tuple of (combined_context, source_chunks), or Failure with error
         """
         pass
 
@@ -163,7 +171,7 @@ class LlamaIndexQueryService(QueryService):
         similarity_top_k: int = 5,
         response_mode: str = "tree_summarize",
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Result[Dict[str, Any], str]:
         """
         Execute a query and generate a response using RAG.
 
@@ -171,9 +179,14 @@ class LlamaIndexQueryService(QueryService):
         1. Builds context by retrieving relevant documents
         2. Generates an answer using the LLM
         3. Formats the response with sources and metadata
+
+        Returns:
+            Success with response dict (answer, sources, metadata), or Failure with error
         """
         if not self.query_engine:
-            return self._create_error_response("Query engine not available")
+            return service_unavailable(
+                "Query engine not available", context={"service": "query"}
+            )
 
         try:
             log_event(
@@ -191,12 +204,19 @@ class LlamaIndexQueryService(QueryService):
             if hasattr(self.query_engine, "retriever"):
                 self.query_engine.retriever.similarity_top_k = similarity_top_k
 
-            # Build context (retrieve relevant chunks)
-            context, source_chunks = await self.build_context(
+            # Build context (retrieve relevant chunks) - returns Result now
+            context_result = await self.build_context(
                 question=question,
                 top_k=similarity_top_k,
                 filters=filters,
             )
+
+            # Handle Result type
+            if context_result.is_failure():
+                return context_result  # Propagate the failure
+
+            # Unwrap successful result
+            context, source_chunks = context_result.value
 
             # Generate response using query engine
             response = await self._generate_response(
@@ -241,7 +261,7 @@ class LlamaIndexQueryService(QueryService):
                 },
             )
 
-            return result
+            return Success(result)
 
         except Exception as e:
             log_event(
@@ -253,7 +273,13 @@ class LlamaIndexQueryService(QueryService):
                 },
                 level=logging.ERROR,
             )
-            return self._create_error_response(f"Query failed: {str(e)}")
+            return internal_error(
+                f"Query failed: {str(e)}",
+                context={
+                    "question": question[:100],
+                    "error_type": type(e).__name__,
+                },
+            )
 
     @track(
         operation="context_building",
@@ -267,12 +293,15 @@ class LlamaIndexQueryService(QueryService):
         question: str,
         top_k: int = 5,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[str, List[Dict[str, Any]]]:
+    ) -> Result[Tuple[str, List[Dict[str, Any]]], str]:
         """
         Build context for a question by retrieving relevant documents.
 
         Uses the search service for retrieval if available, otherwise
         falls back to the query engine's retriever.
+
+        Returns:
+            Success with tuple of (combined_context, source_chunks), or Failure with error
         """
         try:
             source_chunks = []
@@ -285,13 +314,25 @@ class LlamaIndexQueryService(QueryService):
                     level=logging.DEBUG,
                 )
 
-                # Perform semantic search with filters
-                search_results = await self.search_service.semantic_search(
+                # Perform semantic search with filters (returns Result now)
+                search_result = await self.search_service.semantic_search(
                     query=question,
                     top_k=top_k,
                     similarity_threshold=0.3,  # Lower threshold for context building
                     filters=filters,
                 )
+
+                # Handle Result type
+                if search_result.is_failure():
+                    log_event(
+                        "context_search_failed",
+                        {"error": str(search_result.error)},
+                        level=logging.WARNING,
+                    )
+                    return search_result  # Propagate the failure
+
+                # Unwrap successful result
+                search_results = search_result.value
 
                 # Convert search results to source chunks format
                 for result in search_results:
@@ -347,7 +388,10 @@ class LlamaIndexQueryService(QueryService):
                     {"reason": "no_retrieval_method"},
                     level=logging.WARNING,
                 )
-                return "", []
+                return service_unavailable(
+                    "No retrieval method available",
+                    context={"service": "context_building"},
+                )
 
             # Enrich metadata if metadata service available
             if self.metadata_service:
@@ -369,7 +413,7 @@ class LlamaIndexQueryService(QueryService):
                 },
             )
 
-            return context, source_chunks
+            return Success((context, source_chunks))
 
         except Exception as e:
             log_event(
@@ -380,7 +424,13 @@ class LlamaIndexQueryService(QueryService):
                 },
                 level=logging.ERROR,
             )
-            return "", []
+            return internal_error(
+                f"Context building failed: {str(e)}",
+                context={
+                    "question": question[:100],
+                    "error_type": type(e).__name__,
+                },
+            )
 
     def format_response(
         self,
@@ -547,30 +597,21 @@ class LlamaIndexQueryService(QueryService):
     # Filter matching now uses shared utility
     # Removed _matches_filters method - using MetadataFilterUtils.matches_filters instead
 
-    def _create_error_response(self, error_message: str) -> Dict[str, Any]:
-        """Create a standardized error response."""
-        return {
-            "answer": error_message,
-            "sources": [],
-            "method": "error",
-            "context_used": "",
-            "num_chunks_used": 0,
-            "error": True,
-            "error_message": error_message,
-        }
-
     async def query_with_streaming(
         self,
         question: str,
         similarity_top_k: int = 5,
         response_mode: str = "tree_summarize",
         filters: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> AsyncGenerator[Result[Dict[str, Any], str], None]:
         """
         Execute a query with streaming response.
 
         This is a placeholder for future streaming implementation.
-        Yields chunks of the response as they're generated.
+        Yields Result objects containing response chunks as they're generated.
+
+        Yields:
+            Result objects with response data or errors
         """
         # TODO: Implement streaming response
         # This would require using streaming_query instead of query

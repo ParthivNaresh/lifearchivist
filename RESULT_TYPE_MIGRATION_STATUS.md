@@ -32,10 +32,6 @@
   - `DELETE /api/documents`
   - `GET /api/documents/{document_id}/llamaindex-chunks`
 
-- **lifearchivist/server/api/routes/debug.py** - 2 endpoints
-  - `POST /api/debug/test-llamaindex`
-  - `GET /api/debug/check-llamaindex`
-
 - **lifearchivist/server/api/routes/search.py** - 3 endpoints
   - `POST /api/search`
   - `GET /api/search`

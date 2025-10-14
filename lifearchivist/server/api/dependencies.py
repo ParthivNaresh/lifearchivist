@@ -5,30 +5,30 @@ Dependency injection for API routes.
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from ..mcp_server import MCPServer
+    from ..application_server import ApplicationServer
 
 
 # Global server instance - will be set during app initialization
-_server_instance: Optional["MCPServer"] = None
+_server_instance: Optional["ApplicationServer"] = None
 
 
-def set_server_instance(server: "MCPServer"):
+def set_server_instance(server: "ApplicationServer"):
     """
     Set the global server instance.
 
     Args:
-        server: The MCPServer instance to use globally
+        server: The ApplicationServer instance to use globally
     """
     global _server_instance
     _server_instance = server
 
 
-def get_server() -> "MCPServer":
+def get_server() -> "ApplicationServer":
     """
     Get the current server instance.
 
     Returns:
-        The global MCPServer instance
+        The global ApplicationServer instance
 
     Raises:
         RuntimeError: If server instance not initialized
