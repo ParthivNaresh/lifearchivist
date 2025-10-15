@@ -70,6 +70,7 @@ llama-index-vector-stores-qdrant = "*"
 # Utilities
 aiofiles = "^24.1.0"
 watchfiles = "^0.24.0"
+watchdog = "^6.0.0"
 cryptography = "^43.0.0"
 keyring = "^25.4.0"
 requests = "^2.32.5"

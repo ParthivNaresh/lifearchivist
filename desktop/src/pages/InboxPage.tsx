@@ -6,7 +6,8 @@ import {
   DropZone,
   SupportedFormats,
   InboxHeader,
-  TopicLandscape
+  TopicLandscape,
+  FolderWatcher
 } from './InboxPage/index';
 
 const InboxPage: React.FC = () => {
@@ -45,6 +46,11 @@ const InboxPage: React.FC = () => {
             disabled={hasActiveUploads}
           />
         )}
+
+        {/* Folder Watcher */}
+        <div className="mt-6">
+          <FolderWatcher />
+        </div>
 
         {/* Supported Formats Info */}
         <SupportedFormats />

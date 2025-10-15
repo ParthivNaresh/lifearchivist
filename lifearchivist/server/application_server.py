@@ -15,6 +15,7 @@ from ..config import get_settings
 from ..tools.exceptions import ToolExecutionError, ToolNotFoundError, ValidationError
 from ..tools.registry import ToolRegistry
 from ..utils.logging import log_event
+from .activity_manager import ActivityManager
 from .background_tasks import BackgroundTaskManager
 from .enrichment_queue import EnrichmentQueue
 from .progress_manager import ProgressManager
@@ -52,6 +53,25 @@ class SessionManager:
                 )
                 self.disconnect(session_id)
 
+    async def broadcast(self, message: Dict[str, Any]):
+        """Broadcast message to all connected sessions."""
+        disconnected_sessions = []
+
+        for session_id, websocket in self.sessions.items():
+            try:
+                await websocket.send_json(message)
+            except Exception as e:
+                log_event(
+                    "websocket_broadcast_failed",
+                    {"session_id": session_id, "error": str(e)},
+                    level=logging.WARNING,
+                )
+                disconnected_sessions.append(session_id)
+
+        # Clean up disconnected sessions
+        for session_id in disconnected_sessions:
+            self.disconnect(session_id)
+
 
 class ApplicationServer:
     """
@@ -77,10 +97,12 @@ class ApplicationServer:
 
         # Application services (will be initialized)
         self.session_manager: SessionManager = SessionManager()
+        self.activity_manager: Optional[ActivityManager] = None
         self.progress_manager: Optional[ProgressManager] = None
         self.enrichment_queue: Optional[EnrichmentQueue] = None
         self.background_tasks: Optional[BackgroundTaskManager] = None
         self.tool_registry: Optional[ToolRegistry] = None
+        self.folder_watcher = None  # Folder watching service
 
         # Optional agents (only if enabled)
         self.ingestion_agent = None
@@ -116,6 +138,7 @@ class ApplicationServer:
             await self._run_startup_reconciliation()
 
             # Phase 3: Initialize application services
+            await self._init_activity_manager()
             self._init_progress_manager()  # Synchronous - uses sync Redis
             await self._init_enrichment_queue()
             await self._init_background_tasks()
@@ -123,7 +146,10 @@ class ApplicationServer:
             # Phase 4: Initialize tool registry
             await self._init_tool_registry()
 
-            # Phase 5: Initialize agents (if enabled)
+            # Phase 5: Initialize folder watcher
+            self._init_folder_watcher()
+
+            # Phase 6: Initialize agents (if enabled)
             if self.settings.enable_agents:
                 await self._init_agents()
 
@@ -172,6 +198,18 @@ class ApplicationServer:
             except Exception as e:
                 log_event(
                     "enrichment_queue_cleanup_error",
+                    {"error": str(e)},
+                    level=logging.WARNING,
+                )
+
+        # Cleanup activity manager
+        if self.activity_manager:
+            try:
+                await self.activity_manager.close()
+                log_event("activity_manager_cleaned_up")
+            except Exception as e:
+                log_event(
+                    "activity_manager_cleanup_error",
                     {"error": str(e)},
                     level=logging.WARNING,
                 )
@@ -272,6 +310,22 @@ class ApplicationServer:
             )
             # Don't fail startup if reconciliation fails
 
+    async def _init_activity_manager(self):
+        """Initialize activity event manager."""
+        try:
+            self.activity_manager = ActivityManager(redis_url=self.settings.redis_url)
+            await self.activity_manager.initialize()
+            # Link to session manager for WebSocket broadcasting
+            self.activity_manager.session_manager = self.session_manager
+            log_event("activity_manager_initialized")
+        except Exception as e:
+            log_event(
+                "activity_manager_init_failed",
+                {"error": str(e)},
+                level=logging.WARNING,
+            )
+            self.activity_manager = None
+
     def _init_progress_manager(self):
         """
         Initialize progress tracking manager.
@@ -350,11 +404,35 @@ class ApplicationServer:
             llamaindex_service=self.service_container.llamaindex_service,
             progress_manager=self.progress_manager,
             enrichment_queue=self.enrichment_queue,
+            activity_manager=self.activity_manager,
         )
         await self.tool_registry.register_all()
 
         tool_count = len(self.tool_registry.tools)
         log_event("tool_registry_initialized", {"tools_registered": tool_count})
+
+    def _init_folder_watcher(self):
+        """Initialize folder watching service."""
+        try:
+            from ..storage.folder_watcher import FolderWatcherService
+
+            if not self.service_container:
+                return
+
+            self.folder_watcher = FolderWatcherService(
+                vault=self.service_container.vault,
+                server=self,  # Pass self for tool execution
+                debounce_seconds=2.0,
+            )
+
+            log_event("folder_watcher_initialized")
+        except Exception as e:
+            log_event(
+                "folder_watcher_init_failed",
+                {"error": str(e)},
+                level=logging.WARNING,
+            )
+            self.folder_watcher = None
 
     async def _init_agents(self):
         """Initialize agents (if enabled)."""

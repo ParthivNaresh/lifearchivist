@@ -34,12 +34,14 @@ class FileImportTool(BaseTool):
         progress_manager=None,
         enrichment_queue=None,
         theme_classifier=None,
+        activity_manager=None,
     ):
         super().__init__()
         self.vault = vault
         self.llamaindex_service = llamaindex_service
         self.progress_manager = progress_manager
         self.enrichment_queue = enrichment_queue
+        self.activity_manager = activity_manager
         # Use provided classifier or create a new one
         if theme_classifier is None:
             from lifearchivist.tools.theme_classifier.theme_classifier import (
@@ -270,6 +272,24 @@ class FileImportTool(BaseTool):
                 },
             )
 
+            # Add activity event for successful upload
+            if self.activity_manager:
+                # Determine source from metadata
+                source = metadata.get("source", "manual")
+                if source == "folder_watch":
+                    # Skip - folder watcher already added its own event
+                    pass
+                else:
+                    # Manual upload or other source
+                    await self.activity_manager.add_upload_event(
+                        file_count=1,
+                        source=source,
+                        file_name=display_path,
+                        file_size=file_size_bytes,
+                        mime_type=mime_type,
+                        document_id=file_id,
+                    )
+
             return create_success_response(
                 file_id, file_hash, stat, mime_type, display_path, vault_result
             )
@@ -403,6 +423,18 @@ class FileImportTool(BaseTool):
             },
             level=logging.ERROR,
         )
+
+        # Add activity event for failed upload
+        if self.activity_manager:
+            await self.activity_manager.add_event(
+                "file_upload_failed",
+                {
+                    "file_name": display_path,
+                    "error": str(error),
+                    "error_type": type(error).__name__,
+                    "file_id": file_id if file_id else None,
+                },
+            )
 
         # Report error to progress tracking if we have a file_id
         if self.progress_manager and session_id and file_id:

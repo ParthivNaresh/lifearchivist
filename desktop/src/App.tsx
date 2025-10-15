@@ -9,6 +9,7 @@ import VaultPage from './pages/VaultPage';
 import QAPage from './pages/QAPage';
 import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
+import ActivityPage from './pages/ActivityPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/" element={<InboxPage />} />
             <Route path="/vault" element={<VaultPage />} />
             <Route path="/vault/:documentId/details" element={<DocumentDetailPage />} />
+            <Route path="/activity" element={<ActivityPage />} />
             <Route path="/qa" element={<QAPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/settings" element={<SettingsPage />} />

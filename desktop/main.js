@@ -80,7 +80,7 @@ ipcMain.handle('select-directory', async () => {
     properties: ['openDirectory']
   });
   
-  return result.filePaths[0];
+  return result;
 });
 
 ipcMain.handle('select-folder-files', async () => {
