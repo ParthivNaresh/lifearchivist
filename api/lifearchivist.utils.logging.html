@@ -1,0 +1,613 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.utils.logging package &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Development Setup" href="../development/setup.html" />
+    <link rel="prev" title="lifearchivist.utils package" href="lifearchivist.utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">lifearchivist</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="lifearchivist.html">lifearchivist package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="lifearchivist.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">lifearchivist</a></li>
+          <li class="breadcrumb-item"><a href="lifearchivist.html">lifearchivist package</a></li>
+          <li class="breadcrumb-item"><a href="lifearchivist.utils.html">lifearchivist.utils package</a></li>
+      <li class="breadcrumb-item active">lifearchivist.utils.logging package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/lifearchivist.utils.logging.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lifearchivist-utils-logging-package">
+<h1>lifearchivist.utils.logging package<a class="headerlink" href="#lifearchivist-utils-logging-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-lifearchivist.utils.logging.context">
+<span id="lifearchivist-utils-logging-context-module"></span><h2>lifearchivist.utils.logging.context module<a class="headerlink" href="#module-lifearchivist.utils.logging.context" title="Link to this heading"></a></h2>
+<p>Context management for scoped logging with correlation IDs and request tracking.</p>
+<p>Provides context managers and utilities for maintaining logging context
+across async operations and request boundaries.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.context.get_correlation_id">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.context.</span></span><span class="sig-name descname"><span class="pre">get_correlation_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/context.html#get_correlation_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.context.get_correlation_id" title="Link to this definition"></a></dt>
+<dd><p>Get the current correlation ID, generating one if none exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Correlation ID string for tracking requests across components</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.context.set_correlation_id">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.context.</span></span><span class="sig-name descname"><span class="pre">set_correlation_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">correlation_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/context.html#set_correlation_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.context.set_correlation_id" title="Link to this definition"></a></dt>
+<dd><p>Set the correlation ID for the current context.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>correlation_id</strong> – UUID string to use for request tracking</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.context.get_operation_context">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.context.</span></span><span class="sig-name descname"><span class="pre">get_operation_context</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/context.html#get_operation_context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.context.get_operation_context" title="Link to this definition"></a></dt>
+<dd><p>Get the current operation context dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing operation-scoped context data</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-lifearchivist.utils.logging.smart_logger">
+<span id="lifearchivist-utils-logging-smart-logger-module"></span><h2>lifearchivist.utils.logging.smart_logger module<a class="headerlink" href="#module-lifearchivist.utils.logging.smart_logger" title="Link to this heading"></a></h2>
+<p>Next-generation logging system - single decorator handles everything.</p>
+<p>Replaces &#64;log_method, log_context, MetricsCollector, and manual log_event calls
+with one intelligent decorator that adapts to usage patterns.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.LogConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.smart_logger.</span></span><span class="sig-name descname"><span class="pre">LogConfig</span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#LogConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.LogConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Global configuration for smart logging.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.LogConfig.SAMPLE_RATES">
+<span class="sig-name descname"><span class="pre">SAMPLE_RATES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'high_frequency':</span> <span class="pre">0.1,</span> <span class="pre">'low_frequency':</span> <span class="pre">1.0,</span> <span class="pre">'medium_frequency':</span> <span class="pre">0.5}</span></em><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.LogConfig.SAMPLE_RATES" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.LogConfig.SENSITIVE_KEYS">
+<span class="sig-name descname"><span class="pre">SENSITIVE_KEYS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'api_key',</span> <span class="pre">'auth',</span> <span class="pre">'key',</span> <span class="pre">'password',</span> <span class="pre">'secret',</span> <span class="pre">'token'}</span></em><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.LogConfig.SENSITIVE_KEYS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.LogConfig.LARGE_CONTENT_KEYS">
+<span class="sig-name descname"><span class="pre">LARGE_CONTENT_KEYS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'body',</span> <span class="pre">'content',</span> <span class="pre">'data',</span> <span class="pre">'text'}</span></em><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.LogConfig.LARGE_CONTENT_KEYS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.LogConfig.MAX_ARG_LENGTH">
+<span class="sig-name descname"><span class="pre">MAX_ARG_LENGTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></em><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.LogConfig.MAX_ARG_LENGTH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.LogConfig.HIGH_FREQUENCY_OPS">
+<span class="sig-name descname"><span class="pre">HIGH_FREQUENCY_OPS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'check',</span> <span class="pre">'get',</span> <span class="pre">'list',</span> <span class="pre">'query',</span> <span class="pre">'retrieve',</span> <span class="pre">'search',</span> <span class="pre">'validate'}</span></em><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.LogConfig.HIGH_FREQUENCY_OPS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.LogConfig.CRITICAL_OPS">
+<span class="sig-name descname"><span class="pre">CRITICAL_OPS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'add_document',</span> <span class="pre">'create',</span> <span class="pre">'delete',</span> <span class="pre">'initialize',</span> <span class="pre">'setup',</span> <span class="pre">'update'}</span></em><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.LogConfig.CRITICAL_OPS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.track">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.smart_logger.</span></span><span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'low_frequency'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">track_performance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emit_events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#track"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.track" title="Link to this definition"></a></dt>
+<dd><p>Single decorator that intelligently handles all logging needs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>operation</strong> – Operation name (auto-detected from function if None)</p></li>
+<li><p><strong>level</strong> – Log level for this operation</p></li>
+<li><p><strong>frequency</strong> – Sampling frequency category</p></li>
+<li><p><strong>include_args</strong> – True for all args, List[str] for specific args, False for none</p></li>
+<li><p><strong>include_result</strong> – Whether to log return value info</p></li>
+<li><p><strong>track_performance</strong> – Whether to track timing metrics</p></li>
+<li><p><strong>emit_events</strong> – Whether to emit log events (False for silent mode)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>&#64;track()  # Basic tracking with defaults
+&#64;track(frequency=”high_frequency”)  # Sampled logging for hot paths
+&#64;track(include_args=[“document_id”], track_performance=True)  # Selective args
+&#64;track(emit_events=False)  # Silent mode - only log on errors</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.BaseOperationTracker">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.smart_logger.</span></span><span class="sig-name descname"><span class="pre">BaseOperationTracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">track_performance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">emit_events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#BaseOperationTracker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.BaseOperationTracker" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base tracker that handles all logging for an operation.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.BaseOperationTracker.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">track_performance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">emit_events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#BaseOperationTracker.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.BaseOperationTracker.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.BaseOperationTracker.on_enter">
+<span class="sig-name descname"><span class="pre">on_enter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#BaseOperationTracker.on_enter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.BaseOperationTracker.on_enter" title="Link to this definition"></a></dt>
+<dd><p>Called when entering the tracked operation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.BaseOperationTracker.on_exit">
+<span class="sig-name descname"><span class="pre">on_exit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exc_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><span class="pre">type</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">exc_val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><span class="pre">Exception</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">exc_tb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#BaseOperationTracker.on_exit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.BaseOperationTracker.on_exit" title="Link to this definition"></a></dt>
+<dd><p>Called when exiting the tracked operation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.BaseOperationTracker.set_result">
+<span class="sig-name descname"><span class="pre">set_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#BaseOperationTracker.set_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.BaseOperationTracker.set_result" title="Link to this definition"></a></dt>
+<dd><p>Set the operation result for logging.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.BaseOperationTracker.add_metric">
+<span class="sig-name descname"><span class="pre">add_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#BaseOperationTracker.add_metric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.BaseOperationTracker.add_metric" title="Link to this definition"></a></dt>
+<dd><p>Add a custom metric to the operation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.OperationTracker">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.smart_logger.</span></span><span class="sig-name descname"><span class="pre">OperationTracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">track_performance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">emit_events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#OperationTracker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.OperationTracker" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.utils.logging.smart_logger.BaseOperationTracker" title="lifearchivist.utils.logging.smart_logger.BaseOperationTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseOperationTracker</span></code></a></p>
+<p>Async context manager that handles all logging for an operation.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.SyncOperationTracker">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.smart_logger.</span></span><span class="sig-name descname"><span class="pre">SyncOperationTracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">track_performance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">emit_events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#SyncOperationTracker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.SyncOperationTracker" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.utils.logging.smart_logger.BaseOperationTracker" title="lifearchivist.utils.logging.smart_logger.BaseOperationTracker"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseOperationTracker</span></code></a></p>
+<p>Synchronous context manager that handles all logging for an operation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.log_operation_start">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.smart_logger.</span></span><span class="sig-name descname"><span class="pre">log_operation_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#log_operation_start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.log_operation_start" title="Link to this definition"></a></dt>
+<dd><p>Manually log operation start.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.log_operation_success">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.smart_logger.</span></span><span class="sig-name descname"><span class="pre">log_operation_success</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#log_operation_success"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.log_operation_success" title="Link to this definition"></a></dt>
+<dd><p>Manually log operation success.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.smart_logger.log_operation_error">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.smart_logger.</span></span><span class="sig-name descname"><span class="pre">log_operation_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><span class="pre">Exception</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#log_operation_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.smart_logger.log_operation_error" title="Link to this definition"></a></dt>
+<dd><p>Manually log operation error.</p>
+</dd></dl>
+
+</section>
+<section id="module-lifearchivist.utils.logging.structured">
+<span id="lifearchivist-utils-logging-structured-module"></span><h2>lifearchivist.utils.logging.structured module<a class="headerlink" href="#module-lifearchivist.utils.logging.structured" title="Link to this heading"></a></h2>
+<p>Structured logging utilities for professional event-based logging.</p>
+<p>Provides structured event logging and utilities for creating searchable,
+queryable log entries with human-readable development formatting.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.StructuredLogger">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.structured.</span></span><span class="sig-name descname"><span class="pre">StructuredLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.StructuredLogger" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Professional structured logger that creates consistent, searchable log events.</p>
+<p>Provides methods for logging structured events with consistent field names
+and automatic context injection.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.StructuredLogger.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.StructuredLogger.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.StructuredLogger.event">
+<span class="sig-name descname"><span class="pre">event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.StructuredLogger.event" title="Link to this definition"></a></dt>
+<dd><p>Log a structured event with optional data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_name</strong> – Name of the event (e.g., ‘document_processed’)</p></li>
+<li><p><strong>data</strong> – Dictionary of structured data to include</p></li>
+<li><p><strong>level</strong> – Log level (defaults to INFO)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.StructuredLogger.success">
+<span class="sig-name descname"><span class="pre">success</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.success"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.StructuredLogger.success" title="Link to this definition"></a></dt>
+<dd><p>Log a successful operation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.StructuredLogger.failure">
+<span class="sig-name descname"><span class="pre">failure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><span class="pre">Exception</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.failure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.StructuredLogger.failure" title="Link to this definition"></a></dt>
+<dd><p>Log a failed operation with error details.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.StructuredLogger.performance">
+<span class="sig-name descname"><span class="pre">performance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.performance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.StructuredLogger.performance" title="Link to this definition"></a></dt>
+<dd><p>Log performance metrics.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.get_structured_logger">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.structured.</span></span><span class="sig-name descname"><span class="pre">get_structured_logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'lifearchivist'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#lifearchivist.utils.logging.structured.StructuredLogger" title="lifearchivist.utils.logging.structured.StructuredLogger"><span class="pre">StructuredLogger</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#get_structured_logger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.get_structured_logger" title="Link to this definition"></a></dt>
+<dd><p>Get or create a structured logger instance.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.log_event">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.structured.</span></span><span class="sig-name descname"><span class="pre">log_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#log_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.log_event" title="Link to this definition"></a></dt>
+<dd><p>Convenience function for logging structured events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_name</strong> – Name of the event</p></li>
+<li><p><strong>data</strong> – Optional structured data</p></li>
+<li><p><strong>level</strong> – Log level</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;document_processed&quot;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="s2">&quot;123&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;processing_time_ms&quot;</span><span class="p">:</span> <span class="mi">1500</span><span class="p">,</span>
+    <span class="s2">&quot;word_count&quot;</span><span class="p">:</span> <span class="mi">500</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.structured.create_development_formatter">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.structured.</span></span><span class="sig-name descname"><span class="pre">create_development_formatter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Formatter" title="(in Python v3.14)"><span class="pre">Formatter</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#create_development_formatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.structured.create_development_formatter" title="Link to this definition"></a></dt>
+<dd><p>Create a human-readable formatter for development environments.</p>
+<p>Returns a formatter that outputs clean, readable logs for development
+while still including structured data with intelligent event-based formatting.</p>
+</dd></dl>
+
+</section>
+<section id="module-lifearchivist.utils.logging">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lifearchivist.utils.logging" title="Link to this heading"></a></h2>
+<p>Next-generation logging infrastructure for Life Archivist.</p>
+<p>Simplified, high-performance logging with intelligent sampling and
+single decorator that handles all use cases.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.track">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.</span></span><span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'low_frequency'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">track_performance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emit_events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#track"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.track" title="Link to this definition"></a></dt>
+<dd><p>Single decorator that intelligently handles all logging needs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>operation</strong> – Operation name (auto-detected from function if None)</p></li>
+<li><p><strong>level</strong> – Log level for this operation</p></li>
+<li><p><strong>frequency</strong> – Sampling frequency category</p></li>
+<li><p><strong>include_args</strong> – True for all args, List[str] for specific args, False for none</p></li>
+<li><p><strong>include_result</strong> – Whether to log return value info</p></li>
+<li><p><strong>track_performance</strong> – Whether to track timing metrics</p></li>
+<li><p><strong>emit_events</strong> – Whether to emit log events (False for silent mode)</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>&#64;track()  # Basic tracking with defaults
+&#64;track(frequency=”high_frequency”)  # Sampled logging for hot paths
+&#64;track(include_args=[“document_id”], track_performance=True)  # Selective args
+&#64;track(emit_events=False)  # Silent mode - only log on errors</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.log_event">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.</span></span><span class="sig-name descname"><span class="pre">log_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#log_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.log_event" title="Link to this definition"></a></dt>
+<dd><p>Convenience function for logging structured events.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_name</strong> – Name of the event</p></li>
+<li><p><strong>data</strong> – Optional structured data</p></li>
+<li><p><strong>level</strong> – Log level</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;document_processed&quot;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="s2">&quot;123&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;processing_time_ms&quot;</span><span class="p">:</span> <span class="mi">1500</span><span class="p">,</span>
+    <span class="s2">&quot;word_count&quot;</span><span class="p">:</span> <span class="mi">500</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.get_correlation_id">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.</span></span><span class="sig-name descname"><span class="pre">get_correlation_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/context.html#get_correlation_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.get_correlation_id" title="Link to this definition"></a></dt>
+<dd><p>Get the current correlation ID, generating one if none exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Correlation ID string for tracking requests across components</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.set_correlation_id">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.</span></span><span class="sig-name descname"><span class="pre">set_correlation_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">correlation_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/context.html#set_correlation_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.set_correlation_id" title="Link to this definition"></a></dt>
+<dd><p>Set the correlation ID for the current context.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>correlation_id</strong> – UUID string to use for request tracking</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.log_operation_start">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.</span></span><span class="sig-name descname"><span class="pre">log_operation_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#log_operation_start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.log_operation_start" title="Link to this definition"></a></dt>
+<dd><p>Manually log operation start.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.log_operation_success">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.</span></span><span class="sig-name descname"><span class="pre">log_operation_success</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#log_operation_success"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.log_operation_success" title="Link to this definition"></a></dt>
+<dd><p>Manually log operation success.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.log_operation_error">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.</span></span><span class="sig-name descname"><span class="pre">log_operation_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><span class="pre">Exception</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/smart_logger.html#log_operation_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.log_operation_error" title="Link to this definition"></a></dt>
+<dd><p>Manually log operation error.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.StructuredLogger">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.utils.logging.</span></span><span class="sig-name descname"><span class="pre">StructuredLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.StructuredLogger" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Professional structured logger that creates consistent, searchable log events.</p>
+<p>Provides methods for logging structured events with consistent field names
+and automatic context injection.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.StructuredLogger.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.StructuredLogger.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.StructuredLogger.event">
+<span class="sig-name descname"><span class="pre">event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.StructuredLogger.event" title="Link to this definition"></a></dt>
+<dd><p>Log a structured event with optional data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_name</strong> – Name of the event (e.g., ‘document_processed’)</p></li>
+<li><p><strong>data</strong> – Dictionary of structured data to include</p></li>
+<li><p><strong>level</strong> – Log level (defaults to INFO)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.StructuredLogger.failure">
+<span class="sig-name descname"><span class="pre">failure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><span class="pre">Exception</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.failure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.StructuredLogger.failure" title="Link to this definition"></a></dt>
+<dd><p>Log a failed operation with error details.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.StructuredLogger.performance">
+<span class="sig-name descname"><span class="pre">performance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.performance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.StructuredLogger.performance" title="Link to this definition"></a></dt>
+<dd><p>Log performance metrics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.utils.logging.StructuredLogger.success">
+<span class="sig-name descname"><span class="pre">success</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/utils/logging/structured.html#StructuredLogger.success"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.utils.logging.StructuredLogger.success" title="Link to this definition"></a></dt>
+<dd><p>Log a successful operation.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="lifearchivist.utils.html" class="btn btn-neutral float-left" title="lifearchivist.utils package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../development/setup.html" class="btn btn-neutral float-right" title="Development Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

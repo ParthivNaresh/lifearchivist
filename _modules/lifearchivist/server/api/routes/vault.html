@@ -1,0 +1,687 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.server.api.routes.vault &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.server.api.routes.vault</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.server.api.routes.vault</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Vault management endpoints.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">HTTPException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileResponse</span><span class="p">,</span> <span class="n">JSONResponse</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.storage.vault_reconciliation</span><span class="w"> </span><span class="kn">import</span> <span class="n">VaultReconciliationService</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_server</span>
+
+<span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;/api&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;vault&quot;</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="get_vault_info">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.vault.get_vault_info">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/vault/info&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_vault_info</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get vault information and statistics.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - Total file count</span>
+<span class="sd">    - Total storage size</span>
+<span class="sd">    - File type distribution</span>
+<span class="sd">    - Directory structure info</span>
+
+<span class="sd">    Useful for:</span>
+<span class="sd">    - Monitoring storage usage</span>
+<span class="sd">    - Debugging storage issues</span>
+<span class="sd">    - System health checks</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Vault not initialized&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ServiceUnavailable&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">get_vault_statistics</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">stats</span><span class="p">}</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Vault statistics unavailable: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ServiceError&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to retrieve vault info: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="list_vault_files">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.vault.list_vault_files">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/vault/files&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_vault_files</span><span class="p">(</span>
+    <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List files in vault with database record linking.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        directory: Vault subdirectory to list (default: &quot;content&quot;)</span>
+<span class="sd">        limit: Maximum files to return (default: 100, max: 1000)</span>
+<span class="sd">        offset: Pagination offset (default: 0)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        List of files with:</span>
+<span class="sd">        - File path and hash</span>
+<span class="sd">        - Size and timestamps</span>
+<span class="sd">        - Linked database record (if exists)</span>
+<span class="sd">        - Extension and metadata</span>
+
+<span class="sd">    Useful for:</span>
+<span class="sd">    - Debugging storage issues</span>
+<span class="sd">    - Verifying file-to-record mappings</span>
+<span class="sd">    - Identifying orphaned files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="n">vault_path</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">vault_path</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">vault_path</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Vault path not configured&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ConfigurationError&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Validate parameters</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Limit must be between 1 and 1000&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ValidationError&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Offset must be non-negative&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ValidationError&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">target_dir</span> <span class="o">=</span> <span class="n">vault_path</span> <span class="o">/</span> <span class="n">directory</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">target_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;directory&quot;</span><span class="p">:</span> <span class="n">directory</span><span class="p">,</span>
+                <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+                <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Get all files in the directory</span>
+        <span class="n">all_files</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">target_dir</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                <span class="n">stat</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span>
+
+                <span class="c1"># Extract hash from filename (remove extension)</span>
+                <span class="n">file_hash</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">stem</span>
+                <span class="k">if</span> <span class="n">directory</span> <span class="o">==</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span>
+                    <span class="c1"># For content files, reconstruct the full hash from directory structure</span>
+                    <span class="c1"># Path structure: content/93/31/eb7c1d80252e853314bfcb5eba2effb7b163378503f39be03f9dc66fc5d6.pdf</span>
+                    <span class="c1"># Full hash: 9331eb7c1d80252e853314bfcb5eba2effb7b163378503f39be03f9dc66fc5d6</span>
+                    <span class="n">parent_dir</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># &quot;31&quot;</span>
+                    <span class="n">grandparent_dir</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># &quot;93&quot;</span>
+                    <span class="n">full_hash</span> <span class="o">=</span> <span class="n">grandparent_dir</span> <span class="o">+</span> <span class="n">parent_dir</span> <span class="o">+</span> <span class="n">file_hash</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">full_hash</span> <span class="o">=</span> <span class="n">file_hash</span>
+
+                <span class="c1"># Look up database record by file_hash</span>
+                <span class="n">database_record</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="c1"># Query LlamaIndex for documents with this file hash</span>
+                        <span class="n">matching_docs_result</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_documents_by_metadata</span><span class="p">(</span>
+                                <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">full_hash</span><span class="p">},</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="n">matching_docs</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">matching_docs_result</span><span class="o">.</span><span class="n">value</span>
+                            <span class="k">if</span> <span class="n">matching_docs_result</span><span class="o">.</span><span class="n">is_success</span><span class="p">()</span>
+                            <span class="k">else</span> <span class="p">[]</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">matching_docs</span><span class="p">:</span>
+                            <span class="n">doc</span> <span class="o">=</span> <span class="n">matching_docs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">metadata</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                            <span class="n">database_record</span> <span class="o">=</span> <span class="p">{</span>
+                                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">),</span>
+                                <span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;original_path&quot;</span><span class="p">),</span>
+                                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">),</span>
+                            <span class="p">}</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="c1"># If lookup fails, continue without database record</span>
+                        <span class="k">pass</span>
+
+                <span class="n">all_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">(</span>
+                            <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">vault_path</span><span class="p">))</span>
+                            <span class="k">if</span> <span class="n">vault_path</span>
+                            <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+                        <span class="p">),</span>
+                        <span class="s2">&quot;full_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+                        <span class="s2">&quot;hash&quot;</span><span class="p">:</span> <span class="n">full_hash</span><span class="p">,</span>
+                        <span class="s2">&quot;extension&quot;</span><span class="p">:</span> <span class="n">file_path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
+                        <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+                        <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_ctime</span><span class="p">,</span>
+                        <span class="s2">&quot;modified_at&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">,</span>
+                        <span class="s2">&quot;database_record&quot;</span><span class="p">:</span> <span class="n">database_record</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Sort by creation time (newest first)</span>
+        <span class="n">all_files</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Apply pagination</span>
+        <span class="n">paginated_files</span> <span class="o">=</span> <span class="n">all_files</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">limit</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="n">paginated_files</span><span class="p">,</span>
+            <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_files</span><span class="p">),</span>
+            <span class="s2">&quot;directory&quot;</span><span class="p">:</span> <span class="n">directory</span><span class="p">,</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+            <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span> <span class="ne">PermissionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Permission denied accessing vault directory: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;PermissionError&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">403</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to list vault files: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="reconcile_vault">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.vault.reconcile_vault">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/vault/reconcile&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reconcile_vault</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reconcile vault files with metadata stores.</span>
+
+<span class="sd">    Self-healing operation that:</span>
+<span class="sd">    - Scans all documents in Redis metadata store</span>
+<span class="sd">    - Checks if corresponding vault files exist</span>
+<span class="sd">    - Removes orphaned metadata for missing files</span>
+<span class="sd">    - Ensures data consistency across storage layers</span>
+
+<span class="sd">    Vault files are the source of truth.</span>
+
+<span class="sd">    Triggered by:</span>
+<span class="sd">    - UI refresh button</span>
+<span class="sd">    - Manual file operations</span>
+<span class="sd">    - System maintenance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - Documents checked</span>
+<span class="sd">    - Orphaned metadata removed</span>
+<span class="sd">    - Reconciliation statistics</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Vault not initialized&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ServiceUnavailable&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;LlamaIndex service not initialized&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ServiceUnavailable&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Create reconciliation service</span>
+        <span class="n">reconciliation_service</span> <span class="o">=</span> <span class="n">VaultReconciliationService</span><span class="p">(</span>
+            <span class="n">vault</span><span class="o">=</span><span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span>
+            <span class="n">doc_tracker</span><span class="o">=</span><span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">doc_tracker</span><span class="p">,</span>
+            <span class="n">qdrant_client</span><span class="o">=</span><span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">qdrant_client</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Run reconciliation</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reconciliation_service</span><span class="o">.</span><span class="n">reconcile</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;reconciliation&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Reconciliation service configuration error: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;ConfigurationError&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+            <span class="n">content</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Vault reconciliation failed: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="download_file_from_vault">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.vault.download_file_from_vault">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/vault/file/</span><span class="si">{file_hash}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">download_file_from_vault</span><span class="p">(</span><span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Download or view a file from vault by its SHA256 hash.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_hash: Full SHA256 hash of the file (64 characters)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        FileResponse with appropriate Content-Disposition:</span>
+<span class="sd">        - inline: PDFs, images, text files (viewable in browser)</span>
+<span class="sd">        - attachment: Office docs, other files (force download)</span>
+
+<span class="sd">    Process:</span>
+<span class="sd">    1. Validates hash format</span>
+<span class="sd">    2. Locates file in content-addressed storage</span>
+<span class="sd">    3. Retrieves original filename from metadata</span>
+<span class="sd">    4. Sets appropriate MIME type</span>
+<span class="sd">    5. Returns file with proper headers</span>
+
+<span class="sd">    Vault structure: content/XX/YY/ZZZZ...{ext}</span>
+<span class="sd">    where XXYYZZZZ... is the SHA256 hash split for directory sharding.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Vault not initialized&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Validate hash format</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_hash</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid file hash format. Expected SHA256 hash (64 characters).&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">64</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Invalid hash length: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span><span class="si">}</span><span class="s2">. Expected 64 characters.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">content_dir</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">content_dir</span>
+
+        <span class="c1"># Parse hash into directory structure</span>
+        <span class="c1"># First 2 chars for first directory level</span>
+        <span class="n">dir1</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="c1"># Next 2 chars for second directory level</span>
+        <span class="n">dir2</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+        <span class="c1"># Rest of the hash for filename (without extension)</span>
+        <span class="n">file_stem</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
+
+        <span class="c1"># Look for any file with this hash pattern</span>
+        <span class="n">file_dir</span> <span class="o">=</span> <span class="n">content_dir</span> <span class="o">/</span> <span class="n">dir1</span> <span class="o">/</span> <span class="n">dir2</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;File not found for hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Find the file (we don&#39;t know the extension)</span>
+        <span class="n">matching_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">file_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_stem</span><span class="si">}</span><span class="s2">.*&quot;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">matching_files</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;File not found for hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Use the first matching file</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">matching_files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;File not found for hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Get the original filename from metadata if available</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Try to get original filename from metadata</span>
+                <span class="n">matching_docs_result</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_documents_by_metadata</span><span class="p">(</span>
+                        <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">},</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">matching_docs</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">matching_docs_result</span><span class="o">.</span><span class="n">value</span>
+                    <span class="k">if</span> <span class="n">matching_docs_result</span><span class="o">.</span><span class="n">is_success</span><span class="p">()</span>
+                    <span class="k">else</span> <span class="p">[]</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">matching_docs</span><span class="p">:</span>
+                    <span class="n">metadata</span> <span class="o">=</span> <span class="n">matching_docs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                    <span class="n">original_path</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;original_path&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">original_path</span><span class="p">:</span>
+                        <span class="n">filename</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">original_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="c1"># If lookup fails, use the hash-based filename</span>
+                <span class="k">pass</span>
+
+        <span class="c1"># Determine the correct media type based on file extension</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/octet-stream&quot;</span>  <span class="c1"># default</span>
+
+        <span class="c1"># Set appropriate media types for common formats</span>
+        <span class="k">if</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.pdf&quot;</span><span class="p">:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/pdf&quot;</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpeg&quot;</span><span class="p">]:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;image/jpeg&quot;</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.png&quot;</span><span class="p">:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;image/png&quot;</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.gif&quot;</span><span class="p">:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;image/gif&quot;</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.webp&quot;</span><span class="p">:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;image/webp&quot;</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;.text&quot;</span><span class="p">]:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;text/plain&quot;</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.rtf&quot;</span><span class="p">:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/rtf&quot;</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.doc&quot;</span><span class="p">,</span> <span class="s2">&quot;.docx&quot;</span><span class="p">]:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/msword&quot;</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.xls&quot;</span><span class="p">,</span> <span class="s2">&quot;.xlsx&quot;</span><span class="p">]:</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/vnd.ms-excel&quot;</span>
+
+        <span class="c1"># For PDFs, images, and text files, display inline in browser</span>
+        <span class="k">if</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;.pdf&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;.jpg&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;.jpeg&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;.png&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;.gif&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;.webp&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;.txt&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;.text&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;.rtf&quot;</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span>
+                <span class="n">path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+                <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;inline; filename=&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.doc&quot;</span><span class="p">,</span> <span class="s2">&quot;.docx&quot;</span><span class="p">,</span> <span class="s2">&quot;.xls&quot;</span><span class="p">,</span> <span class="s2">&quot;.xlsx&quot;</span><span class="p">]:</span>
+            <span class="c1"># For Office files, force download</span>
+            <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span>
+                <span class="n">path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+                <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;attachment; filename=&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For other file types, allow download</span>
+            <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span>
+                <span class="n">path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span>
+            <span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">PermissionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">403</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Permission denied accessing file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to retrieve file: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

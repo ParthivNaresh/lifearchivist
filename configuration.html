@@ -1,0 +1,325 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuration &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Overview" href="usage/overview.html" />
+    <link rel="prev" title="Quick Start" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Configuration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/configuration.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="configuration">
+<h1>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h1>
+<p>Life Archivist can be configured through environment variables and configuration files.</p>
+<section id="environment-variables">
+<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading"></a></h2>
+<p>Create a <cite>.env</cite> file in the project root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+</pre></div>
+</div>
+</section>
+<section id="key-configuration-options">
+<h2>Key Configuration Options<a class="headerlink" href="#key-configuration-options" title="Link to this heading"></a></h2>
+<section id="storage-settings">
+<h3>Storage Settings<a class="headerlink" href="#storage-settings" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Storage paths</span>
+<span class="nv">LIFEARCH_HOME</span><span class="o">=</span>/path/to/storage
+<span class="nv">LIFEARCH_VAULT_PATH</span><span class="o">=</span>/path/to/vault
+
+<span class="c1"># Database</span>
+<span class="nv">LIFEARCH_DATABASE_URL</span><span class="o">=</span>sqlite:///lifearchivist.db
+</pre></div>
+</div>
+</section>
+<section id="model-settings">
+<h3>Model Settings<a class="headerlink" href="#model-settings" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># LLM Configuration</span>
+<span class="nv">LIFEARCH_LLM_MODEL</span><span class="o">=</span>llama3.2:3b
+<span class="nv">LIFEARCH_EMBEDDING_MODEL</span><span class="o">=</span>all-MiniLM-L6-v2
+
+<span class="c1"># Ollama settings</span>
+<span class="nv">LIFEARCH_OLLAMA_URL</span><span class="o">=</span>http://localhost:11434
+</pre></div>
+</div>
+</section>
+<section id="service-urls">
+<h3>Service URLs<a class="headerlink" href="#service-urls" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># External services</span>
+<span class="nv">LIFEARCH_REDIS_URL</span><span class="o">=</span>redis://localhost:6379
+<span class="nv">LIFEARCH_QDRANT_URL</span><span class="o">=</span>http://localhost:6333
+</pre></div>
+</div>
+</section>
+<section id="api-settings">
+<h3>API Settings<a class="headerlink" href="#api-settings" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Server configuration</span>
+<span class="nv">LIFEARCH_HOST</span><span class="o">=</span>localhost
+<span class="nv">LIFEARCH_PORT</span><span class="o">=</span><span class="m">8000</span>
+<span class="nv">LIFEARCH_CORS_ORIGINS</span><span class="o">=[</span><span class="s2">&quot;http://localhost:3000&quot;</span><span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="feature-flags">
+<h3>Feature Flags<a class="headerlink" href="#feature-flags" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable/disable features</span>
+<span class="nv">LIFEARCH_ENABLE_UI</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">LIFEARCH_ENABLE_AGENTS</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">LIFEARCH_ENABLE_WEBSOCKETS</span><span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-configuration">
+<h2>Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Link to this heading"></a></h2>
+<section id="logging">
+<h3>Logging<a class="headerlink" href="#logging" title="Link to this heading"></a></h3>
+<p>Configure logging levels and output:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">LIFEARCH_LOG_LEVEL</span><span class="o">=</span>INFO
+<span class="nv">LIFEARCH_LOG_FORMAT</span><span class="o">=</span>json
+<span class="nv">LIFEARCH_LOG_FILE</span><span class="o">=</span>/var/log/lifearchivist.log
+</pre></div>
+</div>
+</section>
+<section id="performance-tuning">
+<h3>Performance Tuning<a class="headerlink" href="#performance-tuning" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Worker settings</span>
+<span class="nv">LIFEARCH_WORKER_COUNT</span><span class="o">=</span><span class="m">4</span>
+<span class="nv">LIFEARCH_MAX_UPLOAD_SIZE</span><span class="o">=</span>100MB
+
+<span class="c1"># Cache settings</span>
+<span class="nv">LIFEARCH_CACHE_TTL</span><span class="o">=</span><span class="m">3600</span>
+<span class="nv">LIFEARCH_CACHE_SIZE</span><span class="o">=</span><span class="m">1000</span>
+</pre></div>
+</div>
+</section>
+<section id="security">
+<h3>Security<a class="headerlink" href="#security" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Security settings</span>
+<span class="nv">LIFEARCH_SECRET_KEY</span><span class="o">=</span>your-secret-key
+<span class="nv">LIFEARCH_ENABLE_AUTH</span><span class="o">=</span><span class="nb">false</span>
+<span class="nv">LIFEARCH_JWT_EXPIRY</span><span class="o">=</span><span class="m">86400</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration-file">
+<h2>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h2>
+<p>You can also use a YAML configuration file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># config.yaml</span>
+<span class="nt">storage</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">home</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/storage</span>
+<span class="w">  </span><span class="nt">vault</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/vault</span>
+
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">llm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llama3.2:3b</span>
+<span class="w">  </span><span class="nt">embedding</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all-MiniLM-L6-v2</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ollama_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:11434</span>
+<span class="w">  </span><span class="nt">redis_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis://localhost:6379</span>
+</pre></div>
+</div>
+<p>Load with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">LIFEARCH_CONFIG_FILE</span><span class="o">=</span>config.yaml<span class="w"> </span>lifearchivist<span class="w"> </span>server
+</pre></div>
+</div>
+</section>
+<section id="validation">
+<h2>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h2>
+<p>Validate your configuration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lifearchivist<span class="w"> </span>config<span class="w"> </span>validate
+lifearchivist<span class="w"> </span>config<span class="w"> </span>show
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quick Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage/overview.html" class="btn btn-neutral float-right" title="Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

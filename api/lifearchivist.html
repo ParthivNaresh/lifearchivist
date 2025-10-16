@@ -1,0 +1,998 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist package &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="lifearchivist.agents package" href="lifearchivist.agents.html" />
+    <link rel="prev" title="lifearchivist" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">lifearchivist</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">lifearchivist</a></li>
+      <li class="breadcrumb-item active">lifearchivist package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/lifearchivist.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lifearchivist-package">
+<h1>lifearchivist package<a class="headerlink" href="#lifearchivist-package" title="Link to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.agents.html">lifearchivist.agents package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.agents.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.agents.html#module-lifearchivist.agents.ingestion">lifearchivist.agents.ingestion module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.ingestion.IngestionAgent"><code class="docutils literal notranslate"><span class="pre">IngestionAgent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.ingestion.IngestionAgent.__init__"><code class="docutils literal notranslate"><span class="pre">IngestionAgent.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.ingestion.IngestionAgent.process"><code class="docutils literal notranslate"><span class="pre">IngestionAgent.process()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.ingestion.IngestionAgent.ingest_file"><code class="docutils literal notranslate"><span class="pre">IngestionAgent.ingest_file()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.agents.html#module-lifearchivist.agents.query">lifearchivist.agents.query module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent"><code class="docutils literal notranslate"><span class="pre">QueryAgent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.__init__"><code class="docutils literal notranslate"><span class="pre">QueryAgent.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.process"><code class="docutils literal notranslate"><span class="pre">QueryAgent.process()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.search_documents"><code class="docutils literal notranslate"><span class="pre">QueryAgent.search_documents()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.answer_question"><code class="docutils literal notranslate"><span class="pre">QueryAgent.answer_question()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.agents.html#module-lifearchivist.agents">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.IngestionAgent"><code class="docutils literal notranslate"><span class="pre">IngestionAgent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.IngestionAgent.__init__"><code class="docutils literal notranslate"><span class="pre">IngestionAgent.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.IngestionAgent.ingest_file"><code class="docutils literal notranslate"><span class="pre">IngestionAgent.ingest_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.IngestionAgent.process"><code class="docutils literal notranslate"><span class="pre">IngestionAgent.process()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.QueryAgent"><code class="docutils literal notranslate"><span class="pre">QueryAgent</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.QueryAgent.__init__"><code class="docutils literal notranslate"><span class="pre">QueryAgent.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.QueryAgent.answer_question"><code class="docutils literal notranslate"><span class="pre">QueryAgent.answer_question()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.QueryAgent.process"><code class="docutils literal notranslate"><span class="pre">QueryAgent.process()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html#lifearchivist.agents.QueryAgent.search_documents"><code class="docutils literal notranslate"><span class="pre">QueryAgent.search_documents()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.config.html">lifearchivist.config package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.config.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.config.html#module-lifearchivist.config.settings">lifearchivist.config.settings module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings"><code class="docutils literal notranslate"><span class="pre">Settings</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.lifearch_home"><code class="docutils literal notranslate"><span class="pre">Settings.lifearch_home</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.embedding_model"><code class="docutils literal notranslate"><span class="pre">Settings.embedding_model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.llm_model"><code class="docutils literal notranslate"><span class="pre">Settings.llm_model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.whisper_model"><code class="docutils literal notranslate"><span class="pre">Settings.whisper_model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.ocr_lang"><code class="docutils literal notranslate"><span class="pre">Settings.ocr_lang</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.qdrant_url"><code class="docutils literal notranslate"><span class="pre">Settings.qdrant_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.redis_url"><code class="docutils literal notranslate"><span class="pre">Settings.redis_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.ollama_url"><code class="docutils literal notranslate"><span class="pre">Settings.ollama_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.max_workers"><code class="docutils literal notranslate"><span class="pre">Settings.max_workers</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.chunk_size"><code class="docutils literal notranslate"><span class="pre">Settings.chunk_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.chunk_overlap"><code class="docutils literal notranslate"><span class="pre">Settings.chunk_overlap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.embedding_batch_size"><code class="docutils literal notranslate"><span class="pre">Settings.embedding_batch_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.local_only"><code class="docutils literal notranslate"><span class="pre">Settings.local_only</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.enable_telemetry"><code class="docutils literal notranslate"><span class="pre">Settings.enable_telemetry</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.enable_cloud_models"><code class="docutils literal notranslate"><span class="pre">Settings.enable_cloud_models</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.max_file_size_mb"><code class="docutils literal notranslate"><span class="pre">Settings.max_file_size_mb</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.max_vault_size_gb"><code class="docutils literal notranslate"><span class="pre">Settings.max_vault_size_gb</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.thumbnail_size"><code class="docutils literal notranslate"><span class="pre">Settings.thumbnail_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.theme"><code class="docutils literal notranslate"><span class="pre">Settings.theme</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.language"><code class="docutils literal notranslate"><span class="pre">Settings.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.host"><code class="docutils literal notranslate"><span class="pre">Settings.host</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.port"><code class="docutils literal notranslate"><span class="pre">Settings.port</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.enable_ui"><code class="docutils literal notranslate"><span class="pre">Settings.enable_ui</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.enable_agents"><code class="docutils literal notranslate"><span class="pre">Settings.enable_agents</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.enable_websockets"><code class="docutils literal notranslate"><span class="pre">Settings.enable_websockets</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.api_only_mode"><code class="docutils literal notranslate"><span class="pre">Settings.api_only_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.Config"><code class="docutils literal notranslate"><span class="pre">Settings.Config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.__init__"><code class="docutils literal notranslate"><span class="pre">Settings.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.vault_path"><code class="docutils literal notranslate"><span class="pre">Settings.vault_path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.database_url"><code class="docutils literal notranslate"><span class="pre">Settings.database_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.Settings.model_config"><code class="docutils literal notranslate"><span class="pre">Settings.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.configure_logging"><code class="docutils literal notranslate"><span class="pre">configure_logging()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.settings.get_settings"><code class="docutils literal notranslate"><span class="pre">get_settings()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.config.html#module-lifearchivist.config">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings"><code class="docutils literal notranslate"><span class="pre">Settings</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.Config"><code class="docutils literal notranslate"><span class="pre">Settings.Config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.__init__"><code class="docutils literal notranslate"><span class="pre">Settings.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.model_config"><code class="docutils literal notranslate"><span class="pre">Settings.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.lifearch_home"><code class="docutils literal notranslate"><span class="pre">Settings.lifearch_home</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.vault_path"><code class="docutils literal notranslate"><span class="pre">Settings.vault_path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.database_url"><code class="docutils literal notranslate"><span class="pre">Settings.database_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.embedding_model"><code class="docutils literal notranslate"><span class="pre">Settings.embedding_model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.llm_model"><code class="docutils literal notranslate"><span class="pre">Settings.llm_model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.whisper_model"><code class="docutils literal notranslate"><span class="pre">Settings.whisper_model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.ocr_lang"><code class="docutils literal notranslate"><span class="pre">Settings.ocr_lang</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.qdrant_url"><code class="docutils literal notranslate"><span class="pre">Settings.qdrant_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.redis_url"><code class="docutils literal notranslate"><span class="pre">Settings.redis_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.ollama_url"><code class="docutils literal notranslate"><span class="pre">Settings.ollama_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.max_workers"><code class="docutils literal notranslate"><span class="pre">Settings.max_workers</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.chunk_size"><code class="docutils literal notranslate"><span class="pre">Settings.chunk_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.chunk_overlap"><code class="docutils literal notranslate"><span class="pre">Settings.chunk_overlap</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.embedding_batch_size"><code class="docutils literal notranslate"><span class="pre">Settings.embedding_batch_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.local_only"><code class="docutils literal notranslate"><span class="pre">Settings.local_only</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.enable_telemetry"><code class="docutils literal notranslate"><span class="pre">Settings.enable_telemetry</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.enable_cloud_models"><code class="docutils literal notranslate"><span class="pre">Settings.enable_cloud_models</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.max_file_size_mb"><code class="docutils literal notranslate"><span class="pre">Settings.max_file_size_mb</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.max_vault_size_gb"><code class="docutils literal notranslate"><span class="pre">Settings.max_vault_size_gb</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.thumbnail_size"><code class="docutils literal notranslate"><span class="pre">Settings.thumbnail_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.theme"><code class="docutils literal notranslate"><span class="pre">Settings.theme</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.language"><code class="docutils literal notranslate"><span class="pre">Settings.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.host"><code class="docutils literal notranslate"><span class="pre">Settings.host</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.port"><code class="docutils literal notranslate"><span class="pre">Settings.port</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.enable_ui"><code class="docutils literal notranslate"><span class="pre">Settings.enable_ui</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.enable_agents"><code class="docutils literal notranslate"><span class="pre">Settings.enable_agents</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.enable_websockets"><code class="docutils literal notranslate"><span class="pre">Settings.enable_websockets</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.Settings.api_only_mode"><code class="docutils literal notranslate"><span class="pre">Settings.api_only_mode</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.config.html#lifearchivist.config.get_settings"><code class="docutils literal notranslate"><span class="pre">get_settings()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.models.html">lifearchivist.models package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.models.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.models.html#module-lifearchivist.models.core">lifearchivist.models.core module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.DocumentStatus"><code class="docutils literal notranslate"><span class="pre">DocumentStatus</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.DocumentStatus.PENDING"><code class="docutils literal notranslate"><span class="pre">DocumentStatus.PENDING</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.DocumentStatus.PROCESSING"><code class="docutils literal notranslate"><span class="pre">DocumentStatus.PROCESSING</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.DocumentStatus.READY"><code class="docutils literal notranslate"><span class="pre">DocumentStatus.READY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.DocumentStatus.FAILED"><code class="docutils literal notranslate"><span class="pre">DocumentStatus.FAILED</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.ExtractionMethod"><code class="docutils literal notranslate"><span class="pre">ExtractionMethod</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.ExtractionMethod.NATIVE"><code class="docutils literal notranslate"><span class="pre">ExtractionMethod.NATIVE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.ExtractionMethod.OCR"><code class="docutils literal notranslate"><span class="pre">ExtractionMethod.OCR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.ExtractionMethod.TRANSCRIPTION"><code class="docutils literal notranslate"><span class="pre">ExtractionMethod.TRANSCRIPTION</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.EntityType"><code class="docutils literal notranslate"><span class="pre">EntityType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.EntityType.PERSON"><code class="docutils literal notranslate"><span class="pre">EntityType.PERSON</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.EntityType.ORG"><code class="docutils literal notranslate"><span class="pre">EntityType.ORG</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.EntityType.PLACE"><code class="docutils literal notranslate"><span class="pre">EntityType.PLACE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.EntityType.DATE"><code class="docutils literal notranslate"><span class="pre">EntityType.DATE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.EntityType.CUSTOM"><code class="docutils literal notranslate"><span class="pre">EntityType.CUSTOM</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchMode"><code class="docutils literal notranslate"><span class="pre">SearchMode</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchMode.HYBRID"><code class="docutils literal notranslate"><span class="pre">SearchMode.HYBRID</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchMode.SEMANTIC"><code class="docutils literal notranslate"><span class="pre">SearchMode.SEMANTIC</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchMode.KEYWORD"><code class="docutils literal notranslate"><span class="pre">SearchMode.KEYWORD</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.id"><code class="docutils literal notranslate"><span class="pre">Document.id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.file_hash"><code class="docutils literal notranslate"><span class="pre">Document.file_hash</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.original_path"><code class="docutils literal notranslate"><span class="pre">Document.original_path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.mime_type"><code class="docutils literal notranslate"><span class="pre">Document.mime_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.size_bytes"><code class="docutils literal notranslate"><span class="pre">Document.size_bytes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.created_at"><code class="docutils literal notranslate"><span class="pre">Document.created_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.modified_at"><code class="docutils literal notranslate"><span class="pre">Document.modified_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.ingested_at"><code class="docutils literal notranslate"><span class="pre">Document.ingested_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.status"><code class="docutils literal notranslate"><span class="pre">Document.status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.error_message"><code class="docutils literal notranslate"><span class="pre">Document.error_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.text_content"><code class="docutils literal notranslate"><span class="pre">Document.text_content</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.summary"><code class="docutils literal notranslate"><span class="pre">Document.summary</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.key_points"><code class="docutils literal notranslate"><span class="pre">Document.key_points</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.word_count"><code class="docutils literal notranslate"><span class="pre">Document.word_count</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.language"><code class="docutils literal notranslate"><span class="pre">Document.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.extraction_method"><code class="docutils literal notranslate"><span class="pre">Document.extraction_method</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.tags"><code class="docutils literal notranslate"><span class="pre">Document.tags</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.entities"><code class="docutils literal notranslate"><span class="pre">Document.entities</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.metadata"><code class="docutils literal notranslate"><span class="pre">Document.metadata</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document.model_config"><code class="docutils literal notranslate"><span class="pre">Document.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchRequest"><code class="docutils literal notranslate"><span class="pre">SearchRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchRequest.query"><code class="docutils literal notranslate"><span class="pre">SearchRequest.query</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchRequest.mode"><code class="docutils literal notranslate"><span class="pre">SearchRequest.mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchRequest.filters"><code class="docutils literal notranslate"><span class="pre">SearchRequest.filters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchRequest.limit"><code class="docutils literal notranslate"><span class="pre">SearchRequest.limit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchRequest.offset"><code class="docutils literal notranslate"><span class="pre">SearchRequest.offset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchRequest.include_content"><code class="docutils literal notranslate"><span class="pre">SearchRequest.include_content</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchRequest.model_config"><code class="docutils literal notranslate"><span class="pre">SearchRequest.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.document_id"><code class="docutils literal notranslate"><span class="pre">SearchResult.document_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.score"><code class="docutils literal notranslate"><span class="pre">SearchResult.score</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.title"><code class="docutils literal notranslate"><span class="pre">SearchResult.title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.snippet"><code class="docutils literal notranslate"><span class="pre">SearchResult.snippet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.created_at"><code class="docutils literal notranslate"><span class="pre">SearchResult.created_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.tags"><code class="docutils literal notranslate"><span class="pre">SearchResult.tags</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.match_type"><code class="docutils literal notranslate"><span class="pre">SearchResult.match_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.document"><code class="docutils literal notranslate"><span class="pre">SearchResult.document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.SearchResult.model_config"><code class="docutils literal notranslate"><span class="pre">SearchResult.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.IngestRequest"><code class="docutils literal notranslate"><span class="pre">IngestRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.IngestRequest.path"><code class="docutils literal notranslate"><span class="pre">IngestRequest.path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.IngestRequest.mime_hint"><code class="docutils literal notranslate"><span class="pre">IngestRequest.mime_hint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.IngestRequest.tags"><code class="docutils literal notranslate"><span class="pre">IngestRequest.tags</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.IngestRequest.metadata"><code class="docutils literal notranslate"><span class="pre">IngestRequest.metadata</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.IngestRequest.session_id"><code class="docutils literal notranslate"><span class="pre">IngestRequest.session_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.IngestRequest.model_config"><code class="docutils literal notranslate"><span class="pre">IngestRequest.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.JobStatus"><code class="docutils literal notranslate"><span class="pre">JobStatus</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.JobStatus.job_id"><code class="docutils literal notranslate"><span class="pre">JobStatus.job_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.JobStatus.status"><code class="docutils literal notranslate"><span class="pre">JobStatus.status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.JobStatus.progress"><code class="docutils literal notranslate"><span class="pre">JobStatus.progress</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.JobStatus.stage"><code class="docutils literal notranslate"><span class="pre">JobStatus.stage</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.JobStatus.estimated_time"><code class="docutils literal notranslate"><span class="pre">JobStatus.estimated_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.JobStatus.result"><code class="docutils literal notranslate"><span class="pre">JobStatus.result</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.JobStatus.model_config"><code class="docutils literal notranslate"><span class="pre">JobStatus.model_config</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.models.html#module-lifearchivist.models">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.model_config"><code class="docutils literal notranslate"><span class="pre">Document.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.id"><code class="docutils literal notranslate"><span class="pre">Document.id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.file_hash"><code class="docutils literal notranslate"><span class="pre">Document.file_hash</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.original_path"><code class="docutils literal notranslate"><span class="pre">Document.original_path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.mime_type"><code class="docutils literal notranslate"><span class="pre">Document.mime_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.size_bytes"><code class="docutils literal notranslate"><span class="pre">Document.size_bytes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.created_at"><code class="docutils literal notranslate"><span class="pre">Document.created_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.modified_at"><code class="docutils literal notranslate"><span class="pre">Document.modified_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.ingested_at"><code class="docutils literal notranslate"><span class="pre">Document.ingested_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.status"><code class="docutils literal notranslate"><span class="pre">Document.status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.error_message"><code class="docutils literal notranslate"><span class="pre">Document.error_message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.text_content"><code class="docutils literal notranslate"><span class="pre">Document.text_content</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.summary"><code class="docutils literal notranslate"><span class="pre">Document.summary</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.key_points"><code class="docutils literal notranslate"><span class="pre">Document.key_points</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.word_count"><code class="docutils literal notranslate"><span class="pre">Document.word_count</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.language"><code class="docutils literal notranslate"><span class="pre">Document.language</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.extraction_method"><code class="docutils literal notranslate"><span class="pre">Document.extraction_method</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.tags"><code class="docutils literal notranslate"><span class="pre">Document.tags</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.entities"><code class="docutils literal notranslate"><span class="pre">Document.entities</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.Document.metadata"><code class="docutils literal notranslate"><span class="pre">Document.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.model_config"><code class="docutils literal notranslate"><span class="pre">SearchResult.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.document_id"><code class="docutils literal notranslate"><span class="pre">SearchResult.document_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.score"><code class="docutils literal notranslate"><span class="pre">SearchResult.score</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.title"><code class="docutils literal notranslate"><span class="pre">SearchResult.title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.snippet"><code class="docutils literal notranslate"><span class="pre">SearchResult.snippet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.created_at"><code class="docutils literal notranslate"><span class="pre">SearchResult.created_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.tags"><code class="docutils literal notranslate"><span class="pre">SearchResult.tags</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.match_type"><code class="docutils literal notranslate"><span class="pre">SearchResult.match_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchResult.document"><code class="docutils literal notranslate"><span class="pre">SearchResult.document</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchRequest"><code class="docutils literal notranslate"><span class="pre">SearchRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchRequest.model_config"><code class="docutils literal notranslate"><span class="pre">SearchRequest.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchRequest.query"><code class="docutils literal notranslate"><span class="pre">SearchRequest.query</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchRequest.mode"><code class="docutils literal notranslate"><span class="pre">SearchRequest.mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchRequest.filters"><code class="docutils literal notranslate"><span class="pre">SearchRequest.filters</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchRequest.limit"><code class="docutils literal notranslate"><span class="pre">SearchRequest.limit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchRequest.offset"><code class="docutils literal notranslate"><span class="pre">SearchRequest.offset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.SearchRequest.include_content"><code class="docutils literal notranslate"><span class="pre">SearchRequest.include_content</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.IngestRequest"><code class="docutils literal notranslate"><span class="pre">IngestRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.IngestRequest.model_config"><code class="docutils literal notranslate"><span class="pre">IngestRequest.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.IngestRequest.path"><code class="docutils literal notranslate"><span class="pre">IngestRequest.path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.IngestRequest.mime_hint"><code class="docutils literal notranslate"><span class="pre">IngestRequest.mime_hint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.IngestRequest.tags"><code class="docutils literal notranslate"><span class="pre">IngestRequest.tags</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.IngestRequest.metadata"><code class="docutils literal notranslate"><span class="pre">IngestRequest.metadata</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.IngestRequest.session_id"><code class="docutils literal notranslate"><span class="pre">IngestRequest.session_id</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.schemas.html">lifearchivist.schemas package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.schemas.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.schemas.html#module-lifearchivist.schemas.tool_schemas">lifearchivist.schemas.tool_schemas module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionInput"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionInput</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionInput.document_id"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionInput.document_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionInput.text_content"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionInput.text_content</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionInput.model_config"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionInput.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionOutput"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionOutput</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionOutput.document_id"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionOutput.document_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionOutput.extracted_date"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionOutput.extracted_date</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionOutput.total_dates_found"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionOutput.total_dates_found</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.ContentDateExtractionOutput.model_config"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionOutput.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest.text"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationRequest.text</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest.primary_theme"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationRequest.primary_theme</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest.metadata"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationRequest.metadata</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest.document_id"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationRequest.document_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest.model_config"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationRequest.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.success"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.success</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.primary_theme"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.primary_theme</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.subthemes"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.subthemes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.primary_subtheme"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.primary_subtheme</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.confidence_scores"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.confidence_scores</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.classification_method"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.classification_method</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.metadata"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.metadata</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.error"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.error</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.model_config"><code class="docutils literal notranslate"><span class="pre">SubthemeClassificationResponse.model_config</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.schemas.html#module-lifearchivist.schemas">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.server.html">lifearchivist.server package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.server.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.api.html">lifearchivist.server.api package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.api.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.api.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.api.html#module-lifearchivist.server.api.dependencies">lifearchivist.server.api.dependencies module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.api.html#module-lifearchivist.server.api.router">lifearchivist.server.api.router module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.api.html#module-lifearchivist.server.api">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.server.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.server.html#module-lifearchivist.server.main">lifearchivist.server.main module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionRequest"><code class="docutils literal notranslate"><span class="pre">ToolExecutionRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionRequest.tool"><code class="docutils literal notranslate"><span class="pre">ToolExecutionRequest.tool</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionRequest.params"><code class="docutils literal notranslate"><span class="pre">ToolExecutionRequest.params</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionRequest.session_id"><code class="docutils literal notranslate"><span class="pre">ToolExecutionRequest.session_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionRequest.model_config"><code class="docutils literal notranslate"><span class="pre">ToolExecutionRequest.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionResult"><code class="docutils literal notranslate"><span class="pre">ToolExecutionResult</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionResult.success"><code class="docutils literal notranslate"><span class="pre">ToolExecutionResult.success</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionResult.result"><code class="docutils literal notranslate"><span class="pre">ToolExecutionResult.result</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionResult.error"><code class="docutils literal notranslate"><span class="pre">ToolExecutionResult.error</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.ToolExecutionResult.model_config"><code class="docutils literal notranslate"><span class="pre">ToolExecutionResult.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.lifespan"><code class="docutils literal notranslate"><span class="pre">lifespan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.main.create_app"><code class="docutils literal notranslate"><span class="pre">create_app()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.server.html#lifearchivist-server-mcp-server-module">lifearchivist.server.mcp_server module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.server.html#module-lifearchivist.server.progress_manager">lifearchivist.server.progress_manager module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage"><code class="docutils literal notranslate"><span class="pre">ProcessingStage</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.UPLOAD"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.UPLOAD</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.EXTRACT"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.EXTRACT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.EMBED"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.EMBED</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.TAG"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.TAG</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.INDEX"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.INDEX</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.COMPLETE"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.COMPLETE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.__init__"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.file_id"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.file_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.stage"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.stage</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.progress"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.progress</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.message"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.timestamp"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.timestamp</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.eta_seconds"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.eta_seconds</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.error"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.error</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.metadata"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.metadata</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.to_dict"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.to_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.__init__"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager"><code class="docutils literal notranslate"><span class="pre">ProgressManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.__init__"><code class="docutils literal notranslate"><span class="pre">ProgressManager.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.start_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.start_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.update_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.update_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.complete_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.complete_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.error_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.error_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.get_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.get_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.cleanup_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.cleanup_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.clear_all_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.clear_all_progress()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressContext"><code class="docutils literal notranslate"><span class="pre">ProgressContext</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressContext.__init__"><code class="docutils literal notranslate"><span class="pre">ProgressContext.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressContext.update"><code class="docutils literal notranslate"><span class="pre">ProgressContext.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.server.html#module-lifearchivist.server">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.create_app"><code class="docutils literal notranslate"><span class="pre">create_app()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer"><code class="docutils literal notranslate"><span class="pre">ApplicationServer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer.__init__"><code class="docutils literal notranslate"><span class="pre">ApplicationServer.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer.cleanup"><code class="docutils literal notranslate"><span class="pre">ApplicationServer.cleanup()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer.execute_tool"><code class="docutils literal notranslate"><span class="pre">ApplicationServer.execute_tool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer.initialize"><code class="docutils literal notranslate"><span class="pre">ApplicationServer.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer.is_initialized"><code class="docutils literal notranslate"><span class="pre">ApplicationServer.is_initialized</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer.llamaindex_service"><code class="docutils literal notranslate"><span class="pre">ApplicationServer.llamaindex_service</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer.query_agent_async"><code class="docutils literal notranslate"><span class="pre">ApplicationServer.query_agent_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ApplicationServer.vault"><code class="docutils literal notranslate"><span class="pre">ApplicationServer.vault</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ServiceContainer"><code class="docutils literal notranslate"><span class="pre">ServiceContainer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ServiceContainer.__aenter__"><code class="docutils literal notranslate"><span class="pre">ServiceContainer.__aenter__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ServiceContainer.__aexit__"><code class="docutils literal notranslate"><span class="pre">ServiceContainer.__aexit__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ServiceContainer.__init__"><code class="docutils literal notranslate"><span class="pre">ServiceContainer.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ServiceContainer.cleanup"><code class="docutils literal notranslate"><span class="pre">ServiceContainer.cleanup()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ServiceContainer.initialize"><code class="docutils literal notranslate"><span class="pre">ServiceContainer.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ServiceContainer.is_initialized"><code class="docutils literal notranslate"><span class="pre">ServiceContainer.is_initialized</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ServiceContainer.require_initialized"><code class="docutils literal notranslate"><span class="pre">ServiceContainer.require_initialized()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager"><code class="docutils literal notranslate"><span class="pre">ProgressManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.__init__"><code class="docutils literal notranslate"><span class="pre">ProgressManager.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.cleanup_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.cleanup_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.clear_all_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.clear_all_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.complete_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.complete_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.error_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.error_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.get_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.get_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.start_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.start_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.update_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.update_progress()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.storage.html">lifearchivist.storage package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html">lifearchivist.storage.llamaindex_service package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#lifearchivist-storage-llamaindex-service-llamaindex-service-module">lifearchivist.storage.llamaindex_service.llamaindex_service module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#lifearchivist-storage-llamaindex-service-llamaindex-service-utils-module">lifearchivist.storage.llamaindex_service.llamaindex_service_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#module-lifearchivist.storage.llamaindex_service">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html">lifearchivist.storage.vault package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#module-lifearchivist.storage.vault.vault">lifearchivist.storage.vault.vault module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#module-lifearchivist.storage.vault.vault_utils">lifearchivist.storage.vault.vault_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#module-lifearchivist.storage.vault">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.html#module-lifearchivist.storage">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault"><code class="docutils literal notranslate"><span class="pre">Vault</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.__init__"><code class="docutils literal notranslate"><span class="pre">Vault.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.calculate_hash"><code class="docutils literal notranslate"><span class="pre">Vault.calculate_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.cleanup_temp"><code class="docutils literal notranslate"><span class="pre">Vault.cleanup_temp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.clear_all_files"><code class="docutils literal notranslate"><span class="pre">Vault.clear_all_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.delete_file"><code class="docutils literal notranslate"><span class="pre">Vault.delete_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.delete_file_by_hash"><code class="docutils literal notranslate"><span class="pre">Vault.delete_file_by_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.file_exists"><code class="docutils literal notranslate"><span class="pre">Vault.file_exists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.get_file_path"><code class="docutils literal notranslate"><span class="pre">Vault.get_file_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.get_thumbnail_path"><code class="docutils literal notranslate"><span class="pre">Vault.get_thumbnail_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.get_vault_statistics"><code class="docutils literal notranslate"><span class="pre">Vault.get_vault_statistics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.initialize"><code class="docutils literal notranslate"><span class="pre">Vault.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.store_file"><code class="docutils literal notranslate"><span class="pre">Vault.store_file()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.tools.html">lifearchivist.tools package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.date_extract.html">lifearchivist.tools.date_extract package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#module-lifearchivist.tools.date_extract.date_extraction_tool">lifearchivist.tools.date_extract.date_extraction_tool module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#module-lifearchivist.tools.date_extract.date_extraction_utils">lifearchivist.tools.date_extract.date_extraction_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#module-lifearchivist.tools.date_extract">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.extract.html">lifearchivist.tools.extract package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.extract.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.extract.html#lifearchivist-tools-extract-extract-tools-module">lifearchivist.tools.extract.extract_tools module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.extract.html#module-lifearchivist.tools.extract.extract_utils">lifearchivist.tools.extract.extract_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.extract.html#module-lifearchivist.tools.extract">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html">lifearchivist.tools.file_import package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.file_import.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.file_import.html#module-lifearchivist.tools.file_import.file_import_tool">lifearchivist.tools.file_import.file_import_tool module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.file_import.html#module-lifearchivist.tools.file_import.file_import_utils">lifearchivist.tools.file_import.file_import_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.file_import.html#module-lifearchivist.tools.file_import">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.llamaindex.html">lifearchivist.tools.llamaindex package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#module-lifearchivist.tools.llamaindex.llamaindex_query_tool">lifearchivist.tools.llamaindex.llamaindex_query_tool module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#module-lifearchivist.tools.llamaindex">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html">lifearchivist.tools.ollama package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#module-lifearchivist.tools.ollama.ollama_tool">lifearchivist.tools.ollama.ollama_tool module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#module-lifearchivist.tools.ollama.ollama_utils">lifearchivist.tools.ollama.ollama_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#module-lifearchivist.tools.ollama">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.search.html">lifearchivist.tools.search package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.search.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.search.html#module-lifearchivist.tools.search.search_tool">lifearchivist.tools.search.search_tool module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.search.html#module-lifearchivist.tools.search">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.html#module-lifearchivist.tools.base">lifearchivist.tools.base module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata"><code class="docutils literal notranslate"><span class="pre">ToolMetadata</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata.name"><code class="docutils literal notranslate"><span class="pre">ToolMetadata.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata.description"><code class="docutils literal notranslate"><span class="pre">ToolMetadata.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata.input_schema"><code class="docutils literal notranslate"><span class="pre">ToolMetadata.input_schema</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata.output_schema"><code class="docutils literal notranslate"><span class="pre">ToolMetadata.output_schema</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata.async_tool"><code class="docutils literal notranslate"><span class="pre">ToolMetadata.async_tool</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata.idempotent"><code class="docutils literal notranslate"><span class="pre">ToolMetadata.idempotent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata.model_config"><code class="docutils literal notranslate"><span class="pre">ToolMetadata.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool"><code class="docutils literal notranslate"><span class="pre">BaseTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool.__init__"><code class="docutils literal notranslate"><span class="pre">BaseTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool.execute"><code class="docutils literal notranslate"><span class="pre">BaseTool.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool.validate_input"><code class="docutils literal notranslate"><span class="pre">BaseTool.validate_input()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool.validate_output"><code class="docutils literal notranslate"><span class="pre">BaseTool.validate_output()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.html#module-lifearchivist.tools.exceptions">lifearchivist.tools.exceptions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.exceptions.LifeArchivistError"><code class="docutils literal notranslate"><span class="pre">LifeArchivistError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.exceptions.ToolError"><code class="docutils literal notranslate"><span class="pre">ToolError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.exceptions.ValidationError"><code class="docutils literal notranslate"><span class="pre">ValidationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.exceptions.ToolNotFoundError"><code class="docutils literal notranslate"><span class="pre">ToolNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.exceptions.ToolExecutionError"><code class="docutils literal notranslate"><span class="pre">ToolExecutionError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.exceptions.StorageError"><code class="docutils literal notranslate"><span class="pre">StorageError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.exceptions.IndexingError"><code class="docutils literal notranslate"><span class="pre">IndexingError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.html#module-lifearchivist.tools.registry">lifearchivist.tools.registry module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry"><code class="docutils literal notranslate"><span class="pre">ToolRegistry</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.__init__"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.register_all"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.register_all()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.register_tool"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.register_tool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.get_tool"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.get_tool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.list_tools"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.list_tools()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.get_tool_schema"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.get_tool_schema()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.html#module-lifearchivist.tools">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.BaseTool"><code class="docutils literal notranslate"><span class="pre">BaseTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.BaseTool.__init__"><code class="docutils literal notranslate"><span class="pre">BaseTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.BaseTool.execute"><code class="docutils literal notranslate"><span class="pre">BaseTool.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.BaseTool.validate_input"><code class="docutils literal notranslate"><span class="pre">BaseTool.validate_input()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.BaseTool.validate_output"><code class="docutils literal notranslate"><span class="pre">BaseTool.validate_output()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ContentDateExtractionTool"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ContentDateExtractionTool.__init__"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ContentDateExtractionTool.execute"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ContentDateExtractionTool.extract_date_from_text"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.extract_date_from_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ContentDateExtractionTool.store_extracted_date"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.store_extracted_date()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ExtractTextTool"><code class="docutils literal notranslate"><span class="pre">ExtractTextTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ExtractTextTool.__init__"><code class="docutils literal notranslate"><span class="pre">ExtractTextTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ExtractTextTool.execute"><code class="docutils literal notranslate"><span class="pre">ExtractTextTool.execute()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.FileImportTool"><code class="docutils literal notranslate"><span class="pre">FileImportTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.FileImportTool.__init__"><code class="docutils literal notranslate"><span class="pre">FileImportTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.FileImportTool.execute"><code class="docutils literal notranslate"><span class="pre">FileImportTool.execute()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.OllamaTool"><code class="docutils literal notranslate"><span class="pre">OllamaTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.OllamaTool.__init__"><code class="docutils literal notranslate"><span class="pre">OllamaTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.OllamaTool.chat"><code class="docutils literal notranslate"><span class="pre">OllamaTool.chat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.OllamaTool.execute"><code class="docutils literal notranslate"><span class="pre">OllamaTool.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.OllamaTool.generate"><code class="docutils literal notranslate"><span class="pre">OllamaTool.generate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ToolRegistry"><code class="docutils literal notranslate"><span class="pre">ToolRegistry</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ToolRegistry.__init__"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ToolRegistry.get_tool"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.get_tool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ToolRegistry.get_tool_schema"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.get_tool_schema()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ToolRegistry.list_tools"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.list_tools()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ToolRegistry.register_all"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.register_all()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.ToolRegistry.register_tool"><code class="docutils literal notranslate"><span class="pre">ToolRegistry.register_tool()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.utils.html">lifearchivist.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.utils.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.utils.logging.html">lifearchivist.utils.logging package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.utils.logging.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.utils.logging.html#module-lifearchivist.utils.logging.context">lifearchivist.utils.logging.context module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.utils.logging.html#module-lifearchivist.utils.logging.smart_logger">lifearchivist.utils.logging.smart_logger module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.utils.logging.html#module-lifearchivist.utils.logging.structured">lifearchivist.utils.logging.structured module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.utils.logging.html#module-lifearchivist.utils.logging">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.utils.html#module-lifearchivist.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-lifearchivist">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lifearchivist" title="Link to this heading"></a></h2>
+<p>Life Archivist - Local-first, privacy-preserving personal knowledge system.</p>
+<p>A comprehensive document management and search system with MCP architecture
+that keeps your data local while providing advanced AI-powered features.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.Document">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.</span></span><span class="sig-name descname"><span class="pre">Document</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_hash:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_path:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mime_type:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_bytes:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at:</span> <span class="pre">~datetime.datetime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modified_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ingested_at:</span> <span class="pre">~datetime.datetime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status:</span> <span class="pre">~lifearchivist.models.core.DocumentStatus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_message:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_content:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">summary:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_points:</span> <span class="pre">~typing.List[str]</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_count:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_method:</span> <span class="pre">~lifearchivist.models.core.ExtractionMethod</span> <span class="pre">|</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags:</span> <span class="pre">~typing.List[str]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entities:</span> <span class="pre">~typing.List[str]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata:</span> <span class="pre">~typing.Dict[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/models/core.html#Document"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.Document" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Core document model.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#lifearchivist.Document.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.id">
+<span class="sig-name descname"><span class="pre">id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.Document.id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.file_hash">
+<span class="sig-name descname"><span class="pre">file_hash</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.Document.file_hash" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.original_path">
+<span class="sig-name descname"><span class="pre">original_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.original_path" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.mime_type">
+<span class="sig-name descname"><span class="pre">mime_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.Document.mime_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.size_bytes">
+<span class="sig-name descname"><span class="pre">size_bytes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#lifearchivist.Document.size_bytes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.created_at">
+<span class="sig-name descname"><span class="pre">created_at</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a></em><a class="headerlink" href="#lifearchivist.Document.created_at" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.modified_at">
+<span class="sig-name descname"><span class="pre">modified_at</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.modified_at" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.ingested_at">
+<span class="sig-name descname"><span class="pre">ingested_at</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a></em><a class="headerlink" href="#lifearchivist.Document.ingested_at" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.status">
+<span class="sig-name descname"><span class="pre">status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.DocumentStatus" title="lifearchivist.models.core.DocumentStatus"><span class="pre">DocumentStatus</span></a></em><a class="headerlink" href="#lifearchivist.Document.status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.error_message">
+<span class="sig-name descname"><span class="pre">error_message</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.error_message" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.text_content">
+<span class="sig-name descname"><span class="pre">text_content</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.text_content" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.summary" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.key_points">
+<span class="sig-name descname"><span class="pre">key_points</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.key_points" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.word_count">
+<span class="sig-name descname"><span class="pre">word_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.word_count" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.language">
+<span class="sig-name descname"><span class="pre">language</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.language" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.extraction_method">
+<span class="sig-name descname"><span class="pre">extraction_method</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.ExtractionMethod" title="lifearchivist.models.core.ExtractionMethod"><span class="pre">ExtractionMethod</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.Document.extraction_method" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.tags">
+<span class="sig-name descname"><span class="pre">tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lifearchivist.Document.tags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.entities">
+<span class="sig-name descname"><span class="pre">entities</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lifearchivist.Document.entities" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.Document.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lifearchivist.Document.metadata" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.</span></span><span class="sig-name descname"><span class="pre">SearchResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">document_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">snippet</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">match_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">document</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document" title="lifearchivist.models.core.Document"><span class="pre">Document</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/models/core.html#SearchResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.SearchResult" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Search result model.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#lifearchivist.SearchResult.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.document_id">
+<span class="sig-name descname"><span class="pre">document_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.SearchResult.document_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.score">
+<span class="sig-name descname"><span class="pre">score</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#lifearchivist.SearchResult.score" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.title">
+<span class="sig-name descname"><span class="pre">title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.SearchResult.title" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.snippet">
+<span class="sig-name descname"><span class="pre">snippet</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.SearchResult.snippet" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.created_at">
+<span class="sig-name descname"><span class="pre">created_at</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a></em><a class="headerlink" href="#lifearchivist.SearchResult.created_at" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.tags">
+<span class="sig-name descname"><span class="pre">tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lifearchivist.SearchResult.tags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.match_type">
+<span class="sig-name descname"><span class="pre">match_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.SearchResult.match_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.SearchResult.document">
+<span class="sig-name descname"><span class="pre">document</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="lifearchivist.models.html#lifearchivist.models.core.Document" title="lifearchivist.models.core.Document"><span class="pre">Document</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#lifearchivist.SearchResult.document" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.LlamaIndexService">
+<span class="sig-prename descclassname"><span class="pre">lifearchivist.</span></span><span class="sig-name descname"><span class="pre">LlamaIndexService</span></span><a class="headerlink" href="#lifearchivist.LlamaIndexService" title="Link to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">LlamaIndexQdrantService</span></code></p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="lifearchivist" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="lifearchivist.agents.html" class="btn btn-neutral float-right" title="lifearchivist.agents package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

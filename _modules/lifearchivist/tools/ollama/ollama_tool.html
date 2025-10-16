@@ -1,0 +1,731 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.tools.ollama.ollama_tool &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.tools.ollama.ollama_tool</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.tools.ollama.ollama_tool</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">LLM integration tools using Ollama.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">aiohttp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTool</span><span class="p">,</span> <span class="n">ToolMetadata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.ollama.ollama_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DEFAULT_REQUEST_TIMEOUT_SECONDS</span><span class="p">,</span>
+    <span class="n">HEALTH_CHECK_ENDPOINT</span><span class="p">,</span>
+    <span class="n">MODEL_PULL_ENDPOINT</span><span class="p">,</span>
+    <span class="n">create_error_response</span><span class="p">,</span>
+    <span class="n">create_model_pull_request</span><span class="p">,</span>
+    <span class="n">create_success_response</span><span class="p">,</span>
+    <span class="n">extract_models_from_health_response</span><span class="p">,</span>
+    <span class="n">extract_response_text</span><span class="p">,</span>
+    <span class="n">parse_streaming_chunk</span><span class="p">,</span>
+    <span class="n">prepare_chat_request</span><span class="p">,</span>
+    <span class="n">prepare_generate_request</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
+
+
+<div class="viewcode-block" id="OllamaTool">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.ollama.html#lifearchivist.tools.OllamaTool">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OllamaTool</span><span class="p">(</span><span class="n">BaseTool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tool for interacting with Ollama for LLM inference.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OllamaTool.__init__">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.ollama.html#lifearchivist.tools.OllamaTool.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">get_settings</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolMetadata</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ToolMetadata</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llm.ollama&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generate text using local Ollama LLM&quot;</span><span class="p">,</span>
+            <span class="n">input_schema</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Text prompt for the LLM&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;System message/instructions&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Chat messages for conversation&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Ollama model name&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">2048</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Maximum tokens to generate&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Sampling temperature (0.0 to 1.0)&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Enable streaming response&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="n">output_schema</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Generated text response&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Model used&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;tokens_generated&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Number of tokens generated&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;generation_time_ms&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Generation time in milliseconds&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="n">async_tool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">idempotent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="OllamaTool.execute">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.ollama.html#lifearchivist.tools.OllamaTool.execute">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;ollama_text_generation&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="s2">&quot;max_tokens&quot;</span><span class="p">,</span> <span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="s2">&quot;stream&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate text using Ollama.&quot;&quot;&quot;</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt&quot;</span><span class="p">)</span>
+        <span class="n">system</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;system&quot;</span><span class="p">)</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;messages&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span><span class="p">)</span>
+        <span class="n">max_tokens</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_tokens&quot;</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
+        <span class="n">temperature</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">)</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stream&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">prompt</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either &#39;prompt&#39; or &#39;messages&#39; must be provided&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Log generation request with context</span>
+        <span class="n">input_type</span> <span class="o">=</span> <span class="s2">&quot;chat&quot;</span> <span class="k">if</span> <span class="n">messages</span> <span class="k">else</span> <span class="s2">&quot;prompt&quot;</span>
+        <span class="n">input_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">messages</span><span class="p">))</span> <span class="k">if</span> <span class="n">messages</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span>
+
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;ollama_generation_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span>
+                <span class="s2">&quot;input_type&quot;</span><span class="p">:</span> <span class="n">input_type</span><span class="p">,</span>
+                <span class="s2">&quot;input_length&quot;</span><span class="p">:</span> <span class="n">input_length</span><span class="p">,</span>
+                <span class="s2">&quot;prompt_preview&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">prompt</span><span class="p">)[:</span><span class="mi">100</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+                    <span class="k">if</span> <span class="n">prompt</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">prompt</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">100</span>
+                    <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span> <span class="k">if</span> <span class="n">prompt</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;message_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span> <span class="k">if</span> <span class="n">messages</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="n">max_tokens</span><span class="p">,</span>
+                <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">temperature</span><span class="p">,</span>
+                <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="n">stream</span><span class="p">,</span>
+                <span class="s2">&quot;has_system&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">system</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Use session-per-request pattern with explicit cleanup configuration</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientTimeout</span><span class="p">(</span>
+            <span class="n">total</span><span class="o">=</span><span class="n">DEFAULT_REQUEST_TIMEOUT_SECONDS</span><span class="p">,</span>
+            <span class="n">connect</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># Connection timeout</span>
+            <span class="n">sock_read</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># Socket read timeout</span>
+        <span class="p">)</span>
+
+        <span class="n">connector</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">TCPConnector</span><span class="p">(</span>
+            <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Limit connections for this session</span>
+            <span class="n">limit_per_host</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Single connection per host</span>
+            <span class="n">ttl_dns_cache</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>  <span class="c1"># DNS cache TTL</span>
+            <span class="n">use_dns_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">keepalive_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># Keep-alive timeout</span>
+            <span class="n">enable_cleanup_closed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Enable cleanup of closed connections</span>
+        <span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">with</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">(</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">,</span>
+            <span class="n">connector_owner</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Session owns the connector and will close it</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Check if Ollama is available</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_ollama_health</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+
+                <span class="c1"># Prepare the request</span>
+                <span class="k">if</span> <span class="n">messages</span><span class="p">:</span>
+                    <span class="c1"># Use chat format</span>
+                    <span class="n">request_data</span><span class="p">,</span> <span class="n">endpoint</span> <span class="o">=</span> <span class="n">prepare_chat_request</span><span class="p">(</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+                        <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
+                        <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+                        <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
+                        <span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
+                        <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+                        <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Use simple generate format</span>
+                    <span class="n">request_data</span><span class="p">,</span> <span class="n">endpoint</span> <span class="o">=</span> <span class="n">prepare_generate_request</span><span class="p">(</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+                        <span class="n">prompt</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">prompt</span><span class="p">),</span>
+                        <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+                        <span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
+                        <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+                        <span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="c1"># Make the request</span>
+                <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
+                    <span class="n">response_text</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stream_request</span><span class="p">(</span>
+                        <span class="n">session</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">request_data</span>
+                    <span class="p">)</span>
+                    <span class="n">generation_time</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Cannot accurately measure for streaming</span>
+                    <span class="n">tokens_generated</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Cannot measure for streaming</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">response_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_single_request</span><span class="p">(</span>
+                        <span class="n">session</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">,</span> <span class="n">request_data</span>
+                    <span class="p">)</span>
+                    <span class="n">response_text</span> <span class="o">=</span> <span class="n">extract_response_text</span><span class="p">(</span><span class="n">response_data</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">)</span>
+
+                    <span class="c1"># Calculate generation time and tokens</span>
+                    <span class="n">generation_time</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">response_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_duration&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">//</span> <span class="mi">1_000_000</span>
+                    <span class="p">)</span>
+                    <span class="n">tokens_generated</span> <span class="o">=</span> <span class="n">response_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eval_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+                <span class="c1"># Log successful generation with metrics</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;ollama_generation_completed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span>
+                        <span class="s2">&quot;response_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">response_text</span><span class="p">),</span>
+                        <span class="s2">&quot;tokens_generated&quot;</span><span class="p">:</span> <span class="n">tokens_generated</span><span class="p">,</span>
+                        <span class="s2">&quot;generation_time_ms&quot;</span><span class="p">:</span> <span class="n">generation_time</span><span class="p">,</span>
+                        <span class="s2">&quot;stream&quot;</span><span class="p">:</span> <span class="n">stream</span><span class="p">,</span>
+                        <span class="s2">&quot;tokens_per_second&quot;</span><span class="p">:</span> <span class="p">(</span>
+                            <span class="p">(</span><span class="n">tokens_generated</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">generation_time</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">generation_time</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">tokens_generated</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                            <span class="k">else</span> <span class="mi">0</span>
+                        <span class="p">),</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Log if response is empty or very short (potential issue)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">response_text</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">response_text</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+                    <span class="n">log_event</span><span class="p">(</span>
+                        <span class="s2">&quot;ollama_short_response&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span>
+                            <span class="s2">&quot;response_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">response_text</span><span class="p">),</span>
+                            <span class="s2">&quot;prompt_length&quot;</span><span class="p">:</span> <span class="n">input_length</span><span class="p">,</span>
+                            <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">temperature</span><span class="p">,</span>
+                        <span class="p">},</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">create_success_response</span><span class="p">(</span>
+                    <span class="n">response_text</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokens_generated</span><span class="p">,</span> <span class="n">generation_time</span>
+                <span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;ollama_generation_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span>
+                        <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                        <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                        <span class="s2">&quot;endpoint&quot;</span><span class="p">:</span> <span class="n">endpoint</span> <span class="k">if</span> <span class="s2">&quot;endpoint&quot;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;unknown&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">create_error_response</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="c1"># Small delay to allow any remaining cleanup to complete</span>
+                <span class="c1"># This helps prevent &quot;Unclosed client session&quot; warnings on shutdown</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span></div>
+
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;ollama_health_check&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_check_ollama_health</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if Ollama service is available.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">ollama_url</span><span class="si">}{</span><span class="n">HEALTH_CHECK_ENDPOINT</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                    <span class="n">models</span> <span class="o">=</span> <span class="n">extract_models_from_health_response</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+                    <span class="c1"># Log available models for debugging</span>
+                    <span class="n">log_event</span><span class="p">(</span>
+                        <span class="s2">&quot;ollama_models_available&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;models&quot;</span><span class="p">:</span> <span class="n">models</span><span class="p">,</span>
+                            <span class="s2">&quot;requested_model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span><span class="p">,</span>
+                            <span class="s2">&quot;model_available&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">,</span>
+                        <span class="p">},</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+                        <span class="c1"># Try to pull the model</span>
+                        <span class="n">log_event</span><span class="p">(</span>
+                            <span class="s2">&quot;ollama_model_missing&quot;</span><span class="p">,</span>
+                            <span class="p">{</span>
+                                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span><span class="p">,</span>
+                                <span class="s2">&quot;available_models&quot;</span><span class="p">:</span> <span class="n">models</span><span class="p">,</span>
+                            <span class="p">},</span>
+                            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pull_model</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Ollama health check failed: HTTP </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;ollama_health_check_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">ollama_url</span><span class="p">,</span>
+                    <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                    <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Cannot connect to Ollama at </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">ollama_url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;model_pull&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;model_name&quot;</span><span class="p">],</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_pull_model</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attempt to pull a model if it&#39;s not available.&quot;&quot;&quot;</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;ollama_model_pull_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model_name</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">request_data</span> <span class="o">=</span> <span class="n">create_model_pull_request</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">ollama_url</span><span class="si">}{</span><span class="n">MODEL_PULL_ENDPOINT</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">request_data</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">log_event</span><span class="p">(</span>
+                        <span class="s2">&quot;ollama_model_pull_succeeded&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model_name</span><span class="p">,</span>
+                        <span class="p">},</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">log_event</span><span class="p">(</span>
+                        <span class="s2">&quot;ollama_model_pull_failed&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model_name</span><span class="p">,</span>
+                            <span class="s2">&quot;status_code&quot;</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                        <span class="p">},</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;ollama_model_pull_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model_name</span><span class="p">,</span>
+                    <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                    <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;ollama_single_request&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;endpoint&quot;</span><span class="p">],</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_single_request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">request_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a single (non-streaming) request to Ollama.&quot;&quot;&quot;</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">ollama_url</span><span class="si">}{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">request_data</span><span class="p">,</span>
+            <span class="c1"># Timeout is configured at session level, no need to override here</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="n">error_text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+                <span class="c1"># Log failed requests for debugging</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;ollama_request_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;endpoint&quot;</span><span class="p">:</span> <span class="n">endpoint</span><span class="p">,</span>
+                        <span class="s2">&quot;status_code&quot;</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                        <span class="s2">&quot;error_text&quot;</span><span class="p">:</span> <span class="n">error_text</span><span class="p">[:</span><span class="mi">200</span><span class="p">],</span>  <span class="c1"># Truncate long errors</span>
+                        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">request_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Ollama request failed: HTTP </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">error_text</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+            <span class="n">response_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+            <span class="c1"># Log slow requests for performance monitoring</span>
+            <span class="n">total_duration_ms</span> <span class="o">=</span> <span class="n">response_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_duration&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">//</span> <span class="mi">1_000_000</span>
+            <span class="k">if</span> <span class="n">total_duration_ms</span> <span class="o">&gt;</span> <span class="mi">5000</span><span class="p">:</span>  <span class="c1"># Log if generation takes more than 5 seconds</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;ollama_slow_generation&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;endpoint&quot;</span><span class="p">:</span> <span class="n">endpoint</span><span class="p">,</span>
+                        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">request_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">),</span>
+                        <span class="s2">&quot;duration_ms&quot;</span><span class="p">:</span> <span class="n">total_duration_ms</span><span class="p">,</span>
+                        <span class="s2">&quot;prompt_eval_count&quot;</span><span class="p">:</span> <span class="n">response_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt_eval_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                        <span class="s2">&quot;eval_count&quot;</span><span class="p">:</span> <span class="n">response_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eval_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">response_data</span><span class="p">)</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;ollama_stream_request&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;endpoint&quot;</span><span class="p">],</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_stream_request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">request_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a streaming request to Ollama and return the full response.&quot;&quot;&quot;</span>
+        <span class="n">accumulated_response</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">chunks_processed</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">ollama_url</span><span class="si">}{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="n">request_data</span><span class="p">,</span>
+            <span class="c1"># Timeout is configured at session level, no need to override here</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="n">error_text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;ollama_stream_request_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;endpoint&quot;</span><span class="p">:</span> <span class="n">endpoint</span><span class="p">,</span>
+                        <span class="s2">&quot;status_code&quot;</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                        <span class="s2">&quot;error_text&quot;</span><span class="p">:</span> <span class="n">error_text</span><span class="p">[:</span><span class="mi">200</span><span class="p">],</span>
+                        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">request_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Ollama streaming request failed: HTTP </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">error_text</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">line</span><span class="p">:</span>
+                    <span class="n">content</span><span class="p">,</span> <span class="n">is_done</span> <span class="o">=</span> <span class="n">parse_streaming_chunk</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">content</span><span class="p">:</span>  <span class="c1"># Only count chunks with actual content</span>
+                        <span class="n">chunks_processed</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">accumulated_response</span> <span class="o">+=</span> <span class="n">content</span>
+
+                    <span class="k">if</span> <span class="n">is_done</span><span class="p">:</span>
+                        <span class="k">break</span>
+
+        <span class="c1"># Log streaming metrics</span>
+        <span class="k">if</span> <span class="n">chunks_processed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;ollama_stream_completed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;endpoint&quot;</span><span class="p">:</span> <span class="n">endpoint</span><span class="p">,</span>
+                    <span class="s2">&quot;chunks_processed&quot;</span><span class="p">:</span> <span class="n">chunks_processed</span><span class="p">,</span>
+                    <span class="s2">&quot;response_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">accumulated_response</span><span class="p">),</span>
+                    <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">request_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">accumulated_response</span>
+
+<div class="viewcode-block" id="OllamaTool.chat">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.ollama.html#lifearchivist.tools.OllamaTool.chat">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;ollama_chat_convenience&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">chat</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convenience method for chat-style interactions.&quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">messages</span><span class="o">=</span><span class="n">messages</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="OllamaTool.generate">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.ollama.html#lifearchivist.tools.OllamaTool.generate">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;ollama_generate_convenience&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convenience method for simple text generation.&quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

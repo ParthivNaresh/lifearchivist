@@ -1,0 +1,594 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.tools.file_import.file_import_utils &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.tools.file_import.file_import_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.tools.file_import.file_import_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">File import utilities and constants for document processing.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="n">SUPPORTED_TEXT_EXTRACTION_TYPES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;text/&quot;</span><span class="p">,</span>  <span class="c1"># All text/* types (includes text/csv)</span>
+    <span class="s2">&quot;application/pdf&quot;</span><span class="p">,</span>  <span class="c1"># PDF documents</span>
+    <span class="s2">&quot;application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot;</span><span class="p">,</span>  <span class="c1"># Word documents</span>
+    <span class="s2">&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&quot;</span><span class="p">,</span>  <span class="c1"># Excel .xlsx</span>
+    <span class="s2">&quot;application/vnd.ms-excel&quot;</span><span class="p">,</span>  <span class="c1"># Excel .xls</span>
+    <span class="s2">&quot;application/excel&quot;</span><span class="p">,</span>  <span class="c1"># Alternative Excel MIME type</span>
+    <span class="s2">&quot;application/x-excel&quot;</span><span class="p">,</span>  <span class="c1"># Alternative Excel MIME type</span>
+    <span class="s2">&quot;application/x-msexcel&quot;</span><span class="p">,</span>  <span class="c1"># Alternative Excel MIME type</span>
+    <span class="s2">&quot;image/&quot;</span><span class="p">,</span>  <span class="c1"># All image/* types for OCR extraction</span>
+<span class="p">]</span>
+
+<span class="n">MIN_TEXT_LENGTH_FOR_EMBEDDINGS</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">MIN_TEXT_LENGTH_FOR_DATE_EXTRACTION</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">HASH_CHUNK_SIZE</span> <span class="o">=</span> <span class="mi">4096</span>
+
+
+<div class="viewcode-block" id="is_text_extraction_supported">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.is_text_extraction_supported">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_text_extraction_supported</span><span class="p">(</span><span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if a file type supports text extraction.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mime_type: MIME type to check</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if text extraction is supported for this type</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">mime_type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">file_type</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">file_type</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">mime_type</span> <span class="o">==</span> <span class="n">file_type</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">file_type</span> <span class="ow">in</span> <span class="n">SUPPORTED_TEXT_EXTRACTION_TYPES</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="should_extract_embeddings">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.should_extract_embeddings">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">should_extract_embeddings</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine if text is long enough for meaningful embedding generation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text: Text content to evaluate</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if text should be processed for embeddings</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="n">MIN_TEXT_LENGTH_FOR_EMBEDDINGS</span></div>
+
+
+
+<div class="viewcode-block" id="should_extract_dates">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.should_extract_dates">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">should_extract_dates</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine if text is long enough for date extraction.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text: Text content to evaluate</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if text should be processed for date extraction</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="n">MIN_TEXT_LENGTH_FOR_DATE_EXTRACTION</span></div>
+
+
+
+<div class="viewcode-block" id="get_platform_creation_date">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.get_platform_creation_date">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_platform_creation_date</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get file creation date using platform-specific methods.</span>
+
+<span class="sd">    On macOS: Reads kMDItemContentCreationDate from extended attributes</span>
+<span class="sd">    On Windows: Uses st_ctime (actual creation time on Windows)</span>
+<span class="sd">    On Linux: Falls back to st_mtime (Linux doesn&#39;t track creation time)</span>
+
+<span class="sd">    This is synchronous and fast (&lt;1ms per file), so it doesn&#39;t need to be async.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to file</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ISO 8601 formatted creation date string, or None if unavailable</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">system</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">system</span> <span class="o">==</span> <span class="s2">&quot;Darwin&quot;</span><span class="p">:</span>  <span class="c1"># macOS</span>
+            <span class="c1"># Use xattr to read macOS extended attributes</span>
+            <span class="c1"># This is much faster than subprocess calls to mdls</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">xattr</span>
+
+                <span class="c1"># Get the creation date from macOS metadata</span>
+                <span class="c1"># kMDItemContentCreationDate is stored as a binary plist</span>
+                <span class="n">attrs</span> <span class="o">=</span> <span class="n">xattr</span><span class="o">.</span><span class="n">xattr</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">))</span>
+
+                <span class="c1"># Try to get the creation date attribute</span>
+                <span class="c1"># macOS stores this in com.apple.metadata:kMDItemContentCreationDate</span>
+                <span class="n">creation_date_key</span> <span class="o">=</span> <span class="s2">&quot;com.apple.metadata:kMDItemContentCreationDate&quot;</span>
+                <span class="k">if</span> <span class="n">creation_date_key</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+                    <span class="c1"># Parse the binary plist data</span>
+                    <span class="kn">import</span><span class="w"> </span><span class="nn">plistlib</span>
+
+                    <span class="n">date_data</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">creation_date_key</span><span class="p">]</span>
+                    <span class="n">date_obj</span> <span class="o">=</span> <span class="n">plistlib</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">date_data</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">date_obj</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="n">date_obj</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+                <span class="c1"># xattr not available or attribute doesn&#39;t exist</span>
+                <span class="c1"># Fall back to stat</span>
+                <span class="k">pass</span>
+
+        <span class="k">elif</span> <span class="n">system</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
+            <span class="c1"># On Windows, st_ctime is actually creation time</span>
+            <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_ctime</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+        <span class="c1"># Linux or fallback: use modification time (best we can do)</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="c1"># If anything fails, return None</span>
+        <span class="c1"># The caller will handle the fallback</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="calculate_file_hash">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.calculate_file_hash">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">calculate_file_hash</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate SHA256 hash of file in chunks for memory efficiency.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to file to hash</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        SHA256 hash as hexadecimal string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hash_sha256</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
+    <span class="n">bytes_processed</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">HASH_CHUNK_SIZE</span><span class="p">),</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="n">hash_sha256</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+            <span class="n">bytes_processed</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+
+    <span class="n">file_hash</span> <span class="o">=</span> <span class="n">hash_sha256</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">file_hash</span></div>
+
+
+
+<div class="viewcode-block" id="create_document_metadata">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_document_metadata">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_document_metadata</span><span class="p">(</span>
+    <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">original_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">stat</span><span class="p">,</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">custom_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create comprehensive document metadata for LlamaIndex.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_id: Unique document identifier</span>
+<span class="sd">        file_hash: SHA256 hash of file content</span>
+<span class="sd">        original_path: Original file path or filename</span>
+<span class="sd">        mime_type: MIME type of the file</span>
+<span class="sd">        stat: File stat object with timestamps and size</span>
+<span class="sd">        text: Extracted text content</span>
+<span class="sd">        custom_metadata: Rest of the custom metadata</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary containing complete document metadata</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="n">original_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">original_path</span> <span class="k">else</span> <span class="n">original_path</span>
+
+    <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="c1"># Core document identification</span>
+        <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>  <span class="c1"># Keep both for compatibility</span>
+        <span class="c1"># Document metadata</span>
+        <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">,</span>
+        <span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="n">original_path</span><span class="p">,</span>
+        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
+        <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+        <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;processing&quot;</span><span class="p">,</span>  <span class="c1"># Will be updated to &quot;ready&quot; later</span>
+        <span class="c1"># Time tracking - File system timestamps</span>
+        <span class="s2">&quot;uploaded_at&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>  <span class="c1"># When uploaded to Life Archivist</span>
+        <span class="s2">&quot;file_created_at_disk&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_ctime</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="s2">&quot;file_modified_at_disk&quot;</span><span class="p">:</span> <span class="p">(</span>
+            <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;document_created_at&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># Will be set by metadata extraction</span>
+        <span class="s2">&quot;document_modified_at&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># Will be set by metadata extraction</span>
+        <span class="c1"># Content metadata</span>
+        <span class="s2">&quot;word_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">if</span> <span class="n">text</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;text_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="k">if</span> <span class="n">text</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;has_content&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">text</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;content_dates&quot;</span><span class="p">:</span> <span class="p">[],</span>  <span class="c1"># Will be populated by ContentDateExtractionTool</span>
+        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[],</span>  <span class="c1"># Will be populated by TagTool</span>
+        <span class="s2">&quot;provenance&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="n">create_provenance_entry</span><span class="p">(</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;import&quot;</span><span class="p">,</span>
+                <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;file_import_tool&quot;</span><span class="p">,</span>
+                <span class="n">tool</span><span class="o">=</span><span class="s2">&quot;file.import&quot;</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="n">original_path</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="p">],</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Merge in any custom metadata provided during import</span>
+    <span class="k">if</span> <span class="n">custom_metadata</span><span class="p">:</span>
+        <span class="c1"># Skip reserved fields that could conflict with core metadata</span>
+        <span class="n">reserved_fields</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;document_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;file_id&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;file_hash&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;original_path&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;mime_type&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;size_bytes&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;uploaded_at&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;file_created_at_disk&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;file_modified_at_disk&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;word_count&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;text_length&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;has_content&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;provenance&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">custom_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">reserved_fields</span><span class="p">:</span>
+                <span class="n">metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">return</span> <span class="n">metadata</span></div>
+
+
+
+<div class="viewcode-block" id="create_provenance_entry">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_provenance_entry">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_provenance_entry</span><span class="p">(</span>
+    <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">agent</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">tool</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">result</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a standardized provenance entry for audit trails.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        action: Action performed (e.g., &quot;import&quot;, &quot;extract&quot;, &quot;process&quot;)</span>
+<span class="sd">        agent: Agent/component performing the action</span>
+<span class="sd">        tool: Specific tool used</span>
+<span class="sd">        params: Parameters passed to the operation</span>
+<span class="sd">        result: Optional result data from the operation</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Standardized provenance entry dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+        <span class="s2">&quot;agent&quot;</span><span class="p">:</span> <span class="n">agent</span><span class="p">,</span>
+        <span class="s2">&quot;tool&quot;</span><span class="p">:</span> <span class="n">tool</span><span class="p">,</span>
+        <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">params</span><span class="p">,</span>
+        <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;result&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+
+    <span class="k">return</span> <span class="n">entry</span></div>
+
+
+
+<div class="viewcode-block" id="create_duplicate_response">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_duplicate_response">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_duplicate_response</span><span class="p">(</span>
+    <span class="n">existing_doc</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">stat</span><span class="p">,</span>
+    <span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">display_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create standardized response for duplicate file detection.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        existing_doc: Existing document metadata from LlamaIndex</span>
+<span class="sd">        file_hash: SHA256 hash of the duplicate file</span>
+<span class="sd">        stat: File stat object</span>
+<span class="sd">        mime_type: MIME type of the file</span>
+<span class="sd">        display_path: Display path for user feedback</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Standardized duplicate response dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">existing_metadata</span> <span class="o">=</span> <span class="n">existing_doc</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span>
+    <span class="n">existing_path</span> <span class="o">=</span> <span class="n">existing_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;original_path&quot;</span><span class="p">,</span> <span class="s2">&quot;Unknown&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">existing_doc</span><span class="p">[</span><span class="s2">&quot;document_id&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+        <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;duplicate&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="n">display_path</span><span class="p">,</span>
+        <span class="s2">&quot;existing_path&quot;</span><span class="p">:</span> <span class="n">existing_path</span><span class="p">,</span>
+        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;File already exists in your archive as &#39;</span><span class="si">{</span><span class="n">existing_path</span><span class="si">}</span><span class="s2">&#39;. Using existing copy.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;deduped&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="create_success_response">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_success_response">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_success_response</span><span class="p">(</span>
+    <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">stat</span><span class="p">,</span>
+    <span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">display_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">vault_result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create standardized response for successful file import.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_id: Document identifier</span>
+<span class="sd">        file_hash: SHA256 hash of the file</span>
+<span class="sd">        stat: File stat object</span>
+<span class="sd">        mime_type: MIME type of the file</span>
+<span class="sd">        display_path: Display path for user feedback</span>
+<span class="sd">        vault_result: Result from vault storage operation</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Standardized success response dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+        <span class="s2">&quot;hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+        <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ready&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="n">display_path</span><span class="p">,</span>
+        <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="n">vault_result</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_ctime</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="s2">&quot;modified_at&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="s2">&quot;deduped&quot;</span><span class="p">:</span> <span class="n">vault_result</span><span class="p">[</span><span class="s2">&quot;existed&quot;</span><span class="p">],</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="create_error_response">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_error_response">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_error_response</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">display_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create standardized response for import errors.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        error: Exception that occurred</span>
+<span class="sd">        display_path: Display path for user feedback</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Standardized error response dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span>
+        <span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="n">display_path</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,566 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.server.progress_manager &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.server.progress_manager</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.server.progress_manager</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Progress tracking system for upload and processing operations.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">asdict</span><span class="p">,</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">redis</span>
+
+
+<div class="viewcode-block" id="ProcessingStage">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProcessingStage</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enumeration of processing stages with their display information.&quot;&quot;&quot;</span>
+
+    <span class="n">UPLOAD</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;upload&quot;</span><span class="p">,</span> <span class="s2">&quot;Uploading file...&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">EXTRACT</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;extract&quot;</span><span class="p">,</span> <span class="s2">&quot;Extracting content...&quot;</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>
+    <span class="n">EMBED</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;embed&quot;</span><span class="p">,</span> <span class="s2">&quot;Generating embeddings...&quot;</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+    <span class="n">TAG</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;tag&quot;</span><span class="p">,</span> <span class="s2">&quot;AI tagging and categorization...&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="n">INDEX</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;index&quot;</span><span class="p">,</span> <span class="s2">&quot;Building search index...&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">COMPLETE</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;complete&quot;</span><span class="p">,</span> <span class="s2">&quot;Processing complete!&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ProcessingStage.__init__">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stage_id</span> <span class="o">=</span> <span class="n">stage_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ProgressUpdate">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProgressUpdate</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a progress update for a specific file upload.&quot;&quot;&quot;</span>
+
+    <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">stage</span><span class="p">:</span> <span class="n">ProcessingStage</span>
+    <span class="n">progress</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># 0.0 to 100.0</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">eta_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ProgressUpdate.to_dict">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert to dictionary for JSON serialization.&quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;stage&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stage</span><span class="o">.</span><span class="n">stage_id</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ProgressManager">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProgressManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages progress tracking for upload operations using Redis.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ProgressManager.__init__">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">,</span> <span class="n">session_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="n">redis_url</span><span class="p">,</span> <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_manager</span> <span class="o">=</span> <span class="n">session_manager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_ttl</span> <span class="o">=</span> <span class="mi">3600</span>  <span class="c1"># 1 hour TTL for progress records</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span> <span class="o">=</span> <span class="s2">&quot;lifearchivist&quot;</span>
+
+        <span class="c1"># Test Redis connection</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">raise</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_progress_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate Redis key for file progress.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;progress:</span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_session_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate Redis key for file-to-session mapping.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;session:</span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<div class="viewcode-block" id="ProgressManager.start_progress">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.start_progress">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start_progress</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize progress tracking for a file upload.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Store session mapping if provided</span>
+            <span class="k">if</span> <span class="n">session_id</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">setex</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_get_session_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_ttl</span><span class="p">,</span> <span class="n">session_id</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Initialize progress with upload stage</span>
+            <span class="n">initial_update</span> <span class="o">=</span> <span class="n">ProgressUpdate</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
+                <span class="n">stage</span><span class="o">=</span><span class="n">ProcessingStage</span><span class="o">.</span><span class="n">UPLOAD</span><span class="p">,</span>
+                <span class="n">progress</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="n">ProcessingStage</span><span class="o">.</span><span class="n">UPLOAD</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+            <span class="p">)</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store_progress</span><span class="p">(</span><span class="n">initial_update</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_progress</span><span class="p">(</span><span class="n">initial_update</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="ProgressManager.update_progress">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.update_progress">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_progress</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">stage</span><span class="p">:</span> <span class="n">ProcessingStage</span><span class="p">,</span>
+        <span class="n">progress</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eta_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update progress for a file upload.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Calculate cumulative progress based on stage weights</span>
+            <span class="n">cumulative_progress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_cumulative_progress</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">progress</span><span class="p">)</span>
+
+            <span class="n">update</span> <span class="o">=</span> <span class="n">ProgressUpdate</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
+                <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span>
+                <span class="n">progress</span><span class="o">=</span><span class="n">cumulative_progress</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="n">message</span> <span class="ow">or</span> <span class="n">stage</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="n">eta_seconds</span><span class="o">=</span><span class="n">eta_seconds</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store_progress</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_progress</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="ProgressManager.complete_progress">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.complete_progress">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">complete_progress</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mark file processing as complete.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">completion_update</span> <span class="o">=</span> <span class="n">ProgressUpdate</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
+                <span class="n">stage</span><span class="o">=</span><span class="n">ProcessingStage</span><span class="o">.</span><span class="n">COMPLETE</span><span class="p">,</span>
+                <span class="n">progress</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="s2">&quot;File processed successfully!&quot;</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store_progress</span><span class="p">(</span><span class="n">completion_update</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_progress</span><span class="p">(</span><span class="n">completion_update</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="ProgressManager.error_progress">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.error_progress">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">error_progress</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">error_message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">ProcessingStage</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mark file processing as failed.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">error_update</span> <span class="o">=</span> <span class="n">ProgressUpdate</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
+                <span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span>
+                <span class="n">progress</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="n">error</span><span class="o">=</span><span class="n">error_message</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store_progress</span><span class="p">(</span><span class="n">error_update</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_progress</span><span class="p">(</span><span class="n">error_update</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="ProgressManager.get_progress">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.get_progress">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ProgressUpdate</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current progress for a file.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">progress_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_progress_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">progress_data</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">progress_data</span><span class="p">)</span>
+            <span class="c1"># Convert stage back to enum by finding matching stage_id</span>
+            <span class="n">stage_id</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;stage&quot;</span><span class="p">]</span>
+            <span class="n">stage</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">ProcessingStage</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">stage_id</span> <span class="o">==</span> <span class="n">stage_id</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;stage&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stage</span>
+
+            <span class="k">return</span> <span class="n">ProgressUpdate</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="ProgressManager.cleanup_progress">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.cleanup_progress">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clean up progress data for a file.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_progress_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_session_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="ProgressManager.clear_all_progress">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.clear_all_progress">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">clear_all_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all progress tracking data from Redis.&quot;&quot;&quot;</span>
+        <span class="n">cleared_metrics</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;progress_keys_deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;session_keys_deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;total_keys_deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Get all progress and session keys</span>
+            <span class="n">progress_pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span><span class="si">}</span><span class="s2">:progress:*&quot;</span>
+            <span class="n">session_pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span><span class="si">}</span><span class="s2">:session:*&quot;</span>
+
+            <span class="n">progress_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">progress_pattern</span><span class="p">)</span>
+            <span class="n">session_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">session_pattern</span><span class="p">)</span>
+
+            <span class="c1"># Delete progress keys</span>
+            <span class="k">if</span> <span class="n">progress_keys</span><span class="p">:</span>
+                <span class="n">deleted_progress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">progress_keys</span><span class="p">)</span>
+                <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;progress_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deleted_progress</span>
+            <span class="c1"># Delete session keys</span>
+            <span class="k">if</span> <span class="n">session_keys</span><span class="p">:</span>
+                <span class="n">deleted_sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">session_keys</span><span class="p">)</span>
+                <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;session_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deleted_sessions</span>
+
+            <span class="n">progress_deleted</span> <span class="o">=</span> <span class="n">cleared_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;progress_keys_deleted&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">session_deleted</span> <span class="o">=</span> <span class="n">cleared_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_keys_deleted&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">progress_count</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">progress_deleted</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">progress_deleted</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="p">)</span>
+            <span class="n">session_count</span> <span class="o">=</span> <span class="n">session_deleted</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_deleted</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">total_deleted</span> <span class="o">=</span> <span class="n">progress_count</span> <span class="o">+</span> <span class="n">session_count</span>
+            <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;total_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_deleted</span>
+            <span class="k">return</span> <span class="n">cleared_metrics</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Failed to clear progress data: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">cleared_metrics</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_cumulative_progress</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">current_stage</span><span class="p">:</span> <span class="n">ProcessingStage</span><span class="p">,</span> <span class="n">stage_progress</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate cumulative progress across all stages.&quot;&quot;&quot;</span>
+        <span class="n">stages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ProcessingStage</span><span class="p">)</span>
+        <span class="n">total_weight</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">weight</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">stages</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># Exclude COMPLETE</span>
+
+        <span class="c1"># Calculate weight of completed stages</span>
+        <span class="n">completed_weight</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">stages</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">current_stage</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">completed_weight</span> <span class="o">+=</span> <span class="n">stage</span><span class="o">.</span><span class="n">weight</span>
+
+        <span class="c1"># Add progress within current stage</span>
+        <span class="n">current_stage_contribution</span> <span class="o">=</span> <span class="p">(</span><span class="n">stage_progress</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">current_stage</span><span class="o">.</span><span class="n">weight</span>
+
+        <span class="c1"># Calculate final percentage</span>
+        <span class="n">total_progress</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">completed_weight</span> <span class="o">+</span> <span class="n">current_stage_contribution</span><span class="p">)</span> <span class="o">/</span> <span class="n">total_weight</span> <span class="o">*</span> <span class="mi">100</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="mf">100.0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">total_progress</span><span class="p">))</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_store_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="n">ProgressUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store progress update in Redis.&quot;&quot;&quot;</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_progress_key</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">file_id</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">setex</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_ttl</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_broadcast_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="n">ProgressUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Broadcast progress update via WebSocket.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_manager</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Get session ID for this file</span>
+            <span class="n">session_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_session_key</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">file_id</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">session_id</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;upload_progress&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">update</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()}</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_manager</span><span class="o">.</span><span class="n">send_to_session</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+
+<div class="viewcode-block" id="ProgressContext">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressContext">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProgressContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager for tracking progress of an operation.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ProgressContext.__init__">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressContext.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">progress_manager</span><span class="p">:</span> <span class="n">ProgressManager</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">ProcessingStage</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span> <span class="o">=</span> <span class="n">progress_manager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_id</span> <span class="o">=</span> <span class="n">file_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stage</span> <span class="o">=</span> <span class="n">stage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">file_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Starting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stage</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aexit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">exc_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Error occurred</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">error_progress</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">file_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc_val</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">stage</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Success</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">file_id</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span>
+                <span class="mf">100.0</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;Completed </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stage</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="ProgressContext.update">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressContext.update">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">progress</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eta_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update progress within this stage.&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">file_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stage</span><span class="p">,</span> <span class="n">progress</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">eta_seconds</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

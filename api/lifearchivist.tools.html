@@ -1,0 +1,742 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.tools package &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="lifearchivist.tools.date_extract package" href="lifearchivist.tools.date_extract.html" />
+    <link rel="prev" title="lifearchivist.storage.vault package" href="lifearchivist.storage.vault.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">lifearchivist</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="lifearchivist.html">lifearchivist package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="lifearchivist.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">lifearchivist</a></li>
+          <li class="breadcrumb-item"><a href="lifearchivist.html">lifearchivist package</a></li>
+      <li class="breadcrumb-item active">lifearchivist.tools package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/lifearchivist.tools.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lifearchivist-tools-package">
+<h1>lifearchivist.tools package<a class="headerlink" href="#lifearchivist-tools-package" title="Link to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.tools.date_extract.html">lifearchivist.tools.date_extract package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.date_extract.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.date_extract.html#module-lifearchivist.tools.date_extract.date_extraction_tool">lifearchivist.tools.date_extract.date_extraction_tool module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.__init__"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.extract_date_from_text"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.extract_date_from_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.store_extracted_date"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.store_extracted_date()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.execute"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.date_extract.html#module-lifearchivist.tools.date_extract.date_extraction_utils">lifearchivist.tools.date_extract.date_extraction_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_utils.create_date_extraction_prompt"><code class="docutils literal notranslate"><span class="pre">create_date_extraction_prompt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_utils.parse_date_string"><code class="docutils literal notranslate"><span class="pre">parse_date_string()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_utils.truncate_text_for_llm"><code class="docutils literal notranslate"><span class="pre">truncate_text_for_llm()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.date_extract.html#module-lifearchivist.tools.date_extract">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.ContentDateExtractionTool"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.ContentDateExtractionTool.__init__"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.ContentDateExtractionTool.execute"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.ContentDateExtractionTool.extract_date_from_text"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.extract_date_from_text()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.ContentDateExtractionTool.store_extracted_date"><code class="docutils literal notranslate"><span class="pre">ContentDateExtractionTool.store_extracted_date()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.tools.extract.html">lifearchivist.tools.extract package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.extract.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.extract.html#lifearchivist-tools-extract-extract-tools-module">lifearchivist.tools.extract.extract_tools module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.extract.html#module-lifearchivist.tools.extract.extract_utils">lifearchivist.tools.extract.extract_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.extract.html#lifearchivist.tools.extract.extract_utils.extract_table_text"><code class="docutils literal notranslate"><span class="pre">extract_table_text()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.extract.html#lifearchivist.tools.extract.extract_utils.extract_paragraph_text"><code class="docutils literal notranslate"><span class="pre">extract_paragraph_text()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.extract.html#module-lifearchivist.tools.extract">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.extract.html#lifearchivist.tools.extract.ExtractTextTool"><code class="docutils literal notranslate"><span class="pre">ExtractTextTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.extract.html#lifearchivist.tools.extract.ExtractTextTool.__init__"><code class="docutils literal notranslate"><span class="pre">ExtractTextTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.extract.html#lifearchivist.tools.extract.ExtractTextTool.execute"><code class="docutils literal notranslate"><span class="pre">ExtractTextTool.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.tools.file_import.html">lifearchivist.tools.file_import package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.file_import.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.file_import.html#module-lifearchivist.tools.file_import.file_import_tool">lifearchivist.tools.file_import.file_import_tool module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_tool.FileImportTool"><code class="docutils literal notranslate"><span class="pre">FileImportTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_tool.FileImportTool.__init__"><code class="docutils literal notranslate"><span class="pre">FileImportTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_tool.FileImportTool.execute"><code class="docutils literal notranslate"><span class="pre">FileImportTool.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.file_import.html#module-lifearchivist.tools.file_import.file_import_utils">lifearchivist.tools.file_import.file_import_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.is_text_extraction_supported"><code class="docutils literal notranslate"><span class="pre">is_text_extraction_supported()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.should_extract_embeddings"><code class="docutils literal notranslate"><span class="pre">should_extract_embeddings()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.should_extract_dates"><code class="docutils literal notranslate"><span class="pre">should_extract_dates()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.get_platform_creation_date"><code class="docutils literal notranslate"><span class="pre">get_platform_creation_date()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.calculate_file_hash"><code class="docutils literal notranslate"><span class="pre">calculate_file_hash()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_document_metadata"><code class="docutils literal notranslate"><span class="pre">create_document_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_provenance_entry"><code class="docutils literal notranslate"><span class="pre">create_provenance_entry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_duplicate_response"><code class="docutils literal notranslate"><span class="pre">create_duplicate_response()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_success_response"><code class="docutils literal notranslate"><span class="pre">create_success_response()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.create_error_response"><code class="docutils literal notranslate"><span class="pre">create_error_response()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.file_import.html#module-lifearchivist.tools.file_import">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.FileImportTool"><code class="docutils literal notranslate"><span class="pre">FileImportTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.FileImportTool.__init__"><code class="docutils literal notranslate"><span class="pre">FileImportTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.FileImportTool.execute"><code class="docutils literal notranslate"><span class="pre">FileImportTool.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.tools.llamaindex.html">lifearchivist.tools.llamaindex package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#module-lifearchivist.tools.llamaindex.llamaindex_query_tool">lifearchivist.tools.llamaindex.llamaindex_query_tool module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.llamaindex_query_tool.LlamaIndexQueryTool"><code class="docutils literal notranslate"><span class="pre">LlamaIndexQueryTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.llamaindex_query_tool.LlamaIndexQueryTool.__init__"><code class="docutils literal notranslate"><span class="pre">LlamaIndexQueryTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.llamaindex_query_tool.LlamaIndexQueryTool.execute"><code class="docutils literal notranslate"><span class="pre">LlamaIndexQueryTool.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#module-lifearchivist.tools.llamaindex">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.LlamaIndexQueryTool"><code class="docutils literal notranslate"><span class="pre">LlamaIndexQueryTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.LlamaIndexQueryTool.__init__"><code class="docutils literal notranslate"><span class="pre">LlamaIndexQueryTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.LlamaIndexQueryTool.execute"><code class="docutils literal notranslate"><span class="pre">LlamaIndexQueryTool.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.tools.ollama.html">lifearchivist.tools.ollama package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.ollama.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.ollama.html#module-lifearchivist.tools.ollama.ollama_tool">lifearchivist.tools.ollama.ollama_tool module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_tool.OllamaTool"><code class="docutils literal notranslate"><span class="pre">OllamaTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_tool.OllamaTool.__init__"><code class="docutils literal notranslate"><span class="pre">OllamaTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_tool.OllamaTool.execute"><code class="docutils literal notranslate"><span class="pre">OllamaTool.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_tool.OllamaTool.chat"><code class="docutils literal notranslate"><span class="pre">OllamaTool.chat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_tool.OllamaTool.generate"><code class="docutils literal notranslate"><span class="pre">OllamaTool.generate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.ollama.html#module-lifearchivist.tools.ollama.ollama_utils">lifearchivist.tools.ollama.ollama_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaMessage"><code class="docutils literal notranslate"><span class="pre">OllamaMessage</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaMessage.role"><code class="docutils literal notranslate"><span class="pre">OllamaMessage.role</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaMessage.content"><code class="docutils literal notranslate"><span class="pre">OllamaMessage.content</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaMessage.model_config"><code class="docutils literal notranslate"><span class="pre">OllamaMessage.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse"><code class="docutils literal notranslate"><span class="pre">OllamaResponse</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.model"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.created_at"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.created_at</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.message"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.message</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.done"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.done</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.total_duration"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.total_duration</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.load_duration"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.load_duration</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.prompt_eval_count"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.prompt_eval_count</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.prompt_eval_duration"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.prompt_eval_duration</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.eval_count"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.eval_count</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.eval_duration"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.eval_duration</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.model_config"><code class="docutils literal notranslate"><span class="pre">OllamaResponse.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.format_system_user_prompt"><code class="docutils literal notranslate"><span class="pre">format_system_user_prompt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.prepare_chat_request"><code class="docutils literal notranslate"><span class="pre">prepare_chat_request()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.prepare_generate_request"><code class="docutils literal notranslate"><span class="pre">prepare_generate_request()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.extract_response_text"><code class="docutils literal notranslate"><span class="pre">extract_response_text()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.calculate_generation_metrics"><code class="docutils literal notranslate"><span class="pre">calculate_generation_metrics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.calculate_input_metrics"><code class="docutils literal notranslate"><span class="pre">calculate_input_metrics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.extract_models_from_health_response"><code class="docutils literal notranslate"><span class="pre">extract_models_from_health_response()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.create_model_pull_request"><code class="docutils literal notranslate"><span class="pre">create_model_pull_request()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.parse_streaming_chunk"><code class="docutils literal notranslate"><span class="pre">parse_streaming_chunk()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.create_success_response"><code class="docutils literal notranslate"><span class="pre">create_success_response()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.create_error_response"><code class="docutils literal notranslate"><span class="pre">create_error_response()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.ollama.html#module-lifearchivist.tools.ollama">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.OllamaTool"><code class="docutils literal notranslate"><span class="pre">OllamaTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.OllamaTool.__init__"><code class="docutils literal notranslate"><span class="pre">OllamaTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.OllamaTool.chat"><code class="docutils literal notranslate"><span class="pre">OllamaTool.chat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.OllamaTool.execute"><code class="docutils literal notranslate"><span class="pre">OllamaTool.execute()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.OllamaTool.generate"><code class="docutils literal notranslate"><span class="pre">OllamaTool.generate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.tools.search.html">lifearchivist.tools.search package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.search.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.search.html#module-lifearchivist.tools.search.search_tool">lifearchivist.tools.search.search_tool module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.search.html#lifearchivist.tools.search.search_tool.IndexSearchTool"><code class="docutils literal notranslate"><span class="pre">IndexSearchTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.search.html#lifearchivist.tools.search.search_tool.IndexSearchTool.__init__"><code class="docutils literal notranslate"><span class="pre">IndexSearchTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.search.html#lifearchivist.tools.search.search_tool.IndexSearchTool.execute"><code class="docutils literal notranslate"><span class="pre">IndexSearchTool.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.tools.search.html#module-lifearchivist.tools.search">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.tools.search.html#lifearchivist.tools.search.IndexSearchTool"><code class="docutils literal notranslate"><span class="pre">IndexSearchTool</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.search.html#lifearchivist.tools.search.IndexSearchTool.__init__"><code class="docutils literal notranslate"><span class="pre">IndexSearchTool.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.search.html#lifearchivist.tools.search.IndexSearchTool.execute"><code class="docutils literal notranslate"><span class="pre">IndexSearchTool.execute()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-lifearchivist.tools.base">
+<span id="lifearchivist-tools-base-module"></span><h2>lifearchivist.tools.base module<a class="headerlink" href="#module-lifearchivist.tools.base" title="Link to this heading"></a></h2>
+<p>Base tool class for MCP tools.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.ToolMetadata">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.base.</span></span><span class="sig-name descname"><span class="pre">ToolMetadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_schema</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_schema</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">async_tool</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idempotent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#ToolMetadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.base.ToolMetadata" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Tool metadata schema.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.ToolMetadata.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.tools.base.ToolMetadata.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.ToolMetadata.description">
+<span class="sig-name descname"><span class="pre">description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#lifearchivist.tools.base.ToolMetadata.description" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.ToolMetadata.input_schema">
+<span class="sig-name descname"><span class="pre">input_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lifearchivist.tools.base.ToolMetadata.input_schema" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.ToolMetadata.output_schema">
+<span class="sig-name descname"><span class="pre">output_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#lifearchivist.tools.base.ToolMetadata.output_schema" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.ToolMetadata.async_tool">
+<span class="sig-name descname"><span class="pre">async_tool</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#lifearchivist.tools.base.ToolMetadata.async_tool" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.ToolMetadata.idempotent">
+<span class="sig-name descname"><span class="pre">idempotent</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#lifearchivist.tools.base.ToolMetadata.idempotent" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.ToolMetadata.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#lifearchivist.tools.base.ToolMetadata.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.BaseTool">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.base.</span></span><span class="sig-name descname"><span class="pre">BaseTool</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.base.BaseTool" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Base class for all MCP tools.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.BaseTool.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.base.BaseTool.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.BaseTool.execute">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.base.BaseTool.execute" title="Link to this definition"></a></dt>
+<dd><p>Execute the tool with given parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.BaseTool.validate_input">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool.validate_input"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.base.BaseTool.validate_input" title="Link to this definition"></a></dt>
+<dd><p>Validate input parameters against schema.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.base.BaseTool.validate_output">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool.validate_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.base.BaseTool.validate_output" title="Link to this definition"></a></dt>
+<dd><p>Validate output against schema.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-lifearchivist.tools.exceptions">
+<span id="lifearchivist-tools-exceptions-module"></span><h2>lifearchivist.tools.exceptions module<a class="headerlink" href="#module-lifearchivist.tools.exceptions" title="Link to this heading"></a></h2>
+<p>Custom exceptions for the tools system.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="lifearchivist.tools.exceptions.LifeArchivistError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.exceptions.</span></span><span class="sig-name descname"><span class="pre">LifeArchivistError</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/exceptions.html#LifeArchivistError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.exceptions.LifeArchivistError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Base exception for LifeArchivist errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="lifearchivist.tools.exceptions.ToolError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.exceptions.</span></span><span class="sig-name descname"><span class="pre">ToolError</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/exceptions.html#ToolError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.exceptions.ToolError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.exceptions.LifeArchivistError" title="lifearchivist.tools.exceptions.LifeArchivistError"><code class="xref py py-class docutils literal notranslate"><span class="pre">LifeArchivistError</span></code></a></p>
+<p>Base exception for tool-related errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="lifearchivist.tools.exceptions.ValidationError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.exceptions.</span></span><span class="sig-name descname"><span class="pre">ValidationError</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/exceptions.html#ValidationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.exceptions.ValidationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.exceptions.ToolError" title="lifearchivist.tools.exceptions.ToolError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ToolError</span></code></a></p>
+<p>Raised when input or output validation fails.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="lifearchivist.tools.exceptions.ToolNotFoundError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.exceptions.</span></span><span class="sig-name descname"><span class="pre">ToolNotFoundError</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/exceptions.html#ToolNotFoundError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.exceptions.ToolNotFoundError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.exceptions.ToolError" title="lifearchivist.tools.exceptions.ToolError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ToolError</span></code></a></p>
+<p>Raised when a requested tool is not found.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="lifearchivist.tools.exceptions.ToolExecutionError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.exceptions.</span></span><span class="sig-name descname"><span class="pre">ToolExecutionError</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/exceptions.html#ToolExecutionError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.exceptions.ToolExecutionError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.exceptions.ToolError" title="lifearchivist.tools.exceptions.ToolError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ToolError</span></code></a></p>
+<p>Raised when tool execution fails.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="lifearchivist.tools.exceptions.StorageError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.exceptions.</span></span><span class="sig-name descname"><span class="pre">StorageError</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/exceptions.html#StorageError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.exceptions.StorageError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.exceptions.LifeArchivistError" title="lifearchivist.tools.exceptions.LifeArchivistError"><code class="xref py py-class docutils literal notranslate"><span class="pre">LifeArchivistError</span></code></a></p>
+<p>Raised when storage operations fail.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="lifearchivist.tools.exceptions.IndexingError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.exceptions.</span></span><span class="sig-name descname"><span class="pre">IndexingError</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/exceptions.html#IndexingError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.exceptions.IndexingError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.exceptions.LifeArchivistError" title="lifearchivist.tools.exceptions.LifeArchivistError"><code class="xref py py-class docutils literal notranslate"><span class="pre">LifeArchivistError</span></code></a></p>
+<p>Raised when indexing operations fail.</p>
+</dd></dl>
+
+</section>
+<section id="module-lifearchivist.tools.registry">
+<span id="lifearchivist-tools-registry-module"></span><h2>lifearchivist.tools.registry module<a class="headerlink" href="#module-lifearchivist.tools.registry" title="Link to this heading"></a></h2>
+<p>Tool registry for managing MCP tools.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.registry.ToolRegistry">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.registry.</span></span><span class="sig-name descname"><span class="pre">ToolRegistry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enrichment_queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activity_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.registry.ToolRegistry" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Registry for managing MCP tools.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.registry.ToolRegistry.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enrichment_queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activity_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.registry.ToolRegistry.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.registry.ToolRegistry.register_all">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.register_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.registry.ToolRegistry.register_all" title="Link to this definition"></a></dt>
+<dd><p>Register all available tools.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.registry.ToolRegistry.register_tool">
+<span class="sig-name descname"><span class="pre">register_tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tool</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><span class="pre">BaseTool</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.register_tool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.registry.ToolRegistry.register_tool" title="Link to this definition"></a></dt>
+<dd><p>Register a single tool.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.registry.ToolRegistry.get_tool">
+<span class="sig-name descname"><span class="pre">get_tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><span class="pre">BaseTool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.get_tool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.registry.ToolRegistry.get_tool" title="Link to this definition"></a></dt>
+<dd><p>Get a tool by name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.registry.ToolRegistry.list_tools">
+<span class="sig-name descname"><span class="pre">list_tools</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.list_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.registry.ToolRegistry.list_tools" title="Link to this definition"></a></dt>
+<dd><p>List all registered tools with their metadata.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.registry.ToolRegistry.get_tool_schema">
+<span class="sig-name descname"><span class="pre">get_tool_schema</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.get_tool_schema"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.registry.ToolRegistry.get_tool_schema" title="Link to this definition"></a></dt>
+<dd><p>Get input/output schema for a tool.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-lifearchivist.tools">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lifearchivist.tools" title="Link to this heading"></a></h2>
+<p>MCP tools for Life Archivist.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.BaseTool">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.</span></span><span class="sig-name descname"><span class="pre">BaseTool</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.BaseTool" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Base class for all MCP tools.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.BaseTool.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.BaseTool.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.BaseTool.execute">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.BaseTool.execute" title="Link to this definition"></a></dt>
+<dd><p>Execute the tool with given parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.BaseTool.validate_input">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool.validate_input"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.BaseTool.validate_input" title="Link to this definition"></a></dt>
+<dd><p>Validate input parameters against schema.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.BaseTool.validate_output">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/base.html#BaseTool.validate_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.BaseTool.validate_output" title="Link to this definition"></a></dt>
+<dd><p>Validate output against schema.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.ContentDateExtractionTool">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.</span></span><span class="sig-name descname"><span class="pre">ContentDateExtractionTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LlamaIndexQdrantService</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ContentDateExtractionTool" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTool</span></code></a></p>
+<p>Tool for extracting content dates from document text using LLM.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ContentDateExtractionTool.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LlamaIndexQdrantService</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ContentDateExtractionTool.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ContentDateExtractionTool.execute">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ContentDateExtractionTool.execute" title="Link to this definition"></a></dt>
+<dd><p>Execute the content date extraction tool.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ContentDateExtractionTool.extract_date_from_text">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extract_date_from_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">document_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.extract_date_from_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ContentDateExtractionTool.extract_date_from_text" title="Link to this definition"></a></dt>
+<dd><p>Extract dates from text using LLM analysis.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ContentDateExtractionTool.store_extracted_date">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">store_extracted_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">extracted_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.store_extracted_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ContentDateExtractionTool.store_extracted_date" title="Link to this definition"></a></dt>
+<dd><p>Store extracted dates in LlamaIndex metadata.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.ExtractTextTool">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.</span></span><span class="sig-name descname"><span class="pre">ExtractTextTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/extract/extract_tool.html#ExtractTextTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ExtractTextTool" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTool</span></code></a></p>
+<p>Tool for extracting text from documents.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ExtractTextTool.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/extract/extract_tool.html#ExtractTextTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ExtractTextTool.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ExtractTextTool.execute">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/extract/extract_tool.html#ExtractTextTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ExtractTextTool.execute" title="Link to this definition"></a></dt>
+<dd><p>Extract text from a document.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.FileImportTool">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.</span></span><span class="sig-name descname"><span class="pre">FileImportTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enrichment_queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme_classifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activity_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/file_import/file_import_tool.html#FileImportTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.FileImportTool" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTool</span></code></a></p>
+<p>Tool for importing files into the vault.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.FileImportTool.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enrichment_queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme_classifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activity_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/file_import/file_import_tool.html#FileImportTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.FileImportTool.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.FileImportTool.execute">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/file_import/file_import_tool.html#FileImportTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.FileImportTool.execute" title="Link to this definition"></a></dt>
+<dd><p>Import a file into the system.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.OllamaTool">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.</span></span><span class="sig-name descname"><span class="pre">OllamaTool</span></span><a class="reference internal" href="../_modules/lifearchivist/tools/ollama/ollama_tool.html#OllamaTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.OllamaTool" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTool</span></code></a></p>
+<p>Tool for interacting with Ollama for LLM inference.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.OllamaTool.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/ollama/ollama_tool.html#OllamaTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.OllamaTool.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.OllamaTool.chat">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">chat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">messages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/ollama/ollama_tool.html#OllamaTool.chat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.OllamaTool.chat" title="Link to this definition"></a></dt>
+<dd><p>Convenience method for chat-style interactions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.OllamaTool.execute">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/ollama/ollama_tool.html#OllamaTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.OllamaTool.execute" title="Link to this definition"></a></dt>
+<dd><p>Generate text using Ollama.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.OllamaTool.generate">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">system</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/ollama/ollama_tool.html#OllamaTool.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.OllamaTool.generate" title="Link to this definition"></a></dt>
+<dd><p>Convenience method for simple text generation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.tools.ToolRegistry">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.</span></span><span class="sig-name descname"><span class="pre">ToolRegistry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enrichment_queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activity_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ToolRegistry" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Registry for managing MCP tools.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ToolRegistry.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enrichment_queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activity_manager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ToolRegistry.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ToolRegistry.get_tool">
+<span class="sig-name descname"><span class="pre">get_tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><span class="pre">BaseTool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.get_tool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ToolRegistry.get_tool" title="Link to this definition"></a></dt>
+<dd><p>Get a tool by name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ToolRegistry.get_tool_schema">
+<span class="sig-name descname"><span class="pre">get_tool_schema</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.get_tool_schema"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ToolRegistry.get_tool_schema" title="Link to this definition"></a></dt>
+<dd><p>Get input/output schema for a tool.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ToolRegistry.list_tools">
+<span class="sig-name descname"><span class="pre">list_tools</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.list_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ToolRegistry.list_tools" title="Link to this definition"></a></dt>
+<dd><p>List all registered tools with their metadata.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ToolRegistry.register_all">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.register_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ToolRegistry.register_all" title="Link to this definition"></a></dt>
+<dd><p>Register all available tools.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.tools.ToolRegistry.register_tool">
+<span class="sig-name descname"><span class="pre">register_tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tool</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><span class="pre">BaseTool</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/registry.html#ToolRegistry.register_tool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.ToolRegistry.register_tool" title="Link to this definition"></a></dt>
+<dd><p>Register a single tool.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="lifearchivist.storage.vault.html" class="btn btn-neutral float-left" title="lifearchivist.storage.vault package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="lifearchivist.tools.date_extract.html" class="btn btn-neutral float-right" title="lifearchivist.tools.date_extract package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

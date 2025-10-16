@@ -1,0 +1,1165 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.tools.extract.extract_utils &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.tools.extract.extract_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.tools.extract.extract_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">csv</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">aiofiles</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">chardet</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytesseract</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil</span><span class="w"> </span><span class="kn">import</span> <span class="n">parser</span> <span class="k">as</span> <span class="n">date_parser</span>  <span class="c1"># type: ignore[import-untyped]</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">docx</span><span class="w"> </span><span class="kn">import</span> <span class="n">Document</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">docx.oxml.table</span><span class="w"> </span><span class="kn">import</span> <span class="n">CT_Tbl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">docx.oxml.text.paragraph</span><span class="w"> </span><span class="kn">import</span> <span class="n">CT_P</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">docx.table</span><span class="w"> </span><span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">docx.text.paragraph</span><span class="w"> </span><span class="kn">import</span> <span class="n">Paragraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openpyxl</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workbook</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openpyxl.cell</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cell</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openpyxl.utils.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidFileException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageEnhance</span><span class="p">,</span> <span class="n">ImageFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypdf</span><span class="w"> </span><span class="kn">import</span> <span class="n">PdfReader</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_extraction_method</span><span class="p">(</span><span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get extraction method name based on mime type.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">mime_type</span> <span class="o">==</span> <span class="s2">&quot;text/csv&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;csv&quot;</span>
+    <span class="k">elif</span> <span class="n">mime_type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;text/&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;text_file&quot;</span>
+    <span class="k">elif</span> <span class="n">mime_type</span> <span class="o">==</span> <span class="s2">&quot;application/pdf&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;pypdf&quot;</span>
+    <span class="k">elif</span> <span class="p">(</span>
+        <span class="n">mime_type</span>
+        <span class="o">==</span> <span class="s2">&quot;application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot;</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;python_docx&quot;</span>
+    <span class="k">elif</span> <span class="n">mime_type</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="s2">&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&quot;</span><span class="p">,</span>  <span class="c1"># .xlsx</span>
+        <span class="s2">&quot;application/vnd.ms-excel&quot;</span><span class="p">,</span>  <span class="c1"># .xls</span>
+        <span class="s2">&quot;application/excel&quot;</span><span class="p">,</span>  <span class="c1"># Alternative MIME type</span>
+        <span class="s2">&quot;application/x-excel&quot;</span><span class="p">,</span>  <span class="c1"># Alternative MIME type</span>
+        <span class="s2">&quot;application/x-msexcel&quot;</span><span class="p">,</span>  <span class="c1"># Alternative MIME type</span>
+    <span class="p">]:</span>
+        <span class="k">return</span> <span class="s2">&quot;openpyxl&quot;</span>
+    <span class="k">elif</span> <span class="n">mime_type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;image/&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;tesseract&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mime type not supported: </span><span class="si">{</span><span class="n">mime_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_text_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract text from plain text files.&quot;&quot;&quot;</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">aiofiles</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="extract_table_text">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.extract.html#lifearchivist.tools.extract.extract_utils.extract_table_text">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_table_text</span><span class="p">(</span><span class="n">table</span><span class="p">:</span> <span class="n">Table</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract text from table with structure preservation.&quot;&quot;&quot;</span>
+    <span class="n">table_text</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">rows</span><span class="p">:</span>
+        <span class="n">row_text</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">cells</span><span class="p">:</span>
+            <span class="n">cell_text</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cell_text</span><span class="p">:</span>
+                <span class="n">row_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell_text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">row_text</span><span class="p">:</span>
+            <span class="n">table_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; | &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">row_text</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">table_text</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="extract_paragraph_text">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.extract.html#lifearchivist.tools.extract.extract_utils.extract_paragraph_text">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_paragraph_text</span><span class="p">(</span><span class="n">paragraph</span><span class="p">:</span> <span class="n">Paragraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract text from paragraph with run-level formatting awareness.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">paragraph</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="n">paragraph_text</span> <span class="o">=</span> <span class="n">paragraph</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="c1"># Preserve important formatting indicators</span>
+    <span class="k">if</span> <span class="n">paragraph</span><span class="o">.</span><span class="n">style</span> <span class="ow">and</span> <span class="n">paragraph</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+        <span class="n">style_name</span> <span class="o">=</span> <span class="n">paragraph</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">&quot;heading&quot;</span> <span class="ow">in</span> <span class="n">style_name</span><span class="p">:</span>
+            <span class="c1"># Mark headings for better semantic understanding</span>
+            <span class="n">paragraph_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[HEADING] </span><span class="si">{</span><span class="n">paragraph_text</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">elif</span> <span class="s2">&quot;title&quot;</span> <span class="ow">in</span> <span class="n">style_name</span><span class="p">:</span>
+            <span class="n">paragraph_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[TITLE] </span><span class="si">{</span><span class="n">paragraph_text</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">paragraph_text</span></div>
+
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_docx_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract text from Word documents using python-docx with comprehensive content extraction.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">Document</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">))</span>
+        <span class="n">extracted_content</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Process document body elements in order to preserve structure</span>
+        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">doc</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">CT_P</span><span class="p">):</span>
+                <span class="c1"># Paragraph element</span>
+                <span class="n">paragraph</span> <span class="o">=</span> <span class="n">Paragraph</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+                <span class="n">paragraph_text</span> <span class="o">=</span> <span class="n">extract_paragraph_text</span><span class="p">(</span><span class="n">paragraph</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">paragraph_text</span><span class="p">:</span>
+                    <span class="n">extracted_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">paragraph_text</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">CT_Tbl</span><span class="p">):</span>
+                <span class="c1"># Table element</span>
+                <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+                <span class="n">table_text</span> <span class="o">=</span> <span class="n">extract_table_text</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">table_text</span><span class="p">:</span>
+                    <span class="n">extracted_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[TABLE]</span><span class="se">\n</span><span class="si">{</span><span class="n">table_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Process headers and footers for comprehensive extraction</span>
+        <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">doc</span><span class="o">.</span><span class="n">sections</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">header</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">paragraph</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">:</span>
+                    <span class="n">header_text</span> <span class="o">=</span> <span class="n">extract_paragraph_text</span><span class="p">(</span><span class="n">paragraph</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">header_text</span><span class="p">:</span>
+                        <span class="n">extracted_content</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;[HEADER] </span><span class="si">{</span><span class="n">header_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">section</span><span class="o">.</span><span class="n">footer</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">paragraph</span> <span class="ow">in</span> <span class="n">section</span><span class="o">.</span><span class="n">footer</span><span class="o">.</span><span class="n">paragraphs</span><span class="p">:</span>
+                    <span class="n">footer_text</span> <span class="o">=</span> <span class="n">extract_paragraph_text</span><span class="p">(</span><span class="n">paragraph</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">footer_text</span><span class="p">:</span>
+                        <span class="n">extracted_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[FOOTER] </span><span class="si">{</span><span class="n">footer_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Join all content with proper spacing</span>
+        <span class="n">full_text</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">extracted_content</span><span class="p">)</span>
+
+        <span class="c1"># Clean up excessive whitespace while preserving structure</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+        <span class="n">full_text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\n{3,}&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">)</span>
+        <span class="n">full_text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[ \t]+&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">full_text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Error extracting Word document text from </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_pdf_needs_ocr</span><span class="p">(</span>
+    <span class="n">pdf_reader</span><span class="p">:</span> <span class="n">PdfReader</span><span class="p">,</span> <span class="n">min_chars_per_page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">min_unique_words</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine if a PDF needs OCR based on text quality.</span>
+
+<span class="sd">    A PDF needs OCR if:</span>
+<span class="sd">    1. No text layer at all (no fonts in resources)</span>
+<span class="sd">    2. Text exists but is minimal/repetitive (e.g., watermarks only)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pdf_reader: PyPDF PdfReader instance</span>
+<span class="sd">        min_chars_per_page: Minimum characters per page to consider text sufficient</span>
+<span class="sd">        min_unique_words: Minimum unique words to consider text meaningful</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if OCR is needed, False otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Sample first 3 pages (or all if fewer)</span>
+    <span class="n">pages_to_check</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdf_reader</span><span class="o">.</span><span class="n">pages</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">pages_to_check</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Empty PDF</span>
+
+    <span class="n">total_text</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">pages_with_fonts</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">pages_with_sufficient_text</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pages_to_check</span><span class="p">):</span>
+        <span class="n">page</span> <span class="o">=</span> <span class="n">pdf_reader</span><span class="o">.</span><span class="n">pages</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="c1"># Check for fonts in resources (indicates text layer)</span>
+        <span class="n">resources</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/Resources&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="s2">&quot;/Font&quot;</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span>
+            <span class="n">pages_with_fonts</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Extract and analyze text</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">extract_text</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">text_clean</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">total_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text_clean</span><span class="p">)</span>
+
+        <span class="c1"># Count unique words to detect repetitive content</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\b[a-zA-Z]+\b&quot;</span><span class="p">,</span> <span class="n">text_clean</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="n">unique_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+
+        <span class="c1"># Check if text is sufficient and diverse</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">text_clean</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">min_chars_per_page</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_words</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">min_unique_words</span>
+        <span class="p">):</span>
+            <span class="n">pages_with_sufficient_text</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># Analyze combined text from sampled pages</span>
+    <span class="n">combined_text</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">total_text</span><span class="p">)</span>
+    <span class="n">all_words</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\b[a-zA-Z]+\b&quot;</span><span class="p">,</span> <span class="n">combined_text</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="n">unique_words_total</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_words</span><span class="p">)</span>
+
+    <span class="c1"># Decision logic</span>
+    <span class="k">if</span> <span class="n">pages_with_fonts</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># No text layer at all</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PDF needs OCR: No text layer found (no fonts in resources)&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">pages_with_sufficient_text</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_words_total</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_unique_words</span><span class="p">:</span>
+        <span class="c1"># Has fonts but insufficient meaningful text (likely just watermarks)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;PDF needs OCR: Insufficient meaningful text (only </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_words_total</span><span class="p">)</span><span class="si">}</span><span class="s2"> unique words)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_pdf_with_ocr</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract text from PDF using OCR by converting pages to images.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to the PDF file</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Extracted text from all pages</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">pdf2image</span><span class="w"> </span><span class="kn">import</span> <span class="n">convert_from_path</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting OCR extraction for PDF: </span><span class="si">{</span><span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Convert PDF pages to images</span>
+        <span class="c1"># Use lower DPI for faster processing (200 is usually sufficient for text)</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">temp_dir</span><span class="p">:</span>
+            <span class="n">images</span> <span class="o">=</span> <span class="n">convert_from_path</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+                <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>  <span class="c1"># Balance between quality and speed</span>
+                <span class="n">output_folder</span><span class="o">=</span><span class="n">temp_dir</span><span class="p">,</span>
+                <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;PNG&quot;</span><span class="p">,</span>
+                <span class="n">thread_count</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># Use multiple threads for faster conversion</span>
+                <span class="n">use_pdftocairo</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># More reliable than pdftoppm</span>
+            <span class="p">)</span>
+
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Converted </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span><span class="si">}</span><span class="s2"> pages to images for OCR&quot;</span><span class="p">)</span>
+
+            <span class="n">all_text</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">page_num</span><span class="p">,</span> <span class="n">image</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing page </span><span class="si">{</span><span class="n">page_num</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span><span class="si">}</span><span class="s2"> with OCR&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Preprocess image for better OCR</span>
+                <span class="n">processed_image</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_preprocess_image_for_ocr</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+
+                <span class="c1"># Run OCR</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># Configure Tesseract for better accuracy</span>
+                    <span class="n">custom_config</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;--oem 3 --psm 3&quot;</span>  <span class="c1"># OEM 3 = Default, PSM 3 = Fully automatic page segmentation</span>
+
+                    <span class="n">text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span>
+                        <span class="n">pytesseract</span><span class="o">.</span><span class="n">image_to_string</span><span class="p">,</span>
+                        <span class="n">processed_image</span><span class="p">,</span>
+                        <span class="n">config</span><span class="o">=</span><span class="n">custom_config</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                        <span class="c1"># Add page separator for multi-page documents</span>
+                        <span class="k">if</span> <span class="n">all_text</span><span class="p">:</span>
+                            <span class="n">all_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- Page </span><span class="si">{</span><span class="n">page_num</span><span class="si">}</span><span class="s2"> ---</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">all_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ocr_error</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OCR failed for page </span><span class="si">{</span><span class="n">page_num</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">ocr_error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="c1"># Continue with other pages</span>
+
+            <span class="k">if</span> <span class="n">all_text</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;OCR extraction complete: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_text</span><span class="p">)</span><span class="si">}</span><span class="s2"> pages with text&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">all_text</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No text extracted via OCR from any page&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;pdf2image is not installed. Please install it using: &quot;</span>
+            <span class="s2">&quot;pip install pdf2image and install poppler-utils (brew install poppler on macOS)&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error during PDF OCR extraction: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error extracting PDF text via OCR: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_pdf_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract text from PDF files with intelligent OCR fallback.</span>
+
+<span class="sd">    First attempts standard text extraction using PyPDF.</span>
+<span class="sd">    If the PDF has no text layer or only minimal/repetitive text (e.g., watermarks),</span>
+<span class="sd">    falls back to OCR extraction.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to the PDF file</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Extracted text content</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># First attempt: Standard text extraction</span>
+        <span class="n">text_content</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">needs_ocr</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+            <span class="n">pdf_reader</span> <span class="o">=</span> <span class="n">PdfReader</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+            <span class="c1"># Check if OCR is needed</span>
+            <span class="n">needs_ocr</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_pdf_needs_ocr</span><span class="p">(</span><span class="n">pdf_reader</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">needs_ocr</span><span class="p">:</span>
+                <span class="c1"># Standard extraction is sufficient</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Using standard text extraction for PDF: </span><span class="si">{</span><span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">pdf_reader</span><span class="o">.</span><span class="n">pages</span><span class="p">:</span>
+                    <span class="n">text_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">extract_text</span><span class="p">())</span>
+
+                <span class="n">extracted_text</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text_content</span><span class="p">)</span>
+
+                <span class="c1"># Final sanity check - if we got very little text from a multi-page PDF</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdf_reader</span><span class="o">.</span><span class="n">pages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">extracted_text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">500</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Suspiciously little text (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">)</span><span class="si">}</span><span class="s2"> chars) from </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pdf_reader</span><span class="o">.</span><span class="n">pages</span><span class="p">)</span><span class="si">}</span><span class="s2"> pages, trying OCR&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">needs_ocr</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># If standard extraction failed or was insufficient, use OCR</span>
+        <span class="k">if</span> <span class="n">needs_ocr</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PDF requires OCR extraction: </span><span class="si">{</span><span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">extracted_text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_extract_pdf_with_ocr</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">extracted_text</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error extracting PDF text from </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># Try OCR as last resort</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Standard extraction failed, attempting OCR fallback for: </span><span class="si">{</span><span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_extract_pdf_with_ocr</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ocr_error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Both standard and OCR extraction failed: </span><span class="si">{</span><span class="n">ocr_error</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_format_cell_value</span><span class="p">(</span><span class="n">cell</span><span class="p">:</span> <span class="n">Cell</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format cell value for text extraction, handling various data types.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cell: The openpyxl cell object</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Formatted string representation of the cell value</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="c1"># Handle dates and times</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+        <span class="c1"># Check if it&#39;s a date only (time is midnight)</span>
+        <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">==</span> <span class="n">datetime</span><span class="o">.</span><span class="n">min</span><span class="o">.</span><span class="n">time</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Handle boolean values</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;TRUE&quot;</span> <span class="k">if</span> <span class="n">value</span> <span class="k">else</span> <span class="s2">&quot;FALSE&quot;</span>
+
+    <span class="c1"># Handle numbers with appropriate formatting</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="c1"># Check if it&#39;s a percentage (based on cell format)</span>
+        <span class="k">if</span> <span class="n">cell</span><span class="o">.</span><span class="n">number_format</span> <span class="ow">and</span> <span class="s2">&quot;%&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">number_format</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span>
+        <span class="c1"># Check if it&#39;s currency (common currency symbols)</span>
+        <span class="k">elif</span> <span class="n">cell</span><span class="o">.</span><span class="n">number_format</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="n">symbol</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">number_format</span><span class="p">)</span> <span class="k">for</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;$&quot;</span><span class="p">,</span> <span class="s2">&quot;€&quot;</span><span class="p">,</span> <span class="s2">&quot;£&quot;</span><span class="p">,</span> <span class="s2">&quot;¥&quot;</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="c1"># Extract currency symbol if present</span>
+            <span class="n">format_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">number_format</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;$&quot;</span> <span class="ow">in</span> <span class="n">format_str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;$</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="s2">&quot;€&quot;</span> <span class="ow">in</span> <span class="n">format_str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;€</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="s2">&quot;£&quot;</span> <span class="ow">in</span> <span class="n">format_str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;£</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="s2">&quot;¥&quot;</span> <span class="ow">in</span> <span class="n">format_str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;¥</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="c1"># Handle large numbers with thousand separators</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1000</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Remove unnecessary decimal points for whole numbers</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">is_integer</span><span class="p">():</span>
+                <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="c1"># Handle formulas (show result, not formula)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cell</span><span class="p">,</span> <span class="s2">&quot;data_type&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">cell</span><span class="o">.</span><span class="n">data_type</span> <span class="o">==</span> <span class="s2">&quot;f&quot;</span><span class="p">:</span>
+        <span class="c1"># The value should already be the calculated result</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;[Formula Error]&quot;</span>
+
+    <span class="c1"># Default string conversion</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_detect_header_row</span><span class="p">(</span><span class="n">sheet</span><span class="p">,</span> <span class="n">max_rows</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Intelligently detect header row in a spreadsheet.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sheet: The openpyxl worksheet object</span>
+<span class="sd">        max_rows: Maximum number of rows to check for headers</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple of (header_row_index, list_of_headers)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">row_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_rows</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sheet</span><span class="o">.</span><span class="n">max_row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)):</span>
+        <span class="n">row_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">non_empty_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">col_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">sheet</span><span class="o">.</span><span class="n">max_column</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">cell</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="n">row_idx</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="n">col_idx</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">_format_cell_value</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>
+            <span class="n">row_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+                <span class="n">non_empty_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Check if this row could be a header</span>
+        <span class="c1"># Headers typically have mostly non-empty text values</span>
+        <span class="k">if</span> <span class="n">non_empty_count</span> <span class="o">&gt;=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">max_column</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">:</span>  <span class="c1"># At least 50% filled</span>
+            <span class="c1"># Check if values look like headers (text, not numbers)</span>
+            <span class="n">text_count</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="mi">1</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row_values</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^-?\d+\.?\d*$&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">text_count</span> <span class="o">&gt;=</span> <span class="n">non_empty_count</span> <span class="o">*</span> <span class="mf">0.7</span><span class="p">:</span>  <span class="c1"># At least 70% text</span>
+                <span class="k">return</span> <span class="n">row_idx</span><span class="p">,</span> <span class="n">row_values</span>
+
+    <span class="c1"># No clear header found, use first row if it has content</span>
+    <span class="n">first_row</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">col_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">sheet</span><span class="o">.</span><span class="n">max_column</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">cell</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="n">col_idx</span><span class="p">)</span>
+        <span class="n">first_row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_format_cell_value</span><span class="p">(</span><span class="n">cell</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">first_row</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">,</span> <span class="n">first_row</span>
+
+    <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[]</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_excel_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract text from Excel files with comprehensive data handling.</span>
+
+<span class="sd">    Handles:</span>
+<span class="sd">    - Multiple sheets</span>
+<span class="sd">    - Various data types (dates, numbers, currency, percentages)</span>
+<span class="sd">    - Formulas (extracts calculated values)</span>
+<span class="sd">    - Merged cells</span>
+<span class="sd">    - Empty cells and sparse data</span>
+<span class="sd">    - Large spreadsheets efficiently</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Load workbook in read-only mode for better performance with large files</span>
+        <span class="n">workbook</span> <span class="o">=</span> <span class="n">load_workbook</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+            <span class="n">read_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">data_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Get values, not formulas</span>
+            <span class="n">keep_links</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Don&#39;t load external links</span>
+        <span class="p">)</span>
+
+        <span class="n">extracted_content</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">sheet_name</span> <span class="ow">in</span> <span class="n">workbook</span><span class="o">.</span><span class="n">sheetnames</span><span class="p">:</span>
+            <span class="n">sheet</span> <span class="o">=</span> <span class="n">workbook</span><span class="p">[</span><span class="n">sheet_name</span><span class="p">]</span>
+
+            <span class="c1"># Skip empty sheets</span>
+            <span class="k">if</span> <span class="n">sheet</span><span class="o">.</span><span class="n">max_row</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">sheet</span><span class="o">.</span><span class="n">max_column</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">sheet_content</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[SHEET: </span><span class="si">{</span><span class="n">sheet_name</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">]</span>
+            <span class="n">sheet_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[DIMENSIONS: </span><span class="si">{</span><span class="n">sheet</span><span class="o">.</span><span class="n">max_row</span><span class="si">}</span><span class="s2"> rows × </span><span class="si">{</span><span class="n">sheet</span><span class="o">.</span><span class="n">max_column</span><span class="si">}</span><span class="s2"> columns]&quot;</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Detect headers</span>
+            <span class="n">header_row_idx</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">_detect_header_row</span><span class="p">(</span><span class="n">sheet</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">headers</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">headers</span><span class="p">):</span>
+                <span class="c1"># Format headers</span>
+                <span class="n">header_text</span> <span class="o">=</span> <span class="s2">&quot; | &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">h</span> <span class="k">if</span> <span class="n">h</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;Column </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">sheet_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[HEADERS] </span><span class="si">{</span><span class="n">header_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">sheet_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>  <span class="c1"># Separator line</span>
+
+            <span class="c1"># Extract data rows</span>
+            <span class="n">data_rows</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">empty_row_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">max_empty_rows</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># Stop after 5 consecutive empty rows</span>
+
+            <span class="n">start_row</span> <span class="o">=</span> <span class="n">header_row_idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">header_row_idx</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span>
+
+            <span class="k">for</span> <span class="n">row_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_row</span><span class="p">,</span> <span class="n">sheet</span><span class="o">.</span><span class="n">max_row</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">row_values</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">has_content</span> <span class="o">=</span> <span class="kc">False</span>
+
+                <span class="k">for</span> <span class="n">col_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">sheet</span><span class="o">.</span><span class="n">max_column</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">cell</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="n">row_idx</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="n">col_idx</span><span class="p">)</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">_format_cell_value</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>
+                    <span class="n">row_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+                        <span class="n">has_content</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="k">if</span> <span class="n">has_content</span><span class="p">:</span>
+                    <span class="n">empty_row_count</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="c1"># Join with pipe separator, preserving empty cells</span>
+                    <span class="n">row_text</span> <span class="o">=</span> <span class="s2">&quot; | &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">row_values</span><span class="p">)</span>
+                    <span class="n">data_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row_text</span><span class="p">)</span>
+
+                    <span class="c1"># Limit extraction for very large sheets</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_rows</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">10000</span><span class="p">:</span>
+                        <span class="n">data_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;[... truncated after 10,000 rows ...]&quot;</span><span class="p">)</span>
+                        <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">empty_row_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">empty_row_count</span> <span class="o">&gt;=</span> <span class="n">max_empty_rows</span><span class="p">:</span>
+                        <span class="c1"># Stop processing if we hit too many empty rows</span>
+                        <span class="k">break</span>
+
+            <span class="c1"># Add data rows to sheet content</span>
+            <span class="k">if</span> <span class="n">data_rows</span><span class="p">:</span>
+                <span class="n">sheet_content</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">data_rows</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sheet_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;[No data rows found]&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Add sheet content to overall content</span>
+            <span class="n">extracted_content</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sheet_content</span><span class="p">)</span>
+            <span class="n">extracted_content</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># Empty line between sheets</span>
+
+        <span class="n">workbook</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="c1"># Join all content</span>
+        <span class="n">full_text</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">extracted_content</span><span class="p">)</span>
+
+        <span class="c1"># Clean up excessive whitespace</span>
+        <span class="n">full_text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\n{4,}&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n\n\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">full_text</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">full_text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="n">InvalidFileException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid Excel file format for </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error extracting Excel text from </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_detect_csv_encoding</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Detect the encoding of a CSV file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path: Path to the CSV file</span>
+<span class="sd">        sample_size: Number of bytes to sample for detection</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Detected encoding string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">raw_data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">sample_size</span><span class="p">)</span>
+
+        <span class="c1"># Try to detect encoding</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">chardet</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;encoding&quot;</span><span class="p">,</span> <span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">confidence</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Fallback for low confidence or None result</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">encoding</span> <span class="ow">or</span> <span class="n">confidence</span> <span class="o">&lt;</span> <span class="mf">0.7</span><span class="p">:</span>
+            <span class="c1"># Try common encodings</span>
+            <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="s2">&quot;latin-1&quot;</span><span class="p">,</span> <span class="s2">&quot;cp1252&quot;</span><span class="p">,</span> <span class="s2">&quot;iso-8859-1&quot;</span><span class="p">]:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">raw_data</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">enc</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">enc</span>
+                <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+                    <span class="k">continue</span>
+            <span class="c1"># Default to utf-8 with error handling</span>
+            <span class="k">return</span> <span class="s2">&quot;utf-8&quot;</span>
+
+        <span class="k">return</span> <span class="n">encoding</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;utf-8&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_detect_csv_delimiter</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sample_lines</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Detect the delimiter used in CSV content.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        content: CSV file content as string</span>
+<span class="sd">        sample_lines: Number of lines to sample</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Detected delimiter character</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)[:</span><span class="n">sample_lines</span><span class="p">]</span>
+
+    <span class="c1"># Common delimiters to check</span>
+    <span class="n">delimiters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;;&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;|&quot;</span><span class="p">]</span>
+    <span class="n">delimiter_counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">d</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">delimiters</span><span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">delimiter</span> <span class="ow">in</span> <span class="n">delimiters</span><span class="p">:</span>
+            <span class="c1"># Count occurrences, considering quoted fields</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">([</span><span class="n">line</span><span class="p">],</span> <span class="n">delimiter</span><span class="o">=</span><span class="n">delimiter</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">delimiter_counts</span><span class="p">[</span><span class="n">delimiter</span><span class="p">]</span> <span class="o">+=</span> <span class="n">count</span>
+
+    <span class="c1"># Return delimiter with highest count</span>
+    <span class="k">if</span> <span class="n">delimiter_counts</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">delimiter_counts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">delimiter_counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s2">&quot;,&quot;</span>  <span class="c1"># Default to comma</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_preprocess_image_for_ocr</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Preprocess image to improve OCR accuracy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        image: PIL Image object</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Preprocessed PIL Image object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Convert to RGB if necessary</span>
+    <span class="k">if</span> <span class="n">image</span><span class="o">.</span><span class="n">mode</span> <span class="o">!=</span> <span class="s2">&quot;RGB&quot;</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">&quot;RGB&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Resize if image is too small (OCR works better with larger images)</span>
+    <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">size</span>
+    <span class="k">if</span> <span class="n">width</span> <span class="o">&lt;</span> <span class="mi">1000</span> <span class="ow">or</span> <span class="n">height</span> <span class="o">&lt;</span> <span class="mi">1000</span><span class="p">:</span>
+        <span class="n">scale_factor</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1000</span> <span class="o">/</span> <span class="n">width</span><span class="p">,</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">height</span><span class="p">)</span>
+        <span class="n">new_width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">width</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span>
+        <span class="n">new_height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">height</span> <span class="o">*</span> <span class="n">scale_factor</span><span class="p">)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="n">new_width</span><span class="p">,</span> <span class="n">new_height</span><span class="p">),</span> <span class="n">Image</span><span class="o">.</span><span class="n">Resampling</span><span class="o">.</span><span class="n">LANCZOS</span><span class="p">)</span>
+
+    <span class="c1"># Convert to grayscale for better OCR</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">&quot;L&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Enhance contrast</span>
+    <span class="n">contrast_enhancer</span> <span class="o">=</span> <span class="n">ImageEnhance</span><span class="o">.</span><span class="n">Contrast</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">contrast_enhancer</span><span class="o">.</span><span class="n">enhance</span><span class="p">(</span><span class="mf">1.5</span><span class="p">)</span>
+
+    <span class="c1"># Apply slight sharpening</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ImageFilter</span><span class="o">.</span><span class="n">SHARPEN</span><span class="p">)</span>
+
+    <span class="c1"># Enhance brightness if image is too dark</span>
+    <span class="n">brightness_enhancer</span> <span class="o">=</span> <span class="n">ImageEnhance</span><span class="o">.</span><span class="n">Brightness</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="c1"># Calculate average brightness</span>
+    <span class="n">pixels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">getdata</span><span class="p">())</span>
+    <span class="n">avg_brightness</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">pixels</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">pixels</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">avg_brightness</span> <span class="o">&lt;</span> <span class="mi">127</span><span class="p">:</span>  <span class="c1"># If darker than middle gray</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">brightness_enhancer</span><span class="o">.</span><span class="n">enhance</span><span class="p">(</span><span class="mf">1.2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">image</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_image_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract text from images using Tesseract OCR.</span>
+
+<span class="sd">    Handles:</span>
+<span class="sd">    - Various image formats (JPEG, PNG, GIF, BMP, TIFF, WebP)</span>
+<span class="sd">    - Image preprocessing for better OCR accuracy</span>
+<span class="sd">    - Multi-page TIFF files</span>
+<span class="sd">    - Rotated or skewed text</span>
+<span class="sd">    - Low quality images</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Extracted text only (no metadata markers)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Open image</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="c1"># Log image metadata for debugging (not included in extracted text)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;OCR processing image: Format=</span><span class="si">{</span><span class="n">image</span><span class="o">.</span><span class="n">format</span><span class="si">}</span><span class="s2">, Size=</span><span class="si">{</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">, Mode=</span><span class="si">{</span><span class="n">image</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Handle multi-page images (like TIFF)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="s2">&quot;n_frames&quot;</span><span class="p">):</span>
+            <span class="n">num_pages</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">n_frames</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">num_pages</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">all_text</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">total_confidence</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">page_num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_pages</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">num_pages</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">image</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">page_num</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">num_pages</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Preprocess image for better OCR</span>
+            <span class="n">processed_image</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_preprocess_image_for_ocr</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+            <span class="c1"># Run OCR with Tesseract</span>
+            <span class="c1"># Use asyncio.to_thread for non-blocking execution</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Configure Tesseract for better accuracy</span>
+                <span class="n">custom_config</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;--oem 3 --psm 3&quot;</span>  <span class="c1"># OEM 3 = Default, PSM 3 = Fully automatic page segmentation</span>
+
+                <span class="c1"># Extract text</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span>
+                    <span class="n">pytesseract</span><span class="o">.</span><span class="n">image_to_string</span><span class="p">,</span> <span class="n">processed_image</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">custom_config</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Also get detailed data for confidence scores (for logging only)</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">to_thread</span><span class="p">(</span>
+                    <span class="n">pytesseract</span><span class="o">.</span><span class="n">image_to_data</span><span class="p">,</span>
+                    <span class="n">processed_image</span><span class="p">,</span>
+                    <span class="n">output_type</span><span class="o">=</span><span class="n">pytesseract</span><span class="o">.</span><span class="n">Output</span><span class="o">.</span><span class="n">DICT</span><span class="p">,</span>
+                    <span class="n">config</span><span class="o">=</span><span class="n">custom_config</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Calculate average confidence (excluding -1 values which mean no text)</span>
+                <span class="n">confidences</span> <span class="o">=</span> <span class="p">[</span><span class="n">conf</span> <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;conf&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">conf</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="n">avg_confidence</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="nb">sum</span><span class="p">(</span><span class="n">confidences</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">confidences</span><span class="p">)</span> <span class="k">if</span> <span class="n">confidences</span> <span class="k">else</span> <span class="mi">0</span>
+                <span class="p">)</span>
+                <span class="n">total_confidence</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">confidences</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                    <span class="c1"># For multi-page documents, add page separator</span>
+                    <span class="k">if</span> <span class="n">num_pages</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">all_text</span><span class="p">:</span>
+                        <span class="n">all_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- Page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> ---</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">all_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+                    <span class="c1"># Log confidence level for debugging</span>
+                    <span class="k">if</span> <span class="n">avg_confidence</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">:</span>
+                        <span class="n">confidence_level</span> <span class="o">=</span> <span class="s2">&quot;High&quot;</span>
+                    <span class="k">elif</span> <span class="n">avg_confidence</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="p">:</span>
+                        <span class="n">confidence_level</span> <span class="o">=</span> <span class="s2">&quot;Medium&quot;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">confidence_level</span> <span class="o">=</span> <span class="s2">&quot;Low&quot;</span>
+
+                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;OCR confidence for page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">confidence_level</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">avg_confidence</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%)&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="k">except</span> <span class="n">pytesseract</span><span class="o">.</span><span class="n">TesseractNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Tesseract OCR is not installed. Please install it using: &quot;</span>
+                    <span class="s2">&quot;brew install tesseract (macOS) or apt-get install tesseract-ocr (Linux)&quot;</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ocr_error</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OCR failed for page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">ocr_error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># Don&#39;t include error messages in extracted text</span>
+
+        <span class="c1"># Log summary statistics</span>
+        <span class="k">if</span> <span class="n">all_text</span><span class="p">:</span>
+            <span class="n">word_count</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">all_text</span><span class="p">)</span>
+            <span class="n">overall_confidence</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">sum</span><span class="p">(</span><span class="n">total_confidence</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">total_confidence</span><span class="p">)</span> <span class="k">if</span> <span class="n">total_confidence</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;OCR complete: </span><span class="si">{</span><span class="n">num_pages</span><span class="si">}</span><span class="s2"> pages, </span><span class="si">{</span><span class="n">word_count</span><span class="si">}</span><span class="s2"> words, </span><span class="si">{</span><span class="n">overall_confidence</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">% avg confidence&quot;</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Return ONLY the extracted text, no metadata</span>
+            <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">all_text</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No text detected in image&quot;</span><span class="p">)</span>
+            <span class="c1"># Return empty string if no text was extracted</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error extracting text from image </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_csv_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract text from CSV files with intelligent parsing.</span>
+
+<span class="sd">    Handles:</span>
+<span class="sd">    - Various encodings (UTF-8, Latin-1, Windows-1252, etc.)</span>
+<span class="sd">    - Different delimiters (comma, semicolon, tab, pipe)</span>
+<span class="sd">    - Quoted fields with embedded delimiters</span>
+<span class="sd">    - Large files efficiently</span>
+<span class="sd">    - Malformed CSV data</span>
+<span class="sd">    - Date and number formatting</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Detect encoding</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_detect_csv_encoding</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="c1"># Read file with detected encoding</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">aiofiles</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                <span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="k">await</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+            <span class="c1"># Fallback to latin-1 which accepts all byte values</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">aiofiles</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                <span class="n">file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin-1&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="k">await</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="c1"># Detect delimiter</span>
+        <span class="n">delimiter</span> <span class="o">=</span> <span class="n">_detect_csv_delimiter</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="c1"># Parse CSV</span>
+        <span class="n">csv_reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">content</span><span class="p">),</span> <span class="n">delimiter</span><span class="o">=</span><span class="n">delimiter</span><span class="p">)</span>
+
+        <span class="n">extracted_rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">header_row</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">row_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_rows</span> <span class="o">=</span> <span class="mi">10000</span>  <span class="c1"># Limit for very large files</span>
+
+        <span class="k">for</span> <span class="n">row_idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">csv_reader</span><span class="p">):</span>
+            <span class="c1"># Skip completely empty rows</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Process and clean cell values</span>
+            <span class="n">cleaned_row</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+                <span class="n">cell_value</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+                <span class="c1"># Try to detect and format dates</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">cell_value</span>
+                    <span class="ow">and</span> <span class="ow">not</span> <span class="n">cell_value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">isdigit</span><span class="p">()</span>
+                <span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="c1"># Try parsing as date</span>
+                        <span class="n">parsed_date</span> <span class="o">=</span> <span class="n">date_parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">cell_value</span><span class="p">,</span> <span class="n">fuzzy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                        <span class="c1"># Only treat as date if it&#39;s not just a number</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">cell_value</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                            <span class="n">cell_value</span> <span class="o">=</span> <span class="n">parsed_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                        <span class="k">pass</span>  <span class="c1"># Not a date, keep original value</span>
+
+                <span class="c1"># Format numbers with thousand separators if large</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">cell_value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">isdigit</span><span class="p">()</span>
+                <span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="c1"># Remove existing formatting</span>
+                        <span class="n">clean_num</span> <span class="o">=</span> <span class="n">cell_value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">clean_num</span><span class="p">:</span>
+                            <span class="n">num</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">clean_num</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">num</span><span class="o">.</span><span class="n">is_integer</span><span class="p">():</span>
+                                <span class="n">cell_value</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">num</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">cell_value</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num</span><span class="si">:</span><span class="s2">,.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">clean_num</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">num</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1000</span><span class="p">:</span>
+                                <span class="n">cell_value</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                        <span class="k">pass</span>  <span class="c1"># Keep original value</span>
+
+                <span class="n">cleaned_row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell_value</span><span class="p">)</span>
+
+            <span class="c1"># First non-empty row is likely headers</span>
+            <span class="k">if</span> <span class="n">row_idx</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">cleaned_row</span><span class="p">):</span>
+                <span class="n">header_row</span> <span class="o">=</span> <span class="n">cleaned_row</span>
+                <span class="n">header_text</span> <span class="o">=</span> <span class="s2">&quot; | &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cleaned_row</span><span class="p">)</span>
+                <span class="n">extracted_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[CSV HEADERS] </span><span class="si">{</span><span class="n">header_text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">extracted_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Format data row</span>
+                <span class="n">row_text</span> <span class="o">=</span> <span class="s2">&quot; | &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cleaned_row</span><span class="p">)</span>
+                <span class="n">extracted_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row_text</span><span class="p">)</span>
+
+            <span class="n">row_count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">row_count</span> <span class="o">&gt;=</span> <span class="n">max_rows</span><span class="p">:</span>
+                <span class="n">extracted_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[... truncated after </span><span class="si">{</span><span class="n">max_rows</span><span class="si">}</span><span class="s2"> rows ...]&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
+
+        <span class="c1"># Add summary information</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;[CSV SUMMARY]&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Total rows processed: </span><span class="si">{</span><span class="n">row_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Delimiter used: &#39;</span><span class="si">{</span><span class="n">delimiter</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Encoding: </span><span class="si">{</span><span class="n">encoding</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">header_row</span><span class="p">:</span>
+            <span class="n">summary</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of columns: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">header_row</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">extracted_rows</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">extracted_rows</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error extracting CSV text from </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_text_by_type</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract text based on file type.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># CSV files (check first as they can be text/*)</span>
+        <span class="k">if</span> <span class="n">mime_type</span> <span class="o">==</span> <span class="s2">&quot;text/csv&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_extract_csv_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="c1"># Plain text files</span>
+        <span class="k">elif</span> <span class="n">mime_type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;text/&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_extract_text_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="c1"># PDF files</span>
+        <span class="k">elif</span> <span class="n">mime_type</span> <span class="o">==</span> <span class="s2">&quot;application/pdf&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_extract_pdf_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="c1"># Word documents</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">mime_type</span>
+            <span class="o">==</span> <span class="s2">&quot;application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot;</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_extract_docx_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="c1"># Excel files</span>
+        <span class="k">elif</span> <span class="n">mime_type</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&quot;</span><span class="p">,</span>  <span class="c1"># .xlsx</span>
+            <span class="s2">&quot;application/vnd.ms-excel&quot;</span><span class="p">,</span>  <span class="c1"># .xls</span>
+            <span class="s2">&quot;application/excel&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;application/x-excel&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;application/x-msexcel&quot;</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_extract_excel_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="c1"># Image files</span>
+        <span class="k">elif</span> <span class="n">mime_type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;image/&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_extract_image_text</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error extracting text from </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

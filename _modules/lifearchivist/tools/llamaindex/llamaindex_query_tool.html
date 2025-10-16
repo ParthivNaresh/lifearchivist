@@ -1,0 +1,502 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.tools.llamaindex.llamaindex_query_tool &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.tools.llamaindex.llamaindex_query_tool</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.tools.llamaindex.llamaindex_query_tool</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">LlamaIndex query tool for Q&amp;A functionality.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTool</span><span class="p">,</span> <span class="n">ToolMetadata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
+
+
+<div class="viewcode-block" id="LlamaIndexQueryTool">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.llamaindex_query_tool.LlamaIndexQueryTool">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LlamaIndexQueryTool</span><span class="p">(</span><span class="n">BaseTool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tool for querying LlamaIndex to get AI-generated answers.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LlamaIndexQueryTool.__init__">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.llamaindex_query_tool.LlamaIndexQueryTool.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">llamaindex_service</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span> <span class="o">=</span> <span class="n">llamaindex_service</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolMetadata</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ToolMetadata</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;llamaindex.query&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Query LlamaIndex to get AI-generated answers from document content&quot;</span><span class="p">,</span>
+            <span class="n">input_schema</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Question to ask about the documents&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;similarity_top_k&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Number of most similar documents to use as context&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;response_mode&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;enum&quot;</span><span class="p">:</span> <span class="p">[</span>
+                            <span class="s2">&quot;tree_summarize&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;compact&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;refine&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;simple_summarize&quot;</span><span class="p">,</span>
+                        <span class="p">],</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Response synthesis mode for answer generation&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;tree_summarize&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="n">output_schema</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">,</span> <span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+                    <span class="s2">&quot;sources&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="n">async_tool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">idempotent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="LlamaIndexQueryTool.execute">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.llamaindex.html#lifearchivist.tools.llamaindex.llamaindex_query_tool.LlamaIndexQueryTool.execute">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;llamaindex_query&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;similarity_top_k&quot;</span><span class="p">,</span> <span class="s2">&quot;response_mode&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute LlamaIndex query for Q&amp;A.&quot;&quot;&quot;</span>
+        <span class="n">question</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;question&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">similarity_top_k</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;similarity_top_k&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="n">response_mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_mode&quot;</span><span class="p">,</span> <span class="s2">&quot;tree_summarize&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">question</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_response</span><span class="p">(</span><span class="s2">&quot;Question cannot be empty&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_response</span><span class="p">(</span><span class="s2">&quot;LlamaIndex service not available&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Log query start with context (important for debugging Q&amp;A issues)</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;query_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;question_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">question</span><span class="p">),</span>
+                <span class="s2">&quot;question_preview&quot;</span><span class="p">:</span> <span class="p">(</span>
+                    <span class="n">question</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">question</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span> <span class="k">else</span> <span class="n">question</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;similarity_top_k&quot;</span><span class="p">:</span> <span class="n">similarity_top_k</span><span class="p">,</span>
+                <span class="s2">&quot;response_mode&quot;</span><span class="p">:</span> <span class="n">response_mode</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Use the LlamaIndex service query method</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+                <span class="n">question</span><span class="o">=</span><span class="n">question</span><span class="p">,</span>
+                <span class="n">similarity_top_k</span><span class="o">=</span><span class="n">similarity_top_k</span><span class="p">,</span>
+                <span class="n">response_mode</span><span class="o">=</span><span class="n">response_mode</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Check if we got a meaningful response</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">sources</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sources&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">answer</span> <span class="ow">or</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">answer</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;query_empty_response&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;question_preview&quot;</span><span class="p">:</span> <span class="n">question</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                        <span class="s2">&quot;sources_found&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">),</span>
+                        <span class="s2">&quot;answer_preview&quot;</span><span class="p">:</span> <span class="n">answer</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span> <span class="k">if</span> <span class="n">answer</span> <span class="k">else</span> <span class="s2">&quot;empty&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Transform the result to match expected output schema</span>
+            <span class="n">transformed_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_query_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">question</span><span class="p">)</span>
+
+            <span class="c1"># Log successful query with metrics</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;query_completed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;question_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">question</span><span class="p">),</span>
+                    <span class="s2">&quot;answer_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">transformed_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)),</span>
+                    <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">transformed_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+                    <span class="s2">&quot;sources_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">transformed_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sources&quot;</span><span class="p">,</span> <span class="p">[])),</span>
+                    <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="n">transformed_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">transformed_result</span>  <span class="c1"># type: ignore[no-any-return]</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;query_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;question_preview&quot;</span><span class="p">:</span> <span class="n">question</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                    <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                    <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_response</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Query failed: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;result_transformation&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_transform_query_result</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Transform LlamaIndex service result to match tool output schema.&quot;&quot;&quot;</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">sources</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sources&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;llamaindex_rag&quot;</span><span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="c1"># Calculate confidence based on answer quality and sources</span>
+        <span class="n">confidence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_confidence</span><span class="p">(</span><span class="n">answer</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">question</span><span class="p">)</span>
+
+        <span class="c1"># Transform sources to match expected format</span>
+        <span class="n">transformed_sources</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="n">transformed_source</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;Unknown Document&quot;</span><span class="p">)</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)[:</span><span class="mi">500</span><span class="p">],</span>  <span class="c1"># Limit text length</span>
+                <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="n">transformed_sources</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">transformed_source</span><span class="p">)</span>
+
+        <span class="c1"># Log low confidence results for debugging</span>
+        <span class="k">if</span> <span class="n">confidence</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;low_confidence_result&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span><span class="p">,</span>
+                    <span class="s2">&quot;answer_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer</span><span class="p">),</span>
+                    <span class="s2">&quot;sources_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">),</span>
+                    <span class="s2">&quot;avg_source_score&quot;</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="nb">sum</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">sources</span>
+                        <span class="k">else</span> <span class="mi">0</span>
+                    <span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">answer</span><span class="p">,</span>
+            <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span><span class="p">,</span>
+            <span class="s2">&quot;sources&quot;</span><span class="p">:</span> <span class="n">transformed_sources</span><span class="p">,</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
+            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="o">**</span><span class="n">metadata</span><span class="p">,</span>
+                <span class="s2">&quot;question_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">question</span><span class="p">),</span>
+                <span class="s2">&quot;original_sources_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;confidence_calculation&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Fast operation, no need to track</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;high_frequency&quot;</span><span class="p">,</span>  <span class="c1"># Called frequently, sample it</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_confidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">answer</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sources</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate confidence score based on answer and source quality.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">answer</span> <span class="ow">or</span> <span class="n">answer</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;I don&#39;t know&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;No information available&quot;</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+        <span class="n">confidence</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># Base confidence</span>
+
+        <span class="c1"># Boost confidence based on answer length (longer answers often more complete)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="n">confidence</span> <span class="o">+=</span> <span class="mf">0.1</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">300</span><span class="p">:</span>
+            <span class="n">confidence</span> <span class="o">+=</span> <span class="mf">0.1</span>
+
+        <span class="c1"># Boost confidence based on number of sources</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">confidence</span> <span class="o">+=</span> <span class="mf">0.2</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">confidence</span> <span class="o">+=</span> <span class="mf">0.1</span>
+
+        <span class="c1"># Boost confidence based on source scores</span>
+        <span class="k">if</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="n">avg_source_score</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span>
+            <span class="n">confidence</span> <span class="o">+=</span> <span class="n">avg_source_score</span> <span class="o">*</span> <span class="mf">0.2</span>
+
+        <span class="c1"># Reduce confidence for error-indicating phrases</span>
+        <span class="n">error_phrases</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;failed&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;unable&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;cannot&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;don&#39;t have&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;not found&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;insufficient&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">detected_error_phrases</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">phrase</span> <span class="k">for</span> <span class="n">phrase</span> <span class="ow">in</span> <span class="n">error_phrases</span> <span class="k">if</span> <span class="n">phrase</span> <span class="ow">in</span> <span class="n">answer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">detected_error_phrases</span><span class="p">:</span>
+            <span class="n">confidence</span> <span class="o">-=</span> <span class="mf">0.3</span>
+            <span class="c1"># Log when error phrases affect confidence (useful for debugging)</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;confidence_reduced_error_phrases&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;detected_phrases&quot;</span><span class="p">:</span> <span class="n">detected_error_phrases</span><span class="p">,</span>
+                    <span class="s2">&quot;original_confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span>
+                    <span class="s2">&quot;adjusted_confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Ensure confidence is between 0 and 1</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">confidence</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_empty_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error_message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return empty response with error message.&quot;&quot;&quot;</span>
+        <span class="c1"># Log empty responses as they indicate issues</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;query_empty_response_generated&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="n">error_message</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;I encountered an error: </span><span class="si">{</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;sources&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;llamaindex_error&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error_message</span><span class="p">},</span>
+        <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

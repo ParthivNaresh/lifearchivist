@@ -1,0 +1,832 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.utils.logging.structured &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.utils.logging.structured</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.utils.logging.structured</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Structured logging utilities for professional event-based logging.</span>
+
+<span class="sd">Provides structured event logging and utilities for creating searchable,</span>
+<span class="sd">queryable log entries with human-readable development formatting.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="c1"># Get logger for this module</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># StructuredFormatter removed - only using DevelopmentFormatter for human-readable logs</span>
+
+
+<div class="viewcode-block" id="StructuredLogger">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.StructuredLogger">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StructuredLogger</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Professional structured logger that creates consistent, searchable log events.</span>
+
+<span class="sd">    Provides methods for logging structured events with consistent field names</span>
+<span class="sd">    and automatic context injection.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="StructuredLogger.__init__">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.StructuredLogger.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StructuredLogger.event">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.StructuredLogger.event">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">event_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Log a structured event with optional data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            event_name: Name of the event (e.g., &#39;document_processed&#39;)</span>
+<span class="sd">            data: Dictionary of structured data to include</span>
+<span class="sd">            level: Log level (defaults to INFO)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_correlation_id</span><span class="p">,</span> <span class="n">get_operation_context</span>
+
+        <span class="c1"># Build structured log entry</span>
+        <span class="n">structured_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="n">event_name</span><span class="p">,</span>
+            <span class="s2">&quot;correlation_id&quot;</span><span class="p">:</span> <span class="n">get_correlation_id</span><span class="p">(),</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Add operation context</span>
+        <span class="n">operation_context</span> <span class="o">=</span> <span class="n">get_operation_context</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">operation_context</span><span class="p">:</span>
+            <span class="n">structured_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">operation_context</span><span class="p">)</span>
+
+        <span class="c1"># Add custom data</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">structured_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># Create log record with structured data</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">makeRecord</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="s2">&quot;(structured)&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">event_name</span><span class="p">,</span> <span class="p">(),</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">record</span><span class="o">.</span><span class="n">structured_data</span> <span class="o">=</span> <span class="n">structured_data</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StructuredLogger.success">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.StructuredLogger.success">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">success</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log a successful operation.&quot;&quot;&quot;</span>
+        <span class="n">success_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">success_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">success_data</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StructuredLogger.failure">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.StructuredLogger.failure">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">failure</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">event_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log a failed operation with error details.&quot;&quot;&quot;</span>
+        <span class="n">failure_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">failure_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">failure_data</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StructuredLogger.performance">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.StructuredLogger.performance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">performance</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">duration_ms</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log performance metrics.&quot;&quot;&quot;</span>
+        <span class="n">perf_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="n">operation</span><span class="p">,</span>
+            <span class="s2">&quot;duration_ms&quot;</span><span class="p">:</span> <span class="n">duration_ms</span><span class="p">,</span>
+            <span class="s2">&quot;performance_event&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">perf_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">(</span><span class="s2">&quot;performance_metric&quot;</span><span class="p">,</span> <span class="n">perf_data</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># Global structured logger instance</span>
+<span class="n">_global_logger</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StructuredLogger</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="get_structured_logger">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.get_structured_logger">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_structured_logger</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lifearchivist&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StructuredLogger</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get or create a structured logger instance.&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_global_logger</span>
+    <span class="k">if</span> <span class="n">_global_logger</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_global_logger</span> <span class="o">=</span> <span class="n">StructuredLogger</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_global_logger</span></div>
+
+
+
+<div class="viewcode-block" id="log_event">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.log_event">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_event</span><span class="p">(</span>
+    <span class="n">event_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience function for logging structured events.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_name: Name of the event</span>
+<span class="sd">        data: Optional structured data</span>
+<span class="sd">        level: Log level</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        log_event(&quot;document_processed&quot;, {</span>
+<span class="sd">            &quot;document_id&quot;: &quot;123&quot;,</span>
+<span class="sd">            &quot;processing_time_ms&quot;: 1500,</span>
+<span class="sd">            &quot;word_count&quot;: 500</span>
+<span class="sd">        })</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">structured_logger</span> <span class="o">=</span> <span class="n">get_structured_logger</span><span class="p">()</span>
+    <span class="n">structured_logger</span><span class="o">.</span><span class="n">event</span><span class="p">(</span><span class="n">event_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="create_development_formatter">
+<a class="viewcode-back" href="../../../../api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.structured.create_development_formatter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_development_formatter</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a human-readable formatter for development environments.</span>
+
+<span class="sd">    Returns a formatter that outputs clean, readable logs for development</span>
+<span class="sd">    while still including structured data with intelligent event-based formatting.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">DevelopmentFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">created</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%H:%M:%S.</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">)[</span>
+                <span class="p">:</span><span class="o">-</span><span class="mi">3</span>
+            <span class="p">]</span>
+
+            <span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;structured_data&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="c1"># Handle non-structured logs (fallback)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="si">:</span><span class="s2">5</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># Route to appropriate formatter based on event type</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">operation</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operation&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;operation_started&quot;</span><span class="p">:</span>
+                <span class="n">message_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_operation_start</span><span class="p">(</span><span class="n">operation</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;operation_completed&quot;</span><span class="p">:</span>
+                <span class="n">message_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_operation_success</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">operation</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;operation_failed&quot;</span><span class="p">:</span>
+                <span class="n">message_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_operation_error</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">operation</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;file_processed&quot;</span><span class="p">,</span> <span class="s2">&quot;document_indexed&quot;</span><span class="p">,</span> <span class="s2">&quot;user_action&quot;</span><span class="p">]:</span>
+                <span class="n">message_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_business_event</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;system_startup&quot;</span><span class="p">,</span> <span class="s2">&quot;service_ready&quot;</span><span class="p">,</span> <span class="s2">&quot;health_check&quot;</span><span class="p">]:</span>
+                <span class="n">message_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_system_event</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">message_content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_generic_event</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="si">:</span><span class="s2">5</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">message_content</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_format_operation_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Format operation start events.&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">operation</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;🚀 operation started&quot;</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;🚀 </span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> started&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_format_operation_success</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Format successful operation completion events.&quot;&quot;&quot;</span>
+            <span class="n">duration_ms</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;duration_ms&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">duration_ms</span> <span class="o">&lt;</span> <span class="mi">50</span><span class="p">:</span>
+                <span class="n">duration_emoji</span> <span class="o">=</span> <span class="s2">&quot;⚡&quot;</span>
+            <span class="k">elif</span> <span class="n">duration_ms</span> <span class="o">&gt;</span> <span class="mi">2000</span><span class="p">:</span>
+                <span class="n">duration_emoji</span> <span class="o">=</span> <span class="s2">&quot;🐌&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">duration_emoji</span> <span class="o">=</span> <span class="s2">&quot;⏱️&quot;</span>
+
+            <span class="k">if</span> <span class="n">duration_ms</span> <span class="o">&gt;=</span> <span class="mi">1000</span><span class="p">:</span>
+                <span class="n">duration_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">duration_ms</span><span class="o">/</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">duration_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">duration_ms</span><span class="si">}</span><span class="s2">ms&quot;</span>
+
+            <span class="c1"># Add operation-specific context</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_operation_context</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">operation</span><span class="p">)</span>
+
+            <span class="n">base_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">duration_emoji</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">duration_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_message</span><span class="si">}{</span><span class="n">context</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">context</span> <span class="k">else</span> <span class="n">base_message</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_format_operation_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Format failed operation events.&quot;&quot;&quot;</span>
+            <span class="n">duration_ms</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;duration_ms&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">error_type</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error_type&quot;</span><span class="p">,</span> <span class="s2">&quot;Error&quot;</span><span class="p">)</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error_message&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Format duration if available</span>
+            <span class="n">duration_part</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">duration_ms</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">duration_ms</span> <span class="o">&gt;=</span> <span class="mi">1000</span><span class="p">:</span>
+                    <span class="n">duration_part</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">duration_ms</span><span class="o">/</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">duration_part</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">duration_ms</span><span class="si">}</span><span class="s2">ms&quot;</span>
+
+            <span class="c1"># Truncate long error messages</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="p">:</span>
+                <span class="n">error_message</span> <span class="o">=</span> <span class="n">error_message</span><span class="p">[:</span><span class="mi">57</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;❌</span><span class="si">{</span><span class="n">duration_part</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> failed (</span><span class="si">{</span><span class="n">error_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error_message</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_format_business_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Format business/application events.&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;file_processed&quot;</span><span class="p">:</span>
+                <span class="n">file_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_id&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="n">processing_time</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;processing_time&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;📄 file_processed (id=</span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">processing_time</span><span class="si">}</span><span class="s2">s)&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;document_indexed&quot;</span><span class="p">:</span>
+                <span class="n">doc_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="n">chunks</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;chunks&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;📄 document_indexed (id=</span><span class="si">{</span><span class="n">doc_id</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">chunks</span><span class="si">}</span><span class="s2"> chunks)&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;user_action&quot;</span><span class="p">:</span>
+                <span class="n">action</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;action&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;👤 user_action (</span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;📋 </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_format_system_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Format system-level events.&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;service_ready&quot;</span><span class="p">:</span>
+                <span class="n">service</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;service&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;✅ </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2"> service ready (</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;system_startup&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;🚀 system startup&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;health_check&quot;</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;💚 health_check (</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;⚙️ </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_format_generic_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Format generic/unknown events with contextual information.&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;📝 log_event&quot;</span>
+
+            <span class="c1"># Add specific context for common business events</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_business_event_context</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;📝 </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">context</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;📝 </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_business_event_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get contextual information for business events.&quot;&quot;&quot;</span>
+            <span class="c1"># File analysis events</span>
+            <span class="k">if</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;mime_type_detected&quot;</span><span class="p">:</span>
+                <span class="n">mime_type</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="n">detection_method</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;detection_method&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mime_type</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">detection_method</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;mime_type_detection_failed&quot;</span><span class="p">:</span>
+                <span class="n">file_path</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_path&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;failed for </span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">file_path</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;unknown&#39;</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;unknown file&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;mime_type_override&quot;</span><span class="p">:</span>
+                <span class="n">mime_type</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mime_type</span><span class="si">}</span><span class="s2"> (hint)&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;file_not_found&quot;</span><span class="p">:</span>
+                <span class="n">file_path</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_path&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="n">file_hash</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_hash&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">file_hash</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">file_path</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;None&#39;</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;unknown&#39;</span><span class="si">}</span><span class="s2"> (hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">...)&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">file_path</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;None&#39;</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;unknown file&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># Text extraction events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;text_extracted&quot;</span><span class="p">:</span>
+                <span class="n">text_length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">text_length</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">text_length</span><span class="o">/</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">k chars&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">text_length</span><span class="si">}</span><span class="s2"> chars&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;text_extraction_skipped&quot;</span><span class="p">:</span>
+                <span class="n">reason</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;skipped (</span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;text_extraction_supported&quot;</span><span class="p">:</span>
+                <span class="n">mime_type</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mime_type</span><span class="si">}</span><span class="s2"> supported&quot;</span>
+
+            <span class="c1"># Date extraction events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;date_extraction_completed&quot;</span><span class="p">:</span>
+                <span class="n">dates_found</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dates_found&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">dates_found</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">extracted_date</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;extracted_date&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dates_found</span><span class="si">}</span><span class="s2"> dates found: </span><span class="si">{</span><span class="n">extracted_date</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="s2">&quot;No dates found&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;date_extraction_skipped&quot;</span><span class="p">:</span>
+                <span class="n">reason</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;skipped (</span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;date_extraction_started&quot;</span><span class="p">:</span>
+                <span class="n">word_count</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;word_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">word_count</span><span class="si">}</span><span class="s2"> words to analyze&quot;</span>
+
+            <span class="c1"># LLM debugging events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;llm_prompt_created&quot;</span><span class="p">:</span>
+                <span class="n">text_length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">prompt_length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;text: </span><span class="si">{</span><span class="n">text_length</span><span class="si">}</span><span class="s2"> chars, prompt: </span><span class="si">{</span><span class="n">prompt_length</span><span class="si">}</span><span class="s2"> chars&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;llm_response_received&quot;</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="n">response_length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span> <span class="ow">and</span> <span class="n">response</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">response_length</span><span class="si">}</span><span class="s2"> chars)&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="s2">&quot;empty response&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;text_truncated_for_llm&quot;</span><span class="p">:</span>
+                <span class="n">original_length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;original_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">truncated_length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;truncated_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">truncation_ratio</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;truncation_ratio&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">original_length</span><span class="si">}</span><span class="s2"> → </span><span class="si">{</span><span class="n">truncated_length</span><span class="si">}</span><span class="s2"> chars (</span><span class="si">{</span><span class="n">truncation_ratio</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2"> kept)&quot;</span>
+
+            <span class="c1"># Query context events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;query_context_used&quot;</span><span class="p">:</span>
+                <span class="n">num_chunks</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_chunks&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">total_chars</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_context_chars&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">question</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;question&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)[:</span><span class="mi">50</span><span class="p">]</span>
+                <span class="n">context_preview</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;context_preview&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Format the context preview nicely</span>
+                <span class="k">if</span> <span class="n">total_chars</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+                    <span class="n">size_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_chars</span><span class="o">/</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">k chars&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">size_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_chars</span><span class="si">}</span><span class="s2"> chars&quot;</span>
+
+                <span class="c1"># Show a snippet of the context</span>
+                <span class="k">if</span> <span class="n">context_preview</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">context_preview</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+                    <span class="n">context_snippet</span> <span class="o">=</span> <span class="n">context_preview</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">context_snippet</span> <span class="o">=</span> <span class="n">context_preview</span>
+
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🔍 Query: &#39;</span><span class="si">{</span><span class="n">question</span><span class="si">}</span><span class="s2">...&#39;</span><span class="se">\n</span><span class="s2">📚 Context: </span><span class="si">{</span><span class="n">num_chunks</span><span class="si">}</span><span class="s2"> chunks, </span><span class="si">{</span><span class="n">size_str</span><span class="si">}</span><span class="se">\n</span><span class="s2">📄 Preview: </span><span class="si">{</span><span class="n">context_snippet</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;estimated_llm_prompt&quot;</span><span class="p">:</span>
+                <span class="n">prompt_length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">prompt_preview</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt_preview&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Prompt (</span><span class="si">{</span><span class="n">prompt_length</span><span class="si">}</span><span class="s2"> chars): </span><span class="si">{</span><span class="n">prompt_preview</span><span class="si">}</span><span class="s2">...&quot;</span>
+
+            <span class="c1"># Document events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;document_created&quot;</span><span class="p">:</span>
+                <span class="n">word_count</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;word_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">word_count</span><span class="si">}</span><span class="s2"> words indexed&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;document_creation_started&quot;</span><span class="p">:</span>
+                <span class="n">content_length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">metadata_fields</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata_fields&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">content_length</span><span class="si">}</span><span class="s2"> chars, </span><span class="si">{</span><span class="n">metadata_fields</span><span class="si">}</span><span class="s2"> fields&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;document_creation_failed&quot;</span><span class="p">:</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown error&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;document_status_updated&quot;</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;status=</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># File processing events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;file_import_started&quot;</span><span class="p">:</span>
+                <span class="n">file_size</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_size&quot;</span><span class="p">)</span>
+                <span class="n">has_mime_hint</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;has_mime_hint&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="n">mime_type</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_type&quot;</span><span class="p">)</span>
+                <span class="n">has_session</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;has_session&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="n">context_parts</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mime_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_size</span><span class="si">}</span><span class="s2">MB&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">has_mime_hint</span><span class="p">:</span>
+                    <span class="n">context_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;with hint&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">has_session</span><span class="p">:</span>
+                    <span class="n">context_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;tracked&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">context_parts</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;file_analysis_started&quot;</span><span class="p">:</span>
+                <span class="n">file_size_mb</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_size_mb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_size_mb</span><span class="si">}</span><span class="s2">MB file&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;file_hash_calculated&quot;</span><span class="p">:</span>
+                <span class="n">file_hash</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_hash&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;file_processed&quot;</span><span class="p">:</span>
+                <span class="n">size_bytes</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;size_bytes&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">mime_type</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">size_bytes</span> <span class="o">&gt;</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">:</span>
+                    <span class="n">size_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">MB&quot;</span>
+                <span class="k">elif</span> <span class="n">size_bytes</span> <span class="o">&gt;</span> <span class="mi">1024</span><span class="p">:</span>
+                    <span class="n">size_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">KB&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">size_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size_bytes</span><span class="si">}</span><span class="s2">B&quot;</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">mime_type</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># Vault events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;vault_storage_completed&quot;</span><span class="p">:</span>
+                <span class="n">vault_existed</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;vault_existed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="k">return</span> <span class="s2">&quot;existed&quot;</span> <span class="k">if</span> <span class="n">vault_existed</span> <span class="k">else</span> <span class="s2">&quot;new file&quot;</span>
+
+            <span class="c1"># Duplicate detection events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;duplicate_found&quot;</span><span class="p">:</span>
+                <span class="n">existing_doc_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;existing_doc_id&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;existing doc: </span><span class="si">{</span><span class="n">existing_doc_id</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;duplicate_check_started&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;checking for duplicates&quot;</span>
+
+            <span class="c1"># Progress tracking events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;progress_tracking_started&quot;</span><span class="p">:</span>
+                <span class="n">session_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_id&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;session: </span><span class="si">{</span><span class="n">session_id</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;progress_tracking_completed&quot;</span><span class="p">:</span>
+                <span class="n">session_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_id&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;session: </span><span class="si">{</span><span class="n">session_id</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">... completed&quot;</span>
+
+            <span class="c1"># Tagging events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;tags_applied&quot;</span><span class="p">:</span>
+                <span class="n">tags_count</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tags_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">tags</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">if</span> <span class="n">tags_count</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tags_count</span><span class="si">}</span><span class="s2"> tags: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span><span class="si">}</span><span class="s2"> + </span><span class="si">{</span><span class="n">tags_count</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">5</span><span class="si">}</span><span class="s2"> more&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tags_count</span><span class="si">}</span><span class="s2"> tags: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># Success/completion events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;file_import_success&quot;</span><span class="p">:</span>
+                <span class="n">word_count</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;word_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">vault_existed</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;vault_existed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;duplicate&quot;</span> <span class="k">if</span> <span class="n">vault_existed</span> <span class="k">else</span> <span class="s2">&quot;new&quot;</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">word_count</span><span class="si">}</span><span class="s2"> words, </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;text_extraction_completed&quot;</span><span class="p">:</span>
+                <span class="n">word_count</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;word_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">has_text</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;has_text&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">has_text</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">word_count</span><span class="si">}</span><span class="s2"> words extracted&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="s2">&quot;no text found&quot;</span>
+
+            <span class="c1"># Error events</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;file_import_error&quot;</span><span class="p">:</span>
+                <span class="n">error_type</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error_type&quot;</span><span class="p">,</span> <span class="s2">&quot;Error&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">error_type</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;progress_error_failed&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;progress tracking failed&quot;</span>
+            <span class="k">elif</span> <span class="n">event</span> <span class="o">==</span> <span class="s2">&quot;metadata_update_failed&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;metadata update failed&quot;</span>
+
+            <span class="c1"># Default: return empty string for no context</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_operation_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get operation-specific context information.&quot;&quot;&quot;</span>
+            <span class="n">context_parts</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># File operations context</span>
+            <span class="k">if</span> <span class="n">operation</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;file_storage&quot;</span><span class="p">,</span> <span class="s2">&quot;file_import&quot;</span><span class="p">,</span> <span class="s2">&quot;file_deletion&quot;</span><span class="p">]:</span>
+                <span class="n">context_parts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_file_context</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+            <span class="c1"># Document operations context</span>
+            <span class="k">elif</span> <span class="n">operation</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s2">&quot;document_addition&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;document_analysis&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text_extraction&quot;</span><span class="p">,</span>
+            <span class="p">]:</span>
+                <span class="n">context_parts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_document_context</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+            <span class="c1"># Query operations context</span>
+            <span class="k">elif</span> <span class="n">operation</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s2">&quot;metadata_query&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;document_retrieval&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;llamaindex_query&quot;</span><span class="p">,</span>
+            <span class="p">]:</span>
+                <span class="n">context_parts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_query_context</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+            <span class="c1"># Cleanup operations context</span>
+            <span class="k">elif</span> <span class="n">operation</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s2">&quot;temp_file_cleanup&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;vault_file_clearing&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;data_cleanup&quot;</span><span class="p">,</span>
+            <span class="p">]:</span>
+                <span class="n">context_parts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_cleanup_context</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+            <span class="c1"># System operations context</span>
+            <span class="k">elif</span> <span class="n">operation</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s2">&quot;vault_initialization&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;llama_index_setup&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;query_engine_setup&quot;</span><span class="p">,</span>
+            <span class="p">]:</span>
+                <span class="n">context_parts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_system_context</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot; (</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">context_parts</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span> <span class="k">if</span> <span class="n">context_parts</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_file_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get context for file operations.&quot;&quot;&quot;</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># File size (from result data or direct field)</span>
+            <span class="n">size_bytes</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;size_bytes&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">size_bytes</span> <span class="o">&gt;</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">:</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">MB&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">size_bytes</span> <span class="o">&gt;</span> <span class="mi">1024</span><span class="p">:</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">KB&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">size_bytes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">size_bytes</span><span class="si">}</span><span class="s2">B&quot;</span><span class="p">)</span>
+
+            <span class="c1"># File existence/status</span>
+            <span class="k">if</span> <span class="s2">&quot;existed&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">existed</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;existed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;existed&quot;</span> <span class="k">if</span> <span class="n">existed</span> <span class="k">else</span> <span class="s2">&quot;new&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Boolean result (for operations like delete)</span>
+            <span class="k">if</span> <span class="s2">&quot;result_value&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result_value&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;success&quot;</span> <span class="k">if</span> <span class="n">result</span> <span class="k">else</span> <span class="s2">&quot;not_found&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">context</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_document_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get context for document operations.&quot;&quot;&quot;</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># Content length</span>
+            <span class="k">if</span> <span class="s2">&quot;result_length&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">length</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">length</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">length</span><span class="o">/</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">k chars&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">length</span><span class="si">}</span><span class="s2"> chars&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Result keys (for metadata operations)</span>
+            <span class="k">if</span> <span class="s2">&quot;result_keys_count&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">keys</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result_keys_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">keys</span><span class="si">}</span><span class="s2"> fields&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Success status</span>
+            <span class="k">if</span> <span class="s2">&quot;operation_success&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">success</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operation_success&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">success</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;failed&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">context</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_query_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get context for query operations.&quot;&quot;&quot;</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># Result count</span>
+            <span class="k">if</span> <span class="s2">&quot;result_length&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">count</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> results&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Result keys count (for metadata queries)</span>
+            <span class="k">if</span> <span class="s2">&quot;result_keys_count&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">count</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result_keys_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2"> matches&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">context</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_cleanup_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get context for cleanup operations.&quot;&quot;&quot;</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># Files cleaned</span>
+            <span class="k">if</span> <span class="s2">&quot;result_keys_count&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">files</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result_keys_count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">files</span><span class="si">}</span><span class="s2"> files&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Bytes freed</span>
+            <span class="k">if</span> <span class="s2">&quot;result_length&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">bytes_freed</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result_length&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">bytes_freed</span> <span class="o">&gt;</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">:</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bytes_freed</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">MB freed&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">bytes_freed</span> <span class="o">&gt;</span> <span class="mi">1024</span><span class="p">:</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bytes_freed</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">KB freed&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">bytes_freed</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">bytes_freed</span><span class="si">}</span><span class="s2">B freed&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">context</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_system_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Get context for system operations.&quot;&quot;&quot;</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># Success status</span>
+            <span class="k">if</span> <span class="s2">&quot;operation_success&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">success</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operation_success&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">success</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ready&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">success</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">context</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;failed&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">context</span>
+
+    <span class="k">return</span> <span class="n">DevelopmentFormatter</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

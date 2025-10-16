@@ -1,0 +1,726 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.server.api.routes.documents &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.server.api.routes.documents</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.server.api.routes.documents</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Document management endpoints with Result type unwrapping.</span>
+
+<span class="sd">Provides CRUD operations for documents including:</span>
+<span class="sd">- Listing and filtering documents</span>
+<span class="sd">- Deleting documents from index and vault</span>
+<span class="sd">- Updating document metadata</span>
+<span class="sd">- Analyzing document structure and chunks</span>
+<span class="sd">- Finding similar documents</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">HTTPException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONResponse</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_server</span>
+
+<span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;/api&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;documents&quot;</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_format_document_for_ui</span><span class="p">(</span><span class="n">doc</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Format a document for UI consumption.</span>
+
+<span class="sd">    Extracts and flattens metadata for easier frontend access.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">theme_metadata</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;classifications&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_hash&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;original_path&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_type&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;size_bytes&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;modified_at&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;modified_at&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;ingested_at&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;error_message&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;word_count&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;word_count&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;language&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;extraction_method&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;extraction_method&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;text_preview&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text_preview&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;has_content&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;has_content&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="s2">&quot;tag_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="p">[])),</span>
+        <span class="c1"># Theme data</span>
+        <span class="s2">&quot;theme&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;theme&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;theme_confidence&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;confidence&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;confidence_level&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;confidence_level&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;classification&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;match_tier&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;pattern_or_phrase&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;match_pattern&quot;</span><span class="p">),</span>
+        <span class="c1"># Subtheme level</span>
+        <span class="s2">&quot;subthemes&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subthemes&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="s2">&quot;primary_subtheme&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;primary_subtheme&quot;</span><span class="p">),</span>
+        <span class="c1"># Subclassification level</span>
+        <span class="s2">&quot;subclassifications&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;subclassifications&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="s2">&quot;primary_subclassification&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;primary_subclassification&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;subclassification_confidence&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;subclassification_confidence&quot;</span>
+        <span class="p">),</span>
+        <span class="c1"># Category mapping</span>
+        <span class="s2">&quot;category_mapping&quot;</span><span class="p">:</span> <span class="n">theme_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;category_mapping&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_pagination</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validate and normalize pagination parameters.</span>
+
+<span class="sd">    Returns normalized (limit, offset) tuple.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Clamp limit to reasonable bounds</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">:</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="k">elif</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="mi">50</span>
+
+    <span class="c1"># Ensure offset is non-negative</span>
+    <span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">limit</span><span class="p">,</span> <span class="n">offset</span>
+
+
+<div class="viewcode-block" id="list_documents">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.documents.list_documents">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/documents&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_documents</span><span class="p">(</span>
+    <span class="n">status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">count_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List documents from LlamaIndex service with UI-compatible formatting.</span>
+
+<span class="sd">    Supports filtering by status and pagination.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;LlamaIndex service not available&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Validate and normalize pagination</span>
+        <span class="n">limit</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">_validate_pagination</span><span class="p">(</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+
+        <span class="c1"># Build filters</span>
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+            <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+
+        <span class="c1"># Handle count-only request</span>
+        <span class="k">if</span> <span class="n">count_only</span><span class="p">:</span>
+            <span class="c1"># TODO: Implement proper count method in metadata service</span>
+            <span class="n">all_docs_result</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_documents_by_metadata</span><span class="p">(</span>
+                    <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">all_docs_result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                    <span class="n">content</span><span class="o">=</span><span class="n">all_docs_result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                    <span class="n">status_code</span><span class="o">=</span><span class="n">all_docs_result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="c1"># Type-safe extraction of value</span>
+            <span class="n">all_docs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">all_docs_result</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">all_docs_result</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span>
+            <span class="p">):</span>
+                <span class="n">all_docs</span> <span class="o">=</span> <span class="n">all_docs_result</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_docs</span><span class="p">),</span> <span class="s2">&quot;filters&quot;</span><span class="p">:</span> <span class="n">filters</span><span class="p">}</span>
+
+        <span class="c1"># Query documents</span>
+        <span class="n">raw_documents_result</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_documents_by_metadata</span><span class="p">(</span>
+                <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">raw_documents_result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">raw_documents_result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">raw_documents_result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Type-safe extraction of value</span>
+        <span class="n">raw_documents</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">raw_documents_result</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">raw_documents_result</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span>
+        <span class="p">):</span>
+            <span class="n">raw_documents</span> <span class="o">=</span> <span class="n">raw_documents_result</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="c1"># Format documents for UI using helper</span>
+        <span class="n">formatted_documents</span> <span class="o">=</span> <span class="p">[</span><span class="n">_format_document_for_ui</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">raw_documents</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;documents&quot;</span><span class="p">:</span> <span class="n">formatted_documents</span><span class="p">,</span>
+            <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">formatted_documents</span><span class="p">),</span>
+            <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+            <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="delete_document">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.documents.delete_document">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;/documents/</span><span class="si">{document_id}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_document</span><span class="p">(</span><span class="n">document_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Delete a specific document from both LlamaIndex and vault.</span>
+
+<span class="sd">    Handles deduplication - only deletes from vault if no other documents use the same file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;LlamaIndex service not available&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Step 1: Get document metadata to find file hash</span>
+        <span class="n">documents_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_documents_by_metadata</span><span class="p">(</span>
+            <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="n">document_id</span><span class="p">},</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">documents_result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">documents_result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">documents_result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Type-safe extraction of value</span>
+        <span class="n">documents</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">documents_result</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">documents_result</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span>
+        <span class="p">):</span>
+            <span class="n">documents</span> <span class="o">=</span> <span class="n">documents_result</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">documents</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Document </span><span class="si">{</span><span class="n">document_id</span><span class="si">}</span><span class="s2"> not found&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">document_metadata</span> <span class="o">=</span> <span class="n">documents</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">file_hash</span> <span class="o">=</span> <span class="n">document_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_hash&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Step 2: Delete from LlamaIndex</span>
+        <span class="n">delete_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">delete_document</span><span class="p">(</span><span class="n">document_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">delete_result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">delete_result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">delete_result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Type-safe extraction of value</span>
+        <span class="n">delete_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">delete_result</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delete_result</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">delete_info</span> <span class="o">=</span> <span class="n">delete_result</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="c1"># Step 3: Delete from vault if we have the file hash</span>
+        <span class="n">vault_deleted</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">file_hash</span> <span class="ow">and</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Check if any other documents use this file (deduplication check)</span>
+                <span class="n">other_docs_result</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_documents_by_metadata</span><span class="p">(</span>
+                        <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">},</span> <span class="n">limit</span><span class="o">=</span><span class="mi">2</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="c1"># Explicitly type the result to help mypy</span>
+                <span class="n">other_docs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="n">other_docs_result</span><span class="o">.</span><span class="n">is_success</span><span class="p">()</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span>
+                    <span class="n">other_docs_result</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span>
+                <span class="p">):</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">other_docs_result</span><span class="o">.</span><span class="n">value</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                        <span class="n">other_docs</span> <span class="o">=</span> <span class="n">value</span>
+
+                <span class="c1"># Only delete from vault if this is the only document using this file</span>
+                <span class="c1"># 1 or 0 because we might have already deleted from index</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">other_docs</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;files_deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                        <span class="s2">&quot;bytes_reclaimed&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                        <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="p">}</span>
+                    <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">delete_file_by_hash</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+                    <span class="n">files_deleted_count</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;files_deleted&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="n">vault_deleted</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="nb">isinstance</span><span class="p">(</span><span class="n">files_deleted_count</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">files_deleted_count</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                    <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># Log but don&#39;t fail if vault deletion fails</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Failed to delete file from vault: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">delete_info</span><span class="p">,</span>
+            <span class="s2">&quot;index_deleted&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;vault_deleted&quot;</span><span class="p">:</span> <span class="n">vault_deleted</span><span class="p">,</span>
+            <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="update_document_subtheme">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.documents.update_document_subtheme">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s2">&quot;/documents/</span><span class="si">{document_id}</span><span class="s2">/subtheme&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_document_subtheme</span><span class="p">(</span><span class="n">document_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subtheme_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update document subtheme metadata.</span>
+
+<span class="sd">    Allows updating classification, theme, and subtheme information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;LlamaIndex service not available&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Update document metadata with subtheme information (returns Result)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">update_document_metadata</span><span class="p">(</span>
+            <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">,</span> <span class="n">metadata_updates</span><span class="o">=</span><span class="n">subtheme_data</span><span class="p">,</span> <span class="n">merge_mode</span><span class="o">=</span><span class="s2">&quot;update&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Type-safe extraction of value</span>
+        <span class="n">update_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">update_info</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="n">document_id</span><span class="p">,</span>
+            <span class="s2">&quot;updated_fields&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">subtheme_data</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+            <span class="o">**</span><span class="n">update_info</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="clear_all_documents">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.documents.clear_all_documents">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;/documents&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">clear_all_documents</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Comprehensive clear all documents operation with progress tracking.</span>
+
+<span class="sd">    Clears data from:</span>
+<span class="sd">    - LlamaIndex (vectors, metadata, docstore)</span>
+<span class="sd">    - Vault (files)</span>
+<span class="sd">    - Progress tracking</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Step 1: Clear LlamaIndex data</span>
+        <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+            <span class="n">clear_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">clear_all_data</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">clear_result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                    <span class="n">content</span><span class="o">=</span><span class="n">clear_result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                    <span class="n">status_code</span><span class="o">=</span><span class="n">clear_result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Type-safe extraction of value</span>
+            <span class="n">llamaindex_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">clear_result</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">clear_result</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">llamaindex_metrics</span> <span class="o">=</span> <span class="n">clear_result</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">llamaindex_metrics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;skipped&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+
+        <span class="c1"># Step 2: Clear vault files</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Vault not initialized&quot;</span><span class="p">)</span>
+        <span class="n">vault_metrics</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">clear_all_files</span><span class="p">([])</span>
+
+        <span class="c1"># Step 3: Clear progress tracking data</span>
+        <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">progress_manager</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">progress_metrics</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">clear_all_progress</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">progress_error</span><span class="p">:</span>
+                <span class="n">progress_metrics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">progress_error</span><span class="p">)}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">progress_metrics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;skipped&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+
+        <span class="c1"># Compile comprehensive metrics</span>
+        <span class="n">vault_files_deleted</span> <span class="o">=</span> <span class="n">vault_metrics</span><span class="p">[</span><span class="s2">&quot;files_deleted&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">vault_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;orphaned_files_deleted&quot;</span><span class="p">,</span> <span class="mi">0</span>
+        <span class="p">)</span>
+        <span class="n">vault_bytes_reclaimed</span> <span class="o">=</span> <span class="n">vault_metrics</span><span class="p">[</span><span class="s2">&quot;bytes_reclaimed&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">vault_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;orphaned_bytes_reclaimed&quot;</span><span class="p">,</span> <span class="mi">0</span>
+        <span class="p">)</span>
+        <span class="n">total_files_deleted</span> <span class="o">=</span> <span class="n">vault_files_deleted</span> <span class="o">+</span> <span class="n">llamaindex_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;storage_files_deleted&quot;</span><span class="p">,</span> <span class="mi">0</span>
+        <span class="p">)</span>
+        <span class="n">total_bytes_reclaimed</span> <span class="o">=</span> <span class="n">vault_bytes_reclaimed</span> <span class="o">+</span> <span class="n">llamaindex_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;storage_bytes_reclaimed&quot;</span><span class="p">,</span> <span class="mi">0</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="s2">&quot;comprehensive_clear_all&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;total_files_deleted&quot;</span><span class="p">:</span> <span class="n">total_files_deleted</span><span class="p">,</span>
+                <span class="s2">&quot;total_bytes_reclaimed&quot;</span><span class="p">:</span> <span class="n">total_bytes_reclaimed</span><span class="p">,</span>
+                <span class="s2">&quot;total_mb_reclaimed&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">total_bytes_reclaimed</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;vault_metrics&quot;</span><span class="p">:</span> <span class="n">vault_metrics</span><span class="p">,</span>
+            <span class="s2">&quot;llamaindex_metrics&quot;</span><span class="p">:</span> <span class="n">llamaindex_metrics</span><span class="p">,</span>
+            <span class="s2">&quot;progress_metrics&quot;</span><span class="p">:</span> <span class="n">progress_metrics</span><span class="p">,</span>
+            <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">vault_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="o">+</span> <span class="n">llamaindex_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="o">+</span> <span class="n">progress_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="p">),</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="get_llamaindex_document_analysis">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.documents.get_llamaindex_document_analysis">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/documents/</span><span class="si">{document_id}</span><span class="s2">/llamaindex-analysis&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_llamaindex_document_analysis</span><span class="p">(</span><span class="n">document_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get comprehensive LlamaIndex analysis for a document.</span>
+
+<span class="sd">    Returns chunk statistics, processing info, and storage details.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;LlamaIndex service not available&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">get_document_analysis</span><span class="p">(</span><span class="n">document_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="get_llamaindex_document_chunks">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.documents.get_llamaindex_document_chunks">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/documents/</span><span class="si">{document_id}</span><span class="s2">/llamaindex-chunks&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_llamaindex_document_chunks</span><span class="p">(</span>
+    <span class="n">document_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get paginated chunks for a document from LlamaIndex.</span>
+
+<span class="sd">    Returns the text chunks with their metadata and embeddings info.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;LlamaIndex service not available&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Validate pagination</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Limit must be between 1 and 1000&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Offset must be non-negative&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">get_document_chunks</span><span class="p">(</span>
+            <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="get_llamaindex_document_neighbors">
+<a class="viewcode-back" href="../../../../../api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.documents.get_llamaindex_document_neighbors">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/documents/</span><span class="si">{document_id}</span><span class="s2">/llamaindex-neighbors&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_llamaindex_document_neighbors</span><span class="p">(</span><span class="n">document_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">top_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get semantically similar documents for a given document.</span>
+
+<span class="sd">    Uses vector similarity to find related documents.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;LlamaIndex service not available&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Validate parameters</span>
+    <span class="k">if</span> <span class="n">top_k</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">top_k</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;top_k must be between 1 and 100&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Note: get_document_neighbors returns Result</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">get_document_neighbors</span><span class="p">(</span>
+            <span class="n">document_id</span><span class="o">=</span><span class="n">document_id</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="n">top_k</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Handle Result type if it returns one, otherwise handle dict</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;is_failure&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">(</span>
+                    <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                    <span class="n">status_code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="c1"># Legacy dict-based error handling (if service doesn&#39;t return Result yet)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;not found&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

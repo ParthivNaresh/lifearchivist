@@ -1,0 +1,1033 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.tools.file_import.file_import_tool &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.tools.file_import.file_import_tool</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.tools.file_import.file_import_tool</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">File import tool.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">magic</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.server.progress_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessingStage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTool</span><span class="p">,</span> <span class="n">ToolMetadata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.file_import.file_import_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">calculate_file_hash</span><span class="p">,</span>
+    <span class="n">create_document_metadata</span><span class="p">,</span>
+    <span class="n">create_duplicate_response</span><span class="p">,</span>
+    <span class="n">create_error_response</span><span class="p">,</span>
+    <span class="n">create_provenance_entry</span><span class="p">,</span>
+    <span class="n">create_success_response</span><span class="p">,</span>
+    <span class="n">is_text_extraction_supported</span><span class="p">,</span>
+    <span class="n">should_extract_dates</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
+
+
+<div class="viewcode-block" id="FileImportTool">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.FileImportTool">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileImportTool</span><span class="p">(</span><span class="n">BaseTool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tool for importing files into the vault.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FileImportTool.__init__">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.FileImportTool.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">vault</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">llamaindex_service</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">progress_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">enrichment_queue</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">theme_classifier</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">activity_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vault</span> <span class="o">=</span> <span class="n">vault</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span> <span class="o">=</span> <span class="n">llamaindex_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span> <span class="o">=</span> <span class="n">progress_manager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span> <span class="o">=</span> <span class="n">enrichment_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span> <span class="o">=</span> <span class="n">activity_manager</span>
+        <span class="c1"># Use provided classifier or create a new one</span>
+        <span class="k">if</span> <span class="n">theme_classifier</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.theme_classifier.theme_classifier</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+                <span class="n">ThemeClassifier</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">theme_classifier</span> <span class="o">=</span> <span class="n">ThemeClassifier</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theme_classifier</span> <span class="o">=</span> <span class="n">theme_classifier</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolMetadata</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ToolMetadata</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;file.import&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Import file to vault&quot;</span><span class="p">,</span>
+            <span class="n">input_schema</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Absolute or relative path&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;mime_hint&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Override auto-detection&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">],</span> <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">}},</span>
+                    <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;object&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">]},</span>
+                    <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;WebSocket session ID for progress tracking&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="n">output_schema</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;hash&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="n">async_tool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">idempotent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="FileImportTool.execute">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.FileImportTool.execute">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;file_import_pipeline&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">,</span> <span class="s2">&quot;session_id&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Import a file into the system.&quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">)</span>
+        <span class="n">mime_hint</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_hint&quot;</span><span class="p">)</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">session_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_id&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Get original filename from metadata if provided (for uploads)</span>
+        <span class="n">original_filename</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;original_filename&quot;</span><span class="p">)</span>
+        <span class="n">display_path</span> <span class="o">=</span> <span class="n">original_filename</span> <span class="k">if</span> <span class="n">original_filename</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;File path is required&quot;</span><span class="p">)</span>
+
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Vault and LlamaIndex service dependencies not provided&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Get file stats</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span>
+        <span class="n">file_size_bytes</span> <span class="o">=</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="n">file_size_mb</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">file_size_bytes</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Calculate hash and detect MIME type</span>
+        <span class="n">file_hash</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">display_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mime_hint</span><span class="p">:</span>
+            <span class="n">mime_type</span> <span class="o">=</span> <span class="n">mime_hint</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mime_type</span> <span class="o">=</span> <span class="n">magic</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">mime</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Use provided file_id or generate unique ID</span>
+        <span class="n">file_id</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;file_id&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+
+        <span class="c1"># Log import start with all context (single comprehensive event)</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;file_import_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="n">display_path</span><span class="p">,</span>
+                <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                <span class="s2">&quot;mime_source&quot;</span><span class="p">:</span> <span class="s2">&quot;hint&quot;</span> <span class="k">if</span> <span class="n">mime_hint</span> <span class="k">else</span> <span class="s2">&quot;detected&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">file_size_bytes</span><span class="p">,</span>
+                <span class="s2">&quot;size_mb&quot;</span><span class="p">:</span> <span class="n">file_size_mb</span><span class="p">,</span>
+                <span class="s2">&quot;tags_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">),</span>
+                <span class="s2">&quot;has_session&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">session_id</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Initialize progress tracking</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span> <span class="ow">and</span> <span class="n">session_id</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">start_progress</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Store file in vault first - this handles physical file deduplication</span>
+            <span class="n">vault_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">store_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
+
+            <span class="c1"># Check for duplicate using vault result AND LlamaIndex metadata check</span>
+            <span class="k">if</span> <span class="n">vault_result</span><span class="p">[</span><span class="s2">&quot;existed&quot;</span><span class="p">]:</span>
+                <span class="n">duplicate_doc</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_for_duplicate</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">duplicate_doc</span><span class="p">:</span>
+                    <span class="c1"># Send completion message for duplicates BEFORE cleanup</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span> <span class="ow">and</span> <span class="n">session_id</span><span class="p">:</span>
+                        <span class="c1"># Send a completion message indicating this is a duplicate</span>
+                        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">complete_progress</span><span class="p">(</span>
+                            <span class="n">file_id</span><span class="p">,</span>
+                            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+                                <span class="s2">&quot;original_filename&quot;</span><span class="p">:</span> <span class="n">original_filename</span><span class="p">,</span>
+                                <span class="s2">&quot;file_size&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+                                <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;duplicate&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;File already exists in archive&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;existing_doc_id&quot;</span><span class="p">:</span> <span class="n">duplicate_doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">),</span>
+                            <span class="p">},</span>
+                        <span class="p">)</span>
+                        <span class="c1"># Now clean up the progress tracking</span>
+                        <span class="c1"># Note: We may want to keep this for a bit to ensure the message is delivered</span>
+                        <span class="c1"># await self.progress_manager.cleanup_progress(file_id)</span>
+
+                    <span class="c1"># Log duplicate found (important business event)</span>
+                    <span class="n">log_event</span><span class="p">(</span>
+                        <span class="s2">&quot;duplicate_file_detected&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                            <span class="s2">&quot;existing_doc_id&quot;</span><span class="p">:</span> <span class="n">duplicate_doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">),</span>
+                            <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                            <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="n">display_path</span><span class="p">,</span>
+                        <span class="p">},</span>
+                    <span class="p">)</span>
+
+                    <span class="k">return</span> <span class="n">create_duplicate_response</span><span class="p">(</span>
+                        <span class="n">duplicate_doc</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">,</span> <span class="n">stat</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">,</span> <span class="n">display_path</span>
+                    <span class="p">)</span>
+
+            <span class="c1"># Extract text content early to have it available for document creation</span>
+            <span class="n">extracted_text</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_try_extract_text</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">,</span> <span class="n">file_hash</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Extract document internal metadata (PDF/DOCX creation dates, etc.)</span>
+            <span class="n">document_metadata</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_document_metadata</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">mime_type</span>
+            <span class="p">)</span>
+
+            <span class="c1"># If document doesn&#39;t have internal creation date, use platform-specific creation date</span>
+            <span class="c1"># This reads macOS extended attributes (fast, &lt;1ms) or Windows creation time</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">document_metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_created_at&quot;</span><span class="p">):</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.file_import.file_import_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+                    <span class="n">get_platform_creation_date</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="n">platform_date</span> <span class="o">=</span> <span class="n">get_platform_creation_date</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">platform_date</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">document_metadata</span><span class="p">:</span>
+                        <span class="n">document_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">document_metadata</span><span class="p">[</span><span class="s2">&quot;document_created_at&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">platform_date</span>
+                    <span class="n">log_event</span><span class="p">(</span>
+                        <span class="s2">&quot;platform_creation_date_used&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                            <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                            <span class="s2">&quot;creation_date&quot;</span><span class="p">:</span> <span class="n">platform_date</span><span class="p">,</span>
+                        <span class="p">},</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+            <span class="n">theme_result</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">extracted_text</span><span class="p">:</span>
+                <span class="n">theme_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_themes</span><span class="p">(</span>
+                    <span class="n">file_id</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">,</span> <span class="n">display_path</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">theme_result</span><span class="p">:</span>
+                    <span class="c1"># Classify subthemes if we have a primary theme</span>
+                    <span class="n">theme</span> <span class="o">=</span> <span class="n">theme_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;theme&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">theme</span> <span class="ow">and</span> <span class="n">theme</span> <span class="o">!=</span> <span class="s2">&quot;Unclassified&quot;</span><span class="p">:</span>
+                        <span class="n">subtheme_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_subthemes</span><span class="p">(</span>
+                            <span class="n">file_id</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">,</span> <span class="n">theme</span><span class="p">,</span> <span class="n">original_filename</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">subtheme_result</span><span class="p">:</span>
+                            <span class="n">theme_result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subtheme_result</span><span class="p">)</span>
+
+            <span class="c1"># Build custom metadata dictionary with all enrichments</span>
+            <span class="n">custom_metadata_dict</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">metadata</span><span class="p">}</span>  <span class="c1"># Start with user-provided metadata</span>
+
+            <span class="c1"># Add document internal metadata (PDF/DOCX dates, author, etc.)</span>
+            <span class="k">if</span> <span class="n">document_metadata</span><span class="p">:</span>
+                <span class="n">custom_metadata_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">document_metadata</span><span class="p">)</span>
+
+            <span class="c1"># Add theme classifications if available</span>
+            <span class="k">if</span> <span class="n">theme_result</span><span class="p">:</span>
+                <span class="n">custom_metadata_dict</span><span class="p">[</span><span class="s2">&quot;classifications&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theme_result</span>
+
+            <span class="c1"># Add tags if provided</span>
+            <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
+                <span class="n">custom_metadata_dict</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span>
+
+            <span class="c1"># Create document metadata in single call (single source of truth)</span>
+            <span class="n">doc_metadata</span> <span class="o">=</span> <span class="n">create_document_metadata</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
+                <span class="n">file_hash</span><span class="o">=</span><span class="n">file_hash</span><span class="p">,</span>
+                <span class="n">original_path</span><span class="o">=</span><span class="n">display_path</span><span class="p">,</span>
+                <span class="n">mime_type</span><span class="o">=</span><span class="n">mime_type</span><span class="p">,</span>
+                <span class="n">stat</span><span class="o">=</span><span class="n">stat</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="n">extracted_text</span><span class="p">,</span>
+                <span class="n">custom_metadata</span><span class="o">=</span><span class="n">custom_metadata_dict</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_document</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">,</span> <span class="n">doc_metadata</span><span class="p">)</span>
+
+            <span class="c1"># Queue enrichment tasks instead of processing synchronously</span>
+            <span class="k">if</span> <span class="n">extracted_text</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue_enrichment_tasks</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">)</span>
+
+            <span class="c1"># Finalize document</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finalize_document</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">vault_result</span><span class="p">)</span>
+
+            <span class="c1"># Complete progress tracking</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span> <span class="ow">and</span> <span class="n">session_id</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">complete_progress</span><span class="p">(</span>
+                    <span class="n">file_id</span><span class="p">,</span>
+                    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s2">&quot;original_filename&quot;</span><span class="p">:</span> <span class="n">original_filename</span><span class="p">,</span>
+                        <span class="s2">&quot;file_size&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span><span class="p">,</span>
+                        <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Log successful import with comprehensive metrics (important business event)</span>
+            <span class="n">word_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">extracted_text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">if</span> <span class="n">extracted_text</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;file_import_completed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                    <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="n">display_path</span><span class="p">,</span>
+                    <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                    <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">file_size_bytes</span><span class="p">,</span>
+                    <span class="s2">&quot;word_count&quot;</span><span class="p">:</span> <span class="n">word_count</span><span class="p">,</span>
+                    <span class="s2">&quot;text_extracted&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">),</span>
+                    <span class="s2">&quot;tags_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">),</span>
+                    <span class="s2">&quot;vault_existed&quot;</span><span class="p">:</span> <span class="n">vault_result</span><span class="p">[</span><span class="s2">&quot;existed&quot;</span><span class="p">],</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Add activity event for successful upload</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="p">:</span>
+                <span class="c1"># Determine source from metadata</span>
+                <span class="n">source</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;manual&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;folder_watch&quot;</span><span class="p">:</span>
+                    <span class="c1"># Skip - folder watcher already added its own event</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Manual upload or other source</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="o">.</span><span class="n">add_upload_event</span><span class="p">(</span>
+                        <span class="n">file_count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                        <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+                        <span class="n">file_name</span><span class="o">=</span><span class="n">display_path</span><span class="p">,</span>
+                        <span class="n">file_size</span><span class="o">=</span><span class="n">file_size_bytes</span><span class="p">,</span>
+                        <span class="n">mime_type</span><span class="o">=</span><span class="n">mime_type</span><span class="p">,</span>
+                        <span class="n">document_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">create_success_response</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">,</span> <span class="n">stat</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">,</span> <span class="n">display_path</span><span class="p">,</span> <span class="n">vault_result</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_import_error</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">file_id</span><span class="p">,</span> <span class="n">display_path</span><span class="p">,</span> <span class="n">session_id</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">create_error_response</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">display_path</span><span class="p">)</span></div>
+
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;file_analysis&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;display_path&quot;</span><span class="p">],</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">display_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze file and calculate hash.&quot;&quot;&quot;</span>
+        <span class="n">file_hash</span> <span class="o">=</span> <span class="k">await</span> <span class="n">calculate_file_hash</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">file_hash</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;duplicate_detection&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">],</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_check_for_duplicate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check for duplicate documents in LlamaIndex.&quot;&quot;&quot;</span>
+        <span class="c1"># Check LlamaIndex for existing document with this file hash</span>
+        <span class="n">existing_docs_result</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_documents_by_metadata</span><span class="p">(</span>
+                <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">},</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Unwrap the Result</span>
+        <span class="k">if</span> <span class="n">existing_docs_result</span><span class="o">.</span><span class="n">is_success</span><span class="p">():</span>
+            <span class="n">existing_docs</span> <span class="o">=</span> <span class="n">existing_docs_result</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">existing_docs</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">existing_docs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># type: ignore[no-any-return]</span>
+
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;document_creation&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">],</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_create_document</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">doc_metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create document in LlamaIndex.&quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">add_document</span><span class="p">(</span>
+            <span class="n">document_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">extracted_text</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">doc_metadata</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;document_indexing_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+                    <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">error_type</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to create document </span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;document_finalization&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">],</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_finalize_document</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">vault_result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Finalize document with status update and provenance.&quot;&quot;&quot;</span>
+        <span class="c1"># Update status to ready in LlamaIndex metadata</span>
+        <span class="n">status_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">update_document_metadata</span><span class="p">(</span>
+            <span class="n">file_id</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ready&quot;</span><span class="p">},</span> <span class="n">merge_mode</span><span class="o">=</span><span class="s2">&quot;update&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">status_result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;document_finalization_warning&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="s2">&quot;status_update&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">status_result</span><span class="o">.</span><span class="n">error</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Log provenance in LlamaIndex metadata</span>
+        <span class="n">provenance_entry</span> <span class="o">=</span> <span class="n">create_provenance_entry</span><span class="p">(</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">&quot;import&quot;</span><span class="p">,</span>
+            <span class="n">agent</span><span class="o">=</span><span class="s2">&quot;file_import_tool&quot;</span><span class="p">,</span>
+            <span class="n">tool</span><span class="o">=</span><span class="s2">&quot;file.import&quot;</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;original_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">)},</span>
+            <span class="n">result</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="n">vault_result</span><span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;existed&quot;</span><span class="p">:</span> <span class="n">vault_result</span><span class="p">[</span><span class="s2">&quot;existed&quot;</span><span class="p">],</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">provenance_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">update_document_metadata</span><span class="p">(</span>
+            <span class="n">file_id</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;provenance&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">provenance_entry</span><span class="p">]},</span> <span class="n">merge_mode</span><span class="o">=</span><span class="s2">&quot;update&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">provenance_result</span><span class="o">.</span><span class="n">is_failure</span><span class="p">():</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;document_finalization_warning&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="s2">&quot;provenance_update&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">provenance_result</span><span class="o">.</span><span class="n">error</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_handle_import_error</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">display_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle import errors with proper cleanup and logging.&quot;&quot;&quot;</span>
+        <span class="c1"># Log the main error (important for debugging)</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;file_import_failed&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span> <span class="k">if</span> <span class="n">file_id</span> <span class="k">else</span> <span class="s2">&quot;unknown&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span>
+                <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="n">display_path</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Add activity event for failed upload</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="o">.</span><span class="n">add_event</span><span class="p">(</span>
+                <span class="s2">&quot;file_upload_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_name&quot;</span><span class="p">:</span> <span class="n">display_path</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span>
+                    <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span> <span class="k">if</span> <span class="n">file_id</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Report error to progress tracking if we have a file_id</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span> <span class="ow">and</span> <span class="n">session_id</span> <span class="ow">and</span> <span class="n">file_id</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">error_progress</span><span class="p">(</span>
+                    <span class="n">file_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">ProcessingStage</span><span class="o">.</span><span class="n">UPLOAD</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">progress_error</span><span class="p">:</span>
+                <span class="c1"># Log secondary failures at DEBUG level to reduce noise</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                        <span class="s2">&quot;cleanup_type&quot;</span><span class="p">:</span> <span class="s2">&quot;progress_tracking&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">progress_error</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Update document metadata to failed status if document exists</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span> <span class="ow">and</span> <span class="n">file_id</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">update_document_metadata</span><span class="p">(</span>
+                    <span class="n">file_id</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;failed&quot;</span><span class="p">,</span> <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)},</span>
+                    <span class="n">merge_mode</span><span class="o">=</span><span class="s2">&quot;update&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">metadata_error</span><span class="p">:</span>
+                <span class="c1"># Log secondary failures at DEBUG level to reduce noise</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                        <span class="s2">&quot;cleanup_type&quot;</span><span class="p">:</span> <span class="s2">&quot;metadata_update&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">metadata_error</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;text_extraction&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">,</span> <span class="s2">&quot;mime_type&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_try_extract_text</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Try to extract text from the imported file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">is_text_extraction_supported</span><span class="p">(</span><span class="n">mime_type</span><span class="p">):</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.extract.extract_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractTextTool</span>
+
+            <span class="n">extract_tool</span> <span class="o">=</span> <span class="n">ExtractTextTool</span><span class="p">(</span><span class="n">vault</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">extract_tool</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="n">file_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
+                <span class="n">file_path</span><span class="o">=</span><span class="n">file_path</span><span class="p">,</span>
+                <span class="n">mime_type</span><span class="o">=</span><span class="n">mime_type</span><span class="p">,</span>
+                <span class="n">file_hash</span><span class="o">=</span><span class="n">file_hash</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Only log if extraction had notable results or issues</span>
+            <span class="n">word_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">extracted_text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">if</span> <span class="n">extracted_text</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">word_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;text_extraction_empty&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                        <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                        <span class="s2">&quot;extraction_method&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_extraction_method</span><span class="p">(</span><span class="n">mime_type</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Log at DEBUG level since this is expected for many file types</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;text_extraction_skipped&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                    <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;unsupported_format&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_extraction_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get extraction method name for logging.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">mime_type</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;text/&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;text_file&quot;</span>
+        <span class="k">elif</span> <span class="n">mime_type</span> <span class="o">==</span> <span class="s2">&quot;application/pdf&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;pypdf&quot;</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">mime_type</span>
+            <span class="o">==</span> <span class="s2">&quot;application/vnd.openxmlformats-officedocument.wordprocessingml.document&quot;</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;python_docx&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;unknown&quot;</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;theme_classification&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_classify_themes</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">display_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Classify document themes using the shared ProductionThemeClassifier.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">theme</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">pattern_or_phrase</span><span class="p">,</span> <span class="n">classification</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">theme_classifier</span><span class="o">.</span><span class="n">classify</span><span class="p">(</span>
+                    <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+                    <span class="n">filename</span><span class="o">=</span><span class="n">display_path</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="n">theme_details</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;theme&quot;</span><span class="p">:</span> <span class="n">theme</span><span class="p">,</span>
+                <span class="s2">&quot;match_tier&quot;</span><span class="p">:</span> <span class="n">classification</span><span class="p">,</span>
+                <span class="s2">&quot;match_pattern&quot;</span><span class="p">:</span> <span class="n">pattern_or_phrase</span><span class="p">,</span>
+                <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="k">match</span> <span class="n">classification</span><span class="p">:</span>
+                <span class="k">case</span> <span class="s2">&quot;primary&quot;</span><span class="p">:</span>
+                    <span class="n">theme_details</span><span class="p">[</span><span class="s2">&quot;confidence_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Very High&quot;</span>
+                <span class="k">case</span> <span class="s2">&quot;secondary&quot;</span><span class="p">:</span>
+                    <span class="n">theme_details</span><span class="p">[</span><span class="s2">&quot;confidence_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;High&quot;</span>
+                <span class="k">case</span> <span class="s2">&quot;tertiary&quot;</span> <span class="k">if</span> <span class="n">confidence</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">:</span>
+                    <span class="n">theme_details</span><span class="p">[</span><span class="s2">&quot;confidence_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Medium&quot;</span>
+                <span class="k">case</span> <span class="s2">&quot;tertiary&quot;</span> <span class="k">if</span> <span class="n">confidence</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+                    <span class="n">theme_details</span><span class="p">[</span><span class="s2">&quot;confidence_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Low&quot;</span>
+                <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                    <span class="n">theme_details</span><span class="p">[</span><span class="s2">&quot;confidence_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;document_themes_classified&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="o">**</span><span class="n">theme_details</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">theme_details</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;theme_classification_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;subtheme_classification&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">,</span> <span class="s2">&quot;primary_theme&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_classify_subthemes</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">primary_theme</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Classify document subthemes based on primary theme.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.subtheme_classifier.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubthemeResult</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.subtheme_classifier.subtheme_classifier</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+                <span class="n">SubthemeClassifier</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Create subtheme classifier instance</span>
+            <span class="n">classifier</span> <span class="o">=</span> <span class="n">SubthemeClassifier</span><span class="p">()</span>
+
+            <span class="c1"># Check if this theme supports subtheme classification</span>
+            <span class="k">if</span> <span class="n">primary_theme</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">classifier</span><span class="o">.</span><span class="n">get_supported_themes</span><span class="p">():</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;subtheme_classification_skipped&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                        <span class="s2">&quot;primary_theme&quot;</span><span class="p">:</span> <span class="n">primary_theme</span><span class="p">,</span>
+                        <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;theme_not_supported&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+            <span class="c1"># Prepare metadata for classification</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">}</span> <span class="k">if</span> <span class="n">filename</span> <span class="k">else</span> <span class="p">{}</span>
+
+            <span class="c1"># Classify subthemes</span>
+            <span class="n">result</span><span class="p">:</span> <span class="n">SubthemeResult</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">classify</span><span class="p">(</span>
+                <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">primary_theme</span><span class="o">=</span><span class="n">primary_theme</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">subthemes</span><span class="p">:</span>
+                <span class="n">subtheme_metadata</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;subthemes&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">subthemes</span><span class="p">,</span>
+                    <span class="s2">&quot;primary_subtheme&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">primary_subtheme</span><span class="p">,</span>
+                    <span class="s2">&quot;subclassifications&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">subclassifications</span><span class="p">,</span>
+                    <span class="s2">&quot;primary_subclassification&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">primary_subclassification</span><span class="p">,</span>
+                    <span class="s2">&quot;subclassification_confidence&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">subclassification_confidence</span><span class="p">,</span>
+                    <span class="s2">&quot;confidence_scores&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">confidence_scores</span><span class="p">,</span>
+                    <span class="s2">&quot;category_mapping&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">category_mapping</span><span class="p">,</span>
+                    <span class="s2">&quot;matched_patterns&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">matched_patterns</span><span class="p">,</span>
+                    <span class="s2">&quot;subclassification_method&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">subclassification_method</span><span class="p">,</span>
+                <span class="p">}</span>
+
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;document_subthemes_classified&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                        <span class="s2">&quot;primary_theme&quot;</span><span class="p">:</span> <span class="n">primary_theme</span><span class="p">,</span>
+                        <span class="s2">&quot;primary_subtheme&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">primary_subtheme</span><span class="p">,</span>
+                        <span class="s2">&quot;subthemes_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">subthemes</span><span class="p">),</span>
+                        <span class="s2">&quot;classification_method&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">subclassification_method</span><span class="p">,</span>
+                        <span class="s2">&quot;primary_pattern&quot;</span><span class="p">:</span> <span class="p">(</span>
+                            <span class="n">result</span><span class="o">.</span><span class="n">matched_patterns</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">primary_subtheme</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">primary_subtheme</span>
+                            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                        <span class="p">),</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">subtheme_metadata</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;document_subthemes_not_detected&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                        <span class="s2">&quot;primary_theme&quot;</span><span class="p">:</span> <span class="n">primary_theme</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log error but don&#39;t fail the import</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;subtheme_classification_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;primary_theme&quot;</span><span class="p">:</span> <span class="n">primary_theme</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;document_metadata_extraction&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">,</span> <span class="s2">&quot;mime_type&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_document_metadata</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract internal document metadata (PDF/DOCX creation dates, etc.).&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.extract.metadata_extraction</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+                <span class="n">extract_document_metadata</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">metadata</span> <span class="o">=</span> <span class="k">await</span> <span class="n">extract_document_metadata</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">metadata</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;document_metadata_extracted&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                        <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                        <span class="s2">&quot;fields_extracted&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                        <span class="s2">&quot;has_document_created_at&quot;</span><span class="p">:</span> <span class="s2">&quot;document_created_at&quot;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">,</span>
+                        <span class="s2">&quot;has_document_author&quot;</span><span class="p">:</span> <span class="s2">&quot;document_author&quot;</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;document_metadata_extraction_skipped&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                        <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                        <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;no_metadata_available_or_unsupported_type&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">metadata</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;document_metadata_extraction_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">mime_type</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;queue_enrichment_tasks&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">],</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_queue_enrichment_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Queue background enrichment tasks for the document.&quot;&quot;&quot;</span>
+        <span class="n">tasks_queued</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># TODO: ENABLE OR REMOVE DATE EXTRACTION</span>
+        <span class="n">enable_date_extraction</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">enable_date_extraction</span> <span class="ow">and</span> <span class="n">should_extract_dates</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="o">.</span><span class="n">enqueue_task</span><span class="p">(</span>
+                <span class="n">task_type</span><span class="o">=</span><span class="s2">&quot;date_extraction&quot;</span><span class="p">,</span>
+                <span class="n">document_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">},</span>
+                <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                <span class="n">tasks_queued</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;date_extraction&quot;</span><span class="p">)</span>
+
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">update_document_metadata</span><span class="p">(</span>
+                    <span class="n">file_id</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;enrichment_status&quot;</span><span class="p">:</span> <span class="s2">&quot;queued&quot;</span><span class="p">},</span> <span class="n">merge_mode</span><span class="o">=</span><span class="s2">&quot;update&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tasks_queued</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;enrichment_tasks_queued&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;tasks&quot;</span><span class="p">:</span> <span class="n">tasks_queued</span><span class="p">,</span>
+                    <span class="s2">&quot;text_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;enrichment_tasks_skipped&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
+                    <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;no_suitable_content&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

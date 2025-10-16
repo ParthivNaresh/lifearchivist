@@ -1,0 +1,1076 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.storage.vault.vault &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.storage.vault.vault</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.storage.vault.vault</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">File vault for content-addressed storage.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.storage.vault.vault_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">build_content_directory</span><span class="p">,</span>
+    <span class="n">build_content_path</span><span class="p">,</span>
+    <span class="n">build_thumbnail_path</span><span class="p">,</span>
+    <span class="n">calculate_file_hash</span><span class="p">,</span>
+    <span class="n">cleanup_empty_directories</span><span class="p">,</span>
+    <span class="n">cleanup_old_temp_files</span><span class="p">,</span>
+    <span class="n">clear_directory_files</span><span class="p">,</span>
+    <span class="n">delete_file_safely</span><span class="p">,</span>
+    <span class="n">find_files_by_hash_pattern</span><span class="p">,</span>
+    <span class="n">generate_image_thumbnail</span><span class="p">,</span>
+    <span class="n">get_comprehensive_directory_stats</span><span class="p">,</span>
+    <span class="n">safe_get_file_size</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
+
+
+<div class="viewcode-block" id="Vault">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Vault</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Content-addressed file storage system that organizes files by their SHA256 hash.</span>
+
+<span class="sd">    Provides automatic deduplication, integrity verification, and efficient storage</span>
+<span class="sd">    organization. Files are stored in a hierarchical directory structure based on</span>
+<span class="sd">    their hash to avoid filesystem limitations and enable fast lookups.</span>
+
+<span class="sd">    Directory structure:</span>
+<span class="sd">    - content/: Actual file content organized by hash (ab/cd/efgh123...)</span>
+<span class="sd">    - thumbnails/: Auto-generated image previews in WEBP format</span>
+<span class="sd">    - temp/: Temporary files (cleaned up automatically)</span>
+<span class="sd">    - exports/: Generated export files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Vault.__init__">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vault_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize vault with specified storage path.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vault_path: Root directory path for vault storage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">vault_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span> <span class="o">/</span> <span class="s2">&quot;content&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thumbnails_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span> <span class="o">/</span> <span class="s2">&quot;thumbnails&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span> <span class="o">/</span> <span class="s2">&quot;temp&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exports_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span> <span class="o">/</span> <span class="s2">&quot;exports&quot;</span></div>
+
+
+<div class="viewcode-block" id="Vault.initialize">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.initialize">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;vault_initialization&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create vault directory structure if it doesn&#39;t exist.</span>
+
+<span class="sd">        Creates all necessary subdirectories for content, thumbnails, temp files,</span>
+<span class="sd">        and exports. Safe to call multiple times.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            OSError: If directory creation fails due to permissions or disk space</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">directories</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;vault&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;thumbnails&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thumbnails_dir</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">&quot;exports&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exports_dir</span><span class="p">),</span>
+        <span class="p">]</span>
+
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;vault_init_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
+                <span class="s2">&quot;directories_to_create&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">directories</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="n">created_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">existing_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">dir_name</span><span class="p">,</span> <span class="n">directory</span> <span class="ow">in</span> <span class="n">directories</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">existed_before</span> <span class="o">=</span> <span class="n">directory</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+                <span class="n">directory</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">existed_before</span><span class="p">:</span>
+                    <span class="n">created_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">log_event</span><span class="p">(</span>
+                        <span class="s2">&quot;vault_directory_created&quot;</span><span class="p">,</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;directory_name&quot;</span><span class="p">:</span> <span class="n">dir_name</span><span class="p">,</span>
+                            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">directory</span><span class="p">),</span>
+                        <span class="p">},</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">existing_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;vault_directory_creation_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;directory_name&quot;</span><span class="p">:</span> <span class="n">dir_name</span><span class="p">,</span>
+                        <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">directory</span><span class="p">),</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to create vault directory </span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;vault_initialized&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
+                <span class="s2">&quot;directories_created&quot;</span><span class="p">:</span> <span class="n">created_count</span><span class="p">,</span>
+                <span class="s2">&quot;directories_existing&quot;</span><span class="p">:</span> <span class="n">existing_count</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Vault.clear_all_files">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.clear_all_files">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;vault_file_clearing&quot;</span><span class="p">,</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">clear_all_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hashes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove files from vault storage by hash, or clear entire vault if no hashes provided.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hashes: List of SHA256 hashes to delete. If empty, clears all files.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary containing deletion metrics:</span>
+<span class="sd">            - files_deleted: Number of content/thumbnail files removed</span>
+<span class="sd">            - bytes_reclaimed: Total bytes freed</span>
+<span class="sd">            - orphaned_files_deleted: Files removed during comprehensive cleanup</span>
+<span class="sd">            - orphaned_bytes_reclaimed: Bytes freed from orphaned files</span>
+<span class="sd">            - errors: List of error messages for failed deletions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cleared_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;files_deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;bytes_reclaimed&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;directories_cleaned&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;orphaned_files_deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;orphaned_bytes_reclaimed&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Log clearing operation start</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;vault_clearing_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;specific_hashes&quot;</span> <span class="k">if</span> <span class="n">file_hashes</span> <span class="k">else</span> <span class="s2">&quot;clear_all&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;hash_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_hashes</span><span class="p">)</span> <span class="k">if</span> <span class="n">file_hashes</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Clear files by specific hashes</span>
+        <span class="k">for</span> <span class="n">file_hash</span> <span class="ow">in</span> <span class="n">file_hashes</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delete_file_by_hash</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">cleared_metrics</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Failed to delete files for hash </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;vault_file_deletion_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># If no file hashes provided or we need comprehensive cleanup, clear all files</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_hashes</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clear_all_vault_files</span><span class="p">(</span><span class="n">cleared_metrics</span><span class="p">)</span>
+
+        <span class="c1"># Clean up empty directories</span>
+        <span class="n">dirs_cleaned</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_empty_directories</span><span class="p">()</span>
+        <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;directories_cleaned&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dirs_cleaned</span>
+
+        <span class="c1"># Log clearing results</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;vault_clearing_completed&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;files_deleted&quot;</span><span class="p">:</span> <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;files_deleted&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;mb_reclaimed&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span>
+                    <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;bytes_reclaimed&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">),</span> <span class="mi">2</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;directories_cleaned&quot;</span><span class="p">:</span> <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;directories_cleaned&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;errors_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleared_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">,</span> <span class="p">[])),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cleared_metrics</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_clear_all_vault_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove all files from vault storage directories (comprehensive cleanup).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            metrics: Dictionary to update with deletion statistics</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">directories_to_clear</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thumbnails_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">directory</span> <span class="ow">in</span> <span class="n">directories_to_clear</span><span class="p">:</span>
+            <span class="c1"># Use empty prefix for main vault clearing (not &quot;orphaned_&quot;)</span>
+            <span class="k">await</span> <span class="n">clear_directory_files</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Vault.delete_file_by_hash">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.delete_file_by_hash">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_file_by_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete all files (content and thumbnails) associated with a specific hash.</span>
+
+<span class="sd">        Public method for deleting files by their hash value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the file to delete</span>
+<span class="sd">            metrics: Dictionary to update with deletion statistics</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delete_file_by_hash</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_delete_file_by_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete all files (content and thumbnails) associated with a specific hash.</span>
+
+<span class="sd">        Internal implementation for file deletion.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the file to delete</span>
+<span class="sd">            metrics: Dictionary to update with deletion statistics</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Content files - find all files matching this hash pattern</span>
+        <span class="n">content_directory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_content_directory</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
+        <span class="n">matching_files</span> <span class="o">=</span> <span class="n">find_files_by_hash_pattern</span><span class="p">(</span><span class="n">content_directory</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">matching_files</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">delete_file_safely</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+
+        <span class="c1"># Thumbnail files</span>
+        <span class="n">thumbnail_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_thumbnail_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">delete_file_safely</span><span class="p">(</span><span class="n">thumbnail_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_content_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the directory path where content files for this hash are stored.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to the directory (e.g., content/ab/cd/ for hash starting with &#39;abcd&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">build_content_directory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup_empty_directories</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove empty directories from vault structure while preserving base directories.</span>
+
+<span class="sd">        Recursively removes empty subdirectories but keeps the main vault directories</span>
+<span class="sd">        (content, thumbnails, temp, exports) intact.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Number of directories cleaned up</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">directories_to_check</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thumbnails_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">]</span>
+        <span class="n">preserve_dirs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">thumbnails_dir</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exports_dir</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="n">total_cleaned</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">base_dir</span> <span class="ow">in</span> <span class="n">directories_to_check</span><span class="p">:</span>
+            <span class="n">cleaned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cleanup_empty_directories</span><span class="p">(</span><span class="n">base_dir</span><span class="p">,</span> <span class="n">preserve_dirs</span><span class="p">)</span>
+            <span class="n">cleaned</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cleaned</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">total_cleaned</span> <span class="o">+=</span> <span class="n">cleaned</span>
+
+        <span class="k">if</span> <span class="n">total_cleaned</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_directories_cleaned&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;directories_removed&quot;</span><span class="p">:</span> <span class="n">total_cleaned</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">total_cleaned</span>
+
+<div class="viewcode-block" id="Vault.get_vault_statistics">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.get_vault_statistics">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;vault_statistics&quot;</span><span class="p">,</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_vault_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get comprehensive statistics about vault storage usage.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary containing storage metrics:</span>
+<span class="sd">            - vault_path: Absolute path to vault root directory</span>
+<span class="sd">            - directories: Nested structure with per-directory stats</span>
+<span class="sd">            - total_files: Total number of files across all directories</span>
+<span class="sd">            - total_size_bytes: Total storage used in bytes</span>
+<span class="sd">            - total_size_mb: Total storage used in megabytes</span>
+<span class="sd">            - error: Error message if statistics collection fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_stats_collection_started&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">directories</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span><span class="p">,</span>
+                <span class="s2">&quot;thumbnails&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">thumbnails_dir</span><span class="p">,</span>  <span class="c1"># Note: UI expects &quot;thumbnails&quot;, not &quot;thumbnail&quot;</span>
+                <span class="s2">&quot;temp&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">,</span>
+                <span class="s2">&quot;exports&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">exports_dir</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="n">flat_stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_comprehensive_directory_stats</span><span class="p">(</span><span class="n">directories</span><span class="p">)</span>
+
+            <span class="c1"># Transform flat structure to nested structure expected by UI</span>
+            <span class="n">nested_directories</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">dir_name</span> <span class="ow">in</span> <span class="n">directories</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">nested_directories</span><span class="p">[</span><span class="n">dir_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;file_count&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dir_name</span><span class="si">}</span><span class="s2">_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="s2">&quot;total_size_bytes&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dir_name</span><span class="si">}</span><span class="s2">_size_bytes&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="s2">&quot;total_size_mb&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dir_name</span><span class="si">}</span><span class="s2">_size_mb&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+                <span class="p">}</span>
+
+            <span class="n">total_files</span> <span class="o">=</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">total_mb</span> <span class="o">=</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_size_mb&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_stats_collected&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;total_files&quot;</span><span class="p">:</span> <span class="n">total_files</span><span class="p">,</span>
+                    <span class="s2">&quot;total_size_mb&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">total_mb</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                    <span class="s2">&quot;content_files&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="s2">&quot;thumbnail_files&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;thumbnails_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="s2">&quot;temp_files&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temp_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
+                <span class="s2">&quot;directories&quot;</span><span class="p">:</span> <span class="n">nested_directories</span><span class="p">,</span>
+                <span class="s2">&quot;total_files&quot;</span><span class="p">:</span> <span class="n">total_files</span><span class="p">,</span>
+                <span class="s2">&quot;total_size_bytes&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_size_bytes&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="s2">&quot;total_size_mb&quot;</span><span class="p">:</span> <span class="n">total_mb</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_stats_collection_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                    <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
+                <span class="s2">&quot;directories&quot;</span><span class="p">:</span> <span class="p">{},</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Failed to collect vault statistics: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;total_files&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;total_size_bytes&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;total_size_mb&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_content_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the full storage path for a file based on its hash and extension.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the file</span>
+<span class="sd">            extension: File extension (without dot)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Full path where file should be stored (e.g., content/ab/cd/efgh123.pdf)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">build_content_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">,</span> <span class="n">extension</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_thumbnail_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the storage path for a file&#39;s thumbnail image.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the original file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path where thumbnail should be stored (e.g., thumbnails/ab/cd/efgh123_thumb.webp)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">build_thumbnail_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thumbnails_dir</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Vault.calculate_hash">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.calculate_hash">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;file_hash_calculation&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;high_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">calculate_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate SHA256 hash of a file for content-addressed storage.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the file to hash</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            SHA256 hash as lowercase hexadecimal string</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileNotFoundError: If file doesn&#39;t exist</span>
+<span class="sd">            OSError: If file cannot be read</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;hash_calculation_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+                    <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;file_not_found&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">file_size</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;hash_calculation_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;file_name&quot;</span><span class="p">:</span> <span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;file_size_mb&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">file_size</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">file_hash</span> <span class="o">=</span> <span class="k">await</span> <span class="n">calculate_file_hash</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;hash_calculated&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;file_name&quot;</span><span class="p">:</span> <span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">file_hash</span></div>
+
+
+<div class="viewcode-block" id="Vault.store_file">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.store_file">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;file_storage&quot;</span><span class="p">,</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">store_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">source_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store a file in the vault using content-addressed storage.</span>
+
+<span class="sd">        Copies the file to vault storage organized by its SHA256 hash. Automatically</span>
+<span class="sd">        generates thumbnails for image files. If file already exists (same hash),</span>
+<span class="sd">        returns existing file information without copying.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            source_path: Path to the file to store</span>
+<span class="sd">            file_hash: Pre-calculated SHA256 hash (optional, will calculate if not provided)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary containing:</span>
+<span class="sd">            - file_hash: SHA256 hash of the stored file</span>
+<span class="sd">            - path: Full path where file is stored in vault</span>
+<span class="sd">            - size_bytes: File size in bytes</span>
+<span class="sd">            - existed: True if file already existed, False if newly stored</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileNotFoundError: If source file doesn&#39;t exist</span>
+<span class="sd">            RuntimeError: If vault directory creation or file copy fails</span>
+<span class="sd">            OSError: If file operations fail</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">source_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_store_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;source_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">source_path</span><span class="p">),</span>
+                    <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;source_not_found&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Source file not found: </span><span class="si">{</span><span class="n">source_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Calculate hash if not provided</span>
+        <span class="k">if</span> <span class="n">file_hash</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">file_hash</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_hash</span><span class="p">(</span><span class="n">source_path</span><span class="p">)</span>
+
+        <span class="c1"># Get file extension</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">source_path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">extension</span><span class="p">:</span>
+            <span class="n">extension</span> <span class="o">=</span> <span class="s2">&quot;bin&quot;</span>
+
+        <span class="c1"># Get storage path</span>
+        <span class="n">target_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_content_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">extension</span><span class="p">)</span>
+
+        <span class="c1"># Check if file already exists</span>
+        <span class="k">if</span> <span class="n">target_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">size_bytes</span> <span class="o">=</span> <span class="n">safe_get_file_size</span><span class="p">(</span><span class="n">target_path</span><span class="p">)</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_file_exists&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                    <span class="s2">&quot;extension&quot;</span><span class="p">:</span> <span class="n">extension</span><span class="p">,</span>
+                    <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">size_bytes</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">,</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">target_path</span><span class="p">),</span>
+                <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">size_bytes</span><span class="p">,</span>
+                <span class="s2">&quot;existed&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Log new file storage</span>
+        <span class="n">source_size</span> <span class="o">=</span> <span class="n">source_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;vault_storing_file&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;source_name&quot;</span><span class="p">:</span> <span class="n">source_path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                <span class="s2">&quot;extension&quot;</span><span class="p">:</span> <span class="n">extension</span><span class="p">,</span>
+                <span class="s2">&quot;size_mb&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">source_size</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Create directory if needed</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">target_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_directory_creation_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;directory&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">target_path</span><span class="o">.</span><span class="n">parent</span><span class="p">),</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to create vault directory </span><span class="si">{</span><span class="n">target_path</span><span class="o">.</span><span class="n">parent</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+        <span class="c1"># Copy file to vault</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">source_path</span><span class="p">,</span> <span class="n">target_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="n">shutil</span><span class="o">.</span><span class="n">Error</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_file_copy_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">source_path</span><span class="p">),</span>
+                    <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">target_path</span><span class="p">),</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to copy file to vault: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+        <span class="c1"># Generate thumbnail for images</span>
+        <span class="n">thumbnail_generated</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_thumbnail</span><span class="p">(</span><span class="n">target_path</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
+
+        <span class="c1"># Get file size</span>
+        <span class="n">size_bytes</span> <span class="o">=</span> <span class="n">safe_get_file_size</span><span class="p">(</span><span class="n">target_path</span><span class="p">)</span>
+
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;vault_file_stored&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                <span class="s2">&quot;extension&quot;</span><span class="p">:</span> <span class="n">extension</span><span class="p">,</span>
+                <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">size_bytes</span><span class="p">,</span>
+                <span class="s2">&quot;thumbnail_generated&quot;</span><span class="p">:</span> <span class="n">thumbnail_generated</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">,</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">target_path</span><span class="p">),</span>
+            <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">size_bytes</span><span class="p">,</span>
+            <span class="s2">&quot;existed&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="Vault.file_exists">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.file_exists">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if a file with the given hash exists in the vault.</span>
+
+<span class="sd">        This checks for any file with the hash, regardless of extension.</span>
+<span class="sd">        Used for consistency checks and validation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if file exists, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Build the directory path where the file should be</span>
+        <span class="c1"># Files are stored as: content/XX/YY/ZZZZ.ext</span>
+        <span class="n">dir1</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">dir2</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">file_stem</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
+
+        <span class="n">file_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span> <span class="o">/</span> <span class="n">dir1</span> <span class="o">/</span> <span class="n">dir2</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Check if any file with this hash exists (any extension)</span>
+        <span class="n">matching_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">file_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_stem</span><span class="si">}</span><span class="s2">.*&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">matching_files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="Vault.get_file_path">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.get_file_path">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the path to a stored file if it exists in the vault.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the file</span>
+<span class="sd">            extension: File extension (without dot)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to the file if it exists, None otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_content_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">extension</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">file_path</span> <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="Vault.get_thumbnail_path">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.get_thumbnail_path">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_thumbnail_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the path to a file&#39;s thumbnail image if it exists.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the original file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to the thumbnail file if it exists, None otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">thumbnail_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_thumbnail_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">thumbnail_path</span> <span class="k">if</span> <span class="n">thumbnail_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_generate_thumbnail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate a thumbnail for an image file (internal method).</span>
+
+<span class="sd">        Creates a 256x256 pixel WEBP thumbnail for supported image formats.</span>
+<span class="sd">        Skips generation if thumbnail already exists or file is not an image.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_path: Path to the original image file</span>
+<span class="sd">            file_hash: SHA256 hash of the original file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if thumbnail was generated, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">thumbnail_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_thumbnail_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
+        <span class="n">generated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_image_thumbnail</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">thumbnail_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">generated</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;thumbnail_generated&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                    <span class="s2">&quot;thumbnail_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">thumbnail_path</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">generated</span>
+
+<div class="viewcode-block" id="Vault.delete_file">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.delete_file">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;file_deletion&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;extension&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete a file and its thumbnail from the vault.</span>
+
+<span class="sd">        Removes both the content file and associated thumbnail (if any).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            file_hash: SHA256 hash of the file to delete</span>
+<span class="sd">            extension: File extension (without dot)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if content file was deleted, False if file didn&#39;t exist</span>
+<span class="sd">            (thumbnail deletion doesn&#39;t affect return value)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_content_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">extension</span><span class="p">)</span>
+        <span class="n">thumbnail_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_thumbnail_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
+
+        <span class="n">deleted</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">content_existed</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="n">thumbnail_existed</span> <span class="o">=</span> <span class="n">thumbnail_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="n">content_size</span> <span class="o">=</span> <span class="n">safe_get_file_size</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">content_existed</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">thumbnail_size</span> <span class="o">=</span> <span class="n">safe_get_file_size</span><span class="p">(</span><span class="n">thumbnail_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">thumbnail_existed</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="c1"># Delete content file</span>
+        <span class="k">if</span> <span class="n">content_existed</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">file_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+                <span class="n">deleted</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;vault_content_deleted&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                        <span class="s2">&quot;extension&quot;</span><span class="p">:</span> <span class="n">extension</span><span class="p">,</span>
+                        <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">content_size</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;vault_content_deletion_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Delete thumbnail file</span>
+        <span class="k">if</span> <span class="n">thumbnail_existed</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">thumbnail_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;vault_thumbnail_deleted&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                        <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">thumbnail_size</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;vault_thumbnail_deletion_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                        <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">deleted</span><span class="p">:</span>
+            <span class="n">total_reclaimed</span> <span class="o">=</span> <span class="n">content_size</span> <span class="o">+</span> <span class="n">thumbnail_size</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_file_deleted&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                    <span class="s2">&quot;extension&quot;</span><span class="p">:</span> <span class="n">extension</span><span class="p">,</span>
+                    <span class="s2">&quot;bytes_reclaimed&quot;</span><span class="p">:</span> <span class="n">total_reclaimed</span><span class="p">,</span>
+                    <span class="s2">&quot;had_thumbnail&quot;</span><span class="p">:</span> <span class="n">thumbnail_existed</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">content_existed</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;vault_file_not_found&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">],</span>
+                    <span class="s2">&quot;extension&quot;</span><span class="p">:</span> <span class="n">extension</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">deleted</span></div>
+
+
+<div class="viewcode-block" id="Vault.cleanup_temp">
+<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.cleanup_temp">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;temp_file_cleanup&quot;</span><span class="p">,</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_temp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Clean up temporary files older than 24 hours.</span>
+
+<span class="sd">        Removes old temporary files to prevent the temp directory from growing</span>
+<span class="sd">        indefinitely. Only affects files in the vault&#39;s temp directory.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary containing cleanup metrics:</span>
+<span class="sd">            - cleaned_files: Number of files removed</span>
+<span class="sd">            - cleaned_bytes: Total bytes freed</span>
+<span class="sd">            - errors: List of error messages for failed deletions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;temp_cleanup_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;temp_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">cleanup_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cleanup_old_temp_files</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cleanup_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cleaned_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;temp_cleanup_completed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;files_cleaned&quot;</span><span class="p">:</span> <span class="n">cleanup_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cleaned_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="s2">&quot;mb_reclaimed&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span>
+                        <span class="n">cleanup_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cleaned_bytes&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">),</span> <span class="mi">2</span>
+                    <span class="p">),</span>
+                    <span class="s2">&quot;errors_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">cleanup_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">,</span> <span class="p">[])),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;temp_cleanup_nothing_to_clean&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;temp_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cleanup_result</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

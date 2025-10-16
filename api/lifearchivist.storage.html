@@ -1,0 +1,529 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.storage package &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="lifearchivist.storage.llamaindex_service package" href="lifearchivist.storage.llamaindex_service.html" />
+    <link rel="prev" title="lifearchivist.server.api.routes package" href="lifearchivist.server.api.routes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">lifearchivist</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="lifearchivist.html">lifearchivist package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="lifearchivist.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">lifearchivist</a></li>
+          <li class="breadcrumb-item"><a href="lifearchivist.html">lifearchivist package</a></li>
+      <li class="breadcrumb-item active">lifearchivist.storage package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/lifearchivist.storage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lifearchivist-storage-package">
+<h1>lifearchivist.storage package<a class="headerlink" href="#lifearchivist-storage-package" title="Link to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html">lifearchivist.storage.llamaindex_service package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#lifearchivist-storage-llamaindex-service-llamaindex-service-module">lifearchivist.storage.llamaindex_service.llamaindex_service module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#lifearchivist-storage-llamaindex-service-llamaindex-service-utils-module">lifearchivist.storage.llamaindex_service.llamaindex_service_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#module-lifearchivist.storage.llamaindex_service">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.llamaindex_service.html#lifearchivist.storage.llamaindex_service.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifearchivist.storage.vault.html">lifearchivist.storage.vault package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.vault.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.vault.html#module-lifearchivist.storage.vault.vault">lifearchivist.storage.vault.vault module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault"><code class="docutils literal notranslate"><span class="pre">Vault</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.__init__"><code class="docutils literal notranslate"><span class="pre">Vault.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.initialize"><code class="docutils literal notranslate"><span class="pre">Vault.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.clear_all_files"><code class="docutils literal notranslate"><span class="pre">Vault.clear_all_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.delete_file_by_hash"><code class="docutils literal notranslate"><span class="pre">Vault.delete_file_by_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.get_vault_statistics"><code class="docutils literal notranslate"><span class="pre">Vault.get_vault_statistics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.calculate_hash"><code class="docutils literal notranslate"><span class="pre">Vault.calculate_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.store_file"><code class="docutils literal notranslate"><span class="pre">Vault.store_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.file_exists"><code class="docutils literal notranslate"><span class="pre">Vault.file_exists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.get_file_path"><code class="docutils literal notranslate"><span class="pre">Vault.get_file_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.get_thumbnail_path"><code class="docutils literal notranslate"><span class="pre">Vault.get_thumbnail_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.delete_file"><code class="docutils literal notranslate"><span class="pre">Vault.delete_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault.Vault.cleanup_temp"><code class="docutils literal notranslate"><span class="pre">Vault.cleanup_temp()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.vault.html#module-lifearchivist.storage.vault.vault_utils">lifearchivist.storage.vault.vault_utils module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.get_hash_path_components"><code class="docutils literal notranslate"><span class="pre">get_hash_path_components()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.build_content_path"><code class="docutils literal notranslate"><span class="pre">build_content_path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.build_thumbnail_path"><code class="docutils literal notranslate"><span class="pre">build_thumbnail_path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.build_content_directory"><code class="docutils literal notranslate"><span class="pre">build_content_directory()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.is_image_file"><code class="docutils literal notranslate"><span class="pre">is_image_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.calculate_file_hash"><code class="docutils literal notranslate"><span class="pre">calculate_file_hash()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.safe_file_operation"><code class="docutils literal notranslate"><span class="pre">safe_file_operation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.safe_get_file_size"><code class="docutils literal notranslate"><span class="pre">safe_get_file_size()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.count_directory_files"><code class="docutils literal notranslate"><span class="pre">count_directory_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.delete_file_safely"><code class="docutils literal notranslate"><span class="pre">delete_file_safely()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.clear_directory_files"><code class="docutils literal notranslate"><span class="pre">clear_directory_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.cleanup_empty_directories"><code class="docutils literal notranslate"><span class="pre">cleanup_empty_directories()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.generate_image_thumbnail"><code class="docutils literal notranslate"><span class="pre">generate_image_thumbnail()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.bytes_to_mb"><code class="docutils literal notranslate"><span class="pre">bytes_to_mb()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.cleanup_old_temp_files"><code class="docutils literal notranslate"><span class="pre">cleanup_old_temp_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.find_files_by_hash_pattern"><code class="docutils literal notranslate"><span class="pre">find_files_by_hash_pattern()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.get_comprehensive_directory_stats"><code class="docutils literal notranslate"><span class="pre">get_comprehensive_directory_stats()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lifearchivist.storage.vault.html#module-lifearchivist.storage.vault">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault"><code class="docutils literal notranslate"><span class="pre">Vault</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.__init__"><code class="docutils literal notranslate"><span class="pre">Vault.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.calculate_hash"><code class="docutils literal notranslate"><span class="pre">Vault.calculate_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.cleanup_temp"><code class="docutils literal notranslate"><span class="pre">Vault.cleanup_temp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.clear_all_files"><code class="docutils literal notranslate"><span class="pre">Vault.clear_all_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.delete_file"><code class="docutils literal notranslate"><span class="pre">Vault.delete_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.delete_file_by_hash"><code class="docutils literal notranslate"><span class="pre">Vault.delete_file_by_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.file_exists"><code class="docutils literal notranslate"><span class="pre">Vault.file_exists()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.get_file_path"><code class="docutils literal notranslate"><span class="pre">Vault.get_file_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.get_thumbnail_path"><code class="docutils literal notranslate"><span class="pre">Vault.get_thumbnail_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.get_vault_statistics"><code class="docutils literal notranslate"><span class="pre">Vault.get_vault_statistics()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.initialize"><code class="docutils literal notranslate"><span class="pre">Vault.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.store_file"><code class="docutils literal notranslate"><span class="pre">Vault.store_file()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-lifearchivist.storage">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lifearchivist.storage" title="Link to this heading"></a></h2>
+<p>Storage layer for Life Archivist.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.storage.</span></span><span class="sig-name descname"><span class="pre">Vault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Content-addressed file storage system that organizes files by their SHA256 hash.</p>
+<p>Provides automatic deduplication, integrity verification, and efficient storage
+organization. Files are stored in a hierarchical directory structure based on
+their hash to avoid filesystem limitations and enable fast lookups.</p>
+<p>Directory structure:
+- content/: Actual file content organized by hash (ab/cd/efgh123…)
+- thumbnails/: Auto-generated image previews in WEBP format
+- temp/: Temporary files (cleaned up automatically)
+- exports/: Generated export files</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vault_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize vault with specified storage path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vault_path</strong> – Root directory path for vault storage</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.calculate_hash">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calculate_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.calculate_hash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.calculate_hash" title="Link to this definition"></a></dt>
+<dd><p>Calculate SHA256 hash of a file for content-addressed storage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_path</strong> – Path to the file to hash</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>SHA256 hash as lowercase hexadecimal string</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.14)"><strong>FileNotFoundError</strong></a> – If file doesn’t exist</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#OSError" title="(in Python v3.14)"><strong>OSError</strong></a> – If file cannot be read</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.cleanup_temp">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cleanup_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.cleanup_temp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.cleanup_temp" title="Link to this definition"></a></dt>
+<dd><p>Clean up temporary files older than 24 hours.</p>
+<p>Removes old temporary files to prevent the temp directory from growing
+indefinitely. Only affects files in the vault’s temp directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>cleaned_files: Number of files removed</p></li>
+<li><p>cleaned_bytes: Total bytes freed</p></li>
+<li><p>errors: List of error messages for failed deletions</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary containing cleanup metrics</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.clear_all_files">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clear_all_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_hashes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.clear_all_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.clear_all_files" title="Link to this definition"></a></dt>
+<dd><p>Remove files from vault storage by hash, or clear entire vault if no hashes provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_hashes</strong> – List of SHA256 hashes to delete. If empty, clears all files.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>files_deleted: Number of content/thumbnail files removed</p></li>
+<li><p>bytes_reclaimed: Total bytes freed</p></li>
+<li><p>orphaned_files_deleted: Files removed during comprehensive cleanup</p></li>
+<li><p>orphaned_bytes_reclaimed: Bytes freed from orphaned files</p></li>
+<li><p>errors: List of error messages for failed deletions</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing deletion metrics</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.delete_file">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">delete_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.delete_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.delete_file" title="Link to this definition"></a></dt>
+<dd><p>Delete a file and its thumbnail from the vault.</p>
+<p>Removes both the content file and associated thumbnail (if any).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_hash</strong> – SHA256 hash of the file to delete</p></li>
+<li><p><strong>extension</strong> – File extension (without dot)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if content file was deleted, False if file didn’t exist
+(thumbnail deletion doesn’t affect return value)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.delete_file_by_hash">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">delete_file_by_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.delete_file_by_hash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.delete_file_by_hash" title="Link to this definition"></a></dt>
+<dd><p>Delete all files (content and thumbnails) associated with a specific hash.</p>
+<p>Public method for deleting files by their hash value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_hash</strong> – SHA256 hash of the file to delete</p></li>
+<li><p><strong>metrics</strong> – Dictionary to update with deletion statistics</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.file_exists">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">file_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.file_exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.file_exists" title="Link to this definition"></a></dt>
+<dd><p>Check if a file with the given hash exists in the vault.</p>
+<p>This checks for any file with the hash, regardless of extension.
+Used for consistency checks and validation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_hash</strong> – SHA256 hash of the file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if file exists, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.get_file_path">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.get_file_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.get_file_path" title="Link to this definition"></a></dt>
+<dd><p>Get the path to a stored file if it exists in the vault.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_hash</strong> – SHA256 hash of the file</p></li>
+<li><p><strong>extension</strong> – File extension (without dot)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to the file if it exists, None otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.get_thumbnail_path">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_thumbnail_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.get_thumbnail_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.get_thumbnail_path" title="Link to this definition"></a></dt>
+<dd><p>Get the path to a file’s thumbnail image if it exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file_hash</strong> – SHA256 hash of the original file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to the thumbnail file if it exists, None otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.get_vault_statistics">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_vault_statistics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.get_vault_statistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.get_vault_statistics" title="Link to this definition"></a></dt>
+<dd><p>Get comprehensive statistics about vault storage usage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>vault_path: Absolute path to vault root directory</p></li>
+<li><p>directories: Nested structure with per-directory stats</p></li>
+<li><p>total_files: Total number of files across all directories</p></li>
+<li><p>total_size_bytes: Total storage used in bytes</p></li>
+<li><p>total_size_mb: Total storage used in megabytes</p></li>
+<li><p>error: Error message if statistics collection fails</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary containing storage metrics</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.initialize">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.initialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.initialize" title="Link to this definition"></a></dt>
+<dd><p>Create vault directory structure if it doesn’t exist.</p>
+<p>Creates all necessary subdirectories for content, thumbnails, temp files,
+and exports. Safe to call multiple times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#OSError" title="(in Python v3.14)"><strong>OSError</strong></a> – If directory creation fails due to permissions or disk space</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.storage.Vault.store_file">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">store_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/storage/vault/vault.html#Vault.store_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.storage.Vault.store_file" title="Link to this definition"></a></dt>
+<dd><p>Store a file in the vault using content-addressed storage.</p>
+<p>Copies the file to vault storage organized by its SHA256 hash. Automatically
+generates thumbnails for image files. If file already exists (same hash),
+returns existing file information without copying.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source_path</strong> – Path to the file to store</p></li>
+<li><p><strong>file_hash</strong> – Pre-calculated SHA256 hash (optional, will calculate if not provided)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>file_hash: SHA256 hash of the stored file</p></li>
+<li><p>path: Full path where file is stored in vault</p></li>
+<li><p>size_bytes: File size in bytes</p></li>
+<li><p>existed: True if file already existed, False if newly stored</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.14)"><strong>FileNotFoundError</strong></a> – If source file doesn’t exist</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.14)"><strong>RuntimeError</strong></a> – If vault directory creation or file copy fails</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#OSError" title="(in Python v3.14)"><strong>OSError</strong></a> – If file operations fail</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="lifearchivist.server.api.routes.html" class="btn btn-neutral float-left" title="lifearchivist.server.api.routes package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="lifearchivist.storage.llamaindex_service.html" class="btn btn-neutral float-right" title="lifearchivist.storage.llamaindex_service package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,851 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.tools.search.search_tool &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.tools.search.search_tool</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.tools.search.search_tool</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Search tool for document retrieval using SearchService.</span>
+
+<span class="sd">This tool provides a high-level interface for document search operations,</span>
+<span class="sd">delegating the actual search logic to the SearchService for better</span>
+<span class="sd">separation of concerns and maintainability.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTool</span><span class="p">,</span> <span class="n">ToolMetadata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
+
+
+<div class="viewcode-block" id="IndexSearchTool">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.search.html#lifearchivist.tools.search.search_tool.IndexSearchTool">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">IndexSearchTool</span><span class="p">(</span><span class="n">BaseTool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tool for searching documents in the index.</span>
+
+<span class="sd">    This tool acts as a bridge between the MCP server and the search service,</span>
+<span class="sd">    providing a standardized interface for search operations while delegating</span>
+<span class="sd">    the actual search logic to the appropriate service.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="IndexSearchTool.__init__">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.search.html#lifearchivist.tools.search.search_tool.IndexSearchTool.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">llamaindex_service</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the search tool.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            llamaindex_service: The LlamaIndex service instance that contains</span>
+<span class="sd">                               the search service for performing searches.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span> <span class="o">=</span> <span class="n">llamaindex_service</span>
+        <span class="c1"># Cache the search service reference for direct access</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_search_service</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ToolMetadata</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ToolMetadata</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;index.search&quot;</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search documents in the index using semantic, keyword, or hybrid search&quot;</span><span class="p">,</span>
+            <span class="n">input_schema</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Search query text&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;enum&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;keyword&quot;</span><span class="p">,</span> <span class="s2">&quot;semantic&quot;</span><span class="p">,</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Search mode: keyword (exact text matching), semantic (AI meaning-based), or hybrid (combined)&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;filters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Metadata filters to apply&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                            <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">}},</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Maximum number of results to return&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Number of results to skip for pagination&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;include_content&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Whether to include full document content in results&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="n">output_schema</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                                <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;snippet&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+                                <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                            <span class="p">},</span>
+                        <span class="p">},</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="n">async_tool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">idempotent</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_search_service</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the search service instance.</span>
+
+<span class="sd">        Returns the cached search service or retrieves it from the llamaindex service.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search_service</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_search_service</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">,</span> <span class="s2">&quot;search_service&quot;</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search_service</span>
+
+<div class="viewcode-block" id="IndexSearchTool.execute">
+<a class="viewcode-back" href="../../../../api/lifearchivist.tools.search.html#lifearchivist.tools.search.search_tool.IndexSearchTool.execute">[docs]</a>
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;index_search&quot;</span><span class="p">,</span>
+        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="s2">&quot;offset&quot;</span><span class="p">,</span> <span class="s2">&quot;include_content&quot;</span><span class="p">],</span>
+        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute document search.&quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">)</span>
+        <span class="n">filters</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filters&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">limit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;offset&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">include_content</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;include_content&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">query</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_search_result</span><span class="p">(</span><span class="s2">&quot;Query cannot be empty&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check if search service is available</span>
+        <span class="n">search_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_search_service</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">search_service</span><span class="p">:</span>
+            <span class="c1"># Fallback to llamaindex_service if search_service not available</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_search_result</span><span class="p">(</span><span class="s2">&quot;Search service not available&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Log search request with context</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;search_started&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span> <span class="k">else</span> <span class="n">query</span><span class="p">,</span>
+                <span class="s2">&quot;query_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">query</span><span class="p">),</span>
+                <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span>
+                <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="n">limit</span><span class="p">,</span>
+                <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">offset</span><span class="p">,</span>
+                <span class="s2">&quot;has_filters&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span>
+                <span class="s2">&quot;filter_types&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="k">if</span> <span class="n">filters</span> <span class="k">else</span> <span class="p">[],</span>
+                <span class="s2">&quot;include_content&quot;</span><span class="p">:</span> <span class="n">include_content</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Determine search strategy based on mode</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;semantic&quot;</span><span class="p">:</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_search</span><span class="p">(</span>
+                    <span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">include_content</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;keyword&quot;</span><span class="p">:</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyword_search</span><span class="p">(</span>
+                    <span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">include_content</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># hybrid</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hybrid_search</span><span class="p">(</span>
+                    <span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">include_content</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Log search completion with metrics</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;search_completed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;query_preview&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                    <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span>
+                    <span class="s2">&quot;results_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="p">[])),</span>
+                    <span class="s2">&quot;total_matches&quot;</span><span class="p">:</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;query_time_ms&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="s2">&quot;has_results&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Log if no results found (potential issue)</span>
+            <span class="k">if</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;search_no_results&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">,</span>
+                        <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span>
+                        <span class="s2">&quot;filters&quot;</span><span class="p">:</span> <span class="n">filters</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">results</span>  <span class="c1"># type: ignore[no-any-return]</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;search_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;query_preview&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                    <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span>
+                    <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                    <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_search_result</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Search failed: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;semantic_search&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_semantic_search</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">include_content</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform semantic search using SearchService.</span>
+
+<span class="sd">        This method delegates to the SearchService for actual search execution,</span>
+<span class="sd">        then processes and formats the results for the tool&#39;s output format.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Get search service</span>
+        <span class="n">search_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_search_service</span><span class="p">()</span>
+
+        <span class="c1"># Use SearchService if available, otherwise fall back to llamaindex_service</span>
+        <span class="n">similarity_threshold</span> <span class="o">=</span> <span class="mf">0.3</span>  <span class="c1"># Lower threshold for broader results</span>
+
+        <span class="k">if</span> <span class="n">search_service</span><span class="p">:</span>
+            <span class="c1"># Use the new SearchService</span>
+            <span class="n">retrieved_nodes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">search_service</span><span class="o">.</span><span class="n">semantic_search</span><span class="p">(</span>
+                <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+                <span class="n">top_k</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">limit</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>  <span class="c1"># Get more results to filter</span>
+                <span class="n">similarity_threshold</span><span class="o">=</span><span class="n">similarity_threshold</span><span class="p">,</span>
+                <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span>  <span class="c1"># Pass filters directly to search service</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Fallback to llamaindex_service for backward compatibility</span>
+            <span class="n">retrieved_nodes</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">retrieve_similar</span><span class="p">(</span>
+                <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+                <span class="n">top_k</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">limit</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+                <span class="n">similarity_threshold</span><span class="o">=</span><span class="n">similarity_threshold</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Apply filters manually if using fallback</span>
+            <span class="k">if</span> <span class="n">filters</span><span class="p">:</span>
+                <span class="n">retrieved_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_filters</span><span class="p">(</span><span class="n">retrieved_nodes</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+
+        <span class="c1"># Log retrieval metrics</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;semantic_retrieval_completed&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;query_preview&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                <span class="s2">&quot;nodes_retrieved&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">retrieved_nodes</span><span class="p">),</span>
+                <span class="s2">&quot;similarity_threshold&quot;</span><span class="p">:</span> <span class="n">similarity_threshold</span><span class="p">,</span>
+                <span class="s2">&quot;top_k&quot;</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">limit</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Note: When using SearchService, filters are already applied</span>
+        <span class="c1"># This block is only needed for backward compatibility logging</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">search_service</span> <span class="ow">and</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="n">nodes_before_filter</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">retrieved_nodes</span><span class="p">)</span>
+            <span class="c1"># Filters were already applied above in the fallback case</span>
+            <span class="k">if</span> <span class="n">nodes_before_filter</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">retrieved_nodes</span><span class="p">):</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;search_filters_applied&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;nodes_before&quot;</span><span class="p">:</span> <span class="n">nodes_before_filter</span><span class="p">,</span>
+                        <span class="s2">&quot;nodes_after&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">retrieved_nodes</span><span class="p">),</span>
+                        <span class="s2">&quot;filtered_out&quot;</span><span class="p">:</span> <span class="n">nodes_before_filter</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">retrieved_nodes</span><span class="p">),</span>
+                        <span class="s2">&quot;filter_types&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Convert to search result format</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_nodes_to_search_results</span><span class="p">(</span>
+            <span class="n">retrieved_nodes</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="s2">&quot;semantic&quot;</span><span class="p">,</span> <span class="n">include_content</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Apply pagination</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="n">paginated_results</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">limit</span><span class="p">]</span>
+
+        <span class="n">query_time_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+        <span class="c1"># Log slow searches</span>
+        <span class="k">if</span> <span class="n">query_time_ms</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>  <span class="c1"># More than 1 second</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;slow_semantic_search&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;query_preview&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                    <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">query_time_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                    <span class="s2">&quot;total_results&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+                    <span class="s2">&quot;nodes_processed&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">retrieved_nodes</span><span class="p">),</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">paginated_results</span><span class="p">,</span>
+            <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+            <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">query_time_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">}</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;keyword_search&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_keyword_search</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">include_content</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform keyword search using SearchService.</span>
+
+<span class="sd">        Delegates entirely to SearchService for BM25-based keyword search.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Get search service</span>
+        <span class="n">search_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_search_service</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">search_service</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;keyword_search_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;search_service_not_available&quot;</span><span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_search_result</span><span class="p">(</span><span class="s2">&quot;Search service not available&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Use the SearchService for keyword search</span>
+        <span class="n">retrieved_nodes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">search_service</span><span class="o">.</span><span class="n">keyword_search</span><span class="p">(</span>
+            <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+            <span class="n">top_k</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">limit</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+            <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Convert to search result format</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_nodes_to_search_results</span><span class="p">(</span>
+            <span class="n">retrieved_nodes</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="s2">&quot;keyword&quot;</span><span class="p">,</span> <span class="n">include_content</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Apply pagination</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+        <span class="n">paginated_results</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">limit</span><span class="p">]</span>
+
+        <span class="n">query_time_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+        <span class="c1"># Log slow searches</span>
+        <span class="k">if</span> <span class="n">query_time_ms</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;slow_keyword_search&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;query_preview&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                    <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">query_time_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                    <span class="s2">&quot;total_results&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">paginated_results</span><span class="p">,</span>
+            <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+            <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">query_time_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">}</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;hybrid_search&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_hybrid_search</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">include_content</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform hybrid search using SearchService.</span>
+
+<span class="sd">        This method delegates to the SearchService for hybrid search,</span>
+<span class="sd">        or combines semantic and keyword results if SearchService is not available.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Get search service</span>
+        <span class="n">search_service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_search_service</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">search_service</span><span class="p">:</span>
+            <span class="c1"># Use the SearchService for hybrid search</span>
+            <span class="n">retrieved_nodes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">search_service</span><span class="o">.</span><span class="n">hybrid_search</span><span class="p">(</span>
+                <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+                <span class="n">top_k</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">limit</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+                <span class="n">semantic_weight</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>  <span class="c1"># Slightly favor semantic search</span>
+                <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Convert to search result format</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_nodes_to_search_results</span><span class="p">(</span>
+                <span class="n">retrieved_nodes</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">,</span> <span class="n">include_content</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Apply pagination</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+            <span class="n">paginated_results</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">limit</span><span class="p">]</span>
+
+            <span class="n">query_time_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+            <span class="c1"># Log slow searches</span>
+            <span class="k">if</span> <span class="n">query_time_ms</span> <span class="o">&gt;</span> <span class="mi">2000</span><span class="p">:</span>  <span class="c1"># More than 2 seconds for hybrid</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;slow_hybrid_search&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;query_preview&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                        <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">query_time_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                        <span class="s2">&quot;total_results&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">paginated_results</span><span class="p">,</span>
+                <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+                <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">query_time_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Fallback: Get results from both methods in parallel for performance</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+        <span class="n">semantic_results</span><span class="p">,</span> <span class="n">keyword_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_semantic_search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">include_content</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_keyword_search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">include_content</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Combine and deduplicate results</span>
+        <span class="n">combined_results</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Add semantic results with boost</span>
+        <span class="n">semantic_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">semantic_results</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">]:</span>
+            <span class="n">doc_id</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;document_id&quot;</span><span class="p">]</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.2</span>  <span class="c1"># Boost semantic scores</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;match_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;hybrid_semantic&quot;</span>
+            <span class="n">combined_results</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+            <span class="n">semantic_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Add keyword results, boosting score if document already exists</span>
+        <span class="n">keyword_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">overlap_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">keyword_results</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">]:</span>
+            <span class="n">doc_id</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;document_id&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="n">combined_results</span><span class="p">:</span>
+                <span class="c1"># Boost existing score</span>
+                <span class="n">combined_results</span><span class="p">[</span><span class="n">doc_id</span><span class="p">][</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">combined_results</span><span class="p">[</span><span class="n">doc_id</span><span class="p">][</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span>
+                <span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">0.1</span>
+                <span class="n">combined_results</span><span class="p">[</span><span class="n">doc_id</span><span class="p">][</span><span class="s2">&quot;match_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;hybrid_both&quot;</span>
+                <span class="n">overlap_count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span><span class="p">[</span><span class="s2">&quot;match_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;hybrid_keyword&quot;</span>
+                <span class="n">combined_results</span><span class="p">[</span><span class="n">doc_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+                <span class="n">keyword_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Log hybrid search metrics</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;hybrid_search_combined&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;semantic_results&quot;</span><span class="p">:</span> <span class="n">semantic_count</span><span class="p">,</span>
+                <span class="s2">&quot;keyword_results&quot;</span><span class="p">:</span> <span class="n">keyword_count</span><span class="p">,</span>
+                <span class="s2">&quot;overlap_results&quot;</span><span class="p">:</span> <span class="n">overlap_count</span><span class="p">,</span>
+                <span class="s2">&quot;total_unique&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">combined_results</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Convert back to list and sort</span>
+        <span class="n">final_results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">combined_results</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">final_results</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Apply pagination</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">final_results</span><span class="p">)</span>
+        <span class="n">paginated_results</span> <span class="o">=</span> <span class="n">final_results</span><span class="p">[</span><span class="n">offset</span> <span class="p">:</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">limit</span><span class="p">]</span>
+
+        <span class="n">query_time_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
+
+        <span class="c1"># Log slow searches</span>
+        <span class="k">if</span> <span class="n">query_time_ms</span> <span class="o">&gt;</span> <span class="mi">2000</span><span class="p">:</span>  <span class="c1"># More than 2 seconds for hybrid</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;slow_hybrid_search&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;query_preview&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">],</span>
+                    <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">query_time_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                    <span class="s2">&quot;total_results&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">paginated_results</span><span class="p">,</span>
+            <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+            <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">query_time_ms</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">}</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;apply_search_filters&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Fast operation</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;high_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_filters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">filters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply metadata filters to retrieved nodes.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nodes</span>
+
+        <span class="n">filtered_nodes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+            <span class="c1"># Check mime_type filter</span>
+            <span class="k">if</span> <span class="s2">&quot;mime_type&quot;</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_type&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;mime_type&quot;</span><span class="p">]:</span>
+                    <span class="k">continue</span>
+
+            <span class="c1"># Check status filter</span>
+            <span class="k">if</span> <span class="s2">&quot;status&quot;</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]:</span>
+                    <span class="k">continue</span>
+
+            <span class="c1"># Check tags filter (document must have at least one of the specified tags)</span>
+            <span class="k">if</span> <span class="s2">&quot;tags&quot;</span> <span class="ow">in</span> <span class="n">filters</span> <span class="ow">and</span> <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
+                <span class="n">doc_tags</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">tag</span> <span class="ow">in</span> <span class="n">doc_tags</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]):</span>
+                    <span class="k">continue</span>
+
+            <span class="n">filtered_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">filtered_nodes</span>
+
+    <span class="nd">@track</span><span class="p">(</span>
+        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;convert_search_results&quot;</span><span class="p">,</span>
+        <span class="n">track_performance</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;high_frequency&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_nodes_to_search_results</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">match_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">include_content</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert LlamaIndex nodes to search result format.&quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Create snippet (first 300 chars with query highlighting context)</span>
+            <span class="n">snippet</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_snippet</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+
+            <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;document_id&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)),</span>
+                <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;original_path&quot;</span><span class="p">,</span> <span class="s2">&quot;Untitled&quot;</span><span class="p">)</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;snippet&quot;</span><span class="p">:</span> <span class="n">snippet</span><span class="p">,</span>
+                <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span>  <span class="c1"># Default score if not provided</span>
+                <span class="s2">&quot;mime_type&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mime_type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;size_bytes&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;size_bytes&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="s2">&quot;word_count&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;word_count&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="n">match_type</span><span class="p">,</span>
+                <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;created_at&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;ingested_at&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ingested_at&quot;</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;created_at&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tags&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="p">}</span>
+
+            <span class="c1"># Include content if requested</span>
+            <span class="k">if</span> <span class="n">include_content</span><span class="p">:</span>
+                <span class="n">result</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">results</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_snippet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a snippet showing context around query terms.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_length</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">text</span>
+
+        <span class="c1"># Try to find query terms in text for better context</span>
+        <span class="n">query_words</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">text_lower</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="n">best_position</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">best_score</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Look for positions with query words</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">-</span> <span class="n">max_length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">50</span><span class="p">):</span>
+            <span class="n">window</span> <span class="o">=</span> <span class="n">text_lower</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">max_length</span><span class="p">]</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">query_words</span> <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">window</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="n">best_score</span><span class="p">:</span>
+                <span class="n">best_score</span> <span class="o">=</span> <span class="n">score</span>
+                <span class="n">best_position</span> <span class="o">=</span> <span class="n">i</span>
+
+        <span class="c1"># Extract snippet</span>
+        <span class="n">snippet</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="n">best_position</span> <span class="p">:</span> <span class="n">best_position</span> <span class="o">+</span> <span class="n">max_length</span><span class="p">]</span>
+
+        <span class="c1"># Add ellipsis if needed</span>
+        <span class="k">if</span> <span class="n">best_position</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">snippet</span> <span class="o">=</span> <span class="s2">&quot;...&quot;</span> <span class="o">+</span> <span class="n">snippet</span>
+        <span class="k">if</span> <span class="n">best_position</span> <span class="o">+</span> <span class="n">max_length</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+            <span class="n">snippet</span> <span class="o">=</span> <span class="n">snippet</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+
+        <span class="k">return</span> <span class="n">snippet</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_empty_search_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error_message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return empty search result with error message.&quot;&quot;&quot;</span>
+        <span class="c1"># Log empty results as they may indicate issues</span>
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;search_empty_result&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="n">error_message</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;query_time_ms&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error_message</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

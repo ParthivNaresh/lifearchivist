@@ -1,0 +1,801 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.server.application_server &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.server.application_server</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.server.application_server</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Application server managing high-level application services.</span>
+
+<span class="sd">This server coordinates application-level services (progress tracking,</span>
+<span class="sd">background tasks, tool registry) while delegating core infrastructure</span>
+<span class="sd">to the ServiceContainer.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebSocket</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tools.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolExecutionError</span><span class="p">,</span> <span class="n">ToolNotFoundError</span><span class="p">,</span> <span class="n">ValidationError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tools.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolRegistry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.activity_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ActivityManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.background_tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackgroundTaskManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.enrichment_queue</span><span class="w"> </span><span class="kn">import</span> <span class="n">EnrichmentQueue</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.progress_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.service_container</span><span class="w"> </span><span class="kn">import</span> <span class="n">ServiceConfig</span><span class="p">,</span> <span class="n">ServiceContainer</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SessionManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages WebSocket sessions for real-time updates.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">WebSocket</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">websocket</span><span class="p">:</span> <span class="n">WebSocket</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register a new WebSocket session.&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">websocket</span>
+        <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;websocket_session_connected&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">})</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a WebSocket session.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;websocket_session_disconnected&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">})</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_to_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Send message to specific session.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span><span class="o">.</span><span class="n">send_json</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;websocket_send_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">broadcast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Broadcast message to all connected sessions.&quot;&quot;&quot;</span>
+        <span class="n">disconnected_sessions</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">websocket</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send_json</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;websocket_broadcast_failed&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">disconnected_sessions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+
+        <span class="c1"># Clean up disconnected sessions</span>
+        <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">disconnected_sessions</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">disconnect</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ApplicationServer">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ApplicationServer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main application server coordinating all services.</span>
+
+<span class="sd">    This server manages:</span>
+<span class="sd">    - Core infrastructure (via ServiceContainer)</span>
+<span class="sd">    - WebSocket sessions</span>
+<span class="sd">    - Progress tracking</span>
+<span class="sd">    - Background task processing</span>
+<span class="sd">    - Tool registry and execution</span>
+<span class="sd">    - Optional agents (if enabled)</span>
+
+<span class="sd">    The server ensures proper initialization order and cleanup.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ApplicationServer.__init__">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize application server.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">get_settings</span><span class="p">()</span>
+
+        <span class="c1"># Core infrastructure (will be initialized)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceContainer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Application services (will be initialized)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SessionManager</span><span class="p">]</span> <span class="o">=</span> <span class="n">SessionManager</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ActivityManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ProgressManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EnrichmentQueue</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BackgroundTaskManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ToolRegistry</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">folder_watcher</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Folder watching service</span>
+
+        <span class="c1"># Optional agents (only if enabled)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="ApplicationServer.initialize">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.initialize">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize all server components in correct order.</span>
+
+<span class="sd">        Initialization phases:</span>
+<span class="sd">        1. Core infrastructure (ServiceContainer)</span>
+<span class="sd">        2. Vault reconciliation</span>
+<span class="sd">        3. Application services (progress, enrichment, background tasks)</span>
+<span class="sd">        4. Tool registry</span>
+<span class="sd">        5. Optional agents</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;application_server_already_initialized&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;application_server_init_start&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Phase 1: Initialize core infrastructure</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_service_container</span><span class="p">()</span>
+
+            <span class="c1"># Phase 2: Run startup reconciliation</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_startup_reconciliation</span><span class="p">()</span>
+
+            <span class="c1"># Phase 3: Initialize application services</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_activity_manager</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_progress_manager</span><span class="p">()</span>  <span class="c1"># Synchronous - uses sync Redis</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_enrichment_queue</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_background_tasks</span><span class="p">()</span>
+
+            <span class="c1"># Phase 4: Initialize tool registry</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_tool_registry</span><span class="p">()</span>
+
+            <span class="c1"># Phase 5: Initialize folder watcher</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_folder_watcher</span><span class="p">()</span>
+
+            <span class="c1"># Phase 6: Initialize agents (if enabled)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_agents</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_agents</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;application_server_initialized&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;agents_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_agents</span><span class="p">,</span>
+                    <span class="s2">&quot;websockets_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_websockets</span><span class="p">,</span>
+                    <span class="s2">&quot;background_tasks_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;application_server_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Cleanup on failure</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="ApplicationServer.cleanup">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.cleanup">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cleanup all services in reverse initialization order.&quot;&quot;&quot;</span>
+        <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;application_server_cleanup_start&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Stop background tasks first</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;background_tasks_stopped&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;background_tasks_stop_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Cleanup enrichment queue</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;enrichment_queue_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;enrichment_queue_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Cleanup activity manager</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;activity_manager_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;activity_manager_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Cleanup core infrastructure</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;service_container_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;service_container_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;application_server_cleanup_complete&quot;</span><span class="p">)</span></div>
+
+
+    <span class="c1"># Initialization methods</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_service_container</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize core infrastructure services.&quot;&quot;&quot;</span>
+        <span class="n">vault_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">vault_path</span>
+        <span class="k">if</span> <span class="n">vault_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Vault path not configured in settings&quot;</span><span class="p">)</span>
+
+        <span class="n">config</span> <span class="o">=</span> <span class="n">ServiceConfig</span><span class="p">(</span>
+            <span class="n">redis_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+            <span class="n">qdrant_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">qdrant_url</span><span class="p">,</span>
+            <span class="n">vault_path</span><span class="o">=</span><span class="n">vault_path</span><span class="p">,</span>
+            <span class="n">settings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span> <span class="o">=</span> <span class="n">ServiceContainer</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+        <span class="n">log_event</span><span class="p">(</span>
+            <span class="s2">&quot;service_container_ready&quot;</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
+                <span class="s2">&quot;redis_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+                <span class="s2">&quot;qdrant_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">qdrant_url</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_run_startup_reconciliation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run vault reconciliation on startup to ensure data consistency.</span>
+
+<span class="sd">        This handles cases where users manually delete vault files,</span>
+<span class="sd">        ensuring Redis/Qdrant metadata stays in sync with actual files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.vault_reconciliation</span><span class="w"> </span><span class="kn">import</span> <span class="n">VaultReconciliationService</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="n">vault</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">vault</span>
+            <span class="n">doc_tracker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">doc_tracker</span>
+            <span class="n">qdrant_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">qdrant_client</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">vault</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">doc_tracker</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">qdrant_client</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="c1"># Create reconciliation service</span>
+            <span class="n">reconciliation_service</span> <span class="o">=</span> <span class="n">VaultReconciliationService</span><span class="p">(</span>
+                <span class="n">vault</span><span class="o">=</span><span class="n">vault</span><span class="p">,</span>
+                <span class="n">doc_tracker</span><span class="o">=</span><span class="n">doc_tracker</span><span class="p">,</span>
+                <span class="n">qdrant_client</span><span class="o">=</span><span class="n">qdrant_client</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Run reconciliation</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reconciliation_service</span><span class="o">.</span><span class="n">reconcile</span><span class="p">()</span>
+
+            <span class="c1"># Log results</span>
+            <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;cleaned&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;startup_reconciliation_cleanup&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;checked&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;checked&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;cleaned&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;cleaned&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">],</span>
+                    <span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;startup_reconciliation_complete&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;checked&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;checked&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;consistent&quot;</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;startup_reconciliation_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Don&#39;t fail startup if reconciliation fails</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_activity_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize activity event manager.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span> <span class="o">=</span> <span class="n">ActivityManager</span><span class="p">(</span><span class="n">redis_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+            <span class="c1"># Link to session manager for WebSocket broadcasting</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="o">.</span><span class="n">session_manager</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_manager</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;activity_manager_initialized&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;activity_manager_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_progress_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize progress tracking manager.</span>
+
+<span class="sd">        Note: This is synchronous because ProgressManager uses the synchronous</span>
+<span class="sd">        Redis client. This is acceptable for progress tracking which is not</span>
+<span class="sd">        on the critical path. For proper async implementation, ProgressManager</span>
+<span class="sd">        should be refactored to use redis.asyncio.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_websockets</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;progress_manager_disabled&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;websockets_disabled&quot;</span><span class="p">})</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span> <span class="o">=</span> <span class="n">ProgressManager</span><span class="p">(</span>
+                <span class="n">redis_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+                <span class="n">session_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session_manager</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;progress_manager_initialized&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_manager_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_enrichment_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize enrichment queue for background processing.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span> <span class="o">=</span> <span class="n">EnrichmentQueue</span><span class="p">(</span><span class="n">redis_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;enrichment_queue_initialized&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;enrichment_queue_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_background_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize background task manager.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;background_tasks_disabled&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;enrichment_queue_not_available&quot;</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span> <span class="o">=</span> <span class="n">BackgroundTaskManager</span><span class="p">(</span>
+                <span class="n">llamaindex_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">,</span>
+                <span class="n">vault</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;background_tasks_initialized&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;background_tasks_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_tool_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize tool registry with all dependencies.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;ServiceContainer must be initialized first&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span> <span class="o">=</span> <span class="n">ToolRegistry</span><span class="p">(</span>
+            <span class="n">vault</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span>
+            <span class="n">llamaindex_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">,</span>
+            <span class="n">progress_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="p">,</span>
+            <span class="n">enrichment_queue</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="p">,</span>
+            <span class="n">activity_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="o">.</span><span class="n">register_all</span><span class="p">()</span>
+
+        <span class="n">tool_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="o">.</span><span class="n">tools</span><span class="p">)</span>
+        <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;tool_registry_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;tools_registered&quot;</span><span class="p">:</span> <span class="n">tool_count</span><span class="p">})</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_folder_watcher</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize folder watching service.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.folder_watcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">FolderWatcherService</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">folder_watcher</span> <span class="o">=</span> <span class="n">FolderWatcherService</span><span class="p">(</span>
+                <span class="n">vault</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span>
+                <span class="n">server</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>  <span class="c1"># Pass self for tool execution</span>
+                <span class="n">debounce_seconds</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;folder_watcher_initialized&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;folder_watcher_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">folder_watcher</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_agents</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize agents (if enabled).&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..agents.ingestion</span><span class="w"> </span><span class="kn">import</span> <span class="n">IngestionAgent</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..agents.query</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueryAgent</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span> <span class="o">=</span> <span class="n">IngestionAgent</span><span class="p">(</span>
+                <span class="n">database</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">vault</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span>
+                <span class="n">tool_registry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span> <span class="o">=</span> <span class="n">QueryAgent</span><span class="p">(</span>
+                <span class="n">llamaindex_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">,</span>
+                <span class="n">tool_registry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;agents_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;ingestion&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;agents_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Tool execution</span>
+
+<div class="viewcode-block" id="ApplicationServer.execute_tool">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.execute_tool">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_tool</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute a tool with input/output validation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tool_name: Name of the tool to execute</span>
+<span class="sd">            params: Tool parameters</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict with success status and result or error</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Check tool registry initialization</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ToolExecutionError</span><span class="p">(</span><span class="s2">&quot;Tool registry not initialized&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Get the tool</span>
+            <span class="n">tool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="o">.</span><span class="n">get_tool</span><span class="p">(</span><span class="n">tool_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">tool</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ToolNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tool &#39;</span><span class="si">{</span><span class="n">tool_name</span><span class="si">}</span><span class="s2">&#39; not found&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Validate input</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">validated_params</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tool</span><span class="o">.</span><span class="n">validate_input</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Invalid input: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+
+            <span class="c1"># Execute tool</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tool</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="o">**</span><span class="n">validated_params</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ToolExecutionError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tool execution failed: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+            <span class="c1"># Validate output</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">validated_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tool</span><span class="o">.</span><span class="n">validate_output</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Invalid tool output: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">validated_result</span><span class="p">}</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="n">ToolNotFoundError</span><span class="p">,</span> <span class="n">ToolExecutionError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;tool_execution_unexpected_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;tool&quot;</span><span class="p">:</span> <span class="n">tool_name</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Internal server error: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span></div>
+
+
+    <span class="c1"># Agent execution</span>
+
+<div class="viewcode-block" id="ApplicationServer.query_agent_async">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.query_agent_async">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_agent_async</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Query an agent asynchronously.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            agent_name: Name of the agent (&quot;query&quot; or &quot;ingestion&quot;)</span>
+<span class="sd">            query: Query string</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict with success status and result or error</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_agents</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Agents are disabled in current mode&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+
+            <span class="k">if</span> <span class="n">agent_name</span> <span class="o">==</span> <span class="s2">&quot;query&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">agent_name</span> <span class="o">==</span> <span class="s2">&quot;ingestion&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">available_agents</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span><span class="p">:</span>
+                    <span class="n">available_agents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span><span class="p">:</span>
+                    <span class="n">available_agents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ingestion&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Agent &#39;</span><span class="si">{</span><span class="n">agent_name</span><span class="si">}</span><span class="s2">&#39; not found. Available: </span><span class="si">{</span><span class="n">available_agents</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">}</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;agent_query_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;agent&quot;</span><span class="p">:</span> <span class="n">agent_name</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}</span></div>
+
+
+    <span class="c1"># Convenience properties for backward compatibility</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">vault</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get vault from service container.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">vault</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">llamaindex_service</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get LlamaIndex service from service container.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llamaindex_service</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if server is initialized.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

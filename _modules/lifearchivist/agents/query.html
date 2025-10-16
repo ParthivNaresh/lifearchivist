@@ -1,0 +1,632 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.agents.query &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.agents.query</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.agents.query</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Query agent for search and Q&amp;A using RAG (Retrieval-Augmented Generation).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+
+<div class="viewcode-block" id="QueryAgent">
+<a class="viewcode-back" href="../../../api/lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QueryAgent</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent responsible for handling search queries and Q&amp;A using RAG.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="QueryAgent.__init__">
+<a class="viewcode-back" href="../../../api/lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">llamaindex_service</span><span class="p">,</span> <span class="n">tool_registry</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span> <span class="o">=</span> <span class="n">llamaindex_service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span> <span class="o">=</span> <span class="n">tool_registry</span></div>
+
+
+<div class="viewcode-block" id="QueryAgent.process">
+<a class="viewcode-back" href="../../../api/lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.process">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process a search query or question intelligently.&quot;&quot;&quot;</span>
+        <span class="c1"># Determine if this is a question or a search</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_question</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">answer_question</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_documents</span><span class="p">(</span><span class="n">query</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_question</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if a query is a question that requires RAG Q&amp;A.&quot;&quot;&quot;</span>
+        <span class="n">query_lower</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="c1"># Question words at the beginning</span>
+        <span class="n">question_words</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;what&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;how&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;why&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;when&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;where&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;who&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;which&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;can&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;could&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;should&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;would&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;is&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;are&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;was&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;were&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;do&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;does&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;did&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Check if starts with question word</span>
+        <span class="n">first_word</span> <span class="o">=</span> <span class="n">query_lower</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">query_lower</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">first_word</span> <span class="ow">in</span> <span class="n">question_words</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Check if ends with question mark</span>
+        <span class="k">if</span> <span class="n">query</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;?&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Check for questioning phrases</span>
+        <span class="n">questioning_phrases</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;tell me about&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;explain&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;describe&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;summarize&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;compare&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;find information about&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">phrase</span> <span class="ow">in</span> <span class="n">query_lower</span> <span class="k">for</span> <span class="n">phrase</span> <span class="ow">in</span> <span class="n">questioning_phrases</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="QueryAgent.search_documents">
+<a class="viewcode-back" href="../../../api/lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.search_documents">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_documents</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
+        <span class="n">filters</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search for documents matching the query.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Use the search tool</span>
+            <span class="n">search_tool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="o">.</span><span class="n">get_tool</span><span class="p">(</span><span class="s2">&quot;index.search&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">search_tool</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Search tool not found&quot;</span><span class="p">}</span>
+
+            <span class="n">tool_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">search_tool</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Extract the actual search result from the tool execution result</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tool_result</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="QueryAgent.answer_question">
+<a class="viewcode-back" href="../../../api/lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.answer_question">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">answer_question</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">max_context_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4000</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Answer a question using LlamaIndex RAG with fallback to custom implementation.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">llamaindex_tool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="o">.</span><span class="n">get_tool</span><span class="p">(</span><span class="s2">&quot;llamaindex.query&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">llamaindex_tool</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llamaindex_tool</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                        <span class="n">question</span><span class="o">=</span><span class="n">question</span><span class="p">,</span>
+                        <span class="n">similarity_top_k</span><span class="o">=</span><span class="n">context_limit</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="c1"># Convert LlamaIndex response to our format</span>
+                    <span class="k">return</span> <span class="p">{</span>
+                        <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                        <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+                        <span class="s2">&quot;citations&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_llamaindex_sources</span><span class="p">(</span>
+                            <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sources&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                        <span class="p">),</span>
+                        <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;llamaindex_rag&quot;</span><span class="p">),</span>
+                        <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+                    <span class="p">}</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_custom_rag_implementation</span><span class="p">(</span>
+                    <span class="n">question</span><span class="p">,</span> <span class="n">context_limit</span><span class="p">,</span> <span class="n">max_context_length</span>
+                <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_llamaindex_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sources</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert LlamaIndex sources to our citation format.&quot;&quot;&quot;</span>
+        <span class="n">citations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="n">citations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;doc_id&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                    <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;Document&quot;</span><span class="p">),</span>
+                    <span class="s2">&quot;snippet&quot;</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)[:</span><span class="mi">200</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">200</span>
+                        <span class="k">else</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="p">),</span>
+                    <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">citations</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_custom_rag_implementation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">max_context_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4000</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Custom RAG implementation as fallback.&quot;&quot;&quot;</span>
+        <span class="c1"># Step 1: Retrieve relevant documents using semantic search</span>
+        <span class="n">search_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_documents</span><span class="p">(</span>
+            <span class="n">question</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;semantic&quot;</span><span class="p">,</span>
+            <span class="n">limit</span><span class="o">=</span><span class="n">context_limit</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1"># Get more to select best</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">search_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;results&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="s2">&quot;I couldn&#39;t find any relevant documents to answer your question. Try rephrasing your question or check if relevant documents have been uploaded.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;citations&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;no_context&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Step 2: Select and prepare context from top results</span>
+        <span class="n">context_info</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_context</span><span class="p">(</span>
+            <span class="n">search_result</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">],</span> <span class="n">max_context_length</span><span class="p">,</span> <span class="n">question</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="s2">&quot;I found some potentially relevant documents, but couldn&#39;t extract sufficient context to answer your question.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="s2">&quot;citations&quot;</span><span class="p">:</span> <span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;citations&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;insufficient_context&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Step 3: Generate answer using Ollama</span>
+        <span class="n">ollama_tool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="o">.</span><span class="n">get_tool</span><span class="p">(</span><span class="s2">&quot;llm.ollama&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ollama_tool</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_answer</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;citations&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Step 4: Call LLM with structured RAG prompt</span>
+        <span class="n">rag_response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_rag_answer</span><span class="p">(</span>
+            <span class="n">ollama_tool</span><span class="p">,</span> <span class="n">question</span><span class="p">,</span> <span class="n">context_info</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rag_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_answer</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;citations&quot;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">rag_response</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">rag_response</span><span class="p">[</span><span class="s2">&quot;confidence&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;citations&quot;</span><span class="p">:</span> <span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;citations&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;search_results&quot;</span><span class="p">:</span> <span class="n">search_result</span><span class="p">[</span><span class="s2">&quot;results&quot;</span><span class="p">][:</span><span class="n">context_limit</span><span class="p">],</span>
+            <span class="s2">&quot;context_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]),</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;custom_rag&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_context</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">search_results</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">max_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare context from search results for RAG.&quot;&quot;&quot;</span>
+        <span class="n">context_pieces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">citations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_length</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Sort results by relevance score</span>
+        <span class="n">sorted_results</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">search_results</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sorted_results</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">current_length</span> <span class="o">&gt;=</span> <span class="n">max_length</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="c1"># Get document content if available</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;snippet&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">content</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Extract relevant sentences based on the question</span>
+            <span class="n">relevant_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_relevant_sentences</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">question</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">relevant_text</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Check if adding this would exceed limit</span>
+            <span class="k">if</span> <span class="n">current_length</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">relevant_text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_length</span><span class="p">:</span>
+                <span class="c1"># Truncate to fit</span>
+                <span class="n">remaining_space</span> <span class="o">=</span> <span class="n">max_length</span> <span class="o">-</span> <span class="n">current_length</span>
+                <span class="k">if</span> <span class="n">remaining_space</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>  <span class="c1"># Only add if meaningful space remains</span>
+                    <span class="n">relevant_text</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">relevant_text</span><span class="p">[:</span><span class="n">remaining_space</span><span class="p">]</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+            <span class="c1"># Add to context</span>
+            <span class="n">doc_title</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Document </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">context_piece</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[Source: </span><span class="si">{</span><span class="n">doc_title</span><span class="si">}</span><span class="s2">]</span><span class="se">\n</span><span class="si">{</span><span class="n">relevant_text</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">context_pieces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">context_piece</span><span class="p">)</span>
+            <span class="n">current_length</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">context_piece</span><span class="p">)</span>
+
+            <span class="c1"># Add citation</span>
+            <span class="n">citations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;doc_id&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;document_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                    <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">doc_title</span><span class="p">,</span>
+                    <span class="s2">&quot;snippet&quot;</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="n">relevant_text</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">relevant_text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">200</span>
+                        <span class="k">else</span> <span class="n">relevant_text</span>
+                    <span class="p">),</span>
+                    <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="n">context</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">context_pieces</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">context</span><span class="p">,</span>
+            <span class="s2">&quot;citations&quot;</span><span class="p">:</span> <span class="n">citations</span><span class="p">,</span>
+            <span class="s2">&quot;total_sources&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">citations</span><span class="p">),</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_relevant_sentences</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_sentences</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract sentences most relevant to the question.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">question</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">text</span><span class="p">[:</span><span class="mi">500</span><span class="p">]</span> <span class="k">if</span> <span class="n">text</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1"># Split into sentences</span>
+        <span class="n">sentences</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[.!?]+&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">10</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentences</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_sentences</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">text</span>
+
+        <span class="c1"># Score sentences based on keyword overlap with question</span>
+        <span class="n">question_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\b\w+\b&quot;</span><span class="p">,</span> <span class="n">question</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+        <span class="n">question_words</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">word</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">question_words</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">word</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span>
+        <span class="p">}</span>  <span class="c1"># Filter short words</span>
+
+        <span class="n">scored_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">:</span>
+            <span class="n">sentence_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\b\w+\b&quot;</span><span class="p">,</span> <span class="n">sentence</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+            <span class="n">overlap</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">question_words</span> <span class="o">&amp;</span> <span class="n">sentence_words</span><span class="p">)</span>
+            <span class="n">scored_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">sentence</span><span class="p">,</span> <span class="n">overlap</span><span class="p">))</span>
+
+        <span class="c1"># Sort by score and take top sentences</span>
+        <span class="n">scored_sentences</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">best_sentences</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">scored_sentences</span><span class="p">[:</span><span class="n">max_sentences</span><span class="p">]]</span>
+
+        <span class="c1"># Maintain original order</span>
+        <span class="n">result_sentences</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">best_sentences</span><span class="p">:</span>
+                <span class="n">result_sentences</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">&quot;. &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">result_sentences</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="k">if</span> <span class="n">result_sentences</span> <span class="k">else</span> <span class="n">text</span><span class="p">[:</span><span class="mi">500</span><span class="p">]</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_generate_rag_answer</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ollama_tool</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context_info</span><span class="p">:</span> <span class="n">Dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate answer using Ollama with RAG prompt.&quot;&quot;&quot;</span>
+
+        <span class="n">system_prompt</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;You are a helpful AI assistant that answers questions based on provided context from documents. Your task is to:</span>
+
+<span class="s2">1. Answer questions accurately using ONLY the information provided in the context</span>
+<span class="s2">2. If the context doesn&#39;t contain enough information, say so clearly</span>
+<span class="s2">3. Always cite which sources you&#39;re referencing</span>
+<span class="s2">4. Be concise but thorough</span>
+<span class="s2">5. If multiple sources say different things, acknowledge the discrepancy</span>
+
+<span class="s2">Format your response as:</span>
+<span class="s2">ANSWER: [Your answer here, referencing sources when needed]</span>
+<span class="s2">CONFIDENCE: [A number from 0.0 to 1.0 indicating how confident you are in the answer]&quot;&quot;&quot;</span>
+
+        <span class="n">user_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span>
+
+<span class="s2">Context from documents:</span>
+<span class="si">{</span><span class="n">context_info</span><span class="p">[</span><span class="s1">&#39;context&#39;</span><span class="p">]</span><span class="si">}</span>
+
+<span class="s2">Please answer the question based on the provided context.&quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Add timeout to prevent hanging due to Ollama memory issues</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
+                <span class="n">ollama_tool</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                    <span class="n">prompt</span><span class="o">=</span><span class="n">user_prompt</span><span class="p">,</span>
+                    <span class="n">system</span><span class="o">=</span><span class="n">system_prompt</span><span class="p">,</span>
+                    <span class="n">temperature</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># Low temperature for factual accuracy</span>
+                    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="mf">35.0</span><span class="p">,</span>  <span class="c1"># 35 second timeout</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+
+            <span class="n">answer</span><span class="p">,</span> <span class="n">confidence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_rag_response</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">answer</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span><span class="p">}</span>
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ollama timed out due to memory constraints&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_rag_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse the structured RAG response.&quot;&quot;&quot;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">confidence</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># Default confidence</span>
+
+        <span class="n">current_section</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ANSWER:&quot;</span><span class="p">):</span>
+                <span class="n">current_section</span> <span class="o">=</span> <span class="s2">&quot;answer&quot;</span>
+                <span class="n">answer</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">7</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;CONFIDENCE:&quot;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">confidence_str</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">11</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="n">confidence</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">confidence_str</span><span class="p">)</span>
+                    <span class="c1"># Ensure confidence is between 0 and 1</span>
+                    <span class="n">confidence</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">confidence</span><span class="p">))</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">):</span>
+                    <span class="n">confidence</span> <span class="o">=</span> <span class="mf">0.5</span>
+            <span class="k">elif</span> <span class="n">current_section</span> <span class="o">==</span> <span class="s2">&quot;answer&quot;</span> <span class="ow">and</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">answer</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">line</span>
+
+        <span class="c1"># Fallback: if parsing failed, use the whole response as answer</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">answer</span><span class="p">:</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="c1"># Try to extract confidence from the text</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+            <span class="n">conf_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;confidence[:\s]+([0-9.]+)&quot;</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">conf_match</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">confidence</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">conf_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                    <span class="n">confidence</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">confidence</span><span class="p">))</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+        <span class="c1"># Clean up the answer</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">answer</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;ANSWER:&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">answer</span><span class="p">,</span> <span class="n">confidence</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_fallback_answer</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">citations</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provide a fallback answer when LLM is not available.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">citations</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="s2">&quot;I couldn&#39;t find relevant information to answer your question.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;citations&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;fallback_no_citations&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="c1"># Create a simple answer based on available snippets</span>
+        <span class="n">snippets</span> <span class="o">=</span> <span class="p">[</span><span class="n">citation</span><span class="p">[</span><span class="s2">&quot;snippet&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">citation</span> <span class="ow">in</span> <span class="n">citations</span><span class="p">[:</span><span class="mi">3</span><span class="p">]]</span>
+
+        <span class="n">answer</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Based on the available documents, here&#39;s what I found: </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">snippets</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">answer</span><span class="p">,</span>
+            <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>  <span class="c1"># Low confidence for fallback</span>
+            <span class="s2">&quot;citations&quot;</span><span class="p">:</span> <span class="n">citations</span><span class="p">,</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;fallback_simple&quot;</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

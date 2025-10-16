@@ -1,0 +1,618 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifearchivist.server.service_container &mdash; Life Archivist 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Life Archivist
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#system-dependencies">System Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#macos">macOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#linux">Linux</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#installation-steps">Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#clone-the-repository">1. Clone the Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#install-dependencies">2. Install Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#start-services">3. Start Services</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#starting-life-archivist">Starting Life Archivist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#first-time-setup">First Time Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#importing-files">Importing Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#searching">Searching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#asking-questions">Asking Questions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#key-configuration-options">Key Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#storage-settings">Storage Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#model-settings">Model Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#service-urls">Service URLs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#api-settings">API Settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#feature-flags">Feature Flags</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#advanced-configuration">Advanced Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#performance-tuning">Performance Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../configuration.html#security">Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#configuration-file">Configuration File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../configuration.html#validation">Validation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/overview.html">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage/overview.html#features">Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/file-management.html">File Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/search.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage/ai-features.html">AI Features</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">lifearchivist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/lifearchivist.html">lifearchivist package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/lifearchivist.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.agents.html">lifearchivist.agents package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.config.html">lifearchivist.config package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.models.html">lifearchivist.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.schemas.html">lifearchivist.schemas package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.server.html">lifearchivist.server package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.storage.html">lifearchivist.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.tools.html">lifearchivist.tools package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.utils.html">lifearchivist.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/lifearchivist.html#module-lifearchivist">Module contents</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.Document"><code class="docutils literal notranslate"><span class="pre">Document</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.SearchResult"><code class="docutils literal notranslate"><span class="pre">SearchResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/lifearchivist.html#lifearchivist.LlamaIndexService"><code class="docutils literal notranslate"><span class="pre">LlamaIndexService</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/setup.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Life Archivist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lifearchivist.server.service_container</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lifearchivist.server.service_container</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Service container for dependency injection and lifecycle management.</span>
+
+<span class="sd">This module provides centralized service initialization and management,</span>
+<span class="sd">ensuring all services are properly initialized before use and cleaned up on shutdown.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">redis.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">redis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qdrant_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">QdrantClient</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..config.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">Settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..storage.bm25_index_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">BM25IndexService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..storage.redis_document_tracker</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisDocumentTracker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..storage.vault.vault</span><span class="w"> </span><span class="kn">import</span> <span class="n">Vault</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="c1"># Import for type checking only to avoid runtime circular import</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.llamaindex_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">LlamaIndexService</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ServiceConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configuration for all core services.</span>
+
+<span class="sd">    This centralizes configuration needed to initialize services,</span>
+<span class="sd">    making dependencies explicit and easy to modify.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">redis_url</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">qdrant_url</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">vault_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">settings</span><span class="p">:</span> <span class="n">Settings</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ServiceInitializationError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when service initialization fails.&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="ServiceContainer">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ServiceContainer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ServiceContainer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Container for core infrastructure services.</span>
+
+<span class="sd">    Manages the lifecycle of:</span>
+<span class="sd">    - Redis client (metadata storage)</span>
+<span class="sd">    - Qdrant client (vector storage)</span>
+<span class="sd">    - Vault (file storage)</span>
+<span class="sd">    - Document tracker (Redis-based)</span>
+<span class="sd">    - BM25 service (keyword search)</span>
+<span class="sd">    - LlamaIndex service (orchestration)</span>
+
+<span class="sd">    All services are guaranteed to be initialized (never None) after</span>
+<span class="sd">    calling initialize(). Services are initialized in dependency order</span>
+<span class="sd">    and cleaned up in reverse order.</span>
+
+<span class="sd">    Usage:</span>
+<span class="sd">        config = ServiceConfig(...)</span>
+<span class="sd">        container = ServiceContainer(config)</span>
+<span class="sd">        await container.initialize()</span>
+
+<span class="sd">        # All services guaranteed to exist</span>
+<span class="sd">        result = await container.llamaindex_service.add_document(...)</span>
+
+<span class="sd">        # Cleanup</span>
+<span class="sd">        await container.cleanup()</span>
+
+<span class="sd">    Or use as async context manager:</span>
+<span class="sd">        async with ServiceContainer(config) as container:</span>
+<span class="sd">            await container.llamaindex_service.add_document(...)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ServiceContainer.__init__">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize container with configuration.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Service configuration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Core services - will be initialized, never None after initialize()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qdrant_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QdrantClient</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Vault</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">doc_tracker</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RedisDocumentTracker</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BM25IndexService</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LlamaIndexService&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="ServiceContainer.initialize">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.initialize">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize all services in correct dependency order.</span>
+
+<span class="sd">        Initialization phases:</span>
+<span class="sd">        1. External connections (Redis, Qdrant)</span>
+<span class="sd">        2. Storage services (Vault)</span>
+<span class="sd">        3. Index services (DocTracker, BM25) - depend on Redis</span>
+<span class="sd">        4. High-level services (LlamaIndex) - depend on everything</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ServiceInitializationError: If any service fails to initialize</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;service_container_already_initialized&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;service_container_init_start&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;redis_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+                    <span class="s2">&quot;qdrant_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">qdrant_url</span><span class="p">,</span>
+                    <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Phase 1: External connections</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_redis</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_qdrant</span><span class="p">()</span>  <span class="c1"># Synchronous - Qdrant client is not async</span>
+
+            <span class="c1"># Phase 2: Storage services</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_vault</span><span class="p">()</span>
+
+            <span class="c1"># Phase 3: Index services (depend on Redis/Qdrant)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_doc_tracker</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_bm25</span><span class="p">()</span>
+
+            <span class="c1"># Phase 4: High-level services (depend on everything)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_llamaindex</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;service_container_initialized&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;services&quot;</span><span class="p">:</span> <span class="p">[</span>
+                        <span class="s2">&quot;redis&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;qdrant&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;vault&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;doc_tracker&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;bm25&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;llamaindex&quot;</span><span class="p">,</span>
+                    <span class="p">],</span>
+                    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ready&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;service_container_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                    <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Cleanup on failure</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize services: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+
+
+<div class="viewcode-block" id="ServiceContainer.cleanup">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.cleanup">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cleanup all services in reverse initialization order.</span>
+
+<span class="sd">        This ensures proper resource cleanup even if some services</span>
+<span class="sd">        failed to initialize.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;service_container_cleanup_start&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Cleanup in reverse order</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;llamaindex_service_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;llamaindex_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;bm25_service_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;bm25_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_tracker</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_tracker</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;doc_tracker_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;doc_tracker_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Vault doesn&#39;t need explicit cleanup currently</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;redis_client_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;redis_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Qdrant client doesn&#39;t need explicit cleanup</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;service_container_cleanup_complete&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ServiceContainer.__aenter__">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.__aenter__">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Async context manager entry.&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="ServiceContainer.__aexit__">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.__aexit__">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aexit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Async context manager exit.&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># Don&#39;t suppress exceptions</span></div>
+
+
+    <span class="c1"># Private initialization methods</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_redis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize Redis client with connection pooling.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+                <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">socket_keepalive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">socket_connect_timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                <span class="n">retry_on_timeout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">max_connections</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>  <span class="c1"># Explicit pool size for high concurrency</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Test connection</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;redis_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">redis_url</span><span class="p">})</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize Redis: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_qdrant</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize Qdrant client.</span>
+
+<span class="sd">        Note: This is synchronous because the official qdrant-client library</span>
+<span class="sd">        uses synchronous operations for client initialization and connection</span>
+<span class="sd">        testing. The blocking is minimal (one HTTP call to get collections).</span>
+
+<span class="sd">        For truly async Qdrant operations, consider using AsyncQdrantClient</span>
+<span class="sd">        when it becomes available in the official library.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">qdrant_client</span> <span class="o">=</span> <span class="n">QdrantClient</span><span class="p">(</span>
+                <span class="n">url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">qdrant_url</span><span class="p">,</span>
+                <span class="n">check_compatibility</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Suppress version warnings</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Test connection by getting collections (synchronous HTTP call)</span>
+            <span class="n">collections</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qdrant_client</span><span class="o">.</span><span class="n">get_collections</span><span class="p">()</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;qdrant_initialized&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">qdrant_url</span><span class="p">,</span>
+                    <span class="s2">&quot;collections&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">collections</span><span class="p">),</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize Qdrant: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_vault</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize vault storage.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vault</span> <span class="o">=</span> <span class="n">Vault</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vault_path</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;vault_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vault_path</span><span class="p">)})</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize Vault: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_doc_tracker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize Redis document tracker.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">doc_tracker</span> <span class="o">=</span> <span class="n">RedisDocumentTracker</span><span class="p">(</span><span class="n">redis_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">redis_url</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_tracker</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+            <span class="n">doc_count</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_tracker</span><span class="o">.</span><span class="n">get_document_count</span><span class="p">()</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;doc_tracker_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;document_count&quot;</span><span class="p">:</span> <span class="n">doc_count</span><span class="p">})</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize document tracker: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_bm25</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize BM25 index service.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span> <span class="o">=</span> <span class="n">BM25IndexService</span><span class="p">(</span>
+                <span class="n">redis_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+                <span class="n">use_stemming</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Can enable if nltk is installed</span>
+                <span class="n">remove_stop_words</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+            <span class="n">doc_count</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="o">.</span><span class="n">get_document_count</span><span class="p">()</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;bm25_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;document_count&quot;</span><span class="p">:</span> <span class="n">doc_count</span><span class="p">})</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize BM25 service: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_llamaindex</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize LlamaIndex service with all dependencies.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Import here to avoid circular dependencies</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.llamaindex_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">LlamaIndexService</span>
+
+            <span class="c1"># Create service with all dependencies</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span> <span class="o">=</span> <span class="n">LlamaIndexService</span><span class="p">(</span>
+                <span class="n">database</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Not used currently</span>
+                <span class="n">vault</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Ensure async initialization</span>
+            <span class="n">li</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span>
+            <span class="k">if</span> <span class="n">li</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;LlamaIndex service failed to construct&quot;</span>
+                <span class="p">)</span>
+            <span class="k">await</span> <span class="n">li</span><span class="o">.</span><span class="n">ensure_initialized</span><span class="p">()</span>
+
+            <span class="c1"># Get document count for logging</span>
+            <span class="n">count_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">li</span><span class="o">.</span><span class="n">get_document_count</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">count_result</span><span class="o">.</span><span class="n">is_success</span><span class="p">()</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">count_result</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">):</span>
+                <span class="n">doc_count</span> <span class="o">=</span> <span class="n">count_result</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">doc_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;llamaindex_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;document_count&quot;</span><span class="p">:</span> <span class="n">doc_count</span><span class="p">})</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize LlamaIndex service: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if container is initialized.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span>
+
+<div class="viewcode-block" id="ServiceContainer.require_initialized">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.require_initialized">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">require_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Raise error if container not initialized.</span>
+
+<span class="sd">        Use this in methods that require initialized services.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: If container not initialized</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;ServiceContainer not initialized. &quot;</span>
+                <span class="s2">&quot;Call await container.initialize() first.&quot;</span>
+            <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
