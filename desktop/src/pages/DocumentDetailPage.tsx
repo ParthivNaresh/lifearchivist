@@ -9,7 +9,6 @@ import {
   getFileTypeName,
   fetchDocumentAnalysis,
   fetchDocumentNeighbors,
-  fetchDocumentText,
   deleteDocument,
   useDocumentTags,
   useDocumentDownload,
@@ -55,10 +54,11 @@ const DocumentDetailPage: React.FC = () => {
     return fetchDocumentNeighbors(documentId);
   }, [documentId]);
 
-  const fetchText = useCallback(async () => {
-    if (!documentId) throw new Error('Document ID required');
-    return fetchDocumentText(documentId);
-  }, [documentId]);
+  // Removed: Debug text endpoint doesn't exist
+  // const fetchText = useCallback(async () => {
+  //   if (!documentId) throw new Error('Document ID required');
+  //   return fetchDocumentText(documentId);
+  // }, [documentId]);
 
   // Use cache hooks with constants
   const { data: analysis, loading: analysisLoading, error: analysisError, refresh: refreshAnalysis } = useCache(
@@ -73,11 +73,12 @@ const DocumentDetailPage: React.FC = () => {
     CACHE_DURATIONS.NEIGHBORS
   );
 
-  const { data: documentText } = useCache(
-    `document-text-${documentId}`,
-    fetchText,
-    CACHE_DURATIONS.DOCUMENT_TEXT
-  );
+  // Removed: Debug text endpoint doesn't exist
+  // const { data: documentText } = useCache(
+  //   `document-text-${documentId}`,
+  //   fetchText,
+  //   CACHE_DURATIONS.DOCUMENT_TEXT
+  // );
 
   // Sync tags from analysis metadata
   useSyncTags(analysis, setTags);
@@ -106,22 +107,6 @@ const DocumentDetailPage: React.FC = () => {
   const handleNavigateToRelated = useCallback((docId: string) => {
     navigateWithTransition(`/vault/${docId}/details`);
   }, [navigateWithTransition]);
-
-  // Debug logging for document text (only in development)
-  React.useEffect(() => {
-    if (import.meta.env.DEV && documentText) {
-      console.log('Document Text Data:', {
-        documentId: documentText.document_id,
-        textLength: documentText.text.length,
-        stats: documentText.stats,
-        textPreview: documentText.text.substring(0, 500) + '...'
-      });
-      
-      // Store in window for easy access in console
-      (window as any).__documentText = documentText;
-      console.log('Full document text available in console as: window.__documentText');
-    }
-  }, [documentText]);
 
   if (!documentId) {
     return (
