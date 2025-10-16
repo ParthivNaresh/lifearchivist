@@ -683,17 +683,22 @@ class LlamaIndexQdrantService:
         document_id: str,
         metadata_updates: Dict[str, Any],
         merge_mode: str = "update",
-    ) -> bool:
+    ) -> Result[Dict[str, Any], str]:
         """
         Update metadata for a document.
 
         Delegates to the metadata service for centralized metadata management.
+
+        Returns:
+            Success with update info, or Failure with error details
         """
         if self.metadata_service:
-            result = await self.metadata_service.update_document_metadata(
-                document_id, metadata_updates, merge_mode
+            result: Result[Dict[str, Any], str] = (
+                await self.metadata_service.update_document_metadata(
+                    document_id, metadata_updates, merge_mode
+                )
             )
-            return bool(result.is_success())
+            return result
 
         # Fallback if metadata service not available
         log_event(
@@ -701,7 +706,10 @@ class LlamaIndexQdrantService:
             {"document_id": document_id, "reason": "no_metadata_service"},
             level=logging.WARNING,
         )
-        return False
+        return internal_error(
+            "Metadata service not available",
+            context={"document_id": document_id},
+        )
 
     async def query_documents_by_metadata(
         self, filters: Dict[str, Any], limit: int = 100, offset: int = 0

@@ -411,7 +411,7 @@ class FileImportTool(BaseTool):
                 {
                     "file_id": file_id,
                     "step": "status_update",
-                    "error": status_result.error,
+                    "error": str(status_result.error),
                 },
                 level=logging.WARNING,
             )
@@ -437,7 +437,7 @@ class FileImportTool(BaseTool):
                 {
                     "file_id": file_id,
                     "step": "provenance_update",
-                    "error": provenance_result.error,
+                    "error": str(provenance_result.error),
                 },
                 level=logging.WARNING,
             )

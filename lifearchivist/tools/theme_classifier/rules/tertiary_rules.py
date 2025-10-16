@@ -46,10 +46,6 @@ TERTIARY_FILENAME_KEYWORD_DEFINITIONS = {
         ],
         "confidence": 0.75,
     },
-    "Personal": {
-        "keywords": ["passport", "license", "birth", "marriage", "divorce"],
-        "confidence": 0.70,
-    },
 }
 
 
@@ -142,22 +138,5 @@ TERTIARY_STATISTICAL_KEYWORD_DEFINITIONS = {
         "expertise",
         "proficiency",
         "competency",
-    },
-    "Personal": {
-        "birth",
-        "death",
-        "marriage",
-        "divorce",
-        "passport",
-        "license",
-        "identification",
-        "certificate",
-        "personal",
-        "family",
-        "estate",
-        "beneficiary",
-        "heir",
-        "guardian",
-        "minor",
     },
 }
