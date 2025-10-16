@@ -8,12 +8,14 @@ for processing. Uses OS-level filesystem events for efficient detection.
 import asyncio
 import hashlib
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Optional
 
 import aiofiles
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
+from watchdog.observers.api import BaseObserver
 
 from lifearchivist.utils.logging import log_event
 
@@ -64,7 +66,7 @@ class FolderWatcherService:
         self.server = server
         self.debounce_seconds = debounce_seconds
 
-        self.observer: Optional[Observer] = None
+        self.observer: Optional[BaseObserver] = None
         self.watched_path: Optional[Path] = None
         self.handler: Optional[DocumentEventHandler] = None
         self.enabled = False
@@ -475,7 +477,7 @@ class DocumentEventHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        file_path = Path(event.src_path)
+        file_path = Path(os.fsdecode(event.src_path))
 
         # Filter by extension
         if not self.watcher_service.is_supported_file(file_path):
@@ -505,7 +507,7 @@ class DocumentEventHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        file_path = Path(event.src_path)
+        file_path = Path(os.fsdecode(event.src_path))
 
         # Only process supported files
         if not self.watcher_service.is_supported_file(file_path):

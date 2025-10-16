@@ -54,10 +54,10 @@ async def get_all_tags(
         )
 
     # Validate parameters
-    if min_count < 0:
+    if min_count is not None and min_count < 0:
         raise HTTPException(status_code=400, detail="min_count must be non-negative")
 
-    if limit < 1 or limit > 1000:
+    if limit is not None and (limit < 1 or limit > 1000):
         raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
 
     try:
@@ -126,10 +126,10 @@ async def get_topic_landscape(
         )
 
     # Validate parameters
-    if min_documents < 1:
+    if min_documents is not None and min_documents < 1:
         raise HTTPException(status_code=400, detail="min_documents must be at least 1")
 
-    if max_topics < 1 or max_topics > 200:
+    if max_topics is not None and (max_topics < 1 or max_topics > 200):
         raise HTTPException(
             status_code=400, detail="max_topics must be between 1 and 200"
         )

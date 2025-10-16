@@ -61,7 +61,7 @@ class BaseSubthemeClassifier:
         self.compiled_patterns: Dict[str, Dict] = {}
 
         for rule in self.all_rules:
-            rule_patterns = {
+            rule_patterns: Dict[str, List[Any]] = {
                 "unique": [],
                 "structure": [],
                 "exclude": [],
@@ -155,6 +155,7 @@ class BaseSubthemeClassifier:
                 primary_subtheme=None,
                 subclassifications=[],
                 primary_subclassification=None,
+                subclassification_confidence=None,
                 confidence_scores={},
                 metadata={"reason": "insufficient_text"},
             )
@@ -198,6 +199,7 @@ class BaseSubthemeClassifier:
                 primary_subtheme=None,
                 subclassifications=[],
                 primary_subclassification=None,
+                subclassification_confidence=None,
                 confidence_scores={},
                 metadata={"reason": "no_matches"},
             )
@@ -220,6 +222,7 @@ class BaseSubthemeClassifier:
                 primary_subtheme=None,
                 subclassifications=[],
                 primary_subclassification=None,
+                subclassification_confidence=None,
                 confidence_scores={},
                 metadata={"reason": "below_threshold"},
             )
@@ -311,7 +314,11 @@ class BaseSubthemeClassifier:
             return 0.0, {}
 
         # Collect all matches from all levels
-        all_matches = {"primary": {}, "secondary": {}, "tertiary": {}}
+        all_matches: Dict[str, Dict[str, Any]] = {
+            "primary": {},
+            "secondary": {},
+            "tertiary": {},
+        }
 
         # Primary identifiers (highest confidence)
         primary_confidence, primary_matches = self._check_primary_identifiers(
@@ -400,7 +407,7 @@ class BaseSubthemeClassifier:
     ) -> Tuple[float, Dict[str, Any]]:
         """Check primary identifiers (unique patterns and definitive phrases)."""
         max_confidence = 0.0
-        all_matches = {
+        all_matches: Dict[str, List[Dict[str, Any]]] = {
             "unique_patterns": [],
             "definitive_phrases": [],
             "form_numbers": [],
@@ -487,7 +494,7 @@ class BaseSubthemeClassifier:
     ) -> Tuple[float, Dict[str, Any]]:
         """Check tertiary identifiers (keywords and filename patterns)."""
         max_confidence = 0.0
-        all_matches = {"filename_patterns": [], "keywords": {}}
+        all_matches: Dict[str, Any] = {"filename_patterns": [], "keywords": {}}
 
         # Check filename patterns first (quick check)
         if filename_lower:

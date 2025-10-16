@@ -9,7 +9,7 @@ Provides CRUD operations for documents including:
 - Finding similar documents
 """
 
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
@@ -124,7 +124,12 @@ async def list_documents(
                     content=all_docs_result.to_dict(),
                     status_code=all_docs_result.status_code,
                 )
-            all_docs = all_docs_result.value
+            # Type-safe extraction of value
+            all_docs: List[Any] = []
+            if hasattr(all_docs_result, "value") and isinstance(
+                all_docs_result.value, list
+            ):
+                all_docs = all_docs_result.value
             return {"total": len(all_docs), "filters": filters}
 
         # Query documents
@@ -140,7 +145,12 @@ async def list_documents(
                 status_code=raw_documents_result.status_code,
             )
 
-        raw_documents = raw_documents_result.value
+        # Type-safe extraction of value
+        raw_documents: List[Any] = []
+        if hasattr(raw_documents_result, "value") and isinstance(
+            raw_documents_result.value, list
+        ):
+            raw_documents = raw_documents_result.value
 
         # Format documents for UI using helper
         formatted_documents = [_format_document_for_ui(doc) for doc in raw_documents]
@@ -183,7 +193,13 @@ async def delete_document(document_id: str):
                 status_code=documents_result.status_code,
             )
 
-        documents = documents_result.value
+        # Type-safe extraction of value
+        documents: List[Any] = []
+        if hasattr(documents_result, "value") and isinstance(
+            documents_result.value, list
+        ):
+            documents = documents_result.value
+
         if not documents:
             raise HTTPException(
                 status_code=404, detail=f"Document {document_id} not found"
@@ -201,7 +217,10 @@ async def delete_document(document_id: str):
                 status_code=delete_result.status_code,
             )
 
-        delete_info = delete_result.value
+        # Type-safe extraction of value
+        delete_info: Dict[str, Any] = {}
+        if hasattr(delete_result, "value") and isinstance(delete_result.value, dict):
+            delete_info = delete_result.value
 
         # Step 3: Delete from vault if we have the file hash
         vault_deleted = False
@@ -213,17 +232,28 @@ async def delete_document(document_id: str):
                         filters={"file_hash": file_hash}, limit=2
                     )
                 )
-                other_docs = (
-                    other_docs_result.value if other_docs_result.is_success() else []
-                )
+                # Explicitly type the result to help mypy
+                other_docs: List[Any] = []
+                if other_docs_result.is_success() and hasattr(
+                    other_docs_result, "value"
+                ):
+                    value = other_docs_result.value
+                    if isinstance(value, list):
+                        other_docs = value
 
                 # Only delete from vault if this is the only document using this file
-                if (
-                    len(other_docs) <= 1
-                ):  # 1 or 0 because we might have already deleted from index
-                    metrics = {"files_deleted": 0, "bytes_reclaimed": 0, "errors": []}
+                # 1 or 0 because we might have already deleted from index
+                if len(other_docs) <= 1:
+                    metrics: Dict[str, Any] = {
+                        "files_deleted": 0,
+                        "bytes_reclaimed": 0,
+                        "errors": [],
+                    }
                     await server.vault.delete_file_by_hash(file_hash, metrics)
-                    vault_deleted = metrics["files_deleted"] > 0
+                    files_deleted_count = metrics.get("files_deleted", 0)
+                    vault_deleted = (
+                        isinstance(files_deleted_count, int) and files_deleted_count > 0
+                    )
             except Exception as e:
                 # Log but don't fail if vault deletion fails
                 print(f"Warning: Failed to delete file from vault: {e}")
@@ -266,7 +296,10 @@ async def update_document_subtheme(document_id: str, subtheme_data: dict):
                 status_code=result.status_code,
             )
 
-        update_info = result.value
+        # Type-safe extraction of value
+        update_info: Dict[str, Any] = {}
+        if hasattr(result, "value") and isinstance(result.value, dict):
+            update_info = result.value
 
         return {
             "success": True,
@@ -304,7 +337,10 @@ async def clear_all_documents():
                     status_code=clear_result.status_code,
                 )
 
-            llamaindex_metrics = clear_result.value
+            # Type-safe extraction of value
+            llamaindex_metrics: Dict[str, Any] = {}
+            if hasattr(clear_result, "value") and isinstance(clear_result.value, dict):
+                llamaindex_metrics = clear_result.value
         else:
             llamaindex_metrics = {"skipped": True}
 

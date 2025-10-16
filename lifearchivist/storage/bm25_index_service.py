@@ -244,6 +244,12 @@ class BM25IndexService:
             )
             raise ConnectionError(f"Failed to connect to Redis: {str(e)}") from e
 
+    def _client(self) -> "redis.Redis":
+        """Return a non-optional Redis client or raise if not initialized."""
+        if self.redis_client is None:
+            raise RuntimeError("BM25IndexService not initialized")
+        return self.redis_client
+
     async def close(self) -> None:
         """
         Close Redis connection and cleanup resources.
@@ -516,7 +522,8 @@ class BM25IndexService:
         self.bm25 = None
 
         # Clear from Redis
-        await self.redis_client.delete(
+        client = self._client()
+        await client.delete(
             self.corpus_key,
             self.doc_ids_key,
             self.count_key,
@@ -542,7 +549,8 @@ class BM25IndexService:
             doc_ids_bytes = pickle.dumps(self.document_ids)
 
             # Save to Redis in atomic transaction
-            async with self.redis_client.pipeline(transaction=True) as pipe:
+            client = self._client()
+            async with client.pipeline(transaction=True) as pipe:
                 pipe.set(self.corpus_key, corpus_bytes)
                 pipe.set(self.doc_ids_key, doc_ids_bytes)
                 pipe.set(self.count_key, len(self.document_ids))
@@ -578,8 +586,9 @@ class BM25IndexService:
         """
         try:
             # Load corpus and doc_ids from Redis
-            corpus_bytes = await self.redis_client.get(self.corpus_key)
-            doc_ids_bytes = await self.redis_client.get(self.doc_ids_key)
+            client = self._client()
+            corpus_bytes = await client.get(self.corpus_key)
+            doc_ids_bytes = await client.get(self.doc_ids_key)
 
             if corpus_bytes and doc_ids_bytes:
                 # Deserialize

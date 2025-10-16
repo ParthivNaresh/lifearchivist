@@ -10,7 +10,7 @@ from typing import List, Tuple
 import aiofiles
 import chardet
 import pytesseract
-from dateutil import parser as date_parser
+from dateutil import parser as date_parser  # type: ignore[import-untyped]
 from docx import Document
 from docx.oxml.table import CT_Tbl
 from docx.oxml.text.paragraph import CT_P
@@ -245,7 +245,7 @@ async def _extract_pdf_with_ocr(file_path: Path) -> str:
 
             logging.info(f"Converted {len(images)} pages to images for OCR")
 
-            all_text = []
+            all_text: List[str] = []
 
             for page_num, image in enumerate(images, 1):
                 logging.info(f"Processing page {page_num}/{len(images)} with OCR")
@@ -639,7 +639,7 @@ def _detect_csv_delimiter(content: str, sample_lines: int = 10) -> str:
 
     # Return delimiter with highest count
     if delimiter_counts:
-        return max(delimiter_counts, key=delimiter_counts.get)
+        return max(delimiter_counts, key=lambda d: delimiter_counts.get(d, 0))
     return ","  # Default to comma
 
 
@@ -669,19 +669,19 @@ async def _preprocess_image_for_ocr(image: Image.Image) -> Image.Image:
     image = image.convert("L")
 
     # Enhance contrast
-    enhancer = ImageEnhance.Contrast(image)
-    image = enhancer.enhance(1.5)
+    contrast_enhancer = ImageEnhance.Contrast(image)
+    image = contrast_enhancer.enhance(1.5)
 
     # Apply slight sharpening
     image = image.filter(ImageFilter.SHARPEN)
 
     # Enhance brightness if image is too dark
-    enhancer = ImageEnhance.Brightness(image)
+    brightness_enhancer = ImageEnhance.Brightness(image)
     # Calculate average brightness
     pixels = list(image.getdata())
     avg_brightness = sum(pixels) / len(pixels)
     if avg_brightness < 127:  # If darker than middle gray
-        image = enhancer.enhance(1.2)
+        image = brightness_enhancer.enhance(1.2)
 
     return image
 
@@ -715,8 +715,8 @@ async def _extract_image_text(file_path: Path) -> str:
         else:
             num_pages = 1
 
-        all_text = []
-        total_confidence = []
+        all_text: List[str] = []
+        total_confidence: List[int] = []
 
         for page_num in range(num_pages):
             if num_pages > 1:

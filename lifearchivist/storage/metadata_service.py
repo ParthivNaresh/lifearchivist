@@ -381,11 +381,13 @@ class LlamaIndexMetadataService(MetadataService):
             tasks = [build_with_limit(doc_id) for doc_id in paginated_doc_ids]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            # Filter out None values and exceptions
-            paginated_results = [
+            # Filter out None values and exceptions, ensure proper typing
+            paginated_results: List[Dict[str, Any]] = [
                 doc
                 for doc in results
-                if doc is not None and not isinstance(doc, Exception)
+                if doc is not None
+                and not isinstance(doc, Exception)
+                and isinstance(doc, dict)
             ]
 
             # Get total document count for logging
@@ -430,11 +432,14 @@ class LlamaIndexMetadataService(MetadataService):
         """
         # Use Redis indexed queries
         if hasattr(self.doc_tracker, "query_by_multiple_filters"):
-            return await self.doc_tracker.query_by_multiple_filters(filters)
+            doc_ids: List[str] = await self.doc_tracker.query_by_multiple_filters(
+                filters
+            )
+            return doc_ids
 
         # Fallback: iterate through all documents (shouldn't happen with Redis)
-        matching_ids = []
-        all_doc_ids = await self.doc_tracker.get_all_document_ids()
+        matching_ids: List[str] = []
+        all_doc_ids: List[str] = await self.doc_tracker.get_all_document_ids()
 
         for document_id in all_doc_ids:
             metadata = await self.doc_tracker.get_full_metadata(document_id)
@@ -466,7 +471,7 @@ class LlamaIndexMetadataService(MetadataService):
         if full_metadata_result.is_failure():
             return None
 
-        full_metadata = full_metadata_result.unwrap()
+        full_metadata: Dict[str, Any] = full_metadata_result.unwrap()
 
         # Generate text preview from first node using Qdrant
         text_preview = await self._get_text_preview_from_qdrant(node_ids[0])
@@ -542,7 +547,9 @@ class LlamaIndexMetadataService(MetadataService):
                 )
 
             # Get full metadata from Redis (source of truth)
-            full_metadata = await self.doc_tracker.get_full_metadata(document_id)
+            full_metadata: Dict[str, Any] = await self.doc_tracker.get_full_metadata(
+                document_id
+            )
 
             if full_metadata:
                 return Success(full_metadata)
@@ -620,11 +627,13 @@ class LlamaIndexMetadataService(MetadataService):
                 )
 
             # Get FULL metadata for this document
-            metadata_result = await self.get_full_document_metadata(document_id)
+            metadata_result: Result[Dict[str, Any], str] = (
+                await self.get_full_document_metadata(document_id)
+            )
             if metadata_result.is_failure():
                 return metadata_result
 
-            full_metadata = metadata_result.value
+            full_metadata = metadata_result.unwrap()
 
             # Collect metrics from Qdrant
             analysis = await self._collect_document_metrics(node_ids)
@@ -680,7 +689,7 @@ class LlamaIndexMetadataService(MetadataService):
         total_words = 0
         chunk_sizes = []
         word_counts = []
-        chunks_preview = []
+        chunks_preview: List[Dict[str, Any]] = []
 
         if not self.qdrant_client:
             # Fallback to empty metrics if Qdrant not available

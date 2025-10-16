@@ -36,20 +36,20 @@ class ThemeClassifier:
             for theme, confidence, name, pattern in PRIMARY_UNIQUE_PATTERN_DEFINITIONS
         }
 
-        self.secondary_structure_patterns: dict[str, list[tuple[re.Pattern, float]]] = {
-            theme: [
-                (
-                    re.compile(
-                        pattern,
-                        re.IGNORECASE | flags if "flags" in locals() else re.IGNORECASE,
-                    ),
-                    confidence,
-                )
-                for pattern, confidence, *flags_list in patterns
-                for flags in [flags_list[0] if flags_list else 0]
-            ]
-            for theme, patterns in SECONDARY_STRUCTURE_PATTERN_DEFINITIONS.items()
-        }
+        self.secondary_structure_patterns: dict[str, list[tuple[re.Pattern, float]]] = (
+            {}
+        )
+        for theme, patterns in SECONDARY_STRUCTURE_PATTERN_DEFINITIONS.items():
+            compiled_patterns: list[tuple[re.Pattern, float]] = []
+            for pattern_def in patterns:
+                pattern: str = pattern_def[0]
+                confidence: float = pattern_def[1]
+                flags: int = pattern_def[2] if len(pattern_def) > 2 else 0
+
+                compiled_pattern = re.compile(pattern, re.IGNORECASE | flags)
+                compiled_patterns.append((compiled_pattern, confidence))
+
+            self.secondary_structure_patterns[theme] = compiled_patterns
 
     def _build_lookup_tables(self):
         """Build hash tables."""
@@ -86,9 +86,10 @@ class ThemeClassifier:
             return theme, confidence, pattern_or_phrase, "primary"
 
         result = self._check_secondary_identifiers(text_lower)
-        if result and result[1] >= 0.6:
+        if result:
             theme, confidence, pattern_or_phrase = result
-            return theme, confidence, pattern_or_phrase, "secondary"
+            if confidence >= 0.6:
+                return theme, confidence, pattern_or_phrase, "secondary"
 
         result = self._check_tertiary_identifiers(filename_lower, text_lower)
         if result:
@@ -124,17 +125,19 @@ class ThemeClassifier:
 
         return None
 
-    def _check_secondary_identifiers(self, text_lower: str) -> Tuple[str, float, str]:
+    def _check_secondary_identifiers(
+        self, text_lower: str
+    ) -> Optional[Tuple[str, float, str]]:
         """Check document structure patterns."""
 
-        best_match = None
-        best_confidence = 0
-        best_patterns = []
+        best_match: Optional[str] = None
+        best_confidence: float = 0.0
+        best_patterns: list[re.Pattern] = []
 
         for theme, patterns in self.secondary_structure_patterns.items():
-            total_weight = 0
-            matched_weight = 0
-            matched_patterns = []
+            total_weight: float = 0.0
+            matched_weight: float = 0.0
+            matched_patterns: list[re.Pattern] = []
 
             for pattern, weight in patterns:
                 total_weight += weight
@@ -142,21 +145,22 @@ class ThemeClassifier:
                     matched_weight += weight
                     matched_patterns.append(pattern)
 
-            if matched_weight > 0:
-                confidence = (matched_weight / total_weight) * 0.8
+            if matched_weight > 0.0:
+                confidence: float = (matched_weight / total_weight) * 0.8
                 if confidence > best_confidence:
                     best_confidence = confidence
                     best_match = theme
                     best_patterns = matched_patterns
 
+        # Only return if we have a match above threshold
         if best_match and best_confidence >= 0.4:
             return best_match, best_confidence, str(best_patterns)
 
-        return best_match, best_confidence, str(best_patterns)
+        return None
 
     def _check_tertiary_identifiers(
         self, filename: str, text_lower: str
-    ) -> Tuple[str, float, str]:
+    ) -> Optional[Tuple[str, float, str]]:
         """Quick filename-based classification."""
         filename_patterns: dict[str, dict] = TERTIARY_FILENAME_KEYWORD_DEFINITIONS
 
@@ -168,22 +172,23 @@ class ThemeClassifier:
         words = set(re.findall(r"\b[a-z]{3,}\b", text_lower))
 
         if not words:
-            return "Unclassified", 0.0, ""
+            return None
 
-        theme_scores = {}
+        theme_scores: dict[str, float] = {}
         for theme, theme_words in self.tertiary_statistical_keywords.items():
             matches = words & theme_words
             if matches:
-                raw_score = len(matches)
-                proportion = len(matches) / len(theme_words)
+                raw_score: float = float(len(matches))
+                proportion: float = len(matches) / len(theme_words)
                 theme_scores[theme] = raw_score * (1 + proportion)
 
         if not theme_scores:
             return "Unclassified", 0.0, ""
 
-        best_theme = max(theme_scores, key=theme_scores.get)
-        best_score = theme_scores[best_theme]
+        best_theme: str = max(theme_scores, key=lambda k: theme_scores[k])
+        best_score: float = theme_scores[best_theme]
 
+        confidence: float
         if best_score >= 10:
             confidence = 0.7
         elif best_score >= 7:

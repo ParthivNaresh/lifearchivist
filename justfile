@@ -39,9 +39,15 @@ setup: install services init-models
 # 🐳 Docker Services Management
 # ───────────────────────────────────────────────────────────────────────# Start development services (Qdrant, Redis, Ollama)
 services:
+    @echo "🐳 Starting Docker services..."
     docker-compose up -d ollama
-    docker exec -it lifearchivist-ollama-1 ollama pull llama3.2:1b
+    @echo "🔍 Checking if llama3.2:1b model is available..."
+    @docker exec lifearchivist-ollama-1 ollama list 2>/dev/null | grep -q "llama3.2:1b" || \
+        (echo "📥 Model not found, pulling llama3.2:1b (this may take a few minutes)..." && \
+         docker exec -it lifearchivist-ollama-1 ollama pull llama3.2:1b) || \
+        echo "✅ Model llama3.2:1b already available"
     docker-compose up -d qdrant redis ollama
+    @echo "✅ All services started"
 
 # Stop development services
 services-stop:
@@ -328,6 +334,8 @@ docs-build:
 # Build documentation with strict checking (for CI)
 docs-ci:
     @echo "📚 Building documentation with strict checking..."
+    @echo "Installing dependencies..."
+    poetry install --with dev
     cd docs && poetry run make clean
     cd docs && poetry run sphinx-build -b html . _build/html
     @echo "✅ Documentation built successfully"

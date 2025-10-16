@@ -253,9 +253,21 @@ class LlamaIndexDocumentService(DocumentService):
 
             # Check if insertion failed
             if insert_result.is_failure():
-                return insert_result  # Propagate the failure
+                # Extract error message from the failure
+                error_msg = (
+                    str(insert_result.error)
+                    if hasattr(insert_result, "error")
+                    else "Document insertion failed"
+                )
+                return internal_error(
+                    error_msg,
+                    context={
+                        "document_id": document_id,
+                        "operation": "insert_document",
+                    },
+                )
 
-            nodes_created = insert_result.unwrap()
+            nodes_created: List[str] = insert_result.unwrap()
 
             # Calculate statistics
             word_count = len(content.split())
@@ -371,7 +383,7 @@ class LlamaIndexDocumentService(DocumentService):
             )
 
             # Track which nodes belong to this document
-            doc_nodes = await self._find_document_nodes(document_id)
+            doc_nodes: List[str] = await self._find_document_nodes(document_id)
 
             if not doc_nodes:
                 log_event(
@@ -447,7 +459,7 @@ class LlamaIndexDocumentService(DocumentService):
 
         Returns list of node IDs.
         """
-        doc_nodes = []
+        doc_nodes: List[str] = []
 
         if not self.qdrant_client:
             log_event(
@@ -1173,7 +1185,7 @@ class LlamaIndexDocumentService(DocumentService):
         if not self.doc_tracker:
             return False
 
-        return await self.doc_tracker.document_exists(document_id)
+        return await self.doc_tracker.document_exists(document_id)  # type: ignore[no-any-return]
 
     async def get_node_ids(self, document_id: str) -> List[str]:
         """
@@ -1188,4 +1200,4 @@ class LlamaIndexDocumentService(DocumentService):
         if not self.doc_tracker:
             return []
 
-        return await self.doc_tracker.get_node_ids(document_id)
+        return await self.doc_tracker.get_node_ids(document_id)  # type: ignore[no-any-return]

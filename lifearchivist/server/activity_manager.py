@@ -18,7 +18,7 @@ Supported event types:
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Dict, List, Optional, cast
 
 import redis.asyncio as redis
 
@@ -69,7 +69,7 @@ class ActivityManager:
         """
         self.redis_url = redis_url
         self.redis_client: Optional[redis.Redis] = None
-        self.session_manager = None  # Set by ApplicationServer
+        self.session_manager: Optional[Any] = None  # Set by ApplicationServer
         self._initialized = False
 
     @track(
@@ -100,7 +100,8 @@ class ActivityManager:
             self._initialized = True
 
             # Get current event count
-            event_count = await self.redis_client.llen(self.EVENTS_KEY)
+            client = self._client()
+            event_count = await cast(Awaitable[int], client.llen(self.EVENTS_KEY))
 
             log_event(
                 "activity_manager_initialized",
@@ -118,6 +119,12 @@ class ActivityManager:
                 level=logging.ERROR,
             )
             raise ConnectionError(f"Failed to connect to Redis: {str(e)}") from e
+
+    def _client(self) -> "redis.Redis":
+        """Return a non-optional Redis client or raise if not initialized."""
+        if self.redis_client is None:
+            raise RuntimeError("ActivityManager not initialized")
+        return self.redis_client
 
     async def close(self) -> None:
         """Close Redis connection and cleanup resources."""
@@ -164,7 +171,8 @@ class ActivityManager:
 
         try:
             # Store in Redis using pipeline for atomicity
-            async with self.redis_client.pipeline(transaction=True) as pipe:
+            client = self._client()
+            async with client.pipeline(transaction=True) as pipe:
                 # Add to front of list (newest first)
                 pipe.lpush(self.EVENTS_KEY, json.dumps(event))
                 # Trim to max size (keep only last MAX_EVENTS)
@@ -223,8 +231,10 @@ class ActivityManager:
 
         try:
             # Get events from Redis (0 to limit-1, newest first)
-            event_strings = await self.redis_client.lrange(
-                self.EVENTS_KEY, 0, limit - 1
+            client = self._client()
+            event_strings = await cast(
+                Awaitable[List[str]],
+                client.lrange(self.EVENTS_KEY, 0, limit - 1),
             )
 
             # Parse JSON strings to dictionaries
@@ -280,10 +290,11 @@ class ActivityManager:
 
         try:
             # Get count before clearing
-            count = await self.redis_client.llen(self.EVENTS_KEY)
+            client = self._client()
+            count = await cast(Awaitable[int], client.llen(self.EVENTS_KEY))
 
             # Delete the list
-            await self.redis_client.delete(self.EVENTS_KEY)
+            await cast(Awaitable[int], client.delete(self.EVENTS_KEY))
 
             log_event(
                 "activity_events_cleared",
@@ -314,7 +325,8 @@ class ActivityManager:
             raise RuntimeError("ActivityManager not initialized")
 
         try:
-            count = await self.redis_client.llen(self.EVENTS_KEY)
+            client = self._client()
+            count = await cast(Awaitable[int], client.llen(self.EVENTS_KEY))
             return count
         except Exception as e:
             log_event(

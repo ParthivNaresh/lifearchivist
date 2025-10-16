@@ -17,6 +17,7 @@ from llama_index.core import (
     VectorStoreIndex,
 )
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.query_engine import BaseQueryEngine
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.qdrant import QdrantVectorStore
@@ -54,20 +55,22 @@ class LlamaIndexQdrantService:
         self.database = database
         self.vault = vault
         self.index: Optional[VectorStoreIndex] = None
-        self.query_engine = None
+        self.query_engine: Optional[BaseQueryEngine] = None
 
         # Initialize services to None first
-        self.search_service = None
-        self.metadata_service = None
-        self.document_service = None
-        self.query_service = None
-        self.qdrant_client = None
+        self.search_service: Optional[LlamaIndexSearchService] = None
+        self.metadata_service: Optional[LlamaIndexMetadataService] = None
+        self.document_service: Optional[LlamaIndexDocumentService] = None
+        self.query_service: Optional[LlamaIndexQueryService] = None
+        self.qdrant_client: Optional[QdrantClient] = None
 
         # Initialize Redis document tracker for production-grade scalability
-        self.doc_tracker = RedisDocumentTracker(redis_url=self.settings.redis_url)
+        self.doc_tracker: RedisDocumentTracker = RedisDocumentTracker(
+            redis_url=self.settings.redis_url
+        )
 
         # Initialize BM25 service for keyword search
-        self.bm25_service = BM25IndexService(
+        self.bm25_service: BM25IndexService = BM25IndexService(
             redis_url=self.settings.redis_url,
             use_stemming=False,  # Can enable if nltk is installed
             remove_stop_words=True,
@@ -502,7 +505,10 @@ class LlamaIndexQdrantService:
             )
 
         # Delegate to document service (which now returns Result)
-        return await self.document_service.add_document(document_id, content, metadata)
+        result: Result[Dict[str, Any], str] = await self.document_service.add_document(
+            document_id, content, metadata
+        )
+        return result
 
     def _create_minimal_chunk_metadata(
         self, full_metadata: Dict[str, Any]
@@ -531,7 +537,10 @@ class LlamaIndexQdrantService:
         Delegates to the metadata service for centralized metadata management.
         """
         if self.metadata_service:
-            return await self.metadata_service.get_full_document_metadata(document_id)
+            result = await self.metadata_service.get_full_document_metadata(document_id)
+            if result.is_failure():
+                return {}
+            return dict(result.value)
 
         # Fallback if metadata service not available
         return {}
@@ -549,12 +558,21 @@ class LlamaIndexQdrantService:
         Delegates to the query service for centralized Q&A operations.
         """
         if self.query_service:
-            return await self.query_service.query(
+            res = await self.query_service.query(
                 question=question,
                 similarity_top_k=similarity_top_k,
                 response_mode=response_mode,
                 filters=filters,
             )
+            if res.is_failure():
+                return {
+                    "answer": "",
+                    "sources": [],
+                    "method": "error",
+                    "error": True,
+                    "error_message": str(res.error),
+                }
+            return dict(res.value)
 
         # Fallback if query service not available
         log_event(
@@ -585,7 +603,8 @@ class LlamaIndexQdrantService:
             )
 
         # Delegate to document service (which now returns Result)
-        return await self.document_service.get_document_count()
+        result: Result[int, str] = await self.document_service.get_document_count()
+        return result
 
     async def delete_document(self, document_id: str) -> Result[Dict[str, Any], str]:
         """
@@ -608,7 +627,10 @@ class LlamaIndexQdrantService:
             )
 
         # Delegate to document service (which now returns Result)
-        return await self.document_service.delete_document(document_id)
+        result: Result[Dict[str, Any], str] = (
+            await self.document_service.delete_document(document_id)
+        )
+        return result
 
     async def clear_all_data(self) -> Result[Dict[str, Any], str]:
         """
@@ -628,7 +650,9 @@ class LlamaIndexQdrantService:
                 )
 
             # Delegate to document service (which now returns Result)
-            clear_result = await self.document_service.clear_all_data()
+            clear_result: Result[Dict[str, Any], str] = (
+                await self.document_service.clear_all_data()
+            )
 
             if clear_result.is_failure():
                 return clear_result  # Propagate the failure
@@ -666,9 +690,10 @@ class LlamaIndexQdrantService:
         Delegates to the metadata service for centralized metadata management.
         """
         if self.metadata_service:
-            return await self.metadata_service.update_document_metadata(
+            result = await self.metadata_service.update_document_metadata(
                 document_id, metadata_updates, merge_mode
             )
+            return bool(result.is_success())
 
         # Fallback if metadata service not available
         log_event(
@@ -680,7 +705,7 @@ class LlamaIndexQdrantService:
 
     async def query_documents_by_metadata(
         self, filters: Dict[str, Any], limit: int = 100, offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    ) -> Result[List[Dict[str, Any]], str]:
         """
         Query documents based on metadata filters.
 
@@ -688,6 +713,9 @@ class LlamaIndexQdrantService:
 
         Note: Call ensure_initialized() before using this method, or use the
         async context manager pattern.
+
+        Returns:
+            Success with list of documents, or Failure with error details
         """
         # Check if initialized
         if not self._initialized:
@@ -696,27 +724,45 @@ class LlamaIndexQdrantService:
                 {"filters": filters},
                 level=logging.WARNING,
             )
-            return []
-
-        if self.metadata_service:
-            return await self.metadata_service.query_documents_by_metadata(
-                filters, limit, offset
+            return internal_error(
+                "Service not initialized. Call ensure_initialized() first or use async context manager.",
+                context={"filters": filters},
             )
 
-        # Fallback if metadata service not available
-        return []
+        if self.metadata_service:
+            result: Result[List[Dict[str, Any]], str] = (
+                await self.metadata_service.query_documents_by_metadata(
+                    filters, limit, offset
+                )
+            )
+            return result
 
-    async def get_document_analysis(self, document_id: str) -> Dict[str, Any]:
+        # Fallback if metadata service not available
+        return internal_error(
+            "Metadata service not available", context={"filters": filters}
+        )
+
+    async def get_document_analysis(
+        self, document_id: str
+    ) -> Result[Dict[str, Any], str]:
         """
         Get comprehensive analysis of a document.
 
         Delegates to the metadata service for centralized document analysis.
+
+        Returns:
+            Success with document analysis, or Failure with error details
         """
         if self.metadata_service:
-            return await self.metadata_service.get_document_analysis(document_id)
+            result: Result[Dict[str, Any], str] = (
+                await self.metadata_service.get_document_analysis(document_id)
+            )
+            return result
 
         # Fallback if metadata service not available
-        return {"error": "Metadata service not available"}
+        return internal_error(
+            "Metadata service not available", context={"document_id": document_id}
+        )
 
     def _get_embedding_stats(self) -> Dict[str, Any]:
         """Get embedding model statistics."""
@@ -748,9 +794,10 @@ class LlamaIndexQdrantService:
             )
 
         # Delegate to document service (which now returns Result)
-        return await self.document_service.get_document_chunks(
-            document_id, limit, offset
+        result: Result[Dict[str, Any], str] = (
+            await self.document_service.get_document_chunks(document_id, limit, offset)
         )
+        return result
 
     async def get_document_neighbors(
         self, document_id: str, top_k: int = 10
@@ -825,6 +872,18 @@ class LlamaIndexQdrantService:
 
                 # Extract text from Qdrant payload
                 node_payload = points[0].payload
+                if node_payload is None:
+                    log_event(
+                        "node_payload_missing",
+                        {"document_id": document_id, "node_id": first_node_id},
+                        level=logging.WARNING,
+                    )
+                    return {
+                        "document_id": document_id,
+                        "neighbors": [],
+                        "total": 0,
+                        "warning": "Node payload is missing",
+                    }
                 document_text = QdrantNodeUtils.extract_text_from_node(node_payload)
 
                 if not document_text:
@@ -864,21 +923,30 @@ class LlamaIndexQdrantService:
                 top_k=top_k,
             )
 
-            # Handle Result type
+            # Handle Result type - check failure before accessing attributes
             if neighbors_result.is_failure():
+                error_msg: str = (
+                    str(neighbors_result.error)
+                    if hasattr(neighbors_result, "error")
+                    else "Unknown error"
+                )
                 return {
                     "document_id": document_id,
                     "neighbors": [],
                     "total": 0,
-                    "error": neighbors_result.error,
+                    "error": error_msg,
                 }
 
-            neighbors = neighbors_result.value
+            neighbors_list: List[Dict[str, Any]] = (
+                list(neighbors_result.value)
+                if hasattr(neighbors_result, "value")
+                else []
+            )
 
             return {
                 "document_id": document_id,
-                "neighbors": neighbors,
-                "total": len(neighbors),
+                "neighbors": neighbors_list,
+                "total": len(neighbors_list),
             }
 
         except Exception as e:
@@ -912,11 +980,14 @@ class LlamaIndexQdrantService:
             return []
 
         # Delegate to search service
-        return await self.search_service.retrieve_similar(
+        res = await self.search_service.retrieve_similar(
             query=query,
             top_k=top_k,
             similarity_threshold=similarity_threshold,
         )
+        if res.is_failure():
+            return []
+        return list(res.value)
 
     # Additional search methods that delegate to the search service
     async def semantic_search(
@@ -929,12 +1000,15 @@ class LlamaIndexQdrantService:
         """Perform semantic search using the search service."""
         if not self.search_service:
             return []
-        return await self.search_service.semantic_search(
+        res = await self.search_service.semantic_search(
             query=query,
             top_k=top_k,
             similarity_threshold=similarity_threshold,
             filters=filters,
         )
+        if res.is_failure():
+            return []
+        return list(res.value)
 
     async def keyword_search(
         self,
@@ -945,11 +1019,14 @@ class LlamaIndexQdrantService:
         """Perform keyword search using the search service."""
         if not self.search_service:
             return []
-        return await self.search_service.keyword_search(
+        res = await self.search_service.keyword_search(
             query=query,
             top_k=top_k,
             filters=filters,
         )
+        if res.is_failure():
+            return []
+        return list(res.value)
 
     async def hybrid_search(
         self,
@@ -961,12 +1038,15 @@ class LlamaIndexQdrantService:
         """Perform hybrid search using the search service."""
         if not self.search_service:
             return []
-        return await self.search_service.hybrid_search(
+        res = await self.search_service.hybrid_search(
             query=query,
             top_k=top_k,
             semantic_weight=semantic_weight,
             filters=filters,
         )
+        if res.is_failure():
+            return []
+        return list(res.value)
 
     async def cleanup(self) -> None:
         """

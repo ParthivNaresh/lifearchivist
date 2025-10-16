@@ -5,7 +5,7 @@ File import tool.
 import logging
 import uuid
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import magic
 
@@ -636,7 +636,11 @@ class FileImportTool(BaseTool):
         frequency="medium_frequency",
     )
     async def _classify_subthemes(
-        self, file_id: str, text: str, primary_theme: str, filename: str = None
+        self,
+        file_id: str,
+        text: str,
+        primary_theme: str,
+        filename: Optional[str] = None,
     ) -> Dict[str, Any] | None:
         """Classify document subthemes based on primary theme."""
         try:

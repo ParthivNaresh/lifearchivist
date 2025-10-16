@@ -5,7 +5,7 @@ Background enrichment queue for asynchronous document processing.
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Awaitable, Dict, Optional, cast
 
 import redis.asyncio as redis
 
@@ -46,6 +46,12 @@ class EnrichmentQueue:
             )
             raise
 
+    def _client(self) -> "redis.Redis":
+        """Return a non-optional Redis client or raise if not initialized."""
+        if self.redis_client is None:
+            raise RuntimeError("EnrichmentQueue not initialized")
+        return self.redis_client
+
     @track(
         operation="enqueue_enrichment_task",
         include_args=["task_type", "document_id"],
@@ -78,14 +84,17 @@ class EnrichmentQueue:
         }
 
         try:
-            await self.redis_client.lpush(self.queue_key, json.dumps(task))
+            client = self._client()
+            await cast(Awaitable[int], client.lpush(self.queue_key, json.dumps(task)))
 
             log_event(
                 "enrichment_task_enqueued",
                 {
                     "task_type": task_type,
                     "document_id": document_id,
-                    "queue_length": await self.redis_client.llen(self.queue_key),
+                    "queue_length": await cast(
+                        Awaitable[int], client.llen(self.queue_key)
+                    ),
                 },
             )
             return True
@@ -113,12 +122,14 @@ class EnrichmentQueue:
             return None
 
         try:
-            task_json = await self.redis_client.brpoplpush(
-                self.queue_key, self.processing_key, timeout
+            client = self._client()
+            task_json = await cast(
+                Awaitable[Optional[str]],
+                client.brpoplpush(self.queue_key, self.processing_key, timeout),
             )
 
             if task_json:
-                task = json.loads(task_json)
+                task = cast(Dict[str, Any], json.loads(task_json))
                 log_event(
                     "enrichment_task_dequeued",
                     {
@@ -162,19 +173,21 @@ class EnrichmentQueue:
             return False
 
         try:
+            client = self._client()
             task_json = json.dumps(task)
 
-            await self.redis_client.lrem(self.processing_key, 1, task_json)
+            await cast(Awaitable[int], client.lrem(self.processing_key, 1, task_json))
 
             completion_record = {
                 **task,
                 "completed_at": datetime.now().isoformat(),
             }
-            await self.redis_client.lpush(
-                self.completed_key, json.dumps(completion_record)
+            await cast(
+                Awaitable[int],
+                client.lpush(self.completed_key, json.dumps(completion_record)),
             )
 
-            await self.redis_client.ltrim(self.completed_key, 0, 999)
+            await cast(Awaitable[int], client.ltrim(self.completed_key, 0, 999))
 
             log_event(
                 "enrichment_task_completed",
@@ -209,14 +222,17 @@ class EnrichmentQueue:
             return False
 
         try:
+            client = self._client()
             task_json = json.dumps(task)
-            await self.redis_client.lrem(self.processing_key, 1, task_json)
+            await cast(Awaitable[int], client.lrem(self.processing_key, 1, task_json))
 
             task["retry_count"] = task.get("retry_count", 0) + 1
             task["last_retry_at"] = datetime.now().isoformat()
 
             if task["retry_count"] <= task.get("max_retries", 3):
-                await self.redis_client.lpush(self.queue_key, json.dumps(task))
+                await cast(
+                    Awaitable[int], client.lpush(self.queue_key, json.dumps(task))
+                )
 
                 log_event(
                     "enrichment_task_requeued",
@@ -254,9 +270,12 @@ class EnrichmentQueue:
             "failure_reason": reason,
         }
 
-        await self.redis_client.lpush(self.failed_key, json.dumps(failure_record))
+        client = self._client()
+        await cast(
+            Awaitable[int], client.lpush(self.failed_key, json.dumps(failure_record))
+        )
 
-        await self.redis_client.ltrim(self.failed_key, 0, 999)
+        await cast(Awaitable[int], client.ltrim(self.failed_key, 0, 999))
 
         log_event(
             "enrichment_task_failed",
@@ -298,12 +317,17 @@ class EnrichmentQueue:
             }
 
         try:
+            client = self._client()
             stats = {
                 "status": "operational",
-                "queue_length": await self.redis_client.llen(self.queue_key),
-                "processing": await self.redis_client.llen(self.processing_key),
-                "completed": await self.redis_client.llen(self.completed_key),
-                "failed": await self.redis_client.llen(self.failed_key),
+                "queue_length": await cast(Awaitable[int], client.llen(self.queue_key)),
+                "processing": await cast(
+                    Awaitable[int], client.llen(self.processing_key)
+                ),
+                "completed": await cast(
+                    Awaitable[int], client.llen(self.completed_key)
+                ),
+                "failed": await cast(Awaitable[int], client.llen(self.failed_key)),
             }
 
             log_event("enrichment_queue_stats", stats)
@@ -326,5 +350,5 @@ class EnrichmentQueue:
     async def cleanup(self):
         """Clean up Redis connection."""
         if self.redis_client:
-            await self.redis_client.close()
+            await self.redis_client.aclose()
             log_event("enrichment_queue_closed", {})

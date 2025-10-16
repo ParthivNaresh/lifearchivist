@@ -5,10 +5,11 @@ Provides hierarchical classification within primary themes.
 Optimized for high-performance batch processing.
 """
 
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from lifearchivist.utils.logging import track
 
+from .base_subtheme_classifier import BaseSubthemeClassifier
 from .financial_subtheme_classifier import FinancialSubthemeClassifier
 from .healthcare_subtheme_classifier import HealthcareSubthemeClassifier
 from .legal_subtheme_classifier import LegalSubthemeClassifier
@@ -34,14 +35,16 @@ class SubthemeClassifier:
             max_workers: Maximum number of threads for parallel classification
         """
         self.max_workers = max_workers
-        self._classifiers: Dict = {}
+        self._classifiers: Dict[str, BaseSubthemeClassifier] = {}
 
         # Define available classifiers (lazy loaded)
         # To add a new theme:
         # 1. Create rules in lifearchivist/tools/subtheme_classifier/rules/<theme>/
         # 2. Create a classifier class that inherits from BaseSubthemeClassifier
         # 3. Add it to this dictionary
-        self._classifier_classes = {
+        # Note: Type is Callable that takes max_workers and returns BaseSubthemeClassifier
+        # The subclasses have __init__(max_workers) that calls super().__init__(theme_name, rules, max_workers)
+        self._classifier_classes: Dict[str, Callable[[int], BaseSubthemeClassifier]] = {
             "Financial": FinancialSubthemeClassifier,
             "Healthcare": HealthcareSubthemeClassifier,
             "Legal": LegalSubthemeClassifier,
@@ -51,7 +54,7 @@ class SubthemeClassifier:
             # "Travel": TravelSubthemeClassifier,
         }
 
-    def _get_classifier(self, theme: str):
+    def _get_classifier(self, theme: str) -> Optional[BaseSubthemeClassifier]:
         """
         Get or create classifier for a theme (lazy loading).
 
@@ -63,8 +66,11 @@ class SubthemeClassifier:
         """
         if theme not in self._classifiers and theme in self._classifier_classes:
             # Create classifier instance with shared max_workers setting
-            classifier_class = self._classifier_classes[theme]
-            self._classifiers[theme] = classifier_class(max_workers=self.max_workers)
+            # The classifier factory takes max_workers and returns an initialized classifier
+            # Each subclass (Financial, Healthcare, Legal) has __init__(max_workers) that
+            # internally calls super().__init__(theme_name, rules, max_workers)
+            classifier_factory = self._classifier_classes[theme]
+            self._classifiers[theme] = classifier_factory(self.max_workers)
 
         return self._classifiers.get(theme)
 
@@ -93,6 +99,7 @@ class SubthemeClassifier:
                 primary_subtheme=None,
                 subclassifications=[],
                 primary_subclassification=None,
+                subclassification_confidence=None,
                 confidence_scores={},
                 metadata={"reason": "no_classifier_available"},
             )

@@ -11,7 +11,7 @@ This implementation provides:
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Dict, List, Optional, Set, Tuple, cast
 
 import redis.asyncio as redis
 
@@ -130,6 +130,12 @@ class RedisDocumentTracker:
             )
             raise ConnectionError(f"Failed to connect to Redis: {str(e)}") from e
 
+    def _client(self) -> "redis.Redis":
+        """Return a non-optional Redis client or raise if not initialized."""
+        if self.redis_client is None:
+            raise RuntimeError("RedisDocumentTracker not initialized")
+        return self.redis_client
+
     async def close(self) -> None:
         """
         Close Redis connection and cleanup resources.
@@ -182,7 +188,8 @@ class RedisDocumentTracker:
         all_index_key = f"{self.key_prefix}:index:all"
         count_key = f"{self.key_prefix}:count"
 
-        async with self.redis_client.pipeline(transaction=True) as pipe:
+        client = self._client()
+        async with client.pipeline(transaction=True) as pipe:
             pipe.rpush(nodes_key, *node_ids)
             pipe.sadd(all_index_key, document_id)
             pipe.incr(count_key)
@@ -209,7 +216,8 @@ class RedisDocumentTracker:
 
         nodes_key = f"{self.key_prefix}:nodes:{document_id}"
 
-        node_ids = await self.redis_client.lrange(nodes_key, 0, -1)
+        client = self._client()
+        node_ids = await cast(Awaitable[List[str]], client.lrange(nodes_key, 0, -1))
 
         return list(node_ids) if node_ids else None
 
@@ -249,7 +257,8 @@ class RedisDocumentTracker:
         all_index_key = f"{self.key_prefix}:index:all"
         count_key = f"{self.key_prefix}:count"
 
-        async with self.redis_client.pipeline(transaction=True) as pipe:
+        client = self._client()
+        async with client.pipeline(transaction=True) as pipe:
             pipe.delete(nodes_key)
             pipe.delete(metadata_key)
             pipe.srem(all_index_key, document_id)
@@ -284,7 +293,10 @@ class RedisDocumentTracker:
 
         all_index_key = f"{self.key_prefix}:index:all"
 
-        exists = await self.redis_client.sismember(all_index_key, document_id)
+        client = self._client()
+        exists = await cast(
+            Awaitable[int], client.sismember(all_index_key, document_id)
+        )
 
         return bool(exists)
 
@@ -307,7 +319,8 @@ class RedisDocumentTracker:
 
         count_key = f"{self.key_prefix}:count"
 
-        count = await self.redis_client.get(count_key)
+        client = self._client()
+        count = await cast(Awaitable[Optional[str]], client.get(count_key))
 
         return int(count) if count else 0
 
@@ -330,9 +343,10 @@ class RedisDocumentTracker:
 
         all_index_key = f"{self.key_prefix}:index:all"
 
-        members = await self.redis_client.smembers(all_index_key)
+        client = self._client()
+        members = await cast(Awaitable[Set[str]], client.smembers(all_index_key))
 
-        return list(members) if members else []
+        return sorted(list(members)) if members else []
 
     @track(
         operation="redis_store_full_metadata",
@@ -363,12 +377,13 @@ class RedisDocumentTracker:
 
         serialized = {k: self._serialize_metadata_value(v) for k, v in metadata.items()}
 
+        client = self._client()
         if serialized:
-            await self.redis_client.hset(metadata_key, mapping=serialized)
+            await cast(Awaitable[int], client.hset(metadata_key, mapping=serialized))
 
         indexable = self._extract_indexable_fields(metadata)
         if indexable:
-            async with self.redis_client.pipeline(transaction=False) as pipe:
+            async with client.pipeline(transaction=False) as pipe:
                 for field, value in indexable.items():
                     if value:
                         index_key = f"{self.key_prefix}:index:{field}:{value}"
@@ -401,7 +416,10 @@ class RedisDocumentTracker:
 
         metadata_key = f"{self.key_prefix}:meta:{document_id}"
 
-        raw_metadata = await self.redis_client.hgetall(metadata_key)
+        client = self._client()
+        raw_metadata = await cast(
+            Awaitable[Dict[str, str]], client.hgetall(metadata_key)
+        )
 
         if not raw_metadata:
             return None
@@ -446,7 +464,8 @@ class RedisDocumentTracker:
 
         metadata_key = f"{self.key_prefix}:meta:{document_id}"
 
-        exists = await self.redis_client.exists(metadata_key)
+        client = self._client()
+        exists = await cast(Awaitable[int], client.exists(metadata_key))
         if not exists:
             return False
 
@@ -458,9 +477,11 @@ class RedisDocumentTracker:
                 for k, v in metadata_updates.items()
             }
 
-            await self.redis_client.delete(metadata_key)
+            await cast(Awaitable[int], client.delete(metadata_key))
             if serialized:
-                await self.redis_client.hset(metadata_key, mapping=serialized)
+                await cast(
+                    Awaitable[int], client.hset(metadata_key, mapping=serialized)
+                )
 
             await self._update_metadata_indexes(
                 document_id, old_metadata, metadata_updates
@@ -491,7 +512,9 @@ class RedisDocumentTracker:
             }
 
             if serialized:
-                await self.redis_client.hset(metadata_key, mapping=serialized)
+                await cast(
+                    Awaitable[int], client.hset(metadata_key, mapping=serialized)
+                )
 
             await self._update_metadata_indexes(document_id, old_metadata, merged)
 
@@ -516,7 +539,8 @@ class RedisDocumentTracker:
             raise RuntimeError("RedisDocumentTracker not initialized")
 
         if not filters:
-            return await self.get_all_document_ids()
+            all_ids: List[str] = await self.get_all_document_ids()
+            return all_ids
 
         index_keys = []
         for field, value in filters.items():
@@ -525,14 +549,19 @@ class RedisDocumentTracker:
                 index_keys.append(index_key)
 
         if not index_keys:
-            return await self.get_all_document_ids()
+            all_doc_ids: List[str] = await self.get_all_document_ids()
+            return all_doc_ids
 
         if len(index_keys) == 1:
-            members = await self.redis_client.smembers(index_keys[0])
-            return list(members) if members else []
+            client = self._client()
+            members = await cast(Awaitable[Set[str]], client.smembers(index_keys[0]))
+            members_list: List[str] = sorted(list(members)) if members else []
+            return members_list
 
-        result = await self.redis_client.sinter(*index_keys)
-        return list(result) if result else []
+        client = self._client()
+        result = await cast(Awaitable[Set[str]], client.sinter(index_keys))
+        result_list: List[str] = sorted(list(result)) if result else []
+        return result_list
 
     @track(
         operation="redis_clear_all",
@@ -561,14 +590,16 @@ class RedisDocumentTracker:
         cursor = 0
         keys_deleted = 0
 
+        client = self._client()
         while True:
-            cursor, keys = await self.redis_client.scan(
-                cursor=cursor, match=pattern, count=100
+            cursor, keys = await cast(
+                Awaitable[Tuple[int, List[str]]],
+                client.scan(cursor=cursor, match=pattern, count=100),
             )
 
             if keys:
-                deleted = await self.redis_client.delete(*keys)
-                keys_deleted += deleted
+                deleted = await cast(Awaitable[int], client.delete(*keys))
+                keys_deleted += int(deleted)
 
             if cursor == 0:
                 break
@@ -655,7 +686,8 @@ class RedisDocumentTracker:
         )
         new_indexable = self._extract_indexable_fields(new_metadata)
 
-        async with self.redis_client.pipeline(transaction=False) as pipe:
+        client = self._client()
+        async with client.pipeline(transaction=False) as pipe:
             for field, old_value in old_indexable.items():
                 new_value = new_indexable.get(field)
                 if old_value != new_value and old_value:
@@ -663,8 +695,8 @@ class RedisDocumentTracker:
                     pipe.srem(old_key, document_id)
 
             for field, new_value in new_indexable.items():
-                old_value = old_indexable.get(field)
-                if new_value != old_value and new_value:
+                old_val: Optional[str] = old_indexable.get(field)
+                if new_value != old_val and new_value:
                     new_key = f"{self.key_prefix}:index:{field}:{new_value}"
                     pipe.sadd(new_key, document_id)
 
@@ -685,7 +717,8 @@ class RedisDocumentTracker:
 
         indexable = self._extract_indexable_fields(metadata)
 
-        async with self.redis_client.pipeline(transaction=False) as pipe:
+        client = self._client()
+        async with client.pipeline(transaction=False) as pipe:
             for field, value in indexable.items():
                 if value:
                     index_key = f"{self.key_prefix}:index:{field}:{value}"
@@ -704,11 +737,11 @@ class RedisDocumentTracker:
         if "theme" in metadata:
             theme_data = metadata["theme"]
             if isinstance(theme_data, dict):
-                theme_value = theme_data.get("theme", "")
+                theme_value: Optional[str] = theme_data.get("theme", "")
             else:
                 theme_value = str(theme_data)
             if theme_value:
-                indexable["theme"] = theme_value
+                indexable["theme"] = str(theme_value)
 
         if "mime_type" in metadata:
             mime_value = metadata["mime_type"]

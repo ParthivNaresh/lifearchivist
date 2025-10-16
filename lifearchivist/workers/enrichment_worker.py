@@ -41,7 +41,10 @@ class EnrichmentWorker:
         await self.queue.initialize()
 
         if not self.vault:
-            self.vault = Vault(self.settings.vault_path)
+            vault_path = self.settings.vault_path
+            if vault_path is None:
+                raise RuntimeError("Vault path not configured in settings")
+            self.vault = Vault(vault_path)
             await self.vault.initialize()
 
         if not self.llamaindex_service:
@@ -220,6 +223,8 @@ class EnrichmentWorker:
         )
 
         try:
+            if not self.ollama_tool:
+                raise RuntimeError("Ollama tool not initialized")
             response = await asyncio.wait_for(
                 self.ollama_tool.generate(
                     prompt=prompt,

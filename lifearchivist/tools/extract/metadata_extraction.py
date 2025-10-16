@@ -124,12 +124,18 @@ async def extract_pdf_metadata(file_path: Path) -> Dict[str, Any]:
 
             # Dates
             if "/CreationDate" in pdf_metadata:
-                created = parse_pdf_date(pdf_metadata["/CreationDate"])
+                raw_created = pdf_metadata.get("/CreationDate")
+                created = parse_pdf_date(
+                    str(raw_created) if raw_created is not None else None
+                )
                 if created:
                     metadata["document_created_at"] = created
 
             if "/ModDate" in pdf_metadata:
-                modified = parse_pdf_date(pdf_metadata["/ModDate"])
+                raw_modified = pdf_metadata.get("/ModDate")
+                modified = parse_pdf_date(
+                    str(raw_modified) if raw_modified is not None else None
+                )
                 if modified:
                     metadata["document_modified_at"] = modified
 

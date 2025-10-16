@@ -20,9 +20,8 @@ class StartWatchRequest(BaseModel):
     """Request to start watching a folder."""
 
     folder_path: str = Field(
-        ...,
         description="Absolute path to folder to watch",
-        example="/Users/username/Documents",
+        examples=["/Users/username/Documents"],
     )
 
 

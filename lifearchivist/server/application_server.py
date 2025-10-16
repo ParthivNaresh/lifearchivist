@@ -96,7 +96,7 @@ class ApplicationServer:
         self.service_container: Optional[ServiceContainer] = None
 
         # Application services (will be initialized)
-        self.session_manager: SessionManager = SessionManager()
+        self.session_manager: Optional[SessionManager] = SessionManager()
         self.activity_manager: Optional[ActivityManager] = None
         self.progress_manager: Optional[ProgressManager] = None
         self.enrichment_queue: Optional[EnrichmentQueue] = None
@@ -233,10 +233,14 @@ class ApplicationServer:
 
     async def _init_service_container(self):
         """Initialize core infrastructure services."""
+        vault_path = self.settings.vault_path
+        if vault_path is None:
+            raise RuntimeError("Vault path not configured in settings")
+
         config = ServiceConfig(
             redis_url=self.settings.redis_url,
             qdrant_url=self.settings.qdrant_url,
-            vault_path=self.settings.vault_path,
+            vault_path=vault_path,
             settings=self.settings,
         )
 

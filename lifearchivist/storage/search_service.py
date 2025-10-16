@@ -325,10 +325,12 @@ class LlamaIndexSearchService(SearchService):
                 return Success([])
 
             # Enrich results with metadata and text
-            enriched_results = await self._enrich_bm25_results(bm25_results, filters)
+            enriched_results: List[Dict[str, Any]] = await self._enrich_bm25_results(
+                bm25_results, filters
+            )
 
             # Apply pagination
-            final_results = enriched_results[:top_k]
+            final_results: List[Dict[str, Any]] = enriched_results[:top_k]
 
             log_event(
                 "keyword_search_completed",
@@ -456,7 +458,8 @@ class LlamaIndexSearchService(SearchService):
             )
 
             if points and len(points) > 0:
-                return QdrantNodeUtils.extract_text_from_node(points[0].payload)
+                text = QdrantNodeUtils.extract_text_from_node(points[0].payload)
+                return text if isinstance(text, str) and text is not None else ""
 
         except Exception as e:
             log_event(
@@ -517,7 +520,8 @@ class LlamaIndexSearchService(SearchService):
 
             # If semantic search failed, return the failure
             if semantic_result.is_failure():
-                return semantic_result
+                failure_result: Result[List[Dict[str, Any]], str] = semantic_result
+                return failure_result
 
             keyword_result = await self.keyword_search(
                 query=query,
@@ -527,14 +531,17 @@ class LlamaIndexSearchService(SearchService):
 
             # If keyword search failed, return the failure
             if keyword_result.is_failure():
-                return keyword_result
+                keyword_failure_result: Result[List[Dict[str, Any]], str] = (
+                    keyword_result
+                )
+                return keyword_failure_result
 
             # Unwrap successful results
             semantic_results = semantic_result.value
             keyword_results = keyword_result.value
 
             # Combine and re-score results
-            combined_results = self._combine_search_results(
+            combined_results: List[Dict[str, Any]] = self._combine_search_results(
                 semantic_results,
                 keyword_results,
                 semantic_weight,
@@ -542,7 +549,7 @@ class LlamaIndexSearchService(SearchService):
 
             # Sort by combined score and take top_k
             combined_results.sort(key=lambda x: x["score"], reverse=True)
-            final_results = combined_results[:top_k]
+            final_results: List[Dict[str, Any]] = combined_results[:top_k]
 
             log_event(
                 "hybrid_search_completed",
@@ -595,12 +602,13 @@ class LlamaIndexSearchService(SearchService):
         Returns:
             Success with list of similar documents, or Failure with error
         """
-        return await self.semantic_search(
+        result: Result[List[Dict[str, Any]], str] = await self.semantic_search(
             query=query,
             top_k=top_k,
             similarity_threshold=similarity_threshold,
             filters=None,
         )
+        return result
 
     # Filter matching now uses shared utility
     # Removed _matches_filters method - using MetadataFilterUtils.matches_filters instead
@@ -684,13 +692,14 @@ class LlamaIndexSearchService(SearchService):
 
             # If search failed, return the failure
             if similar_result.is_failure():
-                return similar_result
+                failure_result: Result[List[Dict[str, Any]], str] = similar_result
+                return failure_result
 
             # Unwrap successful result
-            similar_docs = similar_result.value
+            similar_docs: List[Dict[str, Any]] = similar_result.value
 
             # Filter out the document itself and format results
-            neighbors = []
+            neighbors: List[Dict[str, Any]] = []
             for doc in similar_docs:
                 if doc["document_id"] != document_id:
                     neighbors.append(doc)

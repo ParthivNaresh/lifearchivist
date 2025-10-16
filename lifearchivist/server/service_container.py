@@ -8,7 +8,7 @@ ensuring all services are properly initialized before use and cleaned up on shut
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import redis.asyncio as redis
 from qdrant_client import QdrantClient
@@ -18,6 +18,10 @@ from ..storage.bm25_index_service import BM25IndexService
 from ..storage.redis_document_tracker import RedisDocumentTracker
 from ..storage.vault.vault import Vault
 from ..utils.logging import log_event
+
+if TYPE_CHECKING:
+    # Import for type checking only to avoid runtime circular import
+    from ..storage.llamaindex_service import LlamaIndexService
 
 
 @dataclass
@@ -89,7 +93,7 @@ class ServiceContainer:
         self.vault: Optional[Vault] = None
         self.doc_tracker: Optional[RedisDocumentTracker] = None
         self.bm25_service: Optional[BM25IndexService] = None
-        self.llamaindex_service = None  # Will be LlamaIndexQdrantService
+        self.llamaindex_service: Optional["LlamaIndexService"] = None
 
     async def initialize(self) -> None:
         """
@@ -356,11 +360,19 @@ class ServiceContainer:
             )
 
             # Ensure async initialization
-            await self.llamaindex_service.ensure_initialized()
+            li = self.llamaindex_service
+            if li is None:
+                raise ServiceInitializationError(
+                    "LlamaIndex service failed to construct"
+                )
+            await li.ensure_initialized()
 
             # Get document count for logging
-            count_result = await self.llamaindex_service.get_document_count()
-            doc_count = count_result.value if count_result.is_success() else 0
+            count_result = await li.get_document_count()
+            if count_result.is_success() and hasattr(count_result, "value"):
+                doc_count = count_result.value
+            else:
+                doc_count = 0
 
             log_event("llamaindex_initialized", {"document_count": doc_count})
 

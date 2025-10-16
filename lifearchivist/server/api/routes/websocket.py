@@ -51,6 +51,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         await websocket.close(code=1008, reason="Invalid session_id")
         return
 
+    # Validate session manager is available
+    if server.session_manager is None:
+        await websocket.close(code=1011, reason="Session manager not available")
+        logger.error("WebSocket connection rejected: session manager not initialized")
+        return
+
     try:
         # Accept connection and register with session manager
         await server.session_manager.connect(session_id, websocket)
@@ -173,7 +179,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     except WebSocketDisconnect:
         # Normal disconnection
         logger.info(f"WebSocket disconnected: session_id={session_id}")
-        server.session_manager.disconnect(session_id)
+        if server.session_manager is not None:
+            server.session_manager.disconnect(session_id)
 
     except Exception as e:
         # Unexpected error - close connection
@@ -183,4 +190,5 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         except Exception:
             pass  # Connection may already be closed
         finally:
-            server.session_manager.disconnect(session_id)
+            if server.session_manager is not None:
+                server.session_manager.disconnect(session_id)

@@ -213,10 +213,12 @@ class LlamaIndexQueryService(QueryService):
 
             # Handle Result type
             if context_result.is_failure():
-                return context_result  # Propagate the failure
+                failure_result: Result[Dict[str, Any], str] = context_result
+                return failure_result
 
             # Unwrap successful result
-            context, source_chunks = context_result.value
+            context_tuple: Tuple[str, List[Dict[str, Any]]] = context_result.value
+            context, source_chunks = context_tuple
 
             # Generate response using query engine
             response = await self._generate_response(
@@ -329,10 +331,13 @@ class LlamaIndexQueryService(QueryService):
                         {"error": str(search_result.error)},
                         level=logging.WARNING,
                     )
-                    return search_result  # Propagate the failure
+                    failure_result: Result[Tuple[str, List[Dict[str, Any]]], str] = (
+                        search_result
+                    )
+                    return failure_result
 
                 # Unwrap successful result
-                search_results = search_result.value
+                search_results: List[Dict[str, Any]] = search_result.value
 
                 # Convert search results to source chunks format
                 for result in search_results:
@@ -475,7 +480,7 @@ class LlamaIndexQueryService(QueryService):
         question: str,
         context: str,
         response_mode: str,
-    ) -> Response:
+    ) -> Any:
         """
         Generate a response using the query engine.
 
@@ -484,7 +489,10 @@ class LlamaIndexQueryService(QueryService):
         try:
             # If we have context, we could potentially inject it
             # For now, let the query engine handle its own retrieval
-            response = self.query_engine.query(question)
+            engine = self.query_engine
+            if engine is None:
+                raise RuntimeError("Query engine not available")
+            response = engine.query(question)
 
             # Log the generation details
             log_event(
@@ -492,7 +500,7 @@ class LlamaIndexQueryService(QueryService):
                 {
                     "response_mode": response_mode,
                     "has_response": bool(response),
-                    "response_length": len(str(response.response)) if response else 0,
+                    "response_length": len(str(getattr(response, "response", ""))),
                 },
                 level=logging.DEBUG,
             )
@@ -512,9 +520,8 @@ class LlamaIndexQueryService(QueryService):
 
     def _extract_answer(self, response: Response) -> str:
         """Extract the answer text from a LlamaIndex response."""
-        if response and hasattr(response, "response"):
-            return str(response.response) if response.response else ""
-        return ""
+        content = getattr(response, "response", "")
+        return str(content) if content is not None else ""
 
     def _format_sources(
         self, source_chunks: List[Dict[str, Any]]
@@ -562,14 +569,15 @@ class LlamaIndexQueryService(QueryService):
             if document_id and document_id != "unknown":
                 try:
                     # Get full metadata for the document
-                    full_metadata = (
+                    meta_result = (
                         await self.metadata_service.get_full_document_metadata(
                             document_id
                         )
                     )
 
-                    # Merge with existing metadata (chunk metadata takes precedence)
-                    if full_metadata:
+                    if not meta_result.is_failure():
+                        full_metadata = meta_result.unwrap()
+                        # Merge with existing metadata (chunk metadata takes precedence)
                         enriched_metadata = {
                             **full_metadata,
                             **chunk.get("metadata", {}),
