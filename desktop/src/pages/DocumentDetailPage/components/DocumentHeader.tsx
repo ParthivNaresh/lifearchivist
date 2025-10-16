@@ -34,9 +34,9 @@ export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
   const fileName = metadata.title || metadata.original_path?.split('/').pop() || 'Unknown Document';
 
   const handleBack = () => {
-    // Check if we came from vault with preserved state
-    if (location.state?.from === 'vault' && location.state?.returnPath) {
-      // Navigate back to the exact location in vault with preserved state
+    // Check if we have a return path from any source (vault, search, timeline, etc.)
+    if (location.state?.returnPath) {
+      // Navigate back to the exact location with preserved state
       navigate(location.state.returnPath, {
         state: location.state.returnState,
         replace: true

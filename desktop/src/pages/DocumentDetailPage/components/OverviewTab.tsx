@@ -11,7 +11,7 @@ import {
   AlertCircle,
   ExternalLink
 } from 'lucide-react';
-import { formatFileSize, formatDate, getFileTypeName, willFileDownload } from '../utils';
+import { formatFileSize, formatDate, formatDateOnly, getFileTypeName, willFileDownload } from '../utils';
 import { DocumentAnalysis } from '../types';
 
 interface OverviewTabProps {
@@ -244,11 +244,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             <div>
               <div className="flex items-center text-xs text-muted-foreground mb-1">
                 <Calendar className="h-3 w-3 mr-1.5" />
-                Content Date
+                Document Created
               </div>
               <p className="text-sm font-medium">
-                {metadata.content_date || metadata.enrichment_status === 'queued' 
-                  ? metadata.content_date || 'Processing...' 
+                {metadata.document_created_at 
+                  ? formatDateOnly(metadata.document_created_at)
                   : 'Not detected'}
               </p>
             </div>

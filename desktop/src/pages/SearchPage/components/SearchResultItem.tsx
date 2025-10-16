@@ -6,6 +6,7 @@ import React from 'react';
 import { FileText, Calendar, HardDrive } from 'lucide-react';
 import { SearchResult } from '../types';
 import { formatFileSize, formatDate, getMimeTypeIcon, formatScore, getFileType } from '../utils';
+import { useSearchNavigation } from '../hooks';
 import { UI_TEXT, SEARCH_CONFIG } from '../constants';
 
 interface SearchResultItemProps {
@@ -19,8 +20,13 @@ export const SearchResultItem: React.FC<SearchResultItemProps> = ({
   selectedTags,
   onToggleTag,
 }) => {
+  const { handleDocumentClick } = useSearchNavigation();
+
   return (
-    <div className="p-4 glass-card rounded-lg border border-border/30 hover:bg-accent/50 cursor-pointer transition-colors">
+    <div 
+      onClick={() => handleDocumentClick(result.document_id)}
+      className="p-4 glass-card rounded-lg border border-border/30 hover:bg-accent/50 cursor-pointer transition-colors"
+    >
       <div className="flex items-start space-x-3">
         <div className="text-2xl mt-1 flex-shrink-0">
           {getMimeTypeIcon(result.mime_type)}

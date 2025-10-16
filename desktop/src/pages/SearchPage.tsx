@@ -1,10 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
-  useSearchState,
-  useTagFilters,
-  useUrlParams,
-  useFetchTags,
-  useSearch,
   SearchHeader,
   SearchForm,
   SearchModeToggle,
@@ -14,57 +10,110 @@ import {
   ErrorState,
   EmptyState,
 } from './SearchPage/index';
+import { searchDocuments, fetchTags } from './SearchPage/api';
+import { SearchMode, SearchResult, Tag } from './SearchPage/types';
 
 const SearchPage: React.FC = () => {
-  // Use custom hooks for state management
-  const {
-    query,
-    setQuery,
-    results,
-    setResults,
-    isLoading,
-    setIsLoading,
-    queryTime,
-    setQueryTime,
-    error,
-    setError,
-    searchMode,
-    setSearchMode,
-  } = useSearchState();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // State
+  const [query, setQuery] = useState(() => searchParams.get('q') || '');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [queryTime, setQueryTime] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [searchMode, setSearchMode] = useState<SearchMode>(() => (searchParams.get('mode') as SearchMode) || 'keyword');
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
+    const urlTags = searchParams.get('tags');
+    return urlTags ? urlTags.split(',').map(tag => decodeURIComponent(tag.trim())).filter(Boolean) : [];
+  });
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const {
-    selectedTags,
-    setSelectedTags,
-    availableTags,
-    setAvailableTags,
-    showFilters,
-    setShowFilters,
-    tagsLoading,
-    setTagsLoading,
-    toggleTag,
-    clearTags,
-  } = useTagFilters();
+  // Initialize from URL only once on mount
+  useEffect(() => {
+    setIsInitialized(true);
+  }, []);
 
-  // Initialize from URL parameters
-  useUrlParams(setQuery, setSelectedTags);
+  // Fetch tags on mount
+  useEffect(() => {
+    const loadTags = async () => {
+      setTagsLoading(true);
+      try {
+        const tags = await fetchTags();
+        setAvailableTags(tags);
+      } catch (err) {
+        console.error('Failed to load tags:', err);
+      } finally {
+        setTagsLoading(false);
+      }
+    };
+    loadTags();
+  }, []);
 
-  // Fetch available tags on mount
-  useFetchTags(setAvailableTags, setTagsLoading);
+  // Perform search when query/tags/mode change
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!query.trim() && selectedTags.length === 0) {
+        setResults([]);
+        return;
+      }
 
-  // Perform search with debouncing
-  useSearch(
-    query,
-    selectedTags,
-    searchMode,
-    setResults,
-    setQueryTime,
-    setError,
-    setIsLoading
-  );
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const startTime = performance.now();
+        const response = await searchDocuments({
+          q: query,
+          mode: searchMode,
+          limit: 20,
+          tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
+        });
+        const endTime = performance.now();
+
+        setResults(response.results);
+        setQueryTime(endTime - startTime);
+      } catch (err: any) {
+        setError(err.message || 'Search failed');
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Debounce search
+    const timer = setTimeout(performSearch, 300);
+    return () => clearTimeout(timer);
+  }, [query, selectedTags, searchMode]);
+
+  // Update URL when search params change (only after initialization)
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    const params: Record<string, string> = {};
+    
+    if (query) params.q = query;
+    if (searchMode !== 'keyword') params.mode = searchMode;
+    if (selectedTags.length > 0) params.tags = selectedTags.join(',');
+    
+    setSearchParams(params, { replace: true });
+  }, [query, searchMode, selectedTags, isInitialized, setSearchParams]);
+
+  const toggleTag = useCallback((tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  }, []);
+
+  const clearTags = useCallback(() => {
+    setSelectedTags([]);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Search is handled automatically by useSearch hook
   };
 
   const hasSearched = !!(query || selectedTags.length > 0);
@@ -106,15 +155,17 @@ const SearchPage: React.FC = () => {
           onToggleTag={toggleTag}
         />
 
-        <LoadingState query={query} />
+        {isLoading && <LoadingState query={query} />}
         
-        <ErrorState error={!isLoading ? error : null} />
+        {!isLoading && error && <ErrorState error={error} />}
         
-        <EmptyState
-          query={query}
-          selectedTags={selectedTags}
-          hasSearched={!isLoading && !error && results.length === 0 && hasSearched}
-        />
+        {!isLoading && !error && results.length === 0 && hasSearched && (
+          <EmptyState
+            query={query}
+            selectedTags={selectedTags}
+            hasSearched={hasSearched}
+          />
+        )}
       </div>
     </div>
   );

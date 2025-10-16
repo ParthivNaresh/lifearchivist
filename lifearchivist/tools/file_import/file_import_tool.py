@@ -201,6 +201,33 @@ class FileImportTool(BaseTool):
                 file_id, file_path, mime_type, file_hash
             )
 
+            # Extract document internal metadata (PDF/DOCX creation dates, etc.)
+            document_metadata = await self._extract_document_metadata(
+                file_id, file_path, mime_type
+            )
+
+            # If document doesn't have internal creation date, use platform-specific creation date
+            # This reads macOS extended attributes (fast, <1ms) or Windows creation time
+            if not document_metadata.get("document_created_at"):
+                from lifearchivist.tools.file_import.file_import_utils import (
+                    get_platform_creation_date,
+                )
+
+                platform_date = get_platform_creation_date(file_path)
+                if platform_date:
+                    if not document_metadata:
+                        document_metadata = {}
+                    document_metadata["document_created_at"] = platform_date
+                    log_event(
+                        "platform_creation_date_used",
+                        {
+                            "file_id": file_id,
+                            "mime_type": mime_type,
+                            "creation_date": platform_date,
+                        },
+                        level=logging.DEBUG,
+                    )
+
             theme_result = {}
             if extracted_text:
                 theme_result = await self._classify_themes(
@@ -216,7 +243,22 @@ class FileImportTool(BaseTool):
                         if subtheme_result:
                             theme_result.update(subtheme_result)
 
-            # Create and store document in LlamaIndex
+            # Build custom metadata dictionary with all enrichments
+            custom_metadata_dict = {**metadata}  # Start with user-provided metadata
+
+            # Add document internal metadata (PDF/DOCX dates, author, etc.)
+            if document_metadata:
+                custom_metadata_dict.update(document_metadata)
+
+            # Add theme classifications if available
+            if theme_result:
+                custom_metadata_dict["classifications"] = theme_result
+
+            # Add tags if provided
+            if tags:
+                custom_metadata_dict["tags"] = tags
+
+            # Create document metadata in single call (single source of truth)
             doc_metadata = create_document_metadata(
                 file_id=file_id,
                 file_hash=file_hash,
@@ -224,16 +266,8 @@ class FileImportTool(BaseTool):
                 mime_type=mime_type,
                 stat=stat,
                 text=extracted_text,
-                custom_metadata=metadata,
+                custom_metadata=custom_metadata_dict,
             )
-
-            # Add themes to metadata if classified
-            if theme_result:
-                doc_metadata.update({"classifications": theme_result})
-
-            # Add tags to document metadata if provided
-            if tags:
-                doc_metadata["tags"] = tags
 
             await self._create_document(file_id, extracted_text, doc_metadata)
 
@@ -688,6 +722,60 @@ class FileImportTool(BaseTool):
                 level=logging.WARNING,
             )
             return None
+
+    @track(
+        operation="document_metadata_extraction",
+        include_args=["file_id", "mime_type"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
+    )
+    async def _extract_document_metadata(
+        self, file_id: str, file_path: Path, mime_type: str
+    ) -> Dict[str, Any]:
+        """Extract internal document metadata (PDF/DOCX creation dates, etc.)."""
+        try:
+            from lifearchivist.tools.extract.metadata_extraction import (
+                extract_document_metadata,
+            )
+
+            metadata = await extract_document_metadata(file_path, mime_type)
+
+            if metadata:
+                log_event(
+                    "document_metadata_extracted",
+                    {
+                        "file_id": file_id,
+                        "mime_type": mime_type,
+                        "fields_extracted": list(metadata.keys()),
+                        "has_document_created_at": "document_created_at" in metadata,
+                        "has_document_author": "document_author" in metadata,
+                    },
+                )
+            else:
+                log_event(
+                    "document_metadata_extraction_skipped",
+                    {
+                        "file_id": file_id,
+                        "mime_type": mime_type,
+                        "reason": "no_metadata_available_or_unsupported_type",
+                    },
+                    level=logging.DEBUG,
+                )
+
+            return metadata
+
+        except Exception as e:
+            log_event(
+                "document_metadata_extraction_error",
+                {
+                    "file_id": file_id,
+                    "mime_type": mime_type,
+                    "error": str(e),
+                },
+                level=logging.WARNING,
+            )
+            return {}
 
     @track(
         operation="queue_enrichment_tasks",

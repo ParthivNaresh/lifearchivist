@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import InboxPage from './pages/InboxPage';
 import DocumentDetailPage from './pages/DocumentDetailPage';
 import VaultPage from './pages/VaultPage';
+import TimelinePage from './pages/TimelinePage';
 import QAPage from './pages/QAPage';
 import SearchPage from './pages/SearchPage';
 import SettingsPage from './pages/SettingsPage';
@@ -20,6 +21,7 @@ function App() {
             <Route path="/" element={<InboxPage />} />
             <Route path="/vault" element={<VaultPage />} />
             <Route path="/vault/:documentId/details" element={<DocumentDetailPage />} />
+            <Route path="/timeline" element={<TimelinePage />} />
             <Route path="/activity" element={<ActivityPage />} />
             <Route path="/qa" element={<QAPage />} />
             <Route path="/search" element={<SearchPage />} />

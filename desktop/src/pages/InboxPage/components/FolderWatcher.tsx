@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FolderOpen, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FolderOpen, Pencil, Loader2, CheckCircle2, AlertCircle, RefreshCw, StopCircle } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
 interface FolderWatcherProps {
@@ -22,7 +22,6 @@ export const FolderWatcher: React.FC<FolderWatcherProps> = ({ className }) => {
   const [status, setStatus] = useState<WatchStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Fetch status on mount and subscribe to WebSocket updates
   useEffect(() => {
@@ -100,7 +99,6 @@ export const FolderWatcher: React.FC<FolderWatcherProps> = ({ className }) => {
 
       if (data.success) {
         await fetchStatus();
-        setIsExpanded(true);
       } else {
         setError(data.error || 'Failed to start watching folder');
       }
@@ -168,119 +166,89 @@ export const FolderWatcher: React.FC<FolderWatcherProps> = ({ className }) => {
   };
 
   return (
-    <div className={cn('glass-card rounded-xl p-4', className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 blur-xl" />
-            <FolderOpen className="h-5 w-5 text-primary relative z-10" />
+    <div className={cn('flex flex-col h-full', className)}>
+      {/* Icon and Title - Always Visible */}
+      <div className="flex flex-col items-center gap-3 mb-3">
+        <FolderOpen className="h-8 w-8 text-primary" />
+        <div className="text-center">
+          <div className="font-medium">Auto-Watch Folder</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {status?.enabled ? 'Monitoring for new files' : 'Auto-sync files from a folder'}
           </div>
-          <h3 className="font-semibold text-sm">Auto-Watch Folder</h3>
         </div>
-
-        {status?.enabled && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 hover:bg-secondary/50 rounded transition-colors"
-            title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            {isExpanded ? (
-              <EyeOff className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <Eye className="h-4 w-4 text-muted-foreground" />
-            )}
-          </button>
-        )}
       </div>
 
-      {/* Status Display */}
+      {/* Watched Folders List */}
       {status?.enabled ? (
-        <div className="space-y-3">
-          {/* Active Status */}
-          <div className="flex items-start space-x-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-muted-foreground">
-                Watching: <span className="text-foreground font-medium" title={status.watched_path || ''}>
-                  {getShortPath(status.watched_path)}
-                </span>
-              </p>
-              {status.pending_files > 0 && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  {status.pending_files} file{status.pending_files !== 1 ? 's' : ''} pending...
-                </p>
-              )}
+        <div className="flex-1 space-y-2 mb-2">
+          {/* Single folder for now - ready for multiple */}
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+            <span 
+              className="text-xs text-muted-foreground truncate flex-1 min-w-0" 
+              title={status.watched_path || ''}
+            >
+              {getShortPath(status.watched_path)}
+            </span>
+            
+            {/* Inline Action Icons */}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={handleSelectFolder}
+                disabled={loading}
+                className="p-1 hover:bg-secondary rounded transition-colors"
+                title="Change folder"
+              >
+                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+              <button
+                onClick={handleManualScan}
+                disabled={loading}
+                className="p-1 hover:bg-secondary rounded transition-colors"
+                title="Scan now"
+              >
+                {loading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+              </button>
+              <button
+                onClick={handleStopWatching}
+                disabled={loading}
+                className="p-1 hover:bg-amber-500/20 rounded transition-colors"
+                title="Stop watching"
+              >
+                <StopCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-500" />
+              </button>
             </div>
           </div>
-
-          {/* Expanded Details */}
-          {isExpanded && (
-            <div className="space-y-2 pt-2 border-t border-border/50">
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>
-                  <span className="font-medium">Debounce:</span> {status.debounce_seconds}s
-                </p>
-                <p>
-                  <span className="font-medium">Supported:</span> {status.supported_extensions.length} file types
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex space-x-2 pt-2">
-                <button
-                  onClick={handleManualScan}
-                  disabled={loading}
-                  className="flex-1 px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {loading ? (
-                    <Loader2 className="h-3 w-3 animate-spin mx-auto" />
-                  ) : (
-                    'Scan Now'
-                  )}
-                </button>
-                <button
-                  onClick={handleStopWatching}
-                  disabled={loading}
-                  className="flex-1 px-3 py-1.5 text-xs bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  Stop Watching
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Automatically ingest new files from a folder
-          </p>
-          
-          <button
-            onClick={handleSelectFolder}
-            disabled={loading}
-            className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-medium text-sm flex items-center justify-center space-x-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Starting...</span>
-              </>
-            ) : (
-              <>
-                <FolderOpen className="h-4 w-4" />
-                <span>Select Folder to Watch</span>
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          onClick={handleSelectFolder}
+          disabled={loading}
+          className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm flex items-center justify-center gap-2 mt-auto"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Starting...</span>
+            </>
+          ) : (
+            <>
+              <FolderOpen className="h-4 w-4" />
+              <span>Select Folder</span>
+            </>
+          )}
+        </button>
       )}
 
       {/* Error Display */}
       {error && (
-        <div className="mt-3 flex items-start space-x-2 text-xs text-destructive bg-destructive/10 rounded-lg p-2">
+        <div className="mt-2 flex items-start gap-2 text-xs text-destructive bg-destructive/10 rounded-lg p-2">
           <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
-          <p>{error}</p>
+          <p className="flex-1">{error}</p>
         </div>
       )}
     </div>

@@ -857,12 +857,23 @@ class LlamaIndexQdrantService:
                     "error": f"Failed to retrieve node from Qdrant: {str(e)}",
                 }
 
-            # Delegate to search service with the extracted text
-            neighbors = await self.search_service.get_document_neighbors(
+            # Delegate to search service with the extracted text (returns Result)
+            neighbors_result = await self.search_service.get_document_neighbors(
                 document_text=document_text,
                 document_id=document_id,
                 top_k=top_k,
             )
+
+            # Handle Result type
+            if neighbors_result.is_failure():
+                return {
+                    "document_id": document_id,
+                    "neighbors": [],
+                    "total": 0,
+                    "error": neighbors_result.error,
+                }
+
+            neighbors = neighbors_result.value
 
             return {
                 "document_id": document_id,

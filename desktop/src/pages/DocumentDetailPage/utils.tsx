@@ -32,6 +32,23 @@ export const formatDate = (dateString: string): string => {
 };
 
 /**
+ * Format date string as simple date without time (e.g., "Jan 15, 2024")
+ */
+export const formatDateOnly = (dateString: string): string => {
+  if (!dateString) return 'Unknown';
+  const date = new Date(dateString);
+  
+  // Check if date is valid
+  if (isNaN(date.getTime())) return 'Invalid date';
+  
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+/**
  * Get appropriate icon component based on MIME type
  */
 export const getFileIcon = (mimeType: string): React.ReactNode => {

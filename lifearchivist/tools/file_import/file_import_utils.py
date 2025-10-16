@@ -3,6 +3,8 @@ File import utilities and constants for document processing.
 """
 
 import hashlib
+import os
+import platform
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -70,6 +72,66 @@ def should_extract_dates(text: str) -> bool:
     return len(text.strip()) >= MIN_TEXT_LENGTH_FOR_DATE_EXTRACTION
 
 
+def get_platform_creation_date(file_path: Path) -> Optional[str]:
+    """
+    Get file creation date using platform-specific methods.
+
+    On macOS: Reads kMDItemContentCreationDate from extended attributes
+    On Windows: Uses st_ctime (actual creation time on Windows)
+    On Linux: Falls back to st_mtime (Linux doesn't track creation time)
+
+    This is synchronous and fast (<1ms per file), so it doesn't need to be async.
+
+    Args:
+        file_path: Path to file
+
+    Returns:
+        ISO 8601 formatted creation date string, or None if unavailable
+    """
+    system = platform.system()
+
+    try:
+        if system == "Darwin":  # macOS
+            # Use xattr to read macOS extended attributes
+            # This is much faster than subprocess calls to mdls
+            try:
+                import xattr
+
+                # Get the creation date from macOS metadata
+                # kMDItemContentCreationDate is stored as a binary plist
+                attrs = xattr.xattr(str(file_path))
+
+                # Try to get the creation date attribute
+                # macOS stores this in com.apple.metadata:kMDItemContentCreationDate
+                creation_date_key = "com.apple.metadata:kMDItemContentCreationDate"
+                if creation_date_key in attrs:
+                    # Parse the binary plist data
+                    import plistlib
+
+                    date_data = attrs[creation_date_key]
+                    date_obj = plistlib.loads(date_data)
+                    if isinstance(date_obj, datetime):
+                        return date_obj.isoformat()
+            except (ImportError, KeyError, Exception):
+                # xattr not available or attribute doesn't exist
+                # Fall back to stat
+                pass
+
+        elif system == "Windows":
+            # On Windows, st_ctime is actually creation time
+            stat = os.stat(file_path)
+            return datetime.fromtimestamp(stat.st_ctime).isoformat()
+
+        # Linux or fallback: use modification time (best we can do)
+        stat = os.stat(file_path)
+        return datetime.fromtimestamp(stat.st_mtime).isoformat()
+
+    except Exception:
+        # If anything fails, return None
+        # The caller will handle the fallback
+        return None
+
+
 async def calculate_file_hash(file_path: Path) -> str:
     """
     Calculate SHA256 hash of file in chunks for memory efficiency.
@@ -129,24 +191,18 @@ def create_document_metadata(
         "mime_type": mime_type,
         "size_bytes": stat.st_size,
         "status": "processing",  # Will be updated to "ready" later
-        # Time tracking
+        # Time tracking - File system timestamps
         "uploaded_at": datetime.now().isoformat(),  # When uploaded to Life Archivist
-        "file_created_at": datetime.fromtimestamp(
-            stat.st_ctime
-        ).isoformat(),  # Original file creation
-        "file_modified_at": (
-            datetime.fromtimestamp(stat.st_mtime).isoformat() if stat.st_mtime else None
-        ),  # Original file modification
-        # Legacy fields for compatibility
-        "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
-        "modified_at": (
+        "file_created_at_disk": datetime.fromtimestamp(stat.st_ctime).isoformat(),
+        "file_modified_at_disk": (
             datetime.fromtimestamp(stat.st_mtime).isoformat() if stat.st_mtime else None
         ),
+        "document_created_at": None,  # Will be set by metadata extraction
+        "document_modified_at": None,  # Will be set by metadata extraction
         # Content metadata
         "word_count": len(text.split()) if text else 0,
         "text_length": len(text) if text else 0,
         "has_content": bool(text and len(text.strip()) > 0),
-        # Initialize empty arrays for future metadata updates
         "content_dates": [],  # Will be populated by ContentDateExtractionTool
         "tags": [],  # Will be populated by TagTool
         "provenance": [
@@ -172,10 +228,8 @@ def create_document_metadata(
             "size_bytes",
             "status",
             "uploaded_at",
-            "file_created_at",
-            "file_modified_at",
-            "created_at",
-            "modified_at",
+            "file_created_at_disk",
+            "file_modified_at_disk",
             "word_count",
             "text_length",
             "has_content",
