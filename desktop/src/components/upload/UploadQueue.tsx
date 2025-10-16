@@ -13,6 +13,7 @@ import {
   Copy
 } from 'lucide-react';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
+import { useUploadManager } from '../../hooks/useUploadManager';
 import { UploadBatch } from './UploadBatch';
 
 const UploadQueue: React.FC = () => {
@@ -22,10 +23,11 @@ const UploadQueue: React.FC = () => {
     toggleMinimized, 
     clearCompleted, 
     removeBatch, 
-    retryFailedUploads,
     updateItemStatus,
     resetQueue
   } = useUploadQueue();
+  
+  const { uploadFile } = useUploadManager();
 
   if (!state.isVisible || state.isMinimized) return null;
 
@@ -42,8 +44,94 @@ const UploadQueue: React.FC = () => {
   );
   const errorFiles = state.batches.reduce((acc, batch) => acc + batch.errorFiles, 0);
 
-  const handleRetryItem = (itemId: string) => {
+  const handleRetryItem = async (itemId: string) => {
+    console.log(`🔄 Retrying item ${itemId}`);
+    
+    // Find the item in the batches
+    let itemToRetry = null;
+    for (const batch of state.batches) {
+      const item = batch.items.find(i => i.id === itemId);
+      if (item) {
+        itemToRetry = item;
+        break;
+      }
+    }
+    
+    if (!itemToRetry) {
+      console.error(`❌ Item ${itemId} not found for retry`);
+      return;
+    }
+    
+    console.log(`✅ Found item to retry:`, {
+      id: itemId,
+      fileName: itemToRetry.file instanceof File ? itemToRetry.file.name : itemToRetry.file.name,
+      hasPath: 'path' in itemToRetry.file && itemToRetry.file.path,
+      status: itemToRetry.status
+    });
+    
+    // Reset the item status to pending
     updateItemStatus(itemId, 'pending');
+    
+    // Actually retry the upload using the upload manager
+    try {
+      console.log(`📤 Calling uploadFile for item ${itemId}`);
+      const result = await uploadFile(itemToRetry.file, itemId);
+      console.log(`✅ Upload completed for item ${itemId}:`, result);
+    } catch (error) {
+      console.error(`❌ Failed to retry upload for item ${itemId}:`, error);
+      updateItemStatus(itemId, 'error', 'Retry failed');
+    }
+  };
+  
+  const handleRetryBatch = async (batchId: string) => {
+    const batch = state.batches.find(b => b.id === batchId);
+    if (!batch) {
+      console.error(`Batch ${batchId} not found for retry`);
+      return;
+    }
+    
+    // Find all failed items in the batch
+    const failedItems = batch.items.filter(item => item.status === 'error');
+    
+    // Retry items concurrently with same limit as initial uploads (6)
+    const concurrencyLimit = 6;
+    for (let i = 0; i < failedItems.length; i += concurrencyLimit) {
+      const batchItems = failedItems.slice(i, i + concurrencyLimit);
+      await Promise.all(batchItems.map(item => handleRetryItem(item.id)));
+    }
+  };
+  
+  const handleRetryAll = async () => {
+    console.log('🔄 Retry All clicked');
+    
+    // Find all failed items across all batches
+    const failedItems = state.batches.flatMap(batch => 
+      batch.items.filter(item => item.status === 'error')
+    );
+    
+    console.log(`📊 Found ${failedItems.length} failed items to retry:`, 
+      failedItems.map(item => ({
+        id: item.id,
+        fileName: item.file instanceof File ? item.file.name : item.file.name,
+        status: item.status
+      }))
+    );
+    
+    if (failedItems.length === 0) {
+      console.warn('⚠️ No failed items found to retry');
+      return;
+    }
+    
+    // Retry items concurrently with same limit as initial uploads (6)
+    // This matches the browser WebSocket connection limit
+    const concurrencyLimit = 6;
+    for (let i = 0; i < failedItems.length; i += concurrencyLimit) {
+      const batchItems = failedItems.slice(i, i + concurrencyLimit);
+      console.log(`📦 Processing batch ${Math.floor(i / concurrencyLimit) + 1}: ${batchItems.length} items`);
+      await Promise.all(batchItems.map(item => handleRetryItem(item.id)));
+    }
+    
+    console.log('✅ Retry All completed');
   };
 
   return (
@@ -174,7 +262,7 @@ const UploadQueue: React.FC = () => {
               <div className="flex items-center space-x-1">
                 {errorFiles > 0 && (
                   <button
-                    onClick={() => retryFailedUploads()}
+                    onClick={handleRetryAll}
                     className="px-3 py-1 text-xs bg-amber-500/20 text-amber-300 rounded-lg hover:bg-amber-500/30 transition-colors flex items-center space-x-1"
                   >
                     <RotateCcw className="w-3 h-3" />
@@ -231,7 +319,7 @@ const UploadQueue: React.FC = () => {
                   key={batch.id}
                   batch={batch}
                   onRemove={() => removeBatch(batch.id)}
-                  onRetryBatch={() => retryFailedUploads(batch.id)}
+                  onRetryBatch={() => handleRetryBatch(batch.id)}
                   onRetryItem={handleRetryItem}
                 />
               ))}
@@ -242,7 +330,7 @@ const UploadQueue: React.FC = () => {
                   key={batch.id}
                   batch={batch}
                   onRemove={() => removeBatch(batch.id)}
-                  onRetryBatch={() => retryFailedUploads(batch.id)}
+                  onRetryBatch={() => handleRetryBatch(batch.id)}
                   onRetryItem={handleRetryItem}
                 />
               ))}
@@ -253,7 +341,7 @@ const UploadQueue: React.FC = () => {
                   key={batch.id}
                   batch={batch}
                   onRemove={() => removeBatch(batch.id)}
-                  onRetryBatch={() => retryFailedUploads(batch.id)}
+                  onRetryBatch={() => handleRetryBatch(batch.id)}
                   onRetryItem={handleRetryItem}
                 />
               ))}

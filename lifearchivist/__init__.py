@@ -10,12 +10,10 @@ __author__ = "Parthiv Naresh"
 __email__ = "parthivnaresh@gmail.com"
 
 from .models.core import Document, SearchResult
-from .server.mcp_server import MCPServer
 from .storage.llamaindex_service import LlamaIndexService
 
 __all__ = [
     "Document",
     "SearchResult",
-    "MCPServer",
     "LlamaIndexService",
 ]

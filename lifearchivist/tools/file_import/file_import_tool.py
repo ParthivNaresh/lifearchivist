@@ -1,11 +1,11 @@
 """
-File management tools.
+File import tool.
 """
 
 import logging
 import uuid
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import magic
 
@@ -27,11 +27,30 @@ from lifearchivist.utils.logging import log_event, track
 class FileImportTool(BaseTool):
     """Tool for importing files into the vault."""
 
-    def __init__(self, vault=None, llamaindex_service=None, progress_manager=None):
+    def __init__(
+        self,
+        vault=None,
+        llamaindex_service=None,
+        progress_manager=None,
+        enrichment_queue=None,
+        theme_classifier=None,
+        activity_manager=None,
+    ):
         super().__init__()
         self.vault = vault
         self.llamaindex_service = llamaindex_service
         self.progress_manager = progress_manager
+        self.enrichment_queue = enrichment_queue
+        self.activity_manager = activity_manager
+        # Use provided classifier or create a new one
+        if theme_classifier is None:
+            from lifearchivist.tools.theme_classifier.theme_classifier import (
+                ThemeClassifier,
+            )
+
+            self.theme_classifier = ThemeClassifier()
+        else:
+            self.theme_classifier = theme_classifier
 
     def _get_metadata(self) -> ToolMetadata:
         return ToolMetadata(
@@ -144,9 +163,23 @@ class FileImportTool(BaseTool):
             if vault_result["existed"]:
                 duplicate_doc = await self._check_for_duplicate(file_id, file_hash)
                 if duplicate_doc:
-                    # Clean up progress tracking for duplicates
+                    # Send completion message for duplicates BEFORE cleanup
                     if self.progress_manager and session_id:
-                        await self.progress_manager.cleanup_progress(file_id)
+                        # Send a completion message indicating this is a duplicate
+                        await self.progress_manager.complete_progress(
+                            file_id,
+                            metadata={
+                                "original_filename": original_filename,
+                                "file_size": stat.st_size,
+                                "mime_type": mime_type,
+                                "status": "duplicate",
+                                "message": "File already exists in archive",
+                                "existing_doc_id": duplicate_doc.get("document_id"),
+                            },
+                        )
+                        # Now clean up the progress tracking
+                        # Note: We may want to keep this for a bit to ensure the message is delivered
+                        # await self.progress_manager.cleanup_progress(file_id)
 
                     # Log duplicate found (important business event)
                     log_event(
@@ -168,7 +201,64 @@ class FileImportTool(BaseTool):
                 file_id, file_path, mime_type, file_hash
             )
 
-            # Create and store document in LlamaIndex
+            # Extract document internal metadata (PDF/DOCX creation dates, etc.)
+            document_metadata = await self._extract_document_metadata(
+                file_id, file_path, mime_type
+            )
+
+            # If document doesn't have internal creation date, use platform-specific creation date
+            # This reads macOS extended attributes (fast, <1ms) or Windows creation time
+            if not document_metadata.get("document_created_at"):
+                from lifearchivist.tools.file_import.file_import_utils import (
+                    get_platform_creation_date,
+                )
+
+                platform_date = get_platform_creation_date(file_path)
+                if platform_date:
+                    if not document_metadata:
+                        document_metadata = {}
+                    document_metadata["document_created_at"] = platform_date
+                    log_event(
+                        "platform_creation_date_used",
+                        {
+                            "file_id": file_id,
+                            "mime_type": mime_type,
+                            "creation_date": platform_date,
+                        },
+                        level=logging.DEBUG,
+                    )
+
+            theme_result = {}
+            if extracted_text:
+                theme_result = await self._classify_themes(
+                    file_id, extracted_text, display_path
+                )
+                if theme_result:
+                    # Classify subthemes if we have a primary theme
+                    theme = theme_result.get("theme")
+                    if theme and theme != "Unclassified":
+                        subtheme_result = await self._classify_subthemes(
+                            file_id, extracted_text, theme, original_filename
+                        )
+                        if subtheme_result:
+                            theme_result.update(subtheme_result)
+
+            # Build custom metadata dictionary with all enrichments
+            custom_metadata_dict = {**metadata}  # Start with user-provided metadata
+
+            # Add document internal metadata (PDF/DOCX dates, author, etc.)
+            if document_metadata:
+                custom_metadata_dict.update(document_metadata)
+
+            # Add theme classifications if available
+            if theme_result:
+                custom_metadata_dict["classifications"] = theme_result
+
+            # Add tags if provided
+            if tags:
+                custom_metadata_dict["tags"] = tags
+
+            # Create document metadata in single call (single source of truth)
             doc_metadata = create_document_metadata(
                 file_id=file_id,
                 file_hash=file_hash,
@@ -176,18 +266,14 @@ class FileImportTool(BaseTool):
                 mime_type=mime_type,
                 stat=stat,
                 text=extracted_text,
-                custom_metadata=metadata,
+                custom_metadata=custom_metadata_dict,
             )
-
-            # Add tags to document metadata if provided
-            if tags:
-                doc_metadata["tags"] = tags
 
             await self._create_document(file_id, extracted_text, doc_metadata)
 
-            # Process additional metadata asynchronously (dates, tags) without blocking the main flow
-            if extracted_text:
-                await self._try_extract_content_dates(file_id, extracted_text)
+            # Queue enrichment tasks instead of processing synchronously
+            if extracted_text and self.enrichment_queue:
+                await self._queue_enrichment_tasks(file_id, extracted_text)
 
             # Finalize document
             await self._finalize_document(file_id, file_path, vault_result)
@@ -220,6 +306,24 @@ class FileImportTool(BaseTool):
                 },
             )
 
+            # Add activity event for successful upload
+            if self.activity_manager:
+                # Determine source from metadata
+                source = metadata.get("source", "manual")
+                if source == "folder_watch":
+                    # Skip - folder watcher already added its own event
+                    pass
+                else:
+                    # Manual upload or other source
+                    await self.activity_manager.add_upload_event(
+                        file_count=1,
+                        source=source,
+                        file_name=display_path,
+                        file_size=file_size_bytes,
+                        mime_type=mime_type,
+                        document_id=file_id,
+                    )
+
             return create_success_response(
                 file_id, file_hash, stat, mime_type, display_path, vault_result
             )
@@ -248,12 +352,17 @@ class FileImportTool(BaseTool):
     ) -> Dict[str, Any] | None:
         """Check for duplicate documents in LlamaIndex."""
         # Check LlamaIndex for existing document with this file hash
-        existing_docs = await self.llamaindex_service.query_documents_by_metadata(
-            filters={"file_hash": file_hash}, limit=1
+        existing_docs_result = (
+            await self.llamaindex_service.query_documents_by_metadata(
+                filters={"file_hash": file_hash}, limit=1
+            )
         )
 
-        if existing_docs:
-            return existing_docs[0]  # type: ignore[no-any-return]
+        # Unwrap the Result
+        if existing_docs_result.is_success():
+            existing_docs = existing_docs_result.unwrap()
+            if existing_docs:
+                return existing_docs[0]  # type: ignore[no-any-return]
 
         return None
 
@@ -266,21 +375,21 @@ class FileImportTool(BaseTool):
         self, file_id: str, extracted_text: str, doc_metadata: Dict[str, Any]
     ):
         """Create document in LlamaIndex."""
-        success = await self.llamaindex_service.add_document(
+        result = await self.llamaindex_service.add_document(
             document_id=file_id, content=extracted_text, metadata=doc_metadata
         )
 
-        if not success:
-            # Log failure as it's an exceptional case
+        if result.is_failure():
             log_event(
                 "document_indexing_failed",
                 {
                     "file_id": file_id,
-                    "error": "LlamaIndex add_document returned False",
+                    "error": result.error,
+                    "error_type": result.error_type,
                 },
                 level=logging.ERROR,
             )
-            raise RuntimeError(f"Failed to create document {file_id} in LlamaIndex")
+            raise RuntimeError(f"Failed to create document {file_id}: {result.error}")
 
     @track(
         operation="document_finalization",
@@ -292,9 +401,20 @@ class FileImportTool(BaseTool):
     ):
         """Finalize document with status update and provenance."""
         # Update status to ready in LlamaIndex metadata
-        await self.llamaindex_service.update_document_metadata(
+        status_result = await self.llamaindex_service.update_document_metadata(
             file_id, {"status": "ready"}, merge_mode="update"
         )
+
+        if status_result.is_failure():
+            log_event(
+                "document_finalization_warning",
+                {
+                    "file_id": file_id,
+                    "step": "status_update",
+                    "error": str(status_result.error),
+                },
+                level=logging.WARNING,
+            )
 
         # Log provenance in LlamaIndex metadata
         provenance_entry = create_provenance_entry(
@@ -307,9 +427,20 @@ class FileImportTool(BaseTool):
                 "existed": vault_result["existed"],
             },
         )
-        await self.llamaindex_service.update_document_metadata(
+        provenance_result = await self.llamaindex_service.update_document_metadata(
             file_id, {"provenance": [provenance_entry]}, merge_mode="update"
         )
+
+        if provenance_result.is_failure():
+            log_event(
+                "document_finalization_warning",
+                {
+                    "file_id": file_id,
+                    "step": "provenance_update",
+                    "error": str(provenance_result.error),
+                },
+                level=logging.WARNING,
+            )
 
     async def _handle_import_error(
         self, error: Exception, file_id: str, display_path: str, session_id: str
@@ -326,6 +457,18 @@ class FileImportTool(BaseTool):
             },
             level=logging.ERROR,
         )
+
+        # Add activity event for failed upload
+        if self.activity_manager:
+            await self.activity_manager.add_event(
+                "file_upload_failed",
+                {
+                    "file_name": display_path,
+                    "error": str(error),
+                    "error_type": type(error).__name__,
+                    "file_id": file_id if file_id else None,
+                },
+            )
 
         # Report error to progress tracking if we have a file_id
         if self.progress_manager and session_id and file_id:
@@ -431,27 +574,256 @@ class FileImportTool(BaseTool):
             return "unknown"
 
     @track(
-        operation="content_date_extraction",
+        operation="theme_classification",
         include_args=["file_id"],
         include_result=True,
         track_performance=True,
         frequency="medium_frequency",
     )
-    async def _try_extract_content_dates(self, file_id: str, text: str):
-        """Try to extract content dates from document text."""
-        if not should_extract_dates(text):
-            # Skip logging for this common case - the @track decorator handles it
-            return
+    async def _classify_themes(
+        self, file_id: str, text: str, display_path: str = ""
+    ) -> Dict[str, Any] | None:
+        """Classify document themes using the shared ProductionThemeClassifier."""
+        try:
+            theme, confidence, pattern_or_phrase, classification = (
+                self.theme_classifier.classify(
+                    text=text,
+                    filename=display_path,
+                )
+            )
 
-        from lifearchivist.schemas.tool_schemas import ContentDateExtractionInput
-        from lifearchivist.tools.date_extract.date_extraction_tool import (
-            ContentDateExtractionTool,
-        )
+            theme_details = {
+                "theme": theme,
+                "match_tier": classification,
+                "match_pattern": pattern_or_phrase,
+                "confidence": confidence,
+            }
 
-        date_tool = ContentDateExtractionTool(
-            llamaindex_service=self.llamaindex_service
-        )
-        input_data = ContentDateExtractionInput(document_id=file_id, text_content=text)
+            match classification:
+                case "primary":
+                    theme_details["confidence_level"] = "Very High"
+                case "secondary":
+                    theme_details["confidence_level"] = "High"
+                case "tertiary" if confidence >= 0.5:
+                    theme_details["confidence_level"] = "Medium"
+                case "tertiary" if confidence < 0.5:
+                    theme_details["confidence_level"] = "Low"
+                case _:
+                    theme_details["confidence_level"] = "None"
 
-        result = await date_tool.execute(input_data=input_data)
-        return result
+            log_event(
+                "document_themes_classified",
+                {**theme_details},
+            )
+            return theme_details
+
+        except Exception as e:
+            log_event(
+                "theme_classification_error",
+                {
+                    "file_id": file_id,
+                    "error": str(e),
+                },
+                level=logging.WARNING,
+            )
+            return None
+
+    @track(
+        operation="subtheme_classification",
+        include_args=["file_id", "primary_theme"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
+    )
+    async def _classify_subthemes(
+        self,
+        file_id: str,
+        text: str,
+        primary_theme: str,
+        filename: Optional[str] = None,
+    ) -> Dict[str, Any] | None:
+        """Classify document subthemes based on primary theme."""
+        try:
+            from lifearchivist.tools.subtheme_classifier.models import SubthemeResult
+            from lifearchivist.tools.subtheme_classifier.subtheme_classifier import (
+                SubthemeClassifier,
+            )
+
+            # Create subtheme classifier instance
+            classifier = SubthemeClassifier()
+
+            # Check if this theme supports subtheme classification
+            if primary_theme not in classifier.get_supported_themes():
+                log_event(
+                    "subtheme_classification_skipped",
+                    {
+                        "file_id": file_id,
+                        "primary_theme": primary_theme,
+                        "reason": "theme_not_supported",
+                    },
+                    level=logging.DEBUG,
+                )
+                return None
+
+            # Prepare metadata for classification
+            metadata = {"filename": filename} if filename else {}
+
+            # Classify subthemes
+            result: SubthemeResult = classifier.classify(
+                text=text, primary_theme=primary_theme, metadata=metadata
+            )
+
+            if result.subthemes:
+                subtheme_metadata = {
+                    "subthemes": result.subthemes,
+                    "primary_subtheme": result.primary_subtheme,
+                    "subclassifications": result.subclassifications,
+                    "primary_subclassification": result.primary_subclassification,
+                    "subclassification_confidence": result.subclassification_confidence,
+                    "confidence_scores": result.confidence_scores,
+                    "category_mapping": result.category_mapping,
+                    "matched_patterns": result.matched_patterns,
+                    "subclassification_method": result.subclassification_method,
+                }
+
+                log_event(
+                    "document_subthemes_classified",
+                    {
+                        "file_id": file_id,
+                        "primary_theme": primary_theme,
+                        "primary_subtheme": result.primary_subtheme,
+                        "subthemes_count": len(result.subthemes),
+                        "classification_method": result.subclassification_method,
+                        "primary_pattern": (
+                            result.matched_patterns.get(result.primary_subtheme, "")
+                            if result.primary_subtheme
+                            else ""
+                        ),
+                    },
+                )
+
+                return subtheme_metadata
+            else:
+                log_event(
+                    "document_subthemes_not_detected",
+                    {
+                        "file_id": file_id,
+                        "primary_theme": primary_theme,
+                    },
+                    level=logging.DEBUG,
+                )
+                return None
+
+        except Exception as e:
+            # Log error but don't fail the import
+            log_event(
+                "subtheme_classification_error",
+                {
+                    "file_id": file_id,
+                    "primary_theme": primary_theme,
+                    "error": str(e),
+                },
+                level=logging.WARNING,
+            )
+            return None
+
+    @track(
+        operation="document_metadata_extraction",
+        include_args=["file_id", "mime_type"],
+        include_result=True,
+        track_performance=True,
+        frequency="medium_frequency",
+    )
+    async def _extract_document_metadata(
+        self, file_id: str, file_path: Path, mime_type: str
+    ) -> Dict[str, Any]:
+        """Extract internal document metadata (PDF/DOCX creation dates, etc.)."""
+        try:
+            from lifearchivist.tools.extract.metadata_extraction import (
+                extract_document_metadata,
+            )
+
+            metadata = await extract_document_metadata(file_path, mime_type)
+
+            if metadata:
+                log_event(
+                    "document_metadata_extracted",
+                    {
+                        "file_id": file_id,
+                        "mime_type": mime_type,
+                        "fields_extracted": list(metadata.keys()),
+                        "has_document_created_at": "document_created_at" in metadata,
+                        "has_document_author": "document_author" in metadata,
+                    },
+                )
+            else:
+                log_event(
+                    "document_metadata_extraction_skipped",
+                    {
+                        "file_id": file_id,
+                        "mime_type": mime_type,
+                        "reason": "no_metadata_available_or_unsupported_type",
+                    },
+                    level=logging.DEBUG,
+                )
+
+            return metadata
+
+        except Exception as e:
+            log_event(
+                "document_metadata_extraction_error",
+                {
+                    "file_id": file_id,
+                    "mime_type": mime_type,
+                    "error": str(e),
+                },
+                level=logging.WARNING,
+            )
+            return {}
+
+    @track(
+        operation="queue_enrichment_tasks",
+        include_args=["file_id"],
+        track_performance=True,
+        frequency="medium_frequency",
+    )
+    async def _queue_enrichment_tasks(self, file_id: str, text: str):
+        """Queue background enrichment tasks for the document."""
+        tasks_queued = []
+
+        # TODO: ENABLE OR REMOVE DATE EXTRACTION
+        enable_date_extraction = False
+
+        if enable_date_extraction and should_extract_dates(text):
+            success = await self.enrichment_queue.enqueue_task(
+                task_type="date_extraction",
+                document_id=file_id,
+                data={"text": text},
+                priority=0,
+            )
+
+            if success:
+                tasks_queued.append("date_extraction")
+
+                await self.llamaindex_service.update_document_metadata(
+                    file_id, {"enrichment_status": "queued"}, merge_mode="update"
+                )
+
+        if tasks_queued:
+            log_event(
+                "enrichment_tasks_queued",
+                {
+                    "file_id": file_id,
+                    "tasks": tasks_queued,
+                    "text_length": len(text),
+                },
+            )
+        else:
+            log_event(
+                "enrichment_tasks_skipped",
+                {
+                    "file_id": file_id,
+                    "reason": "no_suitable_content",
+                },
+                level=logging.DEBUG,
+            )

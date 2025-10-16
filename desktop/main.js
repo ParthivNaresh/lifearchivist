@@ -62,8 +62,12 @@ ipcMain.handle('select-files', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile', 'multiSelections'],
     filters: [
-      { name: 'Documents', extensions: ['pdf', 'doc', 'docx', 'txt', 'md'] },
-      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'] },
+      { name: 'All Supported Files', extensions: ['pdf', 'doc', 'docx', 'txt', 'md', 'rtf', 'xlsx', 'xls', 'csv', 'tsv', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp', 'svg', 'mp3', 'wav', 'ogg', 'm4a', 'mp4', 'mov', 'avi', 'webm'] },
+      { name: 'Documents', extensions: ['pdf', 'doc', 'docx', 'txt', 'md', 'rtf'] },
+      { name: 'Spreadsheets', extensions: ['xlsx', 'xls', 'csv', 'tsv'] },
+      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'webp', 'svg'] },
+      { name: 'Audio', extensions: ['mp3', 'wav', 'ogg', 'm4a'] },
+      { name: 'Video', extensions: ['mp4', 'mov', 'avi', 'webm'] },
       { name: 'All Files', extensions: ['*'] }
     ]
   });
@@ -76,7 +80,7 @@ ipcMain.handle('select-directory', async () => {
     properties: ['openDirectory']
   });
   
-  return result.filePaths[0];
+  return result;
 });
 
 ipcMain.handle('select-folder-files', async () => {
@@ -114,7 +118,18 @@ ipcMain.handle('select-folder-files', async () => {
       } else {
         // Only include files with common document extensions
         const ext = path.extname(file).toLowerCase();
-        const supportedExts = ['.pdf', '.doc', '.docx', '.txt', '.md', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.mp3', '.mp4', '.avi', '.mov'];
+        const supportedExts = [
+          // Documents
+          '.pdf', '.doc', '.docx', '.txt', '.md', '.rtf',
+          // Spreadsheets - NEW
+          '.xlsx', '.xls', '.csv', '.tsv',
+          // Images
+          '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', '.svg',
+          // Audio
+          '.mp3', '.wav', '.ogg', '.m4a',
+          // Video
+          '.mp4', '.mov', '.avi', '.webm'
+        ];
         
         if (supportedExts.includes(ext)) {
           filesList.push(filePath);

@@ -1,1 +1,0 @@
-"""Test mocks for Life Archivist."""

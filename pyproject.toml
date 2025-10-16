@@ -23,7 +23,7 @@ classifiers = [
 packages = [{include = "lifearchivist"}]
 
 [tool.poetry.dependencies]
-python = "^3.12.0"
+python = ">=3.12,<3.13"
 # MCP and API Framework
 fastapi = "^0.115.0"
 uvicorn = {extras = ["standard"], version = "^0.31.0"}
@@ -37,16 +37,23 @@ qdrant-client = "^1.12.0"
 sentence-transformers = "^3.0.0"
 torch = "^2.3.0"
 scikit-learn = "^1.3.0"
+nltk = "^3.8.0"
+rank-bm25 = "^0.2.2"
 # Document Processing
 pypdf = "*"
 python-docx = "^1.1.0"
 beautifulsoup4 = "^4.12.0"
 pytesseract = "^0.3.10"
 pillow = "^10.4.0"
+pdf2image = "^1.17.0"
 python-magic = "^0.4.27"
+openpyxl = "^3.1.5"
+chardet = "^5.2.0"
+python-dateutil = "^2.9.0"
 # Audio/Video
 faster-whisper = "^1.0.0"
 ffmpeg-python = "^0.2.0"
+av = "15.1.0"  # Pin to avoid Mac ARM wheel issues with 16.0.0
 # Task Queue and Scheduling
 arq = "^0.26.0"
 redis = "^5.0.0"
@@ -59,11 +66,15 @@ ollama = "*"
 llama-index = "0.13.2"
 llama-index-llms-ollama = "*"
 llama-index-embeddings-huggingface = "*"
+llama-index-vector-stores-qdrant = "*"
 # Utilities
 aiofiles = "^24.1.0"
 watchfiles = "^0.24.0"
+watchdog = "^6.0.0"
 cryptography = "^43.0.0"
 keyring = "^25.4.0"
+requests = "^2.32.5"
+xattr = "^1.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

@@ -7,7 +7,8 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, UploadFile
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from lifearchivist.models import IngestRequest
@@ -19,94 +20,201 @@ router = APIRouter(prefix="/api", tags=["upload"])
 
 @router.post("/ingest")
 async def ingest_document(request: IngestRequest):
-    """Ingest a document from file path."""
+    """
+    Ingest a document from a file path.
 
+    Processes a document from the local filesystem:
+    - Validates file exists and is readable
+    - Calculates file hash for deduplication
+    - Extracts text content
+    - Generates embeddings
+    - Stores in vector database
+
+    Supports progress tracking via session_id.
+    """
     server = get_server()
 
-    # Extract session_id for progress tracking
-    params = request.model_dump()
-    session_id = params.pop("session_id", None)
-
-    # Add session_id as a direct parameter for progress tracking
-    if session_id:
-        params["session_id"] = session_id
-
     try:
+        params = request.model_dump()
+        session_id = params.pop("session_id", None)
+
+        if session_id:
+            params["session_id"] = session_id
+
+        # Execute file import tool
         result = await server.execute_tool("file.import", params)
 
-        if result["success"]:
-            return result["result"]
-        else:
-            error_msg = result["error"]
-            raise HTTPException(status_code=500, detail=error_msg)
+        if not result.get("success"):
+            error_msg = result.get("error", "Import failed")
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": error_msg,
+                    "error_type": "ImportError",
+                },
+                status_code=500,
+            )
 
+        return {"success": True, **result["result"]}
+
+    except KeyError as e:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": f"Missing required field: {str(e)}",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": f"Document ingestion failed: {str(e)}",
+                "error_type": type(e).__name__,
+            },
+            status_code=500,
+        )
 
 
 @router.post("/upload")
 async def upload_file(
-    file: UploadFile = File(...),  # noqa: B008  # FastAPI dependency injection pattern
-    tags: str = Form("[]"),  # noqa: B008  # FastAPI dependency injection pattern
-    metadata: str = Form("{}"),  # noqa: B008  # FastAPI dependency injection pattern
-    session_id: Optional[str] = Form(
-        None
-    ),  # noqa: B008  # FastAPI dependency injection pattern
+    file: UploadFile = File(...),  # noqa: B008
+    tags: str = Form("[]"),  # noqa: B008
+    metadata: str = Form("{}"),  # noqa: B008
+    session_id: Optional[str] = Form(None),  # noqa: B008
 ):
-    """Upload and ingest a file with progress tracking."""
+    """
+    Upload and ingest a file with progress tracking.
 
+    Accepts multipart form data with:
+    - file: The file to upload
+    - tags: JSON array of tags (default: [])
+    - metadata: JSON object of metadata (default: {})
+    - session_id: Optional session ID for progress tracking
+
+    Process:
+    1. Validates file and parses JSON parameters
+    2. Saves file to temporary location
+    3. Processes file through ingestion pipeline
+    4. Cleans up temporary file
+    5. Returns processing results
+    """
     server = get_server()
     temp_file_path = None
 
     try:
+        # Validate file
+        if not file.filename:
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": "No filename provided",
+                    "error_type": "ValidationError",
+                },
+                status_code=400,
+            )
+
         # Parse JSON strings
         try:
             tags_list = json.loads(tags)
             metadata_dict = json.loads(metadata)
         except json.JSONDecodeError as e:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid JSON in tags or metadata: {e}"
-            ) from None
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": f"Invalid JSON in tags or metadata: {str(e)}",
+                    "error_type": "ValidationError",
+                },
+                status_code=400,
+            )
+
+        # Validate parsed data types
+        if not isinstance(tags_list, list):
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": "Tags must be a JSON array",
+                    "error_type": "ValidationError",
+                },
+                status_code=400,
+            )
+
+        if not isinstance(metadata_dict, dict):
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": "Metadata must be a JSON object",
+                    "error_type": "ValidationError",
+                },
+                status_code=400,
+            )
 
         # Create temporary file
         with tempfile.NamedTemporaryFile(
-            delete=False, suffix=Path(file.filename or "").suffix
+            delete=False, suffix=Path(file.filename).suffix
         ) as temp_file:
             temp_file_path = temp_file.name
-
-            # Write uploaded content to temp file
             content = await file.read()
             temp_file.write(content)
             temp_file.flush()
 
-            # Import the temporary file with progress tracking
-            import_params = {
-                "path": temp_file.name,
-                "tags": tags_list,
-                "metadata": {
-                    **metadata_dict,
-                    "original_filename": file.filename,
-                },
-                "session_id": session_id,
-            }
-            result = await server.execute_tool("file.import", import_params)
+            import os
 
-            if result["success"]:
-                return result["result"]
-            else:
-                error_msg = result["error"]
-                raise HTTPException(status_code=500, detail=error_msg)
-    except HTTPException:
-        raise
+            os.fsync(temp_file.fileno())
+
+        # Prepare import parameters
+        import_params = {
+            "path": temp_file_path,
+            "tags": tags_list,
+            "metadata": {
+                **metadata_dict,
+                "original_filename": file.filename,
+            },
+            "session_id": session_id,
+        }
+
+        # Execute file import
+        result = await server.execute_tool("file.import", import_params)
+
+        if not result.get("success"):
+            error_msg = result.get("error", "Upload failed")
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": error_msg,
+                    "error_type": "UploadError",
+                },
+                status_code=500,
+            )
+
+        return {"success": True, **result["result"]}
+
+    except json.JSONDecodeError as e:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": f"JSON parsing error: {str(e)}",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": f"File upload failed: {str(e)}",
+                "error_type": type(e).__name__,
+            },
+            status_code=500,
+        )
     finally:
-        # Clean up temp file
+        # Clean up temporary file
         if temp_file_path:
             try:
                 Path(temp_file_path).unlink()
-            except Exception as cleanup_error:
-                raise cleanup_error
+            except Exception:
+                pass  # Ignore cleanup errors
 
 
 class BulkIngestRequest(BaseModel):
@@ -116,22 +224,56 @@ class BulkIngestRequest(BaseModel):
 
 @router.post("/bulk-ingest")
 async def bulk_ingest_files(request: BulkIngestRequest):
-    """Bulk ingest multiple files from file paths."""
+    """
+    Bulk ingest multiple files from file paths.
+
+    Processes multiple files in sequence:
+    - Validates each file path
+    - Imports each file independently
+    - Continues processing even if individual files fail
+    - Returns detailed results for each file
+
+    Useful for:
+    - Folder imports
+    - Batch processing
+    - Migration of existing documents
+
+    Note: Files are processed sequentially, not in parallel.
+    For large batches, consider using multiple requests.
+    """
     server = get_server()
     file_paths = request.file_paths
     folder_path = request.folder_path
 
+    # Validate input
     if not file_paths:
-        raise HTTPException(status_code=400, detail="No file paths provided")
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "No file paths provided",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
+
+    if len(file_paths) > 1000:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Too many files. Maximum 1000 files per request.",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
 
     results = []
     successful_count = 0
     failed_count = 0
 
     try:
-        for _, file_path in enumerate(file_paths):
+        for file_path in file_paths:
             try:
-                # Use the file import tool
+                # Execute file import for each file
                 result = await server.execute_tool(
                     "file.import",
                     {
@@ -147,31 +289,33 @@ async def bulk_ingest_files(request: BulkIngestRequest):
                 if result.get("success"):
                     successful_count += 1
                     tool_result = result.get("result", {})
-                    file_id = tool_result.get("file_id")
                     results.append(
                         {
                             "file_path": file_path,
                             "success": True,
-                            "file_id": file_id,
+                            "file_id": tool_result.get("file_id"),
                             "status": tool_result.get("status", "unknown"),
                         }
                     )
                 else:
                     failed_count += 1
-                    error_msg = result.get("error", "Unknown error")
-
                     results.append(
                         {
                             "file_path": file_path,
                             "success": False,
-                            "error": error_msg,
+                            "error": result.get("error", "Unknown error"),
                         }
                     )
 
             except Exception as e:
+                # Continue processing even if one file fails
                 failed_count += 1
                 results.append(
-                    {"file_path": file_path, "success": False, "error": str(e)}
+                    {
+                        "file_path": file_path,
+                        "success": False,
+                        "error": f"Processing error: {str(e)}",
+                    }
                 )
 
         return {
@@ -179,31 +323,97 @@ async def bulk_ingest_files(request: BulkIngestRequest):
             "total_files": len(file_paths),
             "successful_count": successful_count,
             "failed_count": failed_count,
+            "success_rate": (
+                round(successful_count / len(file_paths) * 100, 2) if file_paths else 0
+            ),
             "folder_path": folder_path,
             "results": results,
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": f"Bulk ingestion failed: {str(e)}",
+                "error_type": type(e).__name__,
+            },
+            status_code=500,
+        )
 
 
 @router.get("/upload/{file_id}/progress")
 async def get_upload_progress(file_id: str):
-    """Get upload progress for a specific file."""
+    """
+    Get upload progress for a specific file.
+
+    Returns real-time progress information including:
+    - Current processing stage
+    - Percentage complete
+    - Status (pending, processing, completed, failed)
+    - Error messages if failed
+    - Timestamps
+
+    Used by frontend for:
+    - Progress bars
+    - Status updates
+    - Error handling
+
+    Progress is tracked via Redis and expires after completion.
+    """
     server = get_server()
+
+    # Validate file_id format
+    if not file_id or len(file_id) < 3:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Invalid file_id format",
+                "error_type": "ValidationError",
+            },
+            status_code=400,
+        )
+
+    if not server.progress_manager:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": "Progress tracking not available",
+                "error_type": "ServiceUnavailable",
+            },
+            status_code=503,
+        )
+
     try:
-        if not server.progress_manager:
-            raise HTTPException(
-                status_code=503, detail="Progress tracking not available"
+        progress = await server.progress_manager.get_progress(file_id)
+
+        if not progress:
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "error": f"Progress not found for file_id: {file_id}",
+                    "error_type": "NotFoundError",
+                },
+                status_code=404,
             )
 
-        progress = await server.progress_manager.get_progress(file_id)
-        if not progress:
-            raise HTTPException(status_code=404, detail="Progress not found")
+        # Return progress data
+        return {"success": True, **progress.to_dict()}
 
-        progress_dict = progress.to_dict()
-        return progress_dict
-    except HTTPException:
-        raise
+    except AttributeError as e:
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": f"Progress data format error: {str(e)}",
+                "error_type": "DataError",
+            },
+            status_code=500,
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        return JSONResponse(
+            content={
+                "success": False,
+                "error": f"Failed to retrieve progress: {str(e)}",
+                "error_type": type(e).__name__,
+            },
+            status_code=500,
+        )

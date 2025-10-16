@@ -219,9 +219,23 @@ class Vault:
             # Use empty prefix for main vault clearing (not "orphaned_")
             await clear_directory_files(directory, metrics, None, "")
 
+    async def delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
+        """
+        Delete all files (content and thumbnails) associated with a specific hash.
+
+        Public method for deleting files by their hash value.
+
+        Args:
+            file_hash: SHA256 hash of the file to delete
+            metrics: Dictionary to update with deletion statistics
+        """
+        await self._delete_file_by_hash(file_hash, metrics)
+
     async def _delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
         """
         Delete all files (content and thumbnails) associated with a specific hash.
+
+        Internal implementation for file deletion.
 
         Args:
             file_hash: SHA256 hash of the file to delete
@@ -589,6 +603,37 @@ class Vault:
             "size_bytes": size_bytes,
             "existed": False,
         }
+
+    async def file_exists(self, file_hash: str) -> bool:
+        """
+        Check if a file with the given hash exists in the vault.
+
+        This checks for any file with the hash, regardless of extension.
+        Used for consistency checks and validation.
+
+        Args:
+            file_hash: SHA256 hash of the file
+
+        Returns:
+            True if file exists, False otherwise
+        """
+        if len(file_hash) < 4:
+            return False
+
+        # Build the directory path where the file should be
+        # Files are stored as: content/XX/YY/ZZZZ.ext
+        dir1 = file_hash[:2]
+        dir2 = file_hash[2:4]
+        file_stem = file_hash[4:]
+
+        file_dir = self.content_dir / dir1 / dir2
+
+        if not file_dir.exists():
+            return False
+
+        # Check if any file with this hash exists (any extension)
+        matching_files = list(file_dir.glob(f"{file_stem}.*"))
+        return len(matching_files) > 0
 
     async def get_file_path(self, file_hash: str, extension: str) -> Optional[Path]:
         """
