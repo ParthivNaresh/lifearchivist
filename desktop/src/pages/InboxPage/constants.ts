@@ -2,100 +2,29 @@
  * Constants for InboxPage
  */
 
-import { AcceptedFileTypes, FileFormat } from './types';
+// API Base URL - centralized for easy environment switching
+export const API_BASE_URL = 'http://localhost:8000';
 
-// Accepted file types for dropzone
-export const ACCEPTED_FILE_TYPES: AcceptedFileTypes = {
-  // Documents
-  'application/pdf': ['.pdf'],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-  'application/msword': ['.doc'],
-  'text/plain': ['.txt', '.text'],
-  'text/markdown': ['.md', '.markdown'],
-  'text/rtf': ['.rtf'],
-  
-  // Spreadsheets
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-  'application/vnd.ms-excel': ['.xls'],
-  'text/csv': ['.csv'],
-  'text/tab-separated-values': ['.tsv'],
-  
-  // Images
-  'image/jpeg': ['.jpg', '.jpeg'],
-  'image/png': ['.png'],
-  'image/gif': ['.gif'],
-  'image/webp': ['.webp'],
-  'image/svg+xml': ['.svg'],
-  
-  // Audio
-  'audio/mpeg': ['.mp3'],
-  'audio/wav': ['.wav'],
-  'audio/ogg': ['.ogg'],
-  'audio/mp4': ['.m4a'],
-  
-  // Video
-  'video/mp4': ['.mp4'],
-  'video/quicktime': ['.mov'],
-  'video/x-msvideo': ['.avi'],
-  'video/webm': ['.webm'],
-};
+// API Endpoints
+export const API_ENDPOINTS = {
+  VAULT_INFO: `${API_BASE_URL}/api/vault/info`,
+  FOLDER_WATCH_STATUS: `${API_BASE_URL}/api/folder-watch/status`,
+  FOLDER_WATCH_START: `${API_BASE_URL}/api/folder-watch/start`,
+  FOLDER_WATCH_STOP: `${API_BASE_URL}/api/folder-watch/stop`,
+  FOLDER_WATCH_SCAN: `${API_BASE_URL}/api/folder-watch/scan`,
+  ACTIVITY_EVENTS: `${API_BASE_URL}/api/activity/events`,
+} as const;
 
-// Supported file formats for display
-export const SUPPORTED_FORMATS: FileFormat[] = [
-  {
-    category: 'Documents',
-    categoryIcon: '📄',
-    categoryColor: 'text-primary',
-    formats: [
-      { name: 'PDF', extensions: '.pdf' },
-      { name: 'Word', extensions: '.docx, .doc' },
-      { name: 'Text', extensions: '.txt, .text' },
-      { name: 'Markdown', extensions: '.md' },
-      { name: 'Rich Text', extensions: '.rtf' },
-    ],
-  },
-  {
-    category: 'Spreadsheets',
-    categoryIcon: '📊',
-    categoryColor: 'text-green-600 dark:text-green-400',
-    formats: [
-      { name: 'Excel', extensions: '.xlsx, .xls', isNew: true },
-      { name: 'CSV', extensions: '.csv', isNew: true },
-      { name: 'TSV', extensions: '.tsv', isNew: true },
-    ],
-  },
-  {
-    category: 'Media',
-    categoryIcon: '🎨',
-    categoryColor: 'text-purple-600 dark:text-purple-400',
-    formats: [
-      { name: 'Images', extensions: '.jpg, .png, .gif, .webp' },
-      { name: 'Audio', extensions: '.mp3, .wav, .ogg, .m4a' },
-      { name: 'Video', extensions: '.mp4, .mov, .avi, .webm' },
-    ],
-  },
-];
+// WebSocket Endpoints
+export const WS_ENDPOINTS = {
+  ACTIVITY_FEED: `ws://localhost:8000/ws/activity_feed`,
+  FOLDER_WATCHER: `ws://localhost:8000/ws/folder_watcher`,
+} as const;
 
 // UI Text constants
 export const UI_TEXT = {
-  PAGE_TITLE: 'Document Inbox',
-  DROP_ZONE: {
-    DRAG_ACTIVE: 'Drop files here...',
-    DRAG_ACTIVE_SUBTITLE: 'Release to start uploading',
-    DEFAULT: 'Drag & drop files here',
-    DEFAULT_SUBTITLE: 'or use the buttons below to select files',
-    SUPPORTED_FILES: 'Supports PDF, Word, Excel, CSV, images, and more',
-  },
   BUTTONS: {
-    CHOOSE_FILES: 'Choose Files',
-    SELECT_FOLDER: 'Select Folder',
-    VIEW_FORMATS: 'View all supported formats',
     CANCEL_UPLOADS: 'Cancel all active uploads?',
-  },
-  FORMATS: {
-    TITLE: 'Supported File Formats',
-    NEW_FEATURE: '✨ New:',
-    NEW_FEATURE_DESC: 'Excel and CSV files are now fully supported with intelligent data extraction, including automatic detection of headers, currency formatting, and date parsing.',
   },
 } as const;
 
@@ -103,4 +32,14 @@ export const UI_TEXT = {
 export const TIMING = {
   RECENT_BATCH_DURATION: 60000, // Show recent batches for 1 minute
   NAVIGATION_DELAY: 500, // Delay before navigation after clearing
+  REFRESH_INTERVAL: 30000, // Refresh data every 30 seconds
 } as const;
+
+// Display limits
+export const DISPLAY_LIMITS = {
+  RECENT_ACTIVITY_COUNT: 5, // Number of recent activity items to show
+  ACTIVITY_FETCH_LIMIT: 200, // Number of events to fetch for week calculation
+} as const;
+
+// Conversion constants
+export const BYTES_PER_MB = 1024 * 1024;

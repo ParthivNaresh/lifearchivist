@@ -951,10 +951,42 @@ class LlamaIndexQdrantService:
                 else []
             )
 
+            # Enrich neighbors with full metadata from Redis
+            enriched_neighbors = []
+            for neighbor in neighbors_list:
+                neighbor_doc_id = neighbor.get("document_id")
+                if neighbor_doc_id and self.metadata_service:
+                    # Get full metadata from Redis
+                    full_metadata_result = (
+                        await self.metadata_service.get_full_document_metadata(
+                            neighbor_doc_id
+                        )
+                    )
+                    if full_metadata_result.is_success():
+                        full_metadata = full_metadata_result.unwrap()
+                        # Enrich the metadata object with key fields from full metadata
+                        # UI expects these fields under neighbor.metadata.*
+                        if "metadata" not in neighbor:
+                            neighbor["metadata"] = {}
+                        neighbor["metadata"]["size_bytes"] = full_metadata.get(
+                            "size_bytes", 0
+                        )
+                        neighbor["metadata"]["document_created_at"] = full_metadata.get(
+                            "document_created_at"
+                        )
+                        neighbor["metadata"]["theme"] = full_metadata.get(
+                            "classifications", {}
+                        ).get("theme")
+                        neighbor["metadata"]["primary_subtheme"] = full_metadata.get(
+                            "classifications", {}
+                        ).get("primary_subtheme")
+
+                enriched_neighbors.append(neighbor)
+
             return {
                 "document_id": document_id,
-                "neighbors": neighbors_list,
-                "total": len(neighbors_list),
+                "neighbors": enriched_neighbors,
+                "total": len(enriched_neighbors),
             }
 
         except Exception as e:

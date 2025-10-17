@@ -17,6 +17,7 @@ export function useCache<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -27,6 +28,11 @@ export function useCache<T>(
 
   useEffect(() => {
     const fetchData = async () => {
+      // Prevent concurrent fetches (handles React StrictMode double-invoke)
+      if (fetchingRef.current) {
+        return;
+      }
+
       // Check cache first
       const cached = cache.get(key);
       const now = Date.now();
@@ -41,6 +47,7 @@ export function useCache<T>(
 
       // Fetch fresh data
       try {
+        fetchingRef.current = true;
         setLoading(true);
         setError(null);
         
@@ -67,6 +74,9 @@ export function useCache<T>(
             setData(cached.data);
           }
         }
+      } finally {
+        // Always reset the fetching flag
+        fetchingRef.current = false;
       }
     };
 
@@ -78,12 +88,19 @@ export function useCache<T>(
   };
 
   const refresh = async () => {
+    // Prevent concurrent refreshes
+    if (fetchingRef.current) {
+      return;
+    }
+
     cache.delete(key);
     setLoading(true);
     setError(null);
     
     try {
+      fetchingRef.current = true;
       const result = await fetcher();
+      
       if (mountedRef.current) {
         setData(result);
         setLoading(false);
@@ -99,6 +116,8 @@ export function useCache<T>(
         setError(err instanceof Error ? err.message : 'An error occurred');
         setLoading(false);
       }
+    } finally {
+      fetchingRef.current = false;
     }
   };
 

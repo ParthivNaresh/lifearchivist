@@ -29,6 +29,11 @@ const DocumentDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = React.useState(TAB_CONFIG.OVERVIEW);
   
+  // Reset to Overview tab when document changes
+  React.useEffect(() => {
+    setActiveTab(TAB_CONFIG.OVERVIEW);
+  }, [documentId]);
+  
   // Use custom hooks for cleaner state management
   const {
     tags,
@@ -54,12 +59,6 @@ const DocumentDetailPage: React.FC = () => {
     return fetchDocumentNeighbors(documentId);
   }, [documentId]);
 
-  // Removed: Debug text endpoint doesn't exist
-  // const fetchText = useCallback(async () => {
-  //   if (!documentId) throw new Error('Document ID required');
-  //   return fetchDocumentText(documentId);
-  // }, [documentId]);
-
   // Use cache hooks with constants
   const { data: analysis, loading: analysisLoading, error: analysisError, refresh: refreshAnalysis } = useCache(
     `document-analysis-${documentId}`,
@@ -72,13 +71,6 @@ const DocumentDetailPage: React.FC = () => {
     fetchNeighbors,
     CACHE_DURATIONS.NEIGHBORS
   );
-
-  // Removed: Debug text endpoint doesn't exist
-  // const { data: documentText } = useCache(
-  //   `document-text-${documentId}`,
-  //   fetchText,
-  //   CACHE_DURATIONS.DOCUMENT_TEXT
-  // );
 
   // Sync tags from analysis metadata
   useSyncTags(analysis, setTags);

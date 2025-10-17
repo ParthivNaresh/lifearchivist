@@ -33,11 +33,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     );
 
   const navigation = [
-    { name: 'Inbox', href: '/', icon: Inbox },
+    { name: 'Dashboard', href: '/', icon: Inbox },
     { name: 'Vault', href: '/vault', icon: HardDrive },
     { name: 'Timeline', href: '/timeline', icon: Calendar },
     { name: 'Activity', href: '/activity', icon: Activity },
-    { name: 'Q&A', href: '/qa', icon: MessageCircle },
+    { name: 'Ask Archivist', href: '/qa', icon: MessageCircle },
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];

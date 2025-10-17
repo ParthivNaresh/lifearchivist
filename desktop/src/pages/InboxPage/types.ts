@@ -2,23 +2,29 @@
  * Type definitions for InboxPage
  */
 
-export interface FileFormat {
-  category: string;
-  categoryIcon: string;
-  categoryColor: string;
-  formats: FormatItem[];
+/**
+ * Vault information from the backend
+ */
+export interface VaultInfo {
+  success: boolean;
+  total_files: number;
+  total_size_bytes: number;
+  total_size_mb: number;
+  directories: {
+    content: {
+      file_count: number;
+      total_size_bytes: number;
+    };
+  };
 }
 
-export interface FormatItem {
-  name: string;
-  extensions: string;
-  isNew?: boolean;
-}
-
-export interface AcceptedFileTypes {
-  [mimeType: string]: string[];
-}
-
-export interface UploadOptions {
-  batchName: string;
+/**
+ * Folder watch status from the backend
+ */
+export interface WatchStatus {
+  enabled: boolean;
+  watched_path: string | null;
+  pending_files: number;
+  supported_extensions: string[];
+  debounce_seconds: number;
 }

@@ -5,7 +5,7 @@
  * Shows folder watch events, uploads, deletions, Q&A queries, etc.
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Activity, 
   FolderOpen, 
@@ -18,85 +18,19 @@ import {
   Clock,
   RefreshCw,
   XCircle,
-  Filter
 } from 'lucide-react';
 import { cn } from '../utils/cn';
-
-interface ActivityEvent {
-  id: string;
-  type: string;
-  data: Record<string, any>;
-  timestamp: string;
-}
+import { useActivityFeed, ActivityEvent } from '../hooks/useActivityFeed';
 
 type FilterType = 'all' | 'uploads' | 'folder_watch' | 'errors' | 'other';
 
 const ActivityPage: React.FC = () => {
-  const [events, setEvents] = useState<ActivityEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
-  // Fetch initial events
-  const fetchEvents = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:8000/api/activity/events?limit=50');
-      const data = await response.json();
-      
-      if (data.success) {
-        setEvents(data.events);
-        setError(null);
-      } else {
-        setError(data.error || 'Failed to load activity events');
-      }
-    } catch (err) {
-      console.error('Failed to fetch activity events:', err);
-      setError('Failed to connect to server');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // WebSocket connection for real-time updates
-  useEffect(() => {
-    fetchEvents();
-
-    // Connect to WebSocket
-    const ws = new WebSocket('ws://localhost:8000/ws/activity_feed');
-
-    ws.onopen = () => {
-      console.log('🔌 Activity feed WebSocket connected');
-      setWsConnected(true);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        if (message.type === 'activity_event' && message.event) {
-          // Add new event to the top of the list
-          setEvents(prev => [message.event, ...prev].slice(0, 50));
-        }
-      } catch (err) {
-        console.error('Failed to parse WebSocket message:', err);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('Activity feed WebSocket error:', error);
-      setWsConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log('Activity feed WebSocket disconnected');
-      setWsConnected(false);
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, [fetchEvents]);
+  // Use shared activity feed hook
+  const { events, isLoading: loading, error, refetch: fetchEvents } = useActivityFeed({
+    limit: 50,
+  });
 
   // Format timestamp
   const formatTimestamp = (timestamp: string): string => {

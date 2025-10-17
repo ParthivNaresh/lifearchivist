@@ -85,7 +85,14 @@ export const RelatedTab: React.FC<RelatedTabProps> = ({
                     
                     <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                       <span>{formatFileSize(neighbor.metadata.size_bytes || 0)}</span>
-                      <span>{neighbor.metadata.word_count?.toLocaleString() || 0} words</span>
+                      {neighbor.metadata.document_created_at && (
+                        <span>{new Date(neighbor.metadata.document_created_at).toLocaleDateString()}</span>
+                      )}
+                      {neighbor.metadata.theme && (
+                        <span className="px-2 py-0.5 bg-muted rounded text-xs">
+                          {neighbor.metadata.theme}
+                        </span>
+                      )}
                       {neighbor.metadata.tags?.length > 0 && (
                         <div className="flex items-center space-x-1">
                           <Tag className="h-3 w-3" />

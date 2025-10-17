@@ -33,22 +33,6 @@ export const fetchDocumentNeighbors = async (
 };
 
 /**
- * Fetch document text content (debug endpoint)
- */
-export const fetchDocumentText = async (documentId: string): Promise<DocumentTextResponse | null> => {
-  try {
-    const response = await axios.get<DocumentTextResponse>(
-      `${API_BASE_URL}/debug/document/${documentId}/text`
-    );
-    return response.data;
-  } catch (error) {
-    // Debug endpoint might not be available or enabled
-    console.warn('Document text fetch failed:', error);
-    return null;
-  }
-};
-
-/**
  * Delete a document
  */
 export const deleteDocument = async (documentId: string): Promise<void> => {

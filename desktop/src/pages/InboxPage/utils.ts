@@ -2,92 +2,78 @@
  * Utility functions for InboxPage
  */
 
+import { ActivityEvent } from './types';
+
 /**
- * Format file size for display
+ * Calculate the number of files uploaded in the last week
+ * 
+ * @param events - Array of activity events
+ * @returns Number of files uploaded in the last 7 days
  */
-export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
+export const calculateWeekCount = (events: ActivityEvent[]): number => {
+  const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  let totalFiles = 0;
   
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-};
-
-/**
- * Get file extension from filename
- */
-export const getFileExtension = (filename: string): string => {
-  const parts = filename.split('.');
-  return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
-};
-
-/**
- * Check if file type is supported
- */
-export const isFileTypeSupported = (filename: string, acceptedExtensions: string[]): boolean => {
-  const extension = getFileExtension(filename);
-  return acceptedExtensions.some(ext => ext.toLowerCase() === extension);
-};
-
-/**
- * Generate batch name from files
- */
-export const generateBatchName = (files: File[]): string => {
-  if (files.length === 0) return 'Empty batch';
-  if (files.length === 1) return files[0].name;
-  return `${files.length} files`;
-};
-
-/**
- * Calculate total size of files
- */
-export const calculateTotalSize = (files: File[]): number => {
-  return files.reduce((total, file) => total + (file.size || 0), 0);
-};
-
-/**
- * Group files by extension
- */
-export const groupFilesByExtension = (files: File[]): Record<string, File[]> => {
-  return files.reduce((groups, file) => {
-    const ext = getFileExtension(file.name);
-    if (!groups[ext]) {
-      groups[ext] = [];
+  events.forEach(event => {
+    const eventTime = new Date(event.timestamp).getTime();
+    
+    if (eventTime > oneWeekAgo) {
+      if (event.type === 'files_uploaded') {
+        // Each upload event can have multiple files
+        totalFiles += event.data.file_count || 1;
+      } else if (event.type === 'folder_watch_file_ingested') {
+        // Folder watch events are per-file
+        totalFiles += 1;
+      }
     }
-    groups[ext].push(file);
-    return groups;
-  }, {} as Record<string, File[]>);
+  });
+  
+  return totalFiles;
 };
 
 /**
- * Validate file size
+ * Format a timestamp into a human-readable relative time string
+ * 
+ * @param timestamp - ISO timestamp string
+ * @returns Formatted string like "5m ago", "2h ago", or date
  */
-export const validateFileSize = (file: File, maxSizeMB: number): boolean => {
-  const maxSizeBytes = maxSizeMB * 1024 * 1024;
-  return file.size <= maxSizeBytes;
+export const formatTimestamp = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  
+  return date.toLocaleDateString();
 };
 
 /**
- * Get file type category
+ * Format an activity event into a human-readable message
+ * 
+ * @param event - Activity event object
+ * @returns Formatted message string
  */
-export const getFileTypeCategory = (filename: string): string => {
-  const ext = getFileExtension(filename);
-  
-  const categories: Record<string, string[]> = {
-    'Documents': ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'],
-    'Spreadsheets': ['xls', 'xlsx', 'csv', 'ods'],
-    'Presentations': ['ppt', 'pptx', 'odp'],
-    'Images': ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'],
-    'Archives': ['zip', 'rar', '7z', 'tar', 'gz'],
-  };
-  
-  for (const [category, extensions] of Object.entries(categories)) {
-    if (extensions.includes(ext)) {
-      return category;
-    }
+export const formatActivityMessage = (event: ActivityEvent): string => {
+  const { type, data } = event;
+  const fileName = data.file_name ? data.file_name.split('/').pop() : '';
+
+  switch (type) {
+    case 'files_uploaded':
+      return `Uploaded ${fileName || `${data.file_count} files`}`;
+    
+    case 'folder_watch_file_ingested':
+      return `Ingested ${fileName} from watched folder`;
+    
+    case 'file_upload_failed':
+      return `Failed to upload ${fileName}`;
+    
+    default:
+      // Convert snake_case to readable format
+      return type.replace(/_/g, ' ');
   }
-  
-  return 'Other';
 };
