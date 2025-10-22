@@ -305,14 +305,14 @@ test-unit-coverage:
 # Lint backend, then frontend (stops on first failure)
 lint:
     @echo "🔍 Linting backend..."
-    poetry run black --check lifearchivist/
-    poetry run isort --check-only lifearchivist/
-    poetry run ruff check lifearchivist/
-    poetry run mypy lifearchivist/
+    @poetry run black --check lifearchivist/
+    @poetry run isort --check-only lifearchivist/
+    @poetry run ruff check lifearchivist/
+    @poetry run mypy lifearchivist/
     @echo "✅ Backend linting passed"
     @echo "🔍 Linting frontend..."
-    cd desktop && npm run lint
-    cd desktop && npm run type-check
+    @cd desktop && npm run lint
+    @cd desktop && npm run type-check
     @echo "✅ All linting checks passed"
 
 # Fix backend, then frontend

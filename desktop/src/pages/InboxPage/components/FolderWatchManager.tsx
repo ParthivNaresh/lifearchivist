@@ -101,6 +101,8 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<WatchedFolder | null>(null);
+  const [highlightedFolderId, setHighlightedFolderId] = useState<string | null>(null);
+  const [fadingOutFolderId, setFadingOutFolderId] = useState<string | null>(null);
 
   // Fetch status when modal opens
   useEffect(() => {
@@ -176,6 +178,31 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
 
       const folderPath = result.filePaths[0];
 
+      // Check if folder is already being watched
+      const existingFolder = status?.folders.find((folder) => folder.path === folderPath);
+
+      if (existingFolder) {
+        // Highlight the existing folder card
+        setHighlightedFolderId(existingFolder.id);
+
+        // Scroll to the folder if not in view
+        setTimeout(() => {
+          const element = document.getElementById(`folder-${existingFolder.id}`);
+          element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+
+        // Start fade out after 2 seconds
+        setTimeout(() => setFadingOutFolderId(existingFolder.id), 2000);
+        // Clear highlight after fade completes (2s + 500ms fade)
+        setTimeout(() => {
+          setHighlightedFolderId(null);
+          setFadingOutFolderId(null);
+        }, 2500);
+
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(API_ENDPOINTS.FOLDER_WATCH_FOLDERS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -187,7 +214,31 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
 
       if (!response.ok) {
         const data = (await response.json()) as ErrorResponse;
-        throw new Error(data.detail ?? 'Failed to add folder');
+        // Check if it's a "already watched" error from backend
+        const errorMsg = data.detail ?? 'Failed to add folder';
+        if (
+          errorMsg.toLowerCase().includes('already') &&
+          errorMsg.toLowerCase().includes('watch')
+        ) {
+          // Try to find and highlight the folder
+          const existingFolder = status?.folders.find((folder) => folder.path === folderPath);
+          if (existingFolder) {
+            setHighlightedFolderId(existingFolder.id);
+            setTimeout(() => {
+              const element = document.getElementById(`folder-${existingFolder.id}`);
+              element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+            setTimeout(() => setFadingOutFolderId(existingFolder.id), 2000);
+            setTimeout(() => {
+              setHighlightedFolderId(null);
+              setFadingOutFolderId(null);
+            }, 2500);
+          }
+        } else {
+          throw new Error(errorMsg);
+        }
+        setLoading(false);
+        return;
       }
 
       await fetchStatus();
@@ -437,8 +488,46 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
                 {status.folders.map((folder) => (
                   <div
                     key={folder.id}
-                    className="border border-border rounded-lg p-4 hover:bg-accent/30 transition-colors"
+                    id={`folder-${folder.id}`}
+                    className={cn(
+                      'relative rounded-lg p-4 transition-all duration-500 ease-in-out',
+                      highlightedFolderId === folder.id && fadingOutFolderId !== folder.id
+                        ? 'border border-primary/40 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent backdrop-blur-sm shadow-2xl shadow-primary/30'
+                        : highlightedFolderId === folder.id && fadingOutFolderId === folder.id
+                          ? 'border border-border bg-transparent'
+                          : 'border border-border hover:bg-accent/30'
+                    )}
+                    style={
+                      highlightedFolderId === folder.id && fadingOutFolderId !== folder.id
+                        ? {
+                            boxShadow: `
+                              0 0 30px rgba(var(--primary-rgb, 59, 130, 246), 0.3),
+                              0 0 60px rgba(var(--primary-rgb, 59, 130, 246), 0.15),
+                              inset 0 0 20px rgba(var(--primary-rgb, 59, 130, 246), 0.05)
+                            `,
+                          }
+                        : highlightedFolderId === folder.id && fadingOutFolderId === folder.id
+                          ? {
+                              boxShadow: `
+                              0 0 0px rgba(var(--primary-rgb, 59, 130, 246), 0),
+                              0 0 0px rgba(var(--primary-rgb, 59, 130, 246), 0),
+                              inset 0 0 0px rgba(var(--primary-rgb, 59, 130, 246), 0)
+                            `,
+                            }
+                          : undefined
+                    }
                   >
+                    {/* Glassmorphism glow overlay */}
+                    {(highlightedFolderId === folder.id || fadingOutFolderId === folder.id) && (
+                      <div
+                        className={cn(
+                          'absolute inset-0 rounded-lg bg-gradient-to-br from-primary/20 via-transparent to-primary/10 pointer-events-none transition-opacity duration-500',
+                          fadingOutFolderId === folder.id
+                            ? 'opacity-0 animate-none'
+                            : 'opacity-100 animate-pulse'
+                        )}
+                      />
+                    )}
                     <div className="flex items-start gap-3">
                       <CheckCircle2
                         className={cn('h-5 w-5 flex-shrink-0 mt-0.5', getStatusColor(folder))}
@@ -449,6 +538,19 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
                             {folder.path}
                           </span>
                           {getStatusBadge(folder)}
+                          {(highlightedFolderId === folder.id ||
+                            fadingOutFolderId === folder.id) && (
+                            <span
+                              className={cn(
+                                'px-2 py-0.5 text-xs bg-primary/20 text-primary rounded-full backdrop-blur-sm border border-primary/30 font-medium shadow-lg shadow-primary/20 transition-opacity duration-500',
+                                fadingOutFolderId === folder.id
+                                  ? 'opacity-0 animate-none'
+                                  : 'opacity-100 animate-pulse'
+                              )}
+                            >
+                              Already watching
+                            </span>
+                          )}
                         </div>
 
                         {/* Stats */}

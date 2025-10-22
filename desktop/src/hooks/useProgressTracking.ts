@@ -29,6 +29,18 @@ export const useProgressTracking = (
   const sessionsRef = useRef<Map<string, ProgressTrackingSession>>(new Map());
   const reconnectTimeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
+  // Store callbacks in refs to avoid dependency issues
+  const onProgressUpdateRef = useRef(onProgressUpdate);
+  const onErrorRef = useRef(onError);
+  const onConnectionChangeRef = useRef(onConnectionChange);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onProgressUpdateRef.current = onProgressUpdate;
+    onErrorRef.current = onError;
+    onConnectionChangeRef.current = onConnectionChange;
+  }, [onProgressUpdate, onError, onConnectionChange]);
+
   const generateSessionId = useCallback((): string => {
     return `session_${Math.random().toString(36).substring(2)}_${Date.now()}`;
   }, []);
@@ -48,7 +60,7 @@ export const useProgressTracking = (
           console.log(`🔌 WebSocket connected for session ${sessionId}`);
           setIsConnected(true);
           setActiveConnections((prev) => prev + 1);
-          onConnectionChange?.(true);
+          onConnectionChangeRef.current?.(true);
           resolve(ws);
         };
 
@@ -61,18 +73,18 @@ export const useProgressTracking = (
 
               // Verify this progress update is for the expected file
               if (progressUpdate.file_id === fileId) {
-                onProgressUpdate?.(progressUpdate);
+                onProgressUpdateRef.current?.(progressUpdate);
               }
             }
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
-            onError?.('Failed to parse progress update');
+            onErrorRef.current?.('Failed to parse progress update');
           }
         };
 
         ws.onerror = (error) => {
           console.error(`WebSocket error for session ${sessionId}:`, error);
-          onError?.('WebSocket connection error');
+          onErrorRef.current?.('WebSocket connection error');
           reject(new Error('WebSocket connection failed'));
         };
 
@@ -94,7 +106,7 @@ export const useProgressTracking = (
 
           if (!hasActiveConnections) {
             setIsConnected(false);
-            onConnectionChange?.(false);
+            onConnectionChangeRef.current?.(false);
           }
 
           // Attempt reconnection for unexpected closures (not manual close)
@@ -132,7 +144,7 @@ export const useProgressTracking = (
         }, 10000);
       });
     },
-    [onProgressUpdate, onError, onConnectionChange]
+    [] // Callbacks accessed via refs
   );
 
   // Store the function in the ref to allow recursive calls
@@ -165,11 +177,11 @@ export const useProgressTracking = (
       } catch (error) {
         console.error(`❌ Failed to create session for file ${fileId}:`, error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        onError?.(`Failed to establish progress tracking: ${errorMessage}`);
+        onErrorRef.current?.(`Failed to establish progress tracking: ${errorMessage}`);
         throw error;
       }
     },
-    [generateSessionId, createWebSocketConnection, onError]
+    [generateSessionId, createWebSocketConnection]
   );
 
   const closeSession = useCallback((sessionId: string) => {
@@ -210,35 +222,34 @@ export const useProgressTracking = (
     sessionsRef.current.clear();
     setIsConnected(false);
     setActiveConnections(0);
-    onConnectionChange?.(false);
-  }, [onConnectionChange]); // Include onConnectionChange as dependency
+    onConnectionChangeRef.current?.(false);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
-    // Capture current refs in local variables to avoid stale closure issues
-    const currentReconnectTimeouts = reconnectTimeoutsRef.current;
-    const currentSessions = sessionsRef.current;
+    // Capture refs at effect setup time to satisfy ESLint
+    const timeouts = reconnectTimeoutsRef.current;
+    const sessions = sessionsRef.current;
 
     return () => {
       console.log('🧹 useProgressTracking cleanup - closing all connections');
 
-      // Clear all reconnection timeouts using captured reference
-      currentReconnectTimeouts.forEach((timeout) => clearTimeout(timeout));
-      currentReconnectTimeouts.clear();
+      // Clear all reconnection timeouts
+      timeouts.forEach((timeout) => clearTimeout(timeout));
+      timeouts.clear();
 
-      // Close all sessions using captured reference
-      currentSessions.forEach((session) => {
+      // Close all sessions
+      sessions.forEach((session) => {
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
           session.websocket.close(1000, 'Component unmounting');
         }
       });
 
-      currentSessions.clear();
+      sessions.clear();
       setIsConnected(false);
       setActiveConnections(0);
-      onConnectionChange?.(false);
     };
-  }, [onConnectionChange]); // Include onConnectionChange as dependency
+  }, []);
 
   // Auto-cleanup completed sessions after 30 seconds
   useEffect(() => {
