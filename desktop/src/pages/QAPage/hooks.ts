@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useConversation } from '../../hooks/useConversation';
-import { Message } from './types';
+import { type Message } from './types';
 import { askQuestion } from './api';
 import { generateMessageId } from './utils';
 import { DEFAULT_CONTEXT_LIMIT, UI_TEXT } from './constants';
@@ -38,62 +38,66 @@ export const useQuestionSubmit = (
   contextLimit: number,
   setCurrentQuestion: (question: string) => void,
   setIsLoading: (loading: boolean) => void,
-  addMessage: (message: Message) => void
+  addMessage: (message: Message) => void,
+  isLoading?: boolean
 ) => {
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!currentQuestion.trim() || setIsLoading) {
-      return;
-    }
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    const questionMessage: Message = {
-      id: generateMessageId(),
-      type: 'question',
-      content: currentQuestion.trim(),
-      timestamp: new Date()
-    };
+      if (!currentQuestion.trim() || isLoading) {
+        return;
+      }
 
-    // Add question to messages
-    addMessage(questionMessage);
-    setIsLoading(true);
-    
-    const question = currentQuestion.trim();
-    setCurrentQuestion('');
-
-    try {
-      const response = await askQuestion({
-        question,
-        context_limit: contextLimit
-      });
-
-      const answerMessage: Message = {
+      const questionMessage: Message = {
         id: generateMessageId(),
-        type: 'answer',
-        content: response.answer,
+        type: 'question',
+        content: currentQuestion.trim(),
         timestamp: new Date(),
-        confidence: response.confidence,
-        citations: response.citations,
-        method: response.method
       };
 
-      addMessage(answerMessage);
-    } catch (error) {
-      console.error('Q&A failed:', error);
-      
-      const errorMessage: Message = {
-        id: generateMessageId(),
-        type: 'answer',
-        content: UI_TEXT.ERROR_MESSAGE,
-        timestamp: new Date(),
-        confidence: 0
-      };
+      // Add question to messages
+      addMessage(questionMessage);
+      setIsLoading(true);
 
-      addMessage(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentQuestion, contextLimit, setCurrentQuestion, setIsLoading, addMessage]);
+      const question = currentQuestion.trim();
+      setCurrentQuestion('');
+
+      try {
+        const response = await askQuestion({
+          question,
+          context_limit: contextLimit,
+        });
+
+        const answerMessage: Message = {
+          id: generateMessageId(),
+          type: 'answer',
+          content: response.answer,
+          timestamp: new Date(),
+          confidence: response.confidence,
+          citations: response.citations,
+          method: response.method,
+        };
+
+        addMessage(answerMessage);
+      } catch (error) {
+        console.error('Q&A failed:', error);
+
+        const errorMessage: Message = {
+          id: generateMessageId(),
+          type: 'answer',
+          content: UI_TEXT.ERROR_MESSAGE,
+          timestamp: new Date(),
+          confidence: 0,
+        };
+
+        addMessage(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [currentQuestion, contextLimit, setCurrentQuestion, setIsLoading, addMessage, isLoading]
+  );
 
   return { handleSubmit };
 };
@@ -126,6 +130,8 @@ export const useClearConfirmation = (
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
+
+    return undefined;
   }, [showClearConfirm, setShowClearConfirm]);
 
   return { handleClearConversation };

@@ -1,11 +1,10 @@
 /**
  * QuickStats - Dashboard statistics cards
- * 
+ *
  * Displays key metrics: total documents, weekly uploads, storage usage
  */
 
-import React from 'react';
-import { Database, TrendingUp, LucideIcon } from 'lucide-react';
+import { Database, TrendingUp, type LucideIcon } from 'lucide-react';
 import { BYTES_PER_MB } from '../constants';
 
 interface StatCardProps {
@@ -22,15 +21,18 @@ interface QuickStatsProps {
   isLoading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, iconColor = 'text-primary' }) => (
+const StatCard: React.FC<StatCardProps> = ({
+  label,
+  value,
+  icon: Icon,
+  iconColor = 'text-primary',
+}) => (
   <div className="glass-card rounded-xl p-6">
     <div className="flex items-center justify-between mb-2">
       <span className="text-sm text-muted-foreground">{label}</span>
       <Icon className={`h-5 w-5 ${iconColor}`} />
     </div>
-    <div className="text-3xl font-bold">
-      {value}
-    </div>
+    <div className="text-3xl font-bold">{value}</div>
   </div>
 );
 
@@ -52,14 +54,14 @@ export const QuickStats: React.FC<QuickStatsProps> = ({
         icon={Database}
         iconColor="text-primary"
       />
-      
+
       <StatCard
         label="This Week"
         value={isLoading ? '...' : weekCount}
         icon={TrendingUp}
         iconColor="text-emerald-500"
       />
-      
+
       <StatCard
         label="Storage Used"
         value={isLoading ? '...' : formatStorage(storageBytes)}

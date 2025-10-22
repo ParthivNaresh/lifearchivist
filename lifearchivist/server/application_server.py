@@ -147,7 +147,7 @@ class ApplicationServer:
             await self._init_tool_registry()
 
             # Phase 5: Initialize folder watcher
-            self._init_folder_watcher()
+            await self._init_folder_watcher()
 
             # Phase 6: Initialize agents (if enabled)
             if self.settings.enable_agents:
@@ -240,6 +240,7 @@ class ApplicationServer:
         config = ServiceConfig(
             redis_url=self.settings.redis_url,
             qdrant_url=self.settings.qdrant_url,
+            database_url=self.settings.database_url,
             vault_path=vault_path,
             settings=self.settings,
         )
@@ -415,7 +416,7 @@ class ApplicationServer:
         tool_count = len(self.tool_registry.tools)
         log_event("tool_registry_initialized", {"tools_registered": tool_count})
 
-    def _init_folder_watcher(self):
+    async def _init_folder_watcher(self):
         """Initialize folder watching service."""
         try:
             from ..storage.folder_watcher import FolderWatcherService
@@ -426,10 +427,24 @@ class ApplicationServer:
             self.folder_watcher = FolderWatcherService(
                 vault=self.service_container.vault,
                 server=self,  # Pass self for tool execution
-                debounce_seconds=2.0,
+                redis_url=self.settings.redis_url,
+                debounce_seconds=self.settings.folder_watch_debounce_seconds,
+                ingestion_concurrency=self.settings.folder_watch_concurrency,
+                max_folders=self.settings.folder_watch_max_folders,
             )
 
-            log_event("folder_watcher_initialized")
+            # Initialize the service (async)
+            await self.folder_watcher.initialize()
+
+            log_event(
+                "folder_watcher_initialized",
+                {
+                    "debounce_seconds": self.settings.folder_watch_debounce_seconds,
+                    "ingestion_concurrency": self.settings.folder_watch_concurrency,
+                    "max_folders": self.settings.folder_watch_max_folders,
+                    "auto_resume": self.settings.folder_watch_auto_resume,
+                },
+            )
         except Exception as e:
             log_event(
                 "folder_watcher_init_failed",

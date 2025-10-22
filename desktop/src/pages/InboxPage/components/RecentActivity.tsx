@@ -1,12 +1,11 @@
 /**
  * RecentActivity - Activity feed component
- * 
+ *
  * Displays recent system events with timestamps
  */
 
-import React from 'react';
 import { Activity } from 'lucide-react';
-import { ActivityEvent } from '../types';
+import { type ActivityEvent } from '../../../hooks/useActivityFeed';
 import { formatTimestamp, formatActivityMessage } from '../utils';
 
 interface RecentActivityProps {
@@ -70,10 +69,7 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
           Recent Activity
         </h2>
         {onViewAll && (
-          <button
-            onClick={onViewAll}
-            className="text-sm text-primary hover:underline"
-          >
+          <button onClick={onViewAll} className="text-sm text-primary hover:underline">
             View all
           </button>
         )}

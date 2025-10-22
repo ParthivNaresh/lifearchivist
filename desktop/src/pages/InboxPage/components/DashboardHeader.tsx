@@ -1,11 +1,11 @@
 /**
  * DashboardHeader - Page header component
- * 
- * Displays page title, subtitle, and action buttons
+ *
+ * Displays page title, subtitle, search bar, and action buttons
  */
 
-import React from 'react';
 import { CompactUploadButton } from './CompactUploadButton';
+import { SearchBar } from './SearchBar';
 
 interface DashboardHeaderProps {
   title?: string;
@@ -32,23 +32,33 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 }) => {
   return (
     <div className="mb-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{title}</h1>
-          <p className="text-muted-foreground">{subtitle}</p>
+      {/* Top Row: Title, Search, Upload Button */}
+      <div className="flex items-center justify-between gap-6 mb-2">
+        <div className="flex-shrink-0">
+          <h1 className="text-3xl font-bold">{title}</h1>
         </div>
-        
+
+        {/* Search Bar - Centered with flex-grow */}
+        <div className="flex-1 max-w-2xl">
+          <SearchBar placeholder="Quick search documents..." maxResults={5} />
+        </div>
+
         {/* Compact Upload Button */}
-        <CompactUploadButton
-          onUploadFiles={onUploadFiles}
-          onUploadFolder={onUploadFolder}
-          onWatchFolder={onWatchFolder}
-          onManageWatchedFolders={onManageWatchedFolders}
-          disabled={uploadDisabled}
-          watchedFolderPath={watchedFolderPath}
-          watchedFolderPending={watchedFolderPending}
-        />
+        <div className="flex-shrink-0">
+          <CompactUploadButton
+            onUploadFiles={onUploadFiles}
+            onUploadFolder={onUploadFolder}
+            onWatchFolder={onWatchFolder}
+            onManageWatchedFolders={onManageWatchedFolders}
+            disabled={uploadDisabled}
+            watchedFolderPath={watchedFolderPath}
+            watchedFolderPending={watchedFolderPending}
+          />
+        </div>
       </div>
+
+      {/* Subtitle */}
+      <p className="text-muted-foreground">{subtitle}</p>
     </div>
   );
 };

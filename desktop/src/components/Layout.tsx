@@ -1,20 +1,14 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../utils/cn';
-import UploadQueue from './upload/UploadQueue';
-import UploadQueueTrigger from './upload/UploadQueueTrigger';
-import { useUploadQueue } from '../contexts/UploadQueueContext';
-import { 
-  Inbox, 
-  Search, 
-  Settings, 
-  FileText,
+import {
+  Inbox,
+  Search,
+  Settings,
   Database,
   HardDrive,
   Activity,
   MessageCircle,
-  DollarSign,
-  Calendar
+  Calendar,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -23,21 +17,13 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
-  const { state: uploadQueueState } = useUploadQueue();
-  
-  // Only show the floating upload queue on non-inbox pages or when there are completed/error batches
-  const showFloatingQueue = location.pathname !== '/' || 
-    uploadQueueState.batches.some(b => 
-      b.status === 'error' || 
-      (b.status !== 'active' && b.createdAt < Date.now() - 60000) // Older completed batches
-    );
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Inbox },
     { name: 'Vault', href: '/vault', icon: HardDrive },
     { name: 'Timeline', href: '/timeline', icon: Calendar },
     { name: 'Activity', href: '/activity', icon: Activity },
-    { name: 'Ask Archivist', href: '/qa', icon: MessageCircle },
+    { name: 'Ask AI', href: '/conversations', icon: MessageCircle },
     { name: 'Search', href: '/search', icon: Search },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
@@ -89,18 +75,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
-
-      {/* Upload Queue Components - Only show on non-inbox pages or for history */}
-      {showFloatingQueue && (
-        <>
-          <UploadQueue />
-          <UploadQueueTrigger />
-        </>
-      )}
     </div>
   );
 };

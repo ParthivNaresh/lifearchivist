@@ -2,7 +2,7 @@
  * Timeline page - Browse documents by creation date
  */
 
-import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
+import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { useCache } from '../hooks/useCache';
 import {
   fetchTimelineData,
@@ -12,18 +12,16 @@ import {
   ErrorState,
   EmptyState,
   VirtualizedTimeline,
-  TimelineLoadingSkeleton,
   SearchLoadingIndicator,
   CACHE_CONFIG,
   formatDateRange,
-  sortYears,
   filterTimelineBySearch,
   debounce,
   flattenTimelineData,
   initializeVirtualizationState,
   toggleYearExpansion,
   setAllYearsExpanded,
-  VirtualizationState,
+  type VirtualizationState,
 } from './TimelinePage/index';
 
 const TimelinePage: React.FC = () => {
@@ -39,31 +37,36 @@ const TimelinePage: React.FC = () => {
     return await fetchTimelineData();
   }, []);
 
-  const { data: timelineData, loading, error, refresh } = useCache(
-    'timeline-data',
-    fetchCallback,
-    CACHE_CONFIG.TIMELINE_TTL
-  );
+  const {
+    data: timelineData,
+    loading,
+    error,
+    refresh,
+  } = useCache('timeline-data', fetchCallback, CACHE_CONFIG.TIMELINE_TTL);
 
   // Debounced search handler
   const debouncedSetSearch = useMemo(
-    () => debounce((query: string) => {
-      setDebouncedSearchQuery(query);
-    }, 300),
+    () =>
+      debounce((query: string) => {
+        setDebouncedSearchQuery(query);
+      }, 300),
     []
   );
 
   // Handle search input change
-  const handleSearchChange = useCallback((query: string) => {
-    setSearchQuery(query);
-    debouncedSetSearch(query);
-  }, [debouncedSetSearch]);
+  const handleSearchChange = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      debouncedSetSearch(query);
+    },
+    [debouncedSetSearch]
+  );
 
   // Handle search clear
   const handleSearchClear = useCallback(() => {
     setSearchQuery('');
     setDebouncedSearchQuery('');
-    
+
     // Restore scroll position after clearing
     setTimeout(() => {
       const scrollContainer = document.querySelector('main');
@@ -88,30 +91,36 @@ const TimelinePage: React.FC = () => {
   }, [timelineData, debouncedSearchQuery]);
 
   // Use filtered data for display
-  const displayData = filteredData || timelineData;
+  const displayData = filteredData ?? timelineData;
   const isSearching = debouncedSearchQuery.trim().length > 0;
-  
+
   // Show loading indicator while search is debouncing
   const isSearchDebouncing = searchQuery !== debouncedSearchQuery;
 
   // Initialize virtualization state when data loads
   useEffect(() => {
-    if (displayData) {
+    if (!displayData) return;
+
+    // Use setTimeout to defer state update and avoid cascading renders
+    const timer = setTimeout(() => {
       setVirtualizationState(initializeVirtualizationState(displayData, true));
-    }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [displayData]);
 
   // Handle toggle all years
   const handleToggleAll = useCallback(() => {
     if (!displayData) return;
-    
-    const allExpanded = virtualizationState.expandedYears.size === Object.keys(displayData.by_year).length;
+
+    const allExpanded =
+      virtualizationState.expandedYears.size === Object.keys(displayData.by_year).length;
     setVirtualizationState(setAllYearsExpanded(displayData, !allExpanded));
   }, [displayData, virtualizationState]);
 
   // Handle toggle individual year
   const handleToggleYear = useCallback((year: string) => {
-    setVirtualizationState(prev => toggleYearExpansion(year, prev));
+    setVirtualizationState((prev) => toggleYearExpansion(year, prev));
   }, []);
 
   // Flatten timeline data for virtualization
@@ -121,7 +130,7 @@ const TimelinePage: React.FC = () => {
   }, [displayData, virtualizationState]);
 
   // Check if all years are expanded for header button
-  const allExpanded = displayData 
+  const allExpanded = displayData
     ? virtualizationState.expandedYears.size === Object.keys(displayData.by_year).length
     : true;
 
@@ -138,7 +147,7 @@ const TimelinePage: React.FC = () => {
   if (error) {
     return (
       <div className="p-6">
-        <ErrorState error={error} onRetry={refresh} />
+        <ErrorState error={error} onRetry={() => void refresh()} />
       </div>
     );
   }
@@ -152,26 +161,60 @@ const TimelinePage: React.FC = () => {
     );
   }
 
-  const years = sortYears(Object.keys(displayData.by_year));
-  const dateRange = formatDateRange(
-    displayData.date_range.earliest,
-    displayData.date_range.latest
-  );
+  // Type guard: displayData is guaranteed to be non-null here since timelineData exists
+  if (!displayData) {
+    return (
+      <div className="p-6">
+        <EmptyState />
+      </div>
+    );
+  }
 
-  const handleJumpToSection = (year: string, month?: string) => {
+  const dateRange = formatDateRange(displayData.date_range.earliest, displayData.date_range.latest);
+
+  const handleJumpToSection = (_year: string, _month?: string) => {
     // Callback for timeline bar clicks (already handled by scroll)
+    // Parameters are intentionally unused as scrolling is handled internally by TimelineBar
   };
 
   // Show empty search state if searching with no results
   const showEmptySearch = isSearching && resultCount === 0;
 
+  // Render the main content based on current state
+  const renderContent = () => {
+    if (isSearchDebouncing) {
+      return <SearchLoadingIndicator />;
+    }
+
+    if (showEmptySearch) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-semibold mb-2">No documents found</h3>
+            <p className="text-muted-foreground mb-4">Try a different search term</p>
+            <button
+              onClick={handleSearchClear}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Clear Search
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-8 h-[calc(100vh-300px)]">
+        <VirtualizedTimeline items={flattenedItems} onToggleYear={handleToggleYear} />
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Timeline visualization bar (desktop only) */}
-      <TimelineBar 
-        timelineData={displayData} 
-        onJumpToSection={handleJumpToSection}
-      />
+      <TimelineBar timelineData={displayData} onJumpToSection={handleJumpToSection} />
 
       {/* Main content with left margin for timeline bar on desktop */}
       <div className="min-h-screen p-6 lg:ml-32">
@@ -187,32 +230,7 @@ const TimelinePage: React.FC = () => {
             searchResultCount={isSearching ? resultCount : undefined}
           />
 
-          {isSearchDebouncing ? (
-            <SearchLoadingIndicator />
-          ) : showEmptySearch ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold mb-2">No documents found</h3>
-                <p className="text-muted-foreground mb-4">
-                  Try a different search term
-                </p>
-                <button
-                  onClick={handleSearchClear}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  Clear Search
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-8 h-[calc(100vh-300px)]">
-              <VirtualizedTimeline
-                items={flattenedItems}
-                onToggleYear={handleToggleYear}
-              />
-            </div>
-          )}
+          {renderContent()}
         </div>
       </div>
     </>

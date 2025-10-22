@@ -2,7 +2,6 @@
  * Timeline page header
  */
 
-import React from 'react';
 import { Calendar, ChevronDown, ChevronRight } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 
@@ -17,8 +16,8 @@ interface TimelineHeaderProps {
   searchResultCount?: number;
 }
 
-export const TimelineHeader: React.FC<TimelineHeaderProps> = ({ 
-  dateRange, 
+export const TimelineHeader: React.FC<TimelineHeaderProps> = ({
+  dateRange,
   totalDocuments,
   allExpanded,
   onToggleAll,
@@ -39,7 +38,7 @@ export const TimelineHeader: React.FC<TimelineHeaderProps> = ({
             {totalDocuments} {totalDocuments === 1 ? 'document' : 'documents'} • {dateRange}
           </p>
         </div>
-        
+
         {/* Collapse/Expand All Button */}
         <button
           onClick={onToggleAll}
@@ -58,7 +57,7 @@ export const TimelineHeader: React.FC<TimelineHeaderProps> = ({
           )}
         </button>
       </div>
-      
+
       {/* Search Bar */}
       <div className="mb-4">
         <SearchBar
@@ -69,7 +68,7 @@ export const TimelineHeader: React.FC<TimelineHeaderProps> = ({
           totalCount={totalDocuments}
         />
       </div>
-      
+
       {/* Subtle divider */}
       <div className="mt-6 h-px bg-gradient-to-r from-border via-border/50 to-transparent" />
     </div>

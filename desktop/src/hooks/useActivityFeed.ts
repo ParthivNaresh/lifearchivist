@@ -1,17 +1,30 @@
 /**
  * useActivityFeed - Shared hook for activity feed with WebSocket updates
- * 
+ *
  * Fetches activity events and subscribes to real-time updates via WebSocket.
  * Used by both InboxPage and ActivityPage for consistent behavior.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 
+export type ActivityEventData = Record<string, string | number | boolean | null | undefined>;
+
 export interface ActivityEvent {
   id: string;
   type: string;
-  data: Record<string, any>;
+  data: ActivityEventData;
   timestamp: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  events?: ActivityEvent[];
+  error?: string;
+}
+
+interface WebSocketMessage {
+  type: string;
+  event?: ActivityEvent;
 }
 
 interface UseActivityFeedOptions {
@@ -32,21 +45,19 @@ const WS_ACTIVITY_FEED = 'ws://localhost:8000/ws/activity_feed';
 
 /**
  * Hook for managing activity feed with real-time WebSocket updates
- * 
+ *
  * @param options.limit - Maximum number of events to fetch (default: 50)
  * @param options.autoFetch - Whether to fetch on mount (default: true)
- * 
+ *
  * @example
  * // In InboxPage - show last 5 events
  * const { events } = useActivityFeed({ limit: 5 });
- * 
+ *
  * @example
  * // In ActivityPage - show last 50 events
  * const { events, isLoading, refetch } = useActivityFeed({ limit: 50 });
  */
-export const useActivityFeed = (
-  options: UseActivityFeedOptions = {}
-): UseActivityFeedReturn => {
+export const useActivityFeed = (options: UseActivityFeedOptions = {}): UseActivityFeedReturn => {
   const { limit = 50, autoFetch = true } = options;
 
   const [events, setEvents] = useState<ActivityEvent[]>([]);
@@ -59,13 +70,13 @@ export const useActivityFeed = (
     try {
       setIsLoading(true);
       const response = await fetch(`${API_BASE_URL}/api/activity/events?limit=${limit}`);
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
-      if (data.success && Array.isArray(data.events)) {
+      if (data.success && data.events && Array.isArray(data.events)) {
         setEvents(data.events);
         setError(null);
       } else {
-        setError(data.error || 'Failed to load activity events');
+        setError(data.error ?? 'Failed to load activity events');
       }
     } catch (err) {
       console.error('Failed to fetch activity events:', err);
@@ -78,7 +89,7 @@ export const useActivityFeed = (
   // Initial fetch
   useEffect(() => {
     if (autoFetch) {
-      fetchEvents();
+      void fetchEvents();
     }
   }, [autoFetch, fetchEvents]);
 
@@ -97,11 +108,12 @@ export const useActivityFeed = (
 
         ws.onmessage = (event) => {
           try {
-            const message = JSON.parse(event.data);
+            const message = JSON.parse(event.data as string) as WebSocketMessage;
 
             if (message.type === 'activity_event' && message.event) {
               // Add new event to the top of the list, maintain limit
-              setEvents((prev) => [message.event, ...prev].slice(0, limit));
+              const newEvent = message.event;
+              setEvents((prev) => [newEvent, ...prev].slice(0, limit));
             }
           } catch (err) {
             console.error('Failed to parse WebSocket message:', err);

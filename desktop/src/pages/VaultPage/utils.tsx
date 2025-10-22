@@ -2,24 +2,12 @@
  * Utility functions for VaultPage
  */
 
-import React from 'react';
+import { FileText, FileSpreadsheet, Image, FileCode, FileArchive, File } from 'lucide-react';
+import { type Document, type CategoryConfig, type SubthemeStyles } from './types';
 import {
-  FileText,
-  FileSpreadsheet,
-  Image,
-  FileCode,
-  FileArchive,
-  File
-} from 'lucide-react';
-import { 
-  Document, 
-  CategoryConfig,
-  SubthemeStyles 
-} from './types';
-import { 
   SUBTHEME_CATEGORIES,
   SUBTHEME_CATEGORY_CONFIG,
-  SUBCLASSIFICATION_CONFIG 
+  SUBCLASSIFICATION_CONFIG,
 } from './constants';
 import { getSubthemeColors } from '../../utils/theme-colors';
 
@@ -43,12 +31,12 @@ export const formatDate = (dateString: string): string => {
   const now = new Date();
   const diff = now.getTime() - date.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  
+
   if (days === 0) return 'Today';
   if (days === 1) return 'Yesterday';
   if (days < 7) return `${days} days ago`;
   if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-  
+
   return date.toLocaleDateString();
 };
 
@@ -59,7 +47,7 @@ export const getFileName = (path: string): string => {
   if (!path) return 'Unnamed Document';
   // Handle both forward and backward slashes
   const parts = path.split(/[/\\]/);
-  return parts[parts.length - 1] || path;
+  return parts[parts.length - 1] ?? path;
 };
 
 /**
@@ -67,7 +55,7 @@ export const getFileName = (path: string): string => {
  */
 export const getFileIcon = (mimeType: string): React.ReactNode => {
   const mime = mimeType?.toLowerCase() || '';
-  
+
   if (mime.includes('pdf')) {
     return <FileText className="h-5 w-5 text-red-500" />;
   }
@@ -86,7 +74,7 @@ export const getFileIcon = (mimeType: string): React.ReactNode => {
   if (mime.includes('zip') || mime.includes('rar') || mime.includes('archive')) {
     return <FileArchive className="h-5 w-5 text-orange-500" />;
   }
-  
+
   return <File className="h-5 w-5 text-gray-400" />;
 };
 
@@ -98,12 +86,12 @@ export const getDocumentTheme = (doc: Document): string => {
   if (doc.status === 'processing' || doc.status === 'pending') {
     return 'Processing';
   }
-  
+
   // Use the theme field directly from the API response
   if (doc.theme) {
     return doc.theme;
   }
-  
+
   // Default to unclassified
   return 'Unclassified';
 };
@@ -112,21 +100,41 @@ export const getDocumentTheme = (doc: Document): string => {
  * Get the subtheme category for a subclassification
  */
 export const getSubthemeCategory = (subclassification: string): string => {
-  return SUBTHEME_CATEGORIES[subclassification] || 'Other';
+  return SUBTHEME_CATEGORIES[subclassification] ?? 'Other';
 };
 
 /**
  * Get subtheme category config with fallback
  */
 export const getSubthemeCategoryConfig = (categoryName: string): CategoryConfig => {
-  return SUBTHEME_CATEGORY_CONFIG[categoryName] || SUBTHEME_CATEGORY_CONFIG['default'];
+  const config = SUBTHEME_CATEGORY_CONFIG[categoryName];
+  if (config) return config;
+
+  const defaultConfig = SUBTHEME_CATEGORY_CONFIG.default;
+  if (defaultConfig) return defaultConfig;
+
+  // Ultimate fallback
+  return {
+    icon: '📄',
+    description: 'Documents',
+  };
 };
 
 /**
  * Get subclassification config with fallback
  */
 export const getSubclassificationConfig = (subclassificationName: string): CategoryConfig => {
-  return SUBCLASSIFICATION_CONFIG[subclassificationName] || SUBCLASSIFICATION_CONFIG['default'];
+  const config = SUBCLASSIFICATION_CONFIG[subclassificationName];
+  if (config) return config;
+
+  const defaultConfig = SUBCLASSIFICATION_CONFIG.default;
+  if (defaultConfig) return defaultConfig;
+
+  // Ultimate fallback
+  return {
+    icon: '📄',
+    description: 'Documents',
+  };
 };
 
 /**
@@ -135,11 +143,11 @@ export const getSubclassificationConfig = (subclassificationName: string): Categ
 export const getSubthemeStyles = (displayName: string): SubthemeStyles => {
   const isDark = document.documentElement.classList.contains('dark');
   const colors = getSubthemeColors(displayName, isDark);
-  
+
   return {
     bg: colors.background,
     border: colors.border,
-    icon: colors.icon
+    icon: colors.icon,
   };
 };
 
@@ -148,9 +156,7 @@ export const getSubthemeStyles = (displayName: string): SubthemeStyles => {
  */
 export const hasProcessingDocuments = (documents: Document[] | undefined): boolean => {
   if (!documents) return false;
-  return documents.some(doc => 
-    doc.status === 'processing' || doc.status === 'pending'
-  );
+  return documents.some((doc) => doc.status === 'processing' || doc.status === 'pending');
 };
 
 /**
@@ -171,7 +177,7 @@ export const sortThemes = (themes: string[], themeOrder: readonly string[]): str
   return themes.sort((a, b) => {
     const aIndex = themeOrder.indexOf(a);
     const bIndex = themeOrder.indexOf(b);
-    
+
     if (aIndex !== -1 && bIndex !== -1) {
       return aIndex - bIndex;
     }

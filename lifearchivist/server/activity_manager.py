@@ -339,18 +339,39 @@ class ActivityManager:
     # Convenience methods for common event types
 
     async def add_folder_watch_event(
-        self, event_subtype: str, file_name: str, **kwargs
+        self,
+        event_subtype: str,
+        file_name: str,
+        folder_id: Optional[str] = None,
+        folder_path: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """
-        Add a folder watch event.
+        Add a folder watch event with folder context.
 
         Args:
             event_subtype: Subtype (detected, ingested, failed, duplicate_skipped)
             file_name: Name of the file
-            **kwargs: Additional event data
+            folder_id: UUID of the watched folder (for filtering)
+            folder_path: Path of the watched folder (for display)
+            **kwargs: Additional event data (file_size, error, etc.)
+
+        Example:
+            await activity_manager.add_folder_watch_event(
+                "file_ingested",
+                "document.pdf",
+                folder_id="uuid-123",
+                folder_path="/Users/me/Documents",
+                file_size=1024000
+            )
         """
         event_type = f"folder_watch_{event_subtype}"
-        data = {"file_name": file_name, **kwargs}
+        data = {
+            "file_name": file_name,
+            "folder_id": folder_id,
+            "folder_path": folder_path,
+            **kwargs,
+        }
         await self.add_event(event_type, data)
 
     async def add_upload_event(

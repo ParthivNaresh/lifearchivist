@@ -2,8 +2,7 @@
  * TagFilters component - tag selection filters
  */
 
-import React from 'react';
-import { Tag } from '../types';
+import { type Tag } from '../types';
 import { UI_TEXT } from '../constants';
 
 interface TagFiltersProps {
@@ -28,10 +27,10 @@ export const TagFilters: React.FC<TagFiltersProps> = ({
   return (
     <div className="mb-6 p-4 border border-border rounded-lg bg-muted/30">
       <h3 className="text-sm font-medium mb-3">{UI_TEXT.FILTER_BY_TAGS}</h3>
-      
+
       {tagsLoading ? (
         <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
           <span className="text-sm text-muted-foreground">{UI_TEXT.LOADING_TAGS}</span>
         </div>
       ) : availableTags.length > 0 ? (
@@ -55,7 +54,7 @@ export const TagFilters: React.FC<TagFiltersProps> = ({
               );
             })}
           </div>
-          
+
           {selectedTags.length > 0 && (
             <div className="flex items-center space-x-2">
               <span className="text-sm text-muted-foreground">{UI_TEXT.SELECTED_TAGS}</span>

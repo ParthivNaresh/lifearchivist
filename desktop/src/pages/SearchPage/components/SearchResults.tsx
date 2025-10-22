@@ -2,8 +2,7 @@
  * SearchResults component - displays search results
  */
 
-import React from 'react';
-import { SearchResult } from '../types';
+import { type SearchResult } from '../types';
 import { SearchResultItem } from './SearchResultItem';
 import { UI_TEXT } from '../constants';
 
@@ -37,15 +36,13 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">
-          {UI_TEXT.RESULTS_FOUND(results.length)}
-        </h2>
+        <h2 className="text-lg font-semibold">{UI_TEXT.RESULTS_FOUND(results.length)}</h2>
         <div className="text-sm text-muted-foreground">
           <span>{getResultsDescription()}</span>
           {queryTime && <span className="ml-2">({queryTime}ms)</span>}
         </div>
       </div>
-      
+
       <div className="space-y-4">
         {results.map((result) => (
           <SearchResultItem

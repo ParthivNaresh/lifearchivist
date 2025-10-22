@@ -1,11 +1,11 @@
 /**
  * CompactUploadButton - Compact header upload button with dropdown
- * 
+ *
  * Provides upload functionality without dominating the page.
  * Includes: Upload Files, Upload Folder, Watch Folder
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, FolderOpen, Eye, ChevronDown, Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 
@@ -43,6 +43,8 @@ export const CompactUploadButton: React.FC<CompactUploadButtonProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+
+    return undefined;
   }, [isOpen]);
 
   // Close dropdown on Escape key
@@ -57,6 +59,8 @@ export const CompactUploadButton: React.FC<CompactUploadButtonProps> = ({
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
     }
+
+    return undefined;
   }, [isOpen]);
 
   const handleAction = (action: () => void) => {
@@ -80,12 +84,7 @@ export const CompactUploadButton: React.FC<CompactUploadButtonProps> = ({
       >
         <Upload className="h-4 w-4" />
         <span>Upload</span>
-        <ChevronDown 
-          className={cn(
-            'h-3 w-3 transition-transform',
-            isOpen && 'rotate-180'
-          )} 
-        />
+        <ChevronDown className={cn('h-3 w-3 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
       {/* Dropdown Menu */}
@@ -127,7 +126,7 @@ export const CompactUploadButton: React.FC<CompactUploadButtonProps> = ({
           >
             <Eye className="h-4 w-4 text-muted-foreground" />
             <div className="flex-1">
-              <div className="font-medium text-sm">Watch Folder</div>
+              <div className="font-medium text-sm">Watch Folders</div>
               <div className="text-xs text-muted-foreground">Auto-sync new files</div>
             </div>
           </button>

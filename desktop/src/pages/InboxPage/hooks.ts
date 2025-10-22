@@ -4,11 +4,11 @@
 
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useUploadManager } from '../../hooks/useUploadManager';
-import { useUploadQueue } from '../../contexts/UploadQueueContext';
+import { useUploadQueue } from '../../contexts/useUploadQueue';
 import { useActivityFeed } from '../../hooks/useActivityFeed';
-import { FolderFilesResult } from '../../types/electron';
-import { TIMING, UI_TEXT, WS_ENDPOINTS, DISPLAY_LIMITS } from './constants';
-import { VaultInfo, WatchStatus } from './types';
+import { type FolderFilesResult } from '../../types/electron';
+import { TIMING, WS_ENDPOINTS, DISPLAY_LIMITS } from './constants';
+import { type VaultInfo, type WatchStatus } from './types';
 import { fetchVaultInfo, fetchWatchStatus } from './api';
 import { calculateWeekCount } from './utils';
 
@@ -17,58 +17,76 @@ import { calculateWeekCount } from './utils';
  */
 export const useFileUpload = () => {
   const { uploadFiles, uploadFolder } = useUploadManager();
-  const { 
-    state: uploadQueueState, 
+  const {
+    state: uploadQueueState,
     updateItemStatus,
     clearCompleted,
-    resetQueue 
+    resetQueue,
   } = useUploadQueue();
 
   const hasActiveUploads = uploadQueueState.activeUploads > 0;
-  
-  const activeBatches = useMemo(() => 
-    uploadQueueState.batches.filter(
-      batch => batch.status === 'active' || 
-      (batch.createdAt > Date.now() - TIMING.RECENT_BATCH_DURATION && 
-       (batch.status === 'completed' || batch.status === 'partial' || batch.status === 'duplicate'))
-    ), 
-    [uploadQueueState.batches]
-  );
-  
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Move Date.now() outside of useMemo to avoid impure function call
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  // Update current time periodically for accurate batch filtering
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000); // Update every second for accurate recent batch detection
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const activeBatches = useMemo(() => {
+    return uploadQueueState.batches.filter(
+      (batch) =>
+        batch.status === 'active' ||
+        (batch.createdAt > currentTime - TIMING.RECENT_BATCH_DURATION &&
+          (batch.status === 'completed' ||
+            batch.status === 'partial' ||
+            batch.status === 'duplicate'))
+    );
+  }, [uploadQueueState.batches, currentTime]);
+
   const showUploadProgress = activeBatches.length > 0;
 
-  const handleFileDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0 || hasActiveUploads) return;
+  const handleFileDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      if (acceptedFiles.length === 0 || hasActiveUploads) return;
 
-    const batchName = acceptedFiles.length === 1 
-      ? acceptedFiles[0].name 
-      : `${acceptedFiles.length} Files`;
-    
-    try {
-      await uploadFiles(acceptedFiles, { batchName });
-    } catch (error) {
-      console.error('Upload failed:', error);
-    }
-  }, [uploadFiles, hasActiveUploads]);
+      const firstFile = acceptedFiles[0];
+      const batchName =
+        acceptedFiles.length === 1 && firstFile ? firstFile.name : `${acceptedFiles.length} Files`;
+
+      try {
+        await uploadFiles(acceptedFiles, { batchName });
+      } catch (error) {
+        console.error('Upload failed:', error);
+      }
+    },
+    [uploadFiles, hasActiveUploads]
+  );
 
   const handleSelectFiles = useCallback(async () => {
     if (hasActiveUploads) return;
-    
+
     if (window.electronAPI) {
       try {
         const filePaths = await window.electronAPI.selectFiles();
         if (filePaths.length === 0) return;
-        
-        // Convert file paths to File objects
-        const files = filePaths.map(filePath => {
-          const fileName = filePath.split('/').pop() || filePath;
-          return { name: fileName, path: filePath } as File;
+
+        // Create file path objects (not actual File objects)
+        const files = filePaths.map((filePath) => {
+          const fileName = filePath.split('/').pop() ?? filePath;
+          return { name: fileName, path: filePath };
         });
-        
-        const batchName = files.length === 1 
-          ? files[0].name 
-          : `${files.length} Selected Files`;
-        
+
+        const firstFile = files[0];
+        const batchName =
+          files.length === 1 && firstFile ? firstFile.name : `${files.length} Selected Files`;
+
         await uploadFiles(files, { batchName });
       } catch (error) {
         console.error('Error selecting files:', error);
@@ -78,23 +96,23 @@ export const useFileUpload = () => {
 
   const handleSelectFolder = useCallback(async () => {
     if (hasActiveUploads) return;
-    
+
     if (window.electronAPI && typeof window.electronAPI.selectFolderFiles === 'function') {
       try {
         const folderResult: FolderFilesResult | null = await window.electronAPI.selectFolderFiles();
-        
-        if (!folderResult || !folderResult.files || folderResult.files.length === 0) {
+
+        if (!folderResult?.files || folderResult.files.length === 0) {
           return;
         }
-        
-        // Convert file paths to File objects
-        const files = folderResult.files.map(filePath => {
-          const fileName = filePath.split('/').pop() || filePath;
-          return { name: fileName, path: filePath } as File;
+
+        // Create file path objects (not actual File objects)
+        const files = folderResult.files.map((filePath) => {
+          const fileName = filePath.split('/').pop() ?? filePath;
+          return { name: fileName, path: filePath };
         });
-        
-        const folderName = folderResult.folderPath.split('/').pop() || 'Selected Folder';
-        
+
+        const folderName = folderResult.folderPath.split('/').pop() ?? 'Selected Folder';
+
         await uploadFolder(files, folderName);
       } catch (error) {
         console.error('Folder upload failed:', error);
@@ -102,9 +120,12 @@ export const useFileUpload = () => {
     }
   }, [hasActiveUploads, uploadFolder]);
 
-  const handleRetry = useCallback((itemId: string) => {
-    updateItemStatus(itemId, 'pending');
-  }, [updateItemStatus]);
+  const handleRetry = useCallback(
+    (itemId: string) => {
+      updateItemStatus(itemId, 'pending');
+    },
+    [updateItemStatus]
+  );
 
   const handleClearCompleted = useCallback(() => {
     clearCompleted();
@@ -118,10 +139,17 @@ export const useFileUpload = () => {
   }, [clearCompleted, hasActiveUploads]);
 
   const handleCancelUploads = useCallback(() => {
-    if (confirm(UI_TEXT.BUTTONS.CANCEL_UPLOADS)) {
-      resetQueue();
-    }
+    setShowCancelConfirm(true);
+  }, []);
+
+  const confirmCancelUploads = useCallback(() => {
+    resetQueue();
+    setShowCancelConfirm(false);
   }, [resetQueue]);
+
+  const cancelCancelUploads = useCallback(() => {
+    setShowCancelConfirm(false);
+  }, []);
 
   return {
     hasActiveUploads,
@@ -133,12 +161,16 @@ export const useFileUpload = () => {
     handleRetry,
     handleClearCompleted,
     handleCancelUploads,
+    // Expose confirmation state and handlers for proper modal implementation
+    showCancelConfirm,
+    confirmCancelUploads,
+    cancelCancelUploads,
   };
 };
 
 /**
  * Hook for managing vault information
- * 
+ *
  * Fetches vault stats (document count, storage usage) and refreshes periodically
  */
 export const useVaultInfo = () => {
@@ -163,11 +195,13 @@ export const useVaultInfo = () => {
   }, []);
 
   useEffect(() => {
-    fetchInfo();
-    
+    void fetchInfo();
+
     // Refresh periodically
-    const interval = setInterval(fetchInfo, TIMING.REFRESH_INTERVAL);
-    
+    const interval = setInterval(() => {
+      void fetchInfo();
+    }, TIMING.REFRESH_INTERVAL);
+
     return () => clearInterval(interval);
   }, [fetchInfo]);
 
@@ -181,11 +215,11 @@ export const useVaultInfo = () => {
 
 /**
  * Hook for managing activity feed with week count calculation
- * 
+ *
  * Wraps the shared useActivityFeed hook and adds week count calculation
  * specific to InboxPage needs.
  */
-export const useInboxActivityFeed = (limit: number = 5) => {
+export const useInboxActivityFeed = (limit = 5) => {
   const [weekCount, setWeekCount] = useState<number>(0);
 
   // Use shared activity feed hook
@@ -213,7 +247,7 @@ export const useInboxActivityFeed = (limit: number = 5) => {
 
 /**
  * Hook for managing folder watch status with WebSocket updates
- * 
+ *
  * Fetches folder watch status and subscribes to real-time updates
  */
 export const useFolderWatchStatus = () => {
@@ -239,11 +273,13 @@ export const useFolderWatchStatus = () => {
 
   // Initial fetch and periodic refresh
   useEffect(() => {
-    fetchStatus();
-    
+    void fetchStatus();
+
     // Refresh periodically
-    const interval = setInterval(fetchStatus, TIMING.REFRESH_INTERVAL);
-    
+    const interval = setInterval(() => {
+      void fetchStatus();
+    }, TIMING.REFRESH_INTERVAL);
+
     return () => clearInterval(interval);
   }, [fetchStatus]);
 
@@ -254,15 +290,18 @@ export const useFolderWatchStatus = () => {
     const connect = () => {
       try {
         ws = new WebSocket(WS_ENDPOINTS.FOLDER_WATCHER);
-        
+
         ws.onopen = () => {
           console.log('Folder watcher WebSocket connected');
         };
-        
+
         ws.onmessage = (event) => {
           try {
-            const message = JSON.parse(event.data);
-            
+            const message = JSON.parse(event.data as string) as {
+              type: string;
+              data?: WatchStatus;
+            };
+
             if (message.type === 'folder_watch_status' && message.data) {
               setWatchStatus(message.data);
             }

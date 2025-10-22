@@ -1,18 +1,15 @@
-import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Download,
-  Trash2,
-  Share2,
-  RefreshCw
-} from 'lucide-react';
-import { DocumentAnalysis } from '../types';
+import { ArrowLeft, Download, Trash2, Share2, RefreshCw } from 'lucide-react';
+import { type DocumentAnalysis } from '../types';
 import { formatDate, formatFileSize, getFileIcon } from '../utils';
+
+interface LocationState {
+  returnPath?: string;
+  returnState?: unknown;
+}
 
 interface DocumentHeaderProps {
   analysis: DocumentAnalysis | undefined;
-  documentId: string | undefined;
   onDownload: () => void;
   onDelete: () => void;
   onShare: () => void;
@@ -21,25 +18,28 @@ interface DocumentHeaderProps {
 
 export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
   analysis,
-  documentId,
   onDownload,
   onDelete,
   onShare,
-  onRefresh
+  onRefresh,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const metadata = analysis?.metadata || {};
-  const fileName = metadata.title || metadata.original_path?.split('/').pop() || 'Unknown Document';
+  const locationState = location.state as LocationState | null;
+
+  const metadata = analysis?.metadata ?? {};
+  const originalPath = metadata.original_path;
+  const pathParts = typeof originalPath === 'string' ? originalPath.split('/') : [];
+  const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : undefined;
+  const fileName = metadata.title ?? lastPathPart ?? 'Unknown Document';
 
   const handleBack = () => {
     // Check if we have a return path from any source (vault, search, timeline, etc.)
-    if (location.state?.returnPath) {
+    if (locationState?.returnPath) {
       // Navigate back to the exact location with preserved state
-      navigate(location.state.returnPath, {
-        state: location.state.returnState,
-        replace: true
+      navigate(locationState.returnPath, {
+        state: locationState.returnState,
+        replace: true,
       });
     } else {
       // Use browser back as fallback
@@ -59,18 +59,17 @@ export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex items-start space-x-3">
-            <div className="p-2 bg-muted rounded-lg">
-              {getFileIcon(metadata.mime_type)}
-            </div>
+            <div className="p-2 bg-muted rounded-lg">{getFileIcon(metadata.mime_type ?? '')}</div>
             <div>
               <h1 className="text-2xl font-bold">{fileName}</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Uploaded {formatDate(metadata.uploaded_at || metadata.created_at)} • {formatFileSize(metadata.size_bytes || 0)}
+                Uploaded {formatDate(metadata.uploaded_at ?? metadata.created_at ?? '')} •{' '}
+                {formatFileSize(metadata.size_bytes ?? 0)}
               </p>
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <button
             onClick={onDownload}

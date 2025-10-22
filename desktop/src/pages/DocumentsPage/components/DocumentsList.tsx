@@ -2,8 +2,7 @@
  * DocumentsList component - renders list of documents
  */
 
-import React from 'react';
-import { Document, DocumentStatus } from '../types';
+import { type Document, type DocumentStatus } from '../types';
 import { DocumentListItem } from './DocumentListItem';
 import { EmptyState } from './DocumentStates';
 
@@ -16,7 +15,7 @@ interface DocumentsListProps {
 export const DocumentsList: React.FC<DocumentsListProps> = ({
   documents,
   selectedStatus,
-  onTagClick
+  onTagClick,
 }) => {
   if (!documents || documents.length === 0) {
     return <EmptyState selectedStatus={selectedStatus} />;
@@ -25,11 +24,7 @@ export const DocumentsList: React.FC<DocumentsListProps> = ({
   return (
     <div className="space-y-4">
       {documents.map((doc) => (
-        <DocumentListItem 
-          key={doc.id}
-          document={doc}
-          onTagClick={onTagClick}
-        />
+        <DocumentListItem key={doc.id} document={doc} onTagClick={onTagClick} />
       ))}
     </div>
   );

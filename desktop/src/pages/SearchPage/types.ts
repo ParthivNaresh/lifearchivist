@@ -50,4 +50,6 @@ export interface SearchParams {
   mode: SearchMode;
   limit: number;
   tags?: string;
+  mime_type?: string;
+  status?: string;
 }

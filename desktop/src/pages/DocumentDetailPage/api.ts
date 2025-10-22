@@ -3,7 +3,7 @@
  */
 
 import axios from 'axios';
-import { DocumentAnalysis, DocumentNeighborsResponse, DocumentTextResponse } from './types';
+import { type DocumentAnalysis, type DocumentNeighborsResponse } from './types';
 
 // TODO: Move to environment config
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -22,8 +22,8 @@ export const fetchDocumentAnalysis = async (documentId: string): Promise<Documen
  * Fetch related/neighbor documents
  */
 export const fetchDocumentNeighbors = async (
-  documentId: string, 
-  topK: number = 10
+  documentId: string,
+  topK = 10
 ): Promise<DocumentNeighborsResponse> => {
   const response = await axios.get<DocumentNeighborsResponse>(
     `${API_BASE_URL}/documents/${documentId}/llamaindex-neighbors`,
@@ -43,9 +43,8 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
  * Download document file
  */
 export const downloadDocumentFile = async (fileHash: string): Promise<Blob> => {
-  const response = await axios.get(
-    `${API_BASE_URL}/vault/file/${fileHash}`,
-    { responseType: 'blob' }
-  );
+  const response = await axios.get<Blob>(`${API_BASE_URL}/vault/file/${fileHash}`, {
+    responseType: 'blob',
+  });
   return response.data;
 };

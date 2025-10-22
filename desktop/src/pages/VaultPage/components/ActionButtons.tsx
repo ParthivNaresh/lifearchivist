@@ -2,7 +2,6 @@
  * ActionButtons component - refresh and clear vault buttons
  */
 
-import React from 'react';
 import { RefreshCw, Trash2 } from 'lucide-react';
 
 interface ActionButtonsProps {
@@ -18,7 +17,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   clearing,
   documentsCount,
   onRefresh,
-  onClearVault
+  onClearVault,
 }) => {
   return (
     <>

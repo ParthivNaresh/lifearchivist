@@ -17,6 +17,17 @@ interface Message {
   method?: string;
 }
 
+// Type for stored messages (with timestamp as string for JSON serialization)
+interface StoredMessage {
+  id: string;
+  type: 'question' | 'answer';
+  content: string;
+  timestamp: string;
+  confidence?: number;
+  citations?: Citation[];
+  method?: string;
+}
+
 const STORAGE_KEY = 'lifearchivist-conversation-history';
 const MAX_STORED_MESSAGES = 100; // Limit to prevent localStorage bloat
 
@@ -25,21 +36,33 @@ export const useConversation = () => {
 
   // Load conversation from localStorage on mount
   useEffect(() => {
-    try {
-      const storedConversation = localStorage.getItem(STORAGE_KEY);
-      if (storedConversation) {
-        const parsedMessages = JSON.parse(storedConversation);
-        // Convert timestamp strings back to Date objects
-        const messagesWithDates = parsedMessages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp),
-        }));
-        setMessages(messagesWithDates);
+    const loadMessages = () => {
+      try {
+        const storedConversation = localStorage.getItem(STORAGE_KEY);
+        if (storedConversation) {
+          const parsedMessages = JSON.parse(storedConversation) as StoredMessage[];
+          // Convert timestamp strings back to Date objects
+          const messagesWithDates: Message[] = parsedMessages.map((msg) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp),
+          }));
+          return messagesWithDates;
+        }
+        return null;
+      } catch (error) {
+        console.error('Failed to load conversation from localStorage:', error);
+        // Clear corrupted data
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
       }
-    } catch (error) {
-      console.error('Failed to load conversation from localStorage:', error);
-      // Clear corrupted data
-      localStorage.removeItem(STORAGE_KEY);
+    };
+
+    const loadedMessages = loadMessages();
+    if (loadedMessages) {
+      // Defer state update to avoid synchronous setState in effect
+      setTimeout(() => {
+        setMessages(loadedMessages);
+      }, 0);
     }
   }, []);
 
@@ -49,7 +72,7 @@ export const useConversation = () => {
     if (messages.length === 0) {
       return;
     }
-    
+
     try {
       // Only store the most recent messages to prevent localStorage bloat
       const messagesToStore = messages.slice(-MAX_STORED_MESSAGES);
@@ -68,7 +91,7 @@ export const useConversation = () => {
   }, [messages]);
 
   const addMessage = useCallback((message: Message) => {
-    setMessages(prev => [...prev, message]);
+    setMessages((prev) => [...prev, message]);
   }, []);
 
   const clearConversation = useCallback(() => {
@@ -81,17 +104,28 @@ export const useConversation = () => {
   }, []);
 
   const getConversationStats = useCallback(() => {
-    const questionCount = messages.filter(msg => msg.type === 'question').length;
-    const answerCount = messages.filter(msg => msg.type === 'answer').length;
-    const avgConfidence = messages
-      .filter(msg => msg.type === 'answer' && msg.confidence !== undefined)
-      .reduce((sum, msg, _, arr) => sum + (msg.confidence! / arr.length), 0);
+    const questionCount = messages.filter((msg) => msg.type === 'question').length;
+    const answerCount = messages.filter((msg) => msg.type === 'answer').length;
+
+    // Calculate average confidence without non-null assertion
+    const answersWithConfidence = messages.filter(
+      (msg) => msg.type === 'answer' && msg.confidence !== undefined
+    );
+
+    const avgConfidence =
+      answersWithConfidence.length > 0
+        ? answersWithConfidence.reduce((sum, msg) => {
+            // We've already filtered for messages with confidence, so this is safe
+            const confidence = msg.confidence ?? 0;
+            return sum + confidence;
+          }, 0) / answersWithConfidence.length
+        : 0;
 
     return {
       totalMessages: messages.length,
       questionCount,
       answerCount,
-      avgConfidence: isNaN(avgConfidence) ? 0 : avgConfidence,
+      avgConfidence,
       hasMessages: messages.length > 0,
     };
   }, [messages]);

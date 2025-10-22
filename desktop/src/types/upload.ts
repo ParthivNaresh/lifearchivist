@@ -1,14 +1,28 @@
+export interface UploadResult {
+  isDuplicate?: boolean;
+  message?: string;
+  documentId?: string;
+  [key: string]: unknown;
+}
+
+export interface UploadItemMetadata {
+  original_filename?: string;
+  upload_source?: string;
+  file_id?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
 export interface UploadItem {
   id: string;
   file: File | { name: string; size?: number; path?: string };
   status: 'pending' | 'uploading' | 'processing' | 'completed' | 'error' | 'duplicate';
   progress: number;
   error?: string;
-  result?: any;
+  result?: UploadResult;
   batchId?: string;
   startTime: number;
   completedTime?: number;
-  metadata?: Record<string, any>;
+  metadata?: UploadItemMetadata;
   progressStage?: string;
   progressMessage?: string;
   sessionId?: string;
@@ -35,8 +49,19 @@ export interface UploadQueueState {
 
 export type UploadQueueAction =
   | { type: 'ADD_BATCH'; payload: UploadBatch }
-  | { type: 'UPDATE_ITEM_STATUS'; payload: { itemId: string; status: UploadItem['status']; error?: string; result?: any } }
-  | { type: 'UPDATE_ITEM_PROGRESS'; payload: { itemId: string; progress: number; stage?: string; message?: string } }
+  | {
+      type: 'UPDATE_ITEM_STATUS';
+      payload: {
+        itemId: string;
+        status: UploadItem['status'];
+        error?: string;
+        result?: UploadResult;
+      };
+    }
+  | {
+      type: 'UPDATE_ITEM_PROGRESS';
+      payload: { itemId: string; progress: number; stage?: string; message?: string };
+    }
   | { type: 'REMOVE_BATCH'; payload: string }
   | { type: 'CLEAR_COMPLETED' }
   | { type: 'SET_VISIBILITY'; payload: boolean }
@@ -46,8 +71,16 @@ export type UploadQueueAction =
 export interface UploadQueueContextType {
   state: UploadQueueState;
   dispatch: React.Dispatch<UploadQueueAction>;
-  addBatch: (files: (File | { name: string; size?: number; path?: string })[], batchName?: string) => { batchId: string; itemIds: string[] };
-  updateItemStatus: (itemId: string, status: UploadItem['status'], error?: string, result?: any) => void;
+  addBatch: (
+    files: (File | { name: string; size?: number; path?: string })[],
+    batchName?: string
+  ) => { batchId: string; itemIds: string[] };
+  updateItemStatus: (
+    itemId: string,
+    status: UploadItem['status'],
+    error?: string,
+    result?: UploadResult
+  ) => void;
   updateItemProgress: (itemId: string, progress: number, stage?: string, message?: string) => void;
   removeBatch: (batchId: string) => void;
   clearCompleted: () => void;
@@ -58,6 +91,15 @@ export interface UploadQueueContextType {
   resetQueue: () => void;
 }
 
+export interface ProgressMetadata {
+  status?: string;
+  isDuplicate?: boolean;
+  message?: string;
+  document_id?: string;
+  file_hash?: string;
+  [key: string]: unknown;
+}
+
 export interface ProgressUpdate {
   file_id: string;
   stage: string;
@@ -66,14 +108,30 @@ export interface ProgressUpdate {
   timestamp: number;
   eta_seconds?: number;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: ProgressMetadata;
+}
+
+export interface WebSocketMessageData {
+  file_id?: string;
+  stage?: string;
+  progress?: number;
+  message?: string;
+  timestamp?: number;
+  eta_seconds?: number;
+  error?: string;
+  metadata?: ProgressMetadata;
+  [key: string]: unknown;
 }
 
 export interface WebSocketMessage {
   type: string;
-  data?: any;
+  data?: WebSocketMessageData | ProgressUpdate;
   id?: string;
-  result?: any;
+  result?: {
+    success?: boolean;
+    error?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface ProgressTrackingSession {

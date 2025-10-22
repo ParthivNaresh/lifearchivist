@@ -2,7 +2,6 @@
  * LoadingState component
  */
 
-import React from 'react';
 import { Clock } from 'lucide-react';
 import { UI_TEXT } from '../constants';
 

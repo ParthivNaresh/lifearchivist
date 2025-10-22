@@ -450,14 +450,15 @@ class LlamaIndexQdrantService:
             raise
 
     def _setup_query_engine(self):
-        """Setup basic query engine."""
+        """Setup basic query engine with streaming support."""
         if self.index:
             self.query_engine = self.index.as_query_engine(
                 similarity_top_k=5,
+                streaming=True,  # Enable streaming for token-by-token responses
             )
             log_event(
                 "query_engine_created",
-                {"similarity_top_k": 5},
+                {"similarity_top_k": 5, "streaming": True},
             )
 
     async def add_document(
@@ -586,6 +587,49 @@ class LlamaIndexQdrantService:
             "method": "error",
             "error": True,
         }
+
+    async def query_streaming(
+        self,
+        question: str,
+        similarity_top_k: int = 5,
+        response_mode: str = "tree_summarize",
+        filters: Optional[Dict[str, Any]] = None,
+    ):
+        """
+        Query the index using RAG with streaming response.
+
+        Delegates to the query service for centralized streaming Q&A operations.
+
+        Yields:
+            Dict events with type and data fields:
+            - intent_check: Query classification
+            - sources: Retrieved document chunks
+            - chunk: Individual tokens
+            - metadata: Final statistics
+            - error: Any errors
+        """
+        if self.query_service:
+            async for event in self.query_service.query_streaming(
+                question=question,
+                similarity_top_k=similarity_top_k,
+                response_mode=response_mode,
+                filters=filters,
+            ):
+                yield event
+        else:
+            # Fallback if query service not available
+            log_event(
+                "query_streaming_skipped",
+                {"reason": "no_query_service"},
+                level=logging.ERROR,
+            )
+            yield {
+                "type": "error",
+                "data": {
+                    "error": "Query service not available",
+                    "error_type": "ServiceUnavailable",
+                },
+            }
 
     async def get_document_count(self) -> Result[int, str]:
         """

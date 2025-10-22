@@ -22,12 +22,12 @@ export const CONFIDENCE_THRESHOLDS = {
 } as const;
 
 export const METHOD_DESCRIPTIONS: Record<string, string> = {
-  'rag_llm': 'AI-generated using document context',
-  'no_context': 'No relevant documents found',
-  'insufficient_context': 'Insufficient context available',
-  'fallback_simple': 'Simple fallback response',
-  'error': 'Error occurred during processing',
-  'default': 'Response generated',
+  rag_llm: 'AI-generated using document context',
+  no_context: 'No relevant documents found',
+  insufficient_context: 'Insufficient context available',
+  fallback_simple: 'Simple fallback response',
+  error: 'Error occurred during processing',
+  default: 'Response generated',
 } as const;
 
 export const EXAMPLE_QUESTIONS = [
@@ -40,40 +40,44 @@ export const EXAMPLE_QUESTIONS = [
 export const UI_TEXT = {
   PAGE_TITLE: 'Ask Questions',
   PAGE_SUBTITLE: 'Ask questions about your documents and get AI-powered answers',
-  
+
   CONTEXT_LABEL: 'Context documents:',
   CLEAR_BUTTON: 'Clear',
   ASK_BUTTON: 'Ask',
-  
+
   CONVERSATION_STATS: {
     QUESTIONS: (count: number) => `${count} questions`,
     AVG_CONFIDENCE: 'Avg confidence:',
   },
-  
+
   CLEAR_CONFIRMATION: {
     TITLE: 'Clear Conversation',
-    DESCRIPTION: (count: number) => `This will permanently delete all ${count} messages from this conversation.`,
+    DESCRIPTION: (count: number) =>
+      `This will permanently delete all ${count} messages from this conversation.`,
     CONFIRM: 'Clear All',
     CANCEL: 'Cancel',
   },
-  
+
   EMPTY_STATE: {
     TITLE: 'Start a conversation',
-    DESCRIPTION: 'Ask questions about your documents and get intelligent answers powered by AI. Try questions like "What are the key findings?" or "Summarize the main points."',
+    DESCRIPTION:
+      'Ask questions about your documents and get intelligent answers powered by AI. Try questions like "What are the key findings?" or "Summarize the main points."',
     EXAMPLES_TITLE: 'Example questions:',
   },
-  
+
   MESSAGE: {
     THINKING: 'Thinking...',
     CONFIDENCE: 'Confidence:',
     METHOD: 'Method:',
     SOURCES: (count: number) => `Sources (${count})`,
   },
-  
+
   INPUT: {
     PLACEHOLDER: 'Ask a question about your documents...',
-    HELP_TEXT: 'Answers are generated from your uploaded documents. Make sure relevant documents are uploaded for best results.',
+    HELP_TEXT:
+      'Answers are generated from your uploaded documents. Make sure relevant documents are uploaded for best results.',
   },
-  
-  ERROR_MESSAGE: 'I encountered an error while processing your question. Please try again or rephrase your question.',
+
+  ERROR_MESSAGE:
+    'I encountered an error while processing your question. Please try again or rephrase your question.',
 } as const;

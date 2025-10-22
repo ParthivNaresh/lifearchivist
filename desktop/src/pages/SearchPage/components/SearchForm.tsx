@@ -2,7 +2,6 @@
  * SearchForm component - search input and filter button
  */
 
-import React from 'react';
 import { Search, Filter } from 'lucide-react';
 import { UI_TEXT } from '../constants';
 
@@ -31,7 +30,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
         <div className="flex-1 relative">
           {isLoading ? (
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
             </div>
           ) : (
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -44,7 +43,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             className="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        
+
         <button
           type="button"
           onClick={onToggleFilters}
@@ -59,7 +58,7 @@ export const SearchForm: React.FC<SearchFormProps> = ({
             </span>
           )}
         </button>
-        
+
         <button
           type="submit"
           disabled={isLoading}

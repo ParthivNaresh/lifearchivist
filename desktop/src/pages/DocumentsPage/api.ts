@@ -3,7 +3,7 @@
  */
 
 import axios from 'axios';
-import { DocumentsResponse, DocumentStatus } from './types';
+import { type DocumentsResponse, type DocumentStatus } from './types';
 import { API_CONFIG } from './constants';
 
 /**
@@ -11,14 +11,12 @@ import { API_CONFIG } from './constants';
  */
 export const fetchDocuments = async (status?: DocumentStatus): Promise<DocumentsResponse> => {
   const params = new URLSearchParams();
-  
+
   if (status && status !== 'all') {
     params.append('status', status);
   }
-  
-  const response = await axios.get<DocumentsResponse>(
-    `${API_CONFIG.BASE_URL}/documents?${params}`
-  );
-  
+
+  const response = await axios.get<DocumentsResponse>(`${API_CONFIG.BASE_URL}/documents?${params}`);
+
   return response.data;
 };

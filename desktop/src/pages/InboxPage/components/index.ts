@@ -7,3 +7,4 @@ export { QuickStats } from './QuickStats';
 export { RecentActivity } from './RecentActivity';
 export { DashboardHeader } from './DashboardHeader';
 export { CompactUploadButton } from './CompactUploadButton';
+export { SearchBar } from './SearchBar';

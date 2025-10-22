@@ -37,17 +37,17 @@ setup: install services init-models
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🐳 Docker Services Management
-# ───────────────────────────────────────────────────────────────────────# Start development services (Qdrant, Redis, Ollama)
+# ───────────────────────────────────────────────────────────────────────# Start development services (Postgres, Qdrant, Redis, Ollama)
 services:
     @echo "🐳 Starting Docker services..."
-    docker-compose up -d ollama
+    docker-compose up -d postgres ollama
     @echo "🔍 Checking if llama3.2:1b model is available..."
     @docker exec lifearchivist-ollama-1 ollama list 2>/dev/null | grep -q "llama3.2:1b" || \
         (echo "📥 Model not found, pulling llama3.2:1b (this may take a few minutes)..." && \
          docker exec -it lifearchivist-ollama-1 ollama pull llama3.2:1b) || \
         echo "✅ Model llama3.2:1b already available"
-    docker-compose up -d qdrant redis ollama
-    @echo "✅ All services started"
+    docker-compose up -d postgres qdrant redis ollama
+    @echo "✅ All services started (Postgres, Qdrant, Redis, Ollama)"
 
 # Stop development services
 services-stop:
@@ -63,6 +63,7 @@ check-docker:
     docker ps -a
     @echo ""
     @echo "Checking service health..."
+    @echo "Postgres:" && docker exec lifearchivist-postgres-1 pg_isready -U lifearchivist 2>/dev/null || echo "❌ Not responding"
     @echo "Qdrant:" && curl -s http://localhost:6333 | python -c "import sys,json; print('✅ Running' if 'qdrant' in json.load(sys.stdin).get('title','').lower() else '❌ Error')" || echo "❌ Not responding"
     @echo "Redis:" && redis-cli -h localhost -p 6379 ping || echo "❌ Not responding" 
     @echo "Ollama:" && curl -s http://localhost:11434/api/version || echo "❌ Not responding"
@@ -213,6 +214,7 @@ clean-data:
     @echo "   - All documents and files in vault"
     @echo "   - All vector embeddings in Qdrant"
     @echo "   - All document metadata in Redis"
+    @echo "   - All conversation history in Postgres"
     @echo "   - All cached models and storage"
     @echo ""
     @read -p "Are you sure? Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ] || (echo "Cancelled" && exit 1)
@@ -220,6 +222,7 @@ clean-data:
     @echo "🛑 Stopping services..."
     docker-compose down
     @echo "🗑️  Removing Docker volumes..."
+    docker volume rm lifearchivist_postgres_data 2>/dev/null || true
     docker volume rm lifearchivist_redis_data 2>/dev/null || true
     docker volume rm lifearchivist_qdrant_data 2>/dev/null || true
     @echo "🗑️  Removing local data..."
@@ -299,18 +302,54 @@ test-unit-coverage:
 # 🎯 Code Quality
 # ────────────────────────────────────────────────────────────────────────────────
 
-# Code quality checks
+# Lint backend, then frontend (stops on first failure)
 lint:
+    @echo "🔍 Linting backend..."
     poetry run black --check lifearchivist/
     poetry run isort --check-only lifearchivist/
     poetry run ruff check lifearchivist/
     poetry run mypy lifearchivist/
+    @echo "✅ Backend linting passed"
+    @echo "🔍 Linting frontend..."
+    cd desktop && npm run lint
+    cd desktop && npm run type-check
+    @echo "✅ All linting checks passed"
 
-# Fix code formatting and imports
+# Fix backend, then frontend
 lint-fix:
-    poetry run black lifearchivist/
-    poetry run isort lifearchivist/
-    poetry run ruff check --fix lifearchivist/
+    @echo "🔧 Fixing backend..."
+    @poetry run black lifearchivist/
+    @poetry run isort lifearchivist/
+    @poetry run ruff check --fix lifearchivist/
+    @echo "✅ Backend fixed"
+    @echo "🔧 Fixing frontend..."
+    @cd desktop && npm run lint:fix
+    @cd desktop && npm run format 2>&1 | grep -E "(error|warning|✖|ms \(formatted\))" || echo "All files formatted"
+    @echo "✅ All code fixed"
+
+# Frontend: Lint UI code only
+ui-lint:
+    cd desktop && npm run lint
+
+# Frontend: Fix UI linting issues only
+ui-lint-fix:
+    cd desktop && npm run lint:fix
+
+# Frontend: Format UI code only
+ui-format:
+    cd desktop && npm run format
+
+# Frontend: Check UI formatting only
+ui-format-check:
+    cd desktop && npm run format:check
+
+# Frontend: Type check UI only
+ui-type-check:
+    cd desktop && npm run type-check
+
+# Frontend: Run all UI checks only
+ui-check:
+    cd desktop && npm run check
 
 # Development workflow: fix code and run tests
 dev: lint-fix test

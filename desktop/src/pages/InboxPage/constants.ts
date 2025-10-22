@@ -9,23 +9,21 @@ export const API_BASE_URL = 'http://localhost:8000';
 export const API_ENDPOINTS = {
   VAULT_INFO: `${API_BASE_URL}/api/vault/info`,
   FOLDER_WATCH_STATUS: `${API_BASE_URL}/api/folder-watch/status`,
+  FOLDER_WATCH_FOLDERS: `${API_BASE_URL}/api/folder-watch/folders`,
+  FOLDER_WATCH_FOLDER: (id: string) => `${API_BASE_URL}/api/folder-watch/folders/${id}`,
+  FOLDER_WATCH_SCAN_FOLDER: (id: string) => `${API_BASE_URL}/api/folder-watch/folders/${id}/scan`,
+  ACTIVITY_EVENTS: `${API_BASE_URL}/api/activity/events`,
+
+  // Legacy endpoints (deprecated - kept for backwards compatibility)
   FOLDER_WATCH_START: `${API_BASE_URL}/api/folder-watch/start`,
   FOLDER_WATCH_STOP: `${API_BASE_URL}/api/folder-watch/stop`,
   FOLDER_WATCH_SCAN: `${API_BASE_URL}/api/folder-watch/scan`,
-  ACTIVITY_EVENTS: `${API_BASE_URL}/api/activity/events`,
 } as const;
 
 // WebSocket Endpoints
 export const WS_ENDPOINTS = {
   ACTIVITY_FEED: `ws://localhost:8000/ws/activity_feed`,
   FOLDER_WATCHER: `ws://localhost:8000/ws/folder_watcher`,
-} as const;
-
-// UI Text constants
-export const UI_TEXT = {
-  BUTTONS: {
-    CANCEL_UPLOADS: 'Cancel all active uploads?',
-  },
 } as const;
 
 // Timing constants

@@ -20,7 +20,10 @@ class Settings(BaseSettings):
         description="Base directory for Life Archivist data",
     )
     vault_path: Optional[Path] = Field(default=None, description="Document vault path")
-    database_url: Optional[str] = Field(default=None, description="Database URL")
+    database_url: str = Field(
+        default="postgresql://lifearchivist:lifearchivist_dev@localhost:5432/lifearchivist",
+        description="Database URL",
+    )
 
     # Models
     embedding_model: str = Field(
@@ -40,6 +43,28 @@ class Settings(BaseSettings):
     chunk_size: int = Field(default=512, description="Text chunk size")
     chunk_overlap: int = Field(default=64, description="Text chunk overlap")
     embedding_batch_size: int = Field(default=32, description="Embedding batch size")
+
+    # Folder Watching
+    folder_watch_concurrency: int = Field(
+        default=5,
+        description="Maximum concurrent file ingestions across all watched folders",
+    )
+    folder_watch_debounce_seconds: float = Field(
+        default=2.0,
+        description="Seconds to wait before processing a detected file",
+    )
+    folder_watch_max_folders: int = Field(
+        default=100,
+        description="Maximum number of folders that can be watched simultaneously",
+    )
+    folder_watch_auto_resume: bool = Field(
+        default=True,
+        description="Automatically resume watching folders on server restart",
+    )
+    folder_watch_health_check_interval: int = Field(
+        default=300,
+        description="Seconds between folder health checks (0 to disable)",
+    )
 
     # Privacy
     local_only: bool = Field(default=True, description="Local-only mode")
@@ -84,15 +109,9 @@ class Settings(BaseSettings):
         if self.vault_path is None:
             self.vault_path = self.lifearch_home / "vault"
 
-        # Note: database_url is kept for potential future use but not actively used
-        # Current data stores: Redis (metadata), Qdrant (vectors), Vault (files)
-        if self.database_url is None:
-            self.database_url = f"sqlite:///{self.lifearch_home}/data/lifearch.db"
-
         # Ensure directories exist
         self.lifearch_home.mkdir(parents=True, exist_ok=True)
         self.vault_path.mkdir(parents=True, exist_ok=True)
-        # Note: data/ directory not created since SQLite database is not currently used
 
 
 def configure_logging(level: str = "INFO") -> None:

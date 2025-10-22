@@ -2,8 +2,7 @@
  * SearchModeToggle component - toggle between search modes
  */
 
-import React from 'react';
-import { SearchMode } from '../types';
+import { type SearchMode } from '../types';
 import { SEARCH_MODES } from '../constants';
 
 interface SearchModeToggleProps {
@@ -11,11 +10,8 @@ interface SearchModeToggleProps {
   onModeChange: (mode: SearchMode) => void;
 }
 
-export const SearchModeToggle: React.FC<SearchModeToggleProps> = ({
-  searchMode,
-  onModeChange,
-}) => {
-  const currentMode = SEARCH_MODES.find(mode => mode.value === searchMode);
+export const SearchModeToggle: React.FC<SearchModeToggleProps> = ({ searchMode, onModeChange }) => {
+  const currentMode = SEARCH_MODES.find((mode) => mode.value === searchMode);
 
   return (
     <div className="mb-6">
@@ -35,9 +31,7 @@ export const SearchModeToggle: React.FC<SearchModeToggleProps> = ({
         ))}
       </div>
       {currentMode && (
-        <div className="mt-2 text-xs text-muted-foreground">
-          {currentMode.description}
-        </div>
+        <div className="mt-2 text-xs text-muted-foreground">{currentMode.description}</div>
       )}
     </div>
   );

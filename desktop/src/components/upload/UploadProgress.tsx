@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { 
-  FileText, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
+import { useMemo } from 'react';
+import {
+  FileText,
+  CheckCircle2,
+  XCircle,
+  Loader2,
   Copy,
   AlertCircle,
   Clock,
@@ -12,9 +12,9 @@ import {
   FileCode,
   File,
   RotateCcw,
-  X
+  X,
 } from 'lucide-react';
-import { UploadItem as UploadItemType, UploadBatch } from '../../types/upload';
+import { type UploadItem as UploadItemType, type UploadBatch } from '../../types/upload';
 
 interface UploadProgressProps {
   batches: UploadBatch[];
@@ -24,8 +24,8 @@ interface UploadProgressProps {
 }
 
 const getFileIcon = (fileName: string): React.ReactNode => {
-  const ext = fileName.split('.').pop()?.toLowerCase() || '';
-  
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+
   if (['pdf'].includes(ext)) {
     return <FileText className="h-5 w-5 text-red-500" />;
   }
@@ -41,7 +41,7 @@ const getFileIcon = (fileName: string): React.ReactNode => {
   if (['txt', 'md', 'rtf'].includes(ext)) {
     return <FileCode className="h-5 w-5 text-gray-500" />;
   }
-  
+
   return <File className="h-5 w-5 text-gray-400" />;
 };
 
@@ -72,9 +72,9 @@ const getStatusText = (status: UploadItemType['status'], progressStage?: string)
     case 'error':
       return 'Failed';
     case 'uploading':
-      return progressStage || 'Uploading...';
+      return progressStage ?? 'Uploading...';
     case 'processing':
-      return progressStage || 'Processing...';
+      return progressStage ?? 'Processing...';
     case 'pending':
       return 'Waiting...';
     default:
@@ -82,28 +82,26 @@ const getStatusText = (status: UploadItemType['status'], progressStage?: string)
   }
 };
 
-const UploadProgress: React.FC<UploadProgressProps> = ({ 
-  batches, 
-  onRetry, 
+const UploadProgress: React.FC<UploadProgressProps> = ({
+  batches,
+  onRetry,
   onCancel,
-  onClearCompleted 
+  onClearCompleted,
 }) => {
   // Calculate overall statistics
   const stats = useMemo(() => {
-    const allItems = batches.flatMap(b => b.items);
+    const allItems = batches.flatMap((b) => b.items);
     const total = allItems.length;
-    const completed = allItems.filter(i => i.status === 'completed').length;
-    const duplicates = allItems.filter(i => i.status === 'duplicate').length;
-    const errors = allItems.filter(i => i.status === 'error').length;
-    const processing = allItems.filter(i => 
-      i.status === 'uploading' || i.status === 'processing'
+    const completed = allItems.filter((i) => i.status === 'completed').length;
+    const duplicates = allItems.filter((i) => i.status === 'duplicate').length;
+    const errors = allItems.filter((i) => i.status === 'error').length;
+    const processing = allItems.filter(
+      (i) => i.status === 'uploading' || i.status === 'processing'
     ).length;
-    const pending = allItems.filter(i => i.status === 'pending').length;
-    
-    const overallProgress = total > 0 
-      ? ((completed + duplicates) / total) * 100 
-      : 0;
-    
+    const pending = allItems.filter((i) => i.status === 'pending').length;
+
+    const overallProgress = total > 0 ? ((completed + duplicates) / total) * 100 : 0;
+
     return {
       total,
       completed,
@@ -111,32 +109,32 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
       errors,
       processing,
       pending,
-      overallProgress
+      overallProgress,
     };
   }, [batches]);
 
   // Get all items sorted by status (active first, then errors, then completed)
   const sortedItems = useMemo(() => {
-    const allItems = batches.flatMap(b => b.items);
-    
+    const allItems = batches.flatMap((b) => b.items);
+
     return allItems.sort((a, b) => {
       const statusOrder = {
-        'uploading': 0,
-        'processing': 1,
-        'pending': 2,
-        'error': 3,
-        'duplicate': 4,
-        'completed': 5
+        uploading: 0,
+        processing: 1,
+        pending: 2,
+        error: 3,
+        duplicate: 4,
+        completed: 5,
       };
-      
+
       return (statusOrder[a.status] || 6) - (statusOrder[b.status] || 6);
     });
   }, [batches]);
 
   const hasActiveUploads = stats.processing > 0 || stats.pending > 0;
   const hasErrors = stats.errors > 0;
-  const allComplete = stats.total > 0 && 
-    (stats.completed + stats.duplicates + stats.errors) === stats.total;
+  const allComplete =
+    stats.total > 0 && stats.completed + stats.duplicates + stats.errors === stats.total;
 
   return (
     <div className="w-full">
@@ -181,15 +179,14 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
                 <AlertCircle className="h-6 w-6 text-amber-500" />
               </div>
             )}
-            
+
             <div>
               <h3 className="text-lg font-semibold">
-                {hasActiveUploads 
+                {hasActiveUploads
                   ? `Processing ${stats.total} ${stats.total === 1 ? 'file' : 'files'}...`
-                  : allComplete 
+                  : allComplete
                     ? 'Upload Complete'
-                    : 'Upload Paused'
-                }
+                    : 'Upload Paused'}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {stats.completed > 0 && (
@@ -215,19 +212,21 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
               </p>
             </div>
           </div>
-          
+
           {/* Action buttons */}
           <div className="flex items-center space-x-2">
             {hasErrors && (
               <button
-                onClick={() => sortedItems.filter(i => i.status === 'error').forEach(i => onRetry(i.id))}
+                onClick={() =>
+                  sortedItems.filter((i) => i.status === 'error').forEach((i) => onRetry(i.id))
+                }
                 className="px-3 py-1.5 text-sm bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-500/20 transition-colors flex items-center space-x-1"
               >
                 <RotateCcw className="h-4 w-4" />
                 <span>Retry Failed</span>
               </button>
             )}
-            
+
             {allComplete && onClearCompleted && (
               <button
                 onClick={onClearCompleted}
@@ -236,7 +235,7 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
                 Clear
               </button>
             )}
-            
+
             {onCancel && hasActiveUploads && (
               <button
                 onClick={onCancel}
@@ -248,11 +247,11 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
             )}
           </div>
         </div>
-        
+
         {/* Overall progress bar */}
         <div className="w-full">
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 ease-out"
               style={{ width: `${stats.overallProgress}%` }}
             />
@@ -272,38 +271,36 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
       <div className="glass-card rounded-xl p-4 max-h-96 overflow-y-auto">
         <div className="space-y-2">
           {sortedItems.map((item) => (
-            <div 
+            <div
               key={item.id}
               className={`flex items-center justify-between p-3 rounded-lg transition-all ${
-                item.status === 'error' 
-                  ? 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800' 
+                item.status === 'error'
+                  ? 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800'
                   : item.status === 'duplicate'
                     ? 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800'
                     : item.status === 'completed'
                       ? 'bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800'
-                      : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700'
+                      : 'bg-gray-100 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700'
               }`}
             >
               <div className="flex items-center space-x-3 flex-1 min-w-0">
                 {/* File icon */}
-                <div className="flex-shrink-0">
-                  {getFileIcon(item.file.name)}
-                </div>
-                
+                <div className="flex-shrink-0">{getFileIcon(item.file.name)}</div>
+
                 {/* File info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {item.file.name}
-                  </p>
+                  <p className="text-sm font-medium truncate">{item.file.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {item.file.size ? `${(item.file.size / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'}
+                    {item.file.size
+                      ? `${(item.file.size / 1024 / 1024).toFixed(2)} MB`
+                      : 'Unknown size'}
                     {item.progressMessage && ` • ${item.progressMessage}`}
                   </p>
-                  
+
                   {/* Progress bar for active uploads */}
                   {(item.status === 'uploading' || item.status === 'processing') && (
                     <div className="mt-1 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-primary transition-all duration-300"
                         style={{ width: `${item.progress}%` }}
                       />
@@ -311,13 +308,13 @@ const UploadProgress: React.FC<UploadProgressProps> = ({
                   )}
                 </div>
               </div>
-              
+
               {/* Status and actions */}
               <div className="flex items-center space-x-3 ml-3">
                 <span className="text-xs text-muted-foreground">
                   {getStatusText(item.status, item.progressStage)}
                 </span>
-                
+
                 {item.status === 'error' ? (
                   <button
                     onClick={() => onRetry(item.id)}

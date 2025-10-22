@@ -15,7 +15,7 @@ export const SEARCH_CONFIG = {
   MAX_TAGS_DISPLAY: 6,
 } as const;
 
-export const SEARCH_MODES: Array<{ value: SearchMode; label: string; description: string }> = [
+export const SEARCH_MODES: { value: SearchMode; label: string; description: string }[] = [
   {
     value: 'keyword',
     label: 'Keyword',
@@ -39,7 +39,7 @@ export const MIME_TYPE_ICONS: Record<string, string> = {
   'text/': '📄',
   'application/pdf': '📕',
   'image/': '🖼️',
-  'default': '📄',
+  default: '📄',
 } as const;
 
 export const UI_TEXT = {
@@ -61,7 +61,7 @@ export const UI_TEXT = {
   SEARCH_ERROR: 'Search Error',
   RESULTS_FOUND: (count: number) => `${count} result${count !== 1 ? 's' : ''} found`,
   SHOWING_RESULTS: {
-    WITH_QUERY_AND_TAGS: (query: string, tags: string[]) => 
+    WITH_QUERY_AND_TAGS: (query: string, tags: string[]) =>
       `Showing results for "${query}" with tags: ${tags.join(', ')}`,
     WITH_QUERY: (query: string) => `Showing results for "${query}"`,
     WITH_TAGS: (tags: string[]) => `Showing results with tags: ${tags.join(', ')}`,
@@ -74,4 +74,4 @@ export const UI_TEXT = {
   REMOVE_FILTER: (tag: string) => `Remove filter: ${tag}`,
 } as const;
 
-import { SearchMode } from './types';
+import { type SearchMode } from './types';

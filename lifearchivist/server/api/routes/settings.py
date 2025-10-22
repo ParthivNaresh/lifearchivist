@@ -14,6 +14,8 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from lifearchivist.config import get_settings as get_app_settings
+
 from ..dependencies import get_server
 
 router = APIRouter(prefix="/api", tags=["settings"])
@@ -146,8 +148,14 @@ async def update_settings(request: SettingsUpdateRequest):
     """
     Update application settings.
 
-    Note: Currently stores updates in memory only.
-    Persistence to configuration file will be added in a future update.
+    Updates are applied to the global settings instance and will affect:
+    - New conversation creation (llm_model)
+    - File size validation (max_file_size_mb)
+    - UI theme (theme)
+    - Other runtime behavior
+
+    Note: Settings are stored in memory only. Changes persist until server restart.
+    For permanent changes, update environment variables or .env file.
 
     Validates:
     - File size limits (1-1000 MB)
@@ -156,19 +164,31 @@ async def update_settings(request: SettingsUpdateRequest):
     - Interface density (compact/comfortable/spacious)
     """
     try:
+        settings = get_app_settings()
         updated_fields = []
 
-        # Track all fields that would be updated
+        # Update settings in memory
+        if request.max_file_size_mb is not None:
+            settings.max_file_size_mb = request.max_file_size_mb
+            updated_fields.append("max_file_size_mb")
+
+        if request.llm_model is not None:
+            settings.llm_model = request.llm_model
+            updated_fields.append("llm_model")
+
+        if request.embedding_model is not None:
+            settings.embedding_model = request.embedding_model
+            updated_fields.append("embedding_model")
+
+        if request.theme is not None:
+            settings.theme = request.theme
+            updated_fields.append("theme")
+
+        # Track other fields (not yet persisted to settings object)
         if request.auto_extract_dates is not None:
             updated_fields.append("auto_extract_dates")
         if request.generate_text_previews is not None:
             updated_fields.append("generate_text_previews")
-        if request.max_file_size_mb is not None:
-            updated_fields.append("max_file_size_mb")
-        if request.llm_model is not None:
-            updated_fields.append("llm_model")
-        if request.embedding_model is not None:
-            updated_fields.append("embedding_model")
         if request.search_results_limit is not None:
             updated_fields.append("search_results_limit")
         if request.auto_organize_by_date is not None:
@@ -177,8 +197,6 @@ async def update_settings(request: SettingsUpdateRequest):
             updated_fields.append("duplicate_detection")
         if request.default_import_location is not None:
             updated_fields.append("default_import_location")
-        if request.theme is not None:
-            updated_fields.append("theme")
         if request.interface_density is not None:
             updated_fields.append("interface_density")
 
@@ -191,7 +209,8 @@ async def update_settings(request: SettingsUpdateRequest):
             "success": True,
             "message": "Settings updated successfully",
             "updated_fields": updated_fields,
-            "note": "Settings updates are currently stored in memory only. Persistence will be added in a future update.",
+            "current_llm_model": settings.llm_model,
+            "note": "Settings are stored in memory and persist until server restart. For permanent changes, update environment variables.",
         }
 
     except HTTPException:

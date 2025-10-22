@@ -2,7 +2,6 @@
  * SearchBar component - search input with toggle
  */
 
-import React from 'react';
 import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
@@ -18,7 +17,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   isSearching,
   onSearchTermChange,
   onSearchingChange,
-  placeholder = 'Search in current folder...'
+  placeholder = 'Search in current folder...',
 }) => {
   if (isSearching) {
     return (

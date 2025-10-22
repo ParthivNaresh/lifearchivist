@@ -12,18 +12,21 @@ export const useSearchNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleDocumentClick = useCallback((documentId: string) => {
-    // Pass state to indicate we came from search
-    navigate(`/vault/${documentId}/details`, {
-      state: {
-        from: 'search',
-        returnPath: location.pathname + location.search, // Include search params
-      }
-    });
-  }, [navigate, location.pathname, location.search]);
+  const handleDocumentClick = useCallback(
+    (documentId: string) => {
+      // Pass state to indicate we came from search
+      navigate(`/vault/${documentId}/details`, {
+        state: {
+          from: 'search',
+          returnPath: location.pathname + location.search, // Include search params
+        },
+      });
+    },
+    [navigate, location.pathname, location.search]
+  );
 
   return {
-    handleDocumentClick
+    handleDocumentClick,
   };
 };
 
@@ -49,7 +52,10 @@ export const useUrlParams = (
     // Read tags from URL
     const urlTags = searchParams.get('tags');
     if (urlTags) {
-      const tags = urlTags.split(',').map(tag => decodeURIComponent(tag.trim())).filter(Boolean);
+      const tags = urlTags
+        .split(',')
+        .map((tag) => decodeURIComponent(tag.trim()))
+        .filter(Boolean);
       setSelectedTags(tags);
     } else {
       setSelectedTags([]); // Clear if no tags in URL

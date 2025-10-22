@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
-import { 
-  ChevronDown, 
-  ChevronRight, 
-  Folder, 
-  Files, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
+import { useState } from 'react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  Files,
+  Clock,
+  CheckCircle2,
+  XCircle,
   Trash2,
   RotateCcw,
-  Download,
   Copy,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
-import { UploadBatch as UploadBatchType } from '../../types/upload';
+import { type UploadBatch as UploadBatchType } from '../../types/upload';
 import { UploadItem } from './UploadItem';
 
 interface UploadBatchProps {
@@ -23,7 +22,7 @@ interface UploadBatchProps {
   onRetryItem: (itemId: string) => void;
 }
 
-const getBatchIcon = (batchName: string, itemCount: number) => {
+const getBatchIcon = (batchName: string) => {
   if (batchName.toLowerCase().includes('folder') || batchName.includes('/')) {
     return <Folder className="w-4 h-4" />;
   }
@@ -66,7 +65,7 @@ const getBatchStatusColor = (status: UploadBatchType['status']) => {
 
 const calculateBatchProgress = (batch: UploadBatchType): number => {
   if (batch.items.length === 0) return 0;
-  
+
   const totalProgress = batch.items.reduce((acc, item) => {
     if (item.status === 'completed') return acc + 100;
     if (item.status === 'error') return acc + 0;
@@ -81,27 +80,29 @@ const formatTimeAgo = (timestamp: number): string => {
   const diff = now - timestamp;
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
-  
+
   if (minutes < 1) return 'Just now';
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   return new Date(timestamp).toLocaleDateString();
 };
 
-export const UploadBatch: React.FC<UploadBatchProps> = ({ 
-  batch, 
-  onRemove, 
-  onRetryBatch, 
-  onRetryItem 
+export const UploadBatch: React.FC<UploadBatchProps> = ({
+  batch,
+  onRemove,
+  onRetryBatch,
+  onRetryItem,
 }) => {
   const [isExpanded, setIsExpanded] = useState(batch.status === 'active');
-  
+
   const progress = calculateBatchProgress(batch);
   const hasFailedItems = batch.errorFiles > 0;
   const isActive = batch.status === 'active';
 
   return (
-    <div className={`rounded-xl upload-item-glass transition-all duration-300 ${getBatchStatusColor(batch.status)}`}>
+    <div
+      className={`rounded-xl upload-item-glass transition-all duration-300 ${getBatchStatusColor(batch.status)}`}
+    >
       {/* Batch Header */}
       <div className="p-4">
         <div className="flex items-center justify-between">
@@ -116,32 +117,26 @@ export const UploadBatch: React.FC<UploadBatchProps> = ({
                 <ChevronRight className="w-4 h-4 text-white/60 group-hover:text-white/80" />
               )}
               <div className="p-2 rounded-lg bg-white/5 border border-white/10">
-                {getBatchIcon(batch.name, batch.totalFiles)}
+                {getBatchIcon(batch.name)}
               </div>
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-white/90 truncate">
-                  {batch.name}
-                </h3>
+                <h3 className="font-medium text-white/90 truncate">{batch.name}</h3>
                 <div className="flex items-center space-x-2 ml-2">
                   {getBatchStatusIcon(batch.status)}
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between mt-1">
                 <p className="text-sm text-white/60">
                   {batch.completedFiles}/{batch.totalFiles} files
                   {batch.errorFiles > 0 && (
-                    <span className="text-red-400 ml-2">
-                      • {batch.errorFiles} failed
-                    </span>
+                    <span className="text-red-400 ml-2">• {batch.errorFiles} failed</span>
                   )}
                 </p>
-                <span className="text-xs text-white/50">
-                  {formatTimeAgo(batch.createdAt)}
-                </span>
+                <span className="text-xs text-white/50">{formatTimeAgo(batch.createdAt)}</span>
               </div>
             </div>
           </button>
@@ -157,7 +152,7 @@ export const UploadBatch: React.FC<UploadBatchProps> = ({
                 <RotateCcw className="w-4 h-4 text-white/60 hover:text-white/80" />
               </button>
             )}
-            
+
             {!isActive && (
               <button
                 onClick={onRemove}
@@ -174,19 +169,15 @@ export const UploadBatch: React.FC<UploadBatchProps> = ({
         {isActive && (
           <div className="mt-3">
             <div className="h-2 progress-glass">
-              <div 
+              <div
                 className="h-full progress-fill transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
             <div className="flex justify-between items-center mt-1">
-              <span className="text-xs text-white/60">
-                {Math.round(progress)}% complete
-              </span>
+              <span className="text-xs text-white/60">{Math.round(progress)}% complete</span>
               {batch.status === 'active' && (
-                <span className="text-xs text-white/60">
-                  Processing...
-                </span>
+                <span className="text-xs text-white/60">Processing...</span>
               )}
             </div>
           </div>
@@ -198,11 +189,7 @@ export const UploadBatch: React.FC<UploadBatchProps> = ({
         <div className="border-t border-white/10">
           <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
             {batch.items.map((item) => (
-              <UploadItem
-                key={item.id}
-                item={item}
-                onRetry={() => onRetryItem(item.id)}
-              />
+              <UploadItem key={item.id} item={item} onRetry={() => onRetryItem(item.id)} />
             ))}
           </div>
         </div>

@@ -2,16 +2,15 @@
  * MessageBubble component - individual message display
  */
 
-import React from 'react';
 import { FileText } from 'lucide-react';
-import { Message } from '../types';
+import { type Message } from '../types';
 import { UI_TEXT } from '../constants';
-import { 
-  formatConfidence, 
-  getConfidenceColor, 
-  getMethodDescription, 
+import {
+  formatConfidence,
+  getConfidenceColor,
+  getMethodDescription,
   formatTimestamp,
-  formatRelevanceScore 
+  formatRelevanceScore,
 } from '../utils';
 
 interface MessageBubbleProps {
@@ -26,13 +25,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       <div className={`max-w-3xl ${isQuestion ? 'ml-auto' : 'mr-auto'}`}>
         <div
           className={`p-4 rounded-lg ${
-            isQuestion
-              ? 'bg-primary text-primary-foreground'
-              : 'glass-card border border-border/30'
+            isQuestion ? 'bg-primary text-primary-foreground' : 'glass-card border border-border/30'
           }`}
         >
           <div className="whitespace-pre-wrap">{message.content}</div>
-          
+
           {!isQuestion && (
             <div className="mt-3 space-y-3">
               {/* Confidence and Method */}
@@ -55,9 +52,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     </div>
                   )}
                 </div>
-                <span className="text-muted-foreground">
-                  {formatTimestamp(message.timestamp)}
-                </span>
+                <span className="text-muted-foreground">{formatTimestamp(message.timestamp)}</span>
               </div>
 
               {/* Citations */}
@@ -68,8 +63,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                     {UI_TEXT.MESSAGE.SOURCES(message.citations.length)}
                   </div>
                   <div className="space-y-2">
-                    {message.citations.map((citation, index) => (
-                      <div key={index} className="p-3 bg-muted/30 rounded border border-border/20">
+                    {message.citations.map((citation) => (
+                      <div
+                        key={`${citation.doc_id}-${citation.snippet.substring(0, 20)}`}
+                        className="p-3 bg-muted/30 rounded border border-border/20"
+                      >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="font-medium text-sm">{citation.title}</div>

@@ -2,9 +2,8 @@
  * QAHeader component - displays page title and controls
  */
 
-import React from 'react';
 import { MessageCircle, Trash2, BarChart3 } from 'lucide-react';
-import { ConversationStats } from '../types';
+import { type ConversationStats } from '../types';
 import { CONTEXT_LIMIT_OPTIONS, UI_TEXT } from '../constants';
 import { formatConfidence, getConfidenceColor } from '../utils';
 
@@ -33,11 +32,9 @@ export const QAHeader: React.FC<QAHeaderProps> = ({
             <MessageCircle className="h-6 w-6 mr-2" />
             {UI_TEXT.PAGE_TITLE}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {UI_TEXT.PAGE_SUBTITLE}
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{UI_TEXT.PAGE_SUBTITLE}</p>
         </div>
-        
+
         {/* Settings and Actions */}
         <div className="flex items-center space-x-4">
           {/* Conversation Stats */}
@@ -66,7 +63,7 @@ export const QAHeader: React.FC<QAHeaderProps> = ({
               onChange={(e) => onContextLimitChange(Number(e.target.value))}
               className="px-3 py-1 border border-input rounded-md bg-background text-foreground"
             >
-              {CONTEXT_LIMIT_OPTIONS.map(option => (
+              {CONTEXT_LIMIT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -91,7 +88,7 @@ export const QAHeader: React.FC<QAHeaderProps> = ({
 
               {/* Confirmation Modal */}
               {showClearConfirm && (
-                <div 
+                <div
                   className="absolute top-full right-0 mt-2 p-4 bg-card border border-border rounded-lg shadow-lg z-10 min-w-[280px] confirmation-modal"
                   onClick={(e) => e.stopPropagation()}
                 >

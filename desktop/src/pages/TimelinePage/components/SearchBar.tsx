@@ -2,7 +2,7 @@
  * Search bar component for timeline filtering
  */
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
@@ -21,7 +21,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   totalCount,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   // Keyboard shortcut: Cmd/Ctrl + F
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -30,13 +30,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         inputRef.current?.focus();
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-  
+
   const showResultCount = value.trim() && resultCount !== undefined && totalCount !== undefined;
-  
+
   return (
     <div className="flex items-center gap-3">
       {/* Search Input */}
@@ -60,7 +60,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           </button>
         )}
       </div>
-      
+
       {/* Result Count */}
       {showResultCount && (
         <span className="text-sm text-muted-foreground">
