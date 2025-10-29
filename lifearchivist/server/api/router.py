@@ -12,6 +12,7 @@ from .routes import (
     documents,
     enrichment,
     folder_watch,
+    providers,
     search,
 )
 from .routes import settings as settings_routes
@@ -42,6 +43,7 @@ def get_api_router() -> APIRouter:
     api_router.include_router(folder_watch.router)
     api_router.include_router(activity.router)
     api_router.include_router(timeline.router)
+    api_router.include_router(providers.router)
 
     # Conditionally include WebSocket routes
     if settings.enable_websockets:

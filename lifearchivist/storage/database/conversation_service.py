@@ -56,7 +56,7 @@ class ConversationService:
 
     @track(
         operation="conversation_create",
-        include_args=["user_id", "model"],
+        include_args=["user_id", "model", "provider_id"],
         include_result=True,
         track_performance=True,
         frequency="low_frequency",
@@ -66,6 +66,7 @@ class ConversationService:
         user_id: str = "default",
         title: Optional[str] = None,
         model: Optional[str] = None,
+        provider_id: Optional[str] = None,
         context_documents: Optional[List[str]] = None,
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
@@ -79,6 +80,7 @@ class ConversationService:
             user_id: User identifier (default: "default")
             title: Conversation title (auto-generated if None)
             model: LLM model to use (defaults to current settings)
+            provider_id: LLM provider ID (e.g., "my-openai"). NULL = use default
             context_documents: List of document IDs for context
             system_prompt: Custom system prompt
             temperature: LLM temperature (0-2)
@@ -117,6 +119,9 @@ class ConversationService:
 
             if title:
                 data["title"] = title
+
+            if provider_id:
+                data["provider_id"] = provider_id
 
             if context_documents:
                 data["context_documents"] = context_documents
@@ -318,6 +323,8 @@ class ConversationService:
         self,
         conversation_id: str,
         title: Optional[str] = None,
+        model: Optional[str] = None,
+        provider_id: Optional[str] = None,
         context_documents: Optional[List[str]] = None,
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
@@ -330,6 +337,8 @@ class ConversationService:
         Args:
             conversation_id: Conversation UUID
             title: New title
+            model: New model
+            provider_id: New provider ID
             context_documents: New context documents
             system_prompt: New system prompt
             temperature: New temperature
@@ -348,6 +357,12 @@ class ConversationService:
 
             if title is not None:
                 updates["title"] = title
+
+            if model is not None:
+                updates["model"] = model
+
+            if provider_id is not None:
+                updates["provider_id"] = provider_id
 
             if context_documents is not None:
                 updates["context_documents"] = context_documents

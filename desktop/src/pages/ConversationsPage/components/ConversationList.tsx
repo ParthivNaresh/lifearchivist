@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { MessageCircle, Plus, Settings } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { EditableTitle } from './EditableTitle';
-import { ConversationSettingsModal } from './ConversationSettingsModal';
+import { ConversationSettingsModal } from './ConversationSettingsModal/index';
 import type { Conversation } from '../types';
 
 interface ConversationListProps {

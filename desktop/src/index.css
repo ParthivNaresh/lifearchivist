@@ -192,6 +192,30 @@
     animation: shimmer 2s infinite;
   }
 
+  /* Fade in animation for test results */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Fade out animation for test results */
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+  }
+
   /* Enhanced drop zone with glass effect */
   .glass-dropzone {
     background: rgba(255, 255, 255, 0.35);

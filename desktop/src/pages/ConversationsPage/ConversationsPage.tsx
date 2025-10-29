@@ -10,6 +10,7 @@ import { ConversationList } from './components/ConversationList';
 import { MessageList } from './components/MessageList';
 import { MessageInput } from './components/MessageInput';
 import { EditableTitle } from './components/EditableTitle';
+import { ModelSelector } from './components/ModelSelector';
 
 const ConversationsPage: React.FC = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -37,6 +38,7 @@ const ConversationsPage: React.FC = () => {
 
   const handleNewConversation = async () => {
     try {
+      // Create with defaults - backend will use default provider/model
       const newConv = await createConversation('New Conversation');
       setSelectedConversationId(newConv.id);
     } catch (err) {
@@ -97,6 +99,28 @@ const ConversationsPage: React.FC = () => {
     }
   };
 
+  const handleModelChange = async (model: string, providerId?: string) => {
+    if (!selectedConversationId) return;
+
+    try {
+      await conversationsApi.update(selectedConversationId, {
+        model,
+        provider_id: providerId,
+      });
+
+      await reloadConversation();
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === selectedConversationId ? { ...c, model, provider_id: providerId ?? null } : c
+        )
+      );
+    } catch (err) {
+      console.error('Failed to update model:', err);
+      throw err;
+    }
+  };
+
   return (
     <div className="h-full flex">
       {/* Conversation List Sidebar */}
@@ -128,9 +152,15 @@ const ConversationsPage: React.FC = () => {
                       placeholder="Untitled Conversation"
                       fullWidth={false}
                     />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Model: {conversation.model} • Temperature: {conversation.temperature}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <ModelSelector
+                        currentModel={conversation.model}
+                        onModelChange={handleModelChange}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        • Temperature: {conversation.temperature}
+                      </span>
+                    </div>
                   </div>
                   <button
                     onClick={() => setDeleteConfirmId(conversation.id)}

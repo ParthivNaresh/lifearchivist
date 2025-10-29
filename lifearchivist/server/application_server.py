@@ -214,6 +214,18 @@ class ApplicationServer:
                     level=logging.WARNING,
                 )
 
+        # Cleanup LLM provider manager (before service container)
+        if self.service_container and self.service_container.llm_provider_manager:
+            try:
+                await self.service_container.llm_provider_manager.shutdown()
+                log_event("llm_provider_manager_cleaned_up")
+            except Exception as e:
+                log_event(
+                    "llm_provider_manager_cleanup_error",
+                    {"error": str(e)},
+                    level=logging.WARNING,
+                )
+
         # Cleanup core infrastructure
         if self.service_container:
             try:
@@ -596,6 +608,35 @@ class ApplicationServer:
             if self.service_container
             else None
         )
+
+    @property
+    def credential_service(self):
+        """Get credential service from service container."""
+        return (
+            self.service_container.credential_service
+            if self.service_container
+            else None
+        )
+
+    @property
+    def llm_manager(self):
+        """Get LLM provider manager from service container (alias for compatibility)."""
+        return (
+            self.service_container.llm_provider_manager
+            if self.service_container
+            else None
+        )
+
+    @property
+    def provider_loader(self):
+        """Get provider loader (created on-demand from credential service)."""
+        if not self.credential_service:
+            return None
+
+        # Create loader on-demand
+        from ..llm import ProviderLoader
+
+        return ProviderLoader(self.credential_service)
 
     @property
     def is_initialized(self) -> bool:

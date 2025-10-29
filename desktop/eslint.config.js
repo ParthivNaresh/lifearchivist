@@ -15,6 +15,7 @@ export default tseslint.config(
       '*.config.js',
       '*.config.ts',
       'main.js',
+      'main.cjs',
       'preload.js',
     ],
   },

@@ -33,16 +33,23 @@ export function useConversations() {
     void loadConversations();
   }, [loadConversations]);
 
-  const createConversation = useCallback(async (title?: string) => {
-    try {
-      const conversation = await conversationsApi.create({ title });
-      setConversations((prev) => [conversation, ...prev]);
-      return conversation;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create conversation');
-      throw err;
-    }
-  }, []);
+  const createConversation = useCallback(
+    async (title?: string, providerId?: string, model?: string) => {
+      try {
+        const conversation = await conversationsApi.create({
+          title,
+          provider_id: providerId,
+          model,
+        });
+        setConversations((prev) => [conversation, ...prev]);
+        return conversation;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create conversation');
+        throw err;
+      }
+    },
+    []
+  );
 
   const deleteConversation = useCallback(async (conversationId: string) => {
     try {
@@ -303,14 +310,13 @@ export function useConversation(conversationId: string | null) {
                 }
               }
             },
-            onError: (errorMsg) => {
-              // Remove temporary messages on error
+            onError: (_errorMsg) => {
+              // Remove temporary assistant message - backend has saved the error message
               setMessages((prev) =>
-                prev.filter(
-                  (m) => m.id !== optimisticUserMessage.id && m.id !== streamingAssistantMessage.id
-                )
+                prev.filter((m) => m.id !== streamingAssistantMessage.id)
               );
-              setError(errorMsg);
+              // Reload conversation to get the properly formatted error message from backend
+              void loadConversation();
             },
           },
           abortController.signal

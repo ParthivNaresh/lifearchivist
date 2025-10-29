@@ -27,6 +27,7 @@ CREATE TABLE conversations (
     -- Conversation metadata
     title VARCHAR(500),  -- Auto-generated from first message
     model VARCHAR(100) NOT NULL,  -- llama3.2, gpt-4, etc.
+    provider_id VARCHAR(255),  -- LLM provider ID (e.g., "my-openai"). NULL = use default
     
     -- Context management
     context_documents TEXT[] DEFAULT '{}',  -- Array of document IDs
@@ -55,6 +56,7 @@ CREATE INDEX idx_conversations_user_id ON conversations(user_id) WHERE archived_
 CREATE INDEX idx_conversations_updated_at ON conversations(updated_at DESC) WHERE archived_at IS NULL;
 CREATE INDEX idx_conversations_last_message_at ON conversations(last_message_at DESC NULLS LAST) WHERE archived_at IS NULL;
 CREATE INDEX idx_conversations_archived ON conversations(archived_at) WHERE archived_at IS NOT NULL;
+CREATE INDEX idx_conversations_provider_id ON conversations(provider_id) WHERE provider_id IS NOT NULL;
 CREATE INDEX idx_conversations_title_trgm ON conversations USING gin(title gin_trgm_ops);  -- Fuzzy search
 
 -- Trigger to update updated_at

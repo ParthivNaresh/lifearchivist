@@ -9,6 +9,7 @@ export interface Conversation {
   user_id: string;
   title: string | null;
   model: string;
+  provider_id: string | null;
   context_documents: string[];
   system_prompt: string | null;
   temperature: number;
@@ -23,6 +24,15 @@ export interface Conversation {
 }
 
 export type MessageMetadata = Record<string, string | number | boolean | null>;
+
+export interface ErrorMessageMetadata {
+  is_error: boolean;
+  error_type: string;
+  provider_id: string;
+  model: string;
+  retryable: boolean;
+  raw_error?: string;
+}
 
 export interface Message {
   id: string;
@@ -56,6 +66,17 @@ export interface Citation {
 export interface CreateConversationRequest {
   title?: string;
   model?: string;
+  provider_id?: string;
+  context_documents?: string[];
+  system_prompt?: string;
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export interface UpdateConversationRequest {
+  title?: string;
+  model?: string;
+  provider_id?: string;
   context_documents?: string[];
   system_prompt?: string;
   temperature?: number;

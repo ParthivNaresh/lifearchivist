@@ -224,39 +224,60 @@ async def update_settings(request: SettingsUpdateRequest):
 @router.get("/settings/models", response_model=AvailableModelsResponse)
 async def get_available_models():
     """
-    Get available LLM and embedding models.
+    Get available LLM and embedding models from all providers.
 
     Returns lists of:
-    - LLM models for text generation and Q&A
+    - LLM models from all registered providers (Ollama, OpenAI, etc.)
     - Embedding models for semantic search
 
-    Future enhancement: Query Ollama API for dynamically available models.
+    Queries the provider manager to get real-time model availability.
     """
-    try:
-        llm_models = [
-            {
-                "id": "llama3.2:1b",
-                "name": "Llama 3.2 1B",
-                "description": "Fast, lightweight model for basic tasks",
-                "size": "1B parameters",
-                "performance": "fast",
-            },
-            {
-                "id": "llama3.2:3b",
-                "name": "Llama 3.2 3B",
-                "description": "Balanced performance and accuracy",
-                "size": "3B parameters",
-                "performance": "balanced",
-            },
-            {
-                "id": "llama3.1:8b",
-                "name": "Llama 3.1 8B",
-                "description": "High accuracy for complex tasks",
-                "size": "8B parameters",
-                "performance": "accurate",
-            },
-        ]
+    server = get_server()
 
+    try:
+        llm_models = []
+
+        # Get models from all providers
+        if server.service_container and server.service_container.llm_provider_manager:
+            provider_manager = server.service_container.llm_provider_manager
+            providers = provider_manager.list_providers()
+
+            # Fetch models from each provider
+            for provider_info in providers:
+                provider_id = provider_info["id"]
+                provider_type = provider_info["type"]
+
+                try:
+                    models_result = await provider_manager.list_models(provider_id)
+
+                    if models_result.is_success():
+                        models = models_result.unwrap()
+
+                        # Convert ModelInfo to dict format
+                        for model in models:
+                            llm_models.append(
+                                {
+                                    "id": model.id,
+                                    "name": model.name,
+                                    "description": f"{provider_type.upper()} model",
+                                    "provider": provider_type,
+                                    "provider_id": provider_id,
+                                    "context_window": model.context_window,
+                                    "supports_streaming": model.supports_streaming,
+                                    "cost_per_1k_input": model.cost_per_1k_input,
+                                    "cost_per_1k_output": model.cost_per_1k_output,
+                                }
+                            )
+                except Exception as e:
+                    # Log but don't fail if one provider fails
+                    import logging
+
+                    logging.warning(
+                        f"Failed to fetch models from provider {provider_id}: {e}"
+                    )
+                    continue
+
+        # Hardcoded embedding models (these are local sentence-transformers)
         embedding_models = [
             {
                 "id": "all-MiniLM-L6-v2",

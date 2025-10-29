@@ -7,6 +7,7 @@ import type {
   ConversationListResponse,
   ConversationResponse,
   CreateConversationRequest,
+  UpdateConversationRequest,
   MessageListResponse,
   SendMessageRequest,
   SendMessageResponse,
@@ -254,16 +255,7 @@ export const conversationsApi = {
   /**
    * Update a conversation
    */
-  async update(
-    conversationId: string,
-    data: {
-      title?: string;
-      context_documents?: string[];
-      system_prompt?: string;
-      temperature?: number;
-      max_tokens?: number;
-    }
-  ): Promise<Conversation> {
+  async update(conversationId: string, data: UpdateConversationRequest): Promise<Conversation> {
     const response = await fetch(`${API_BASE}/conversations/${conversationId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

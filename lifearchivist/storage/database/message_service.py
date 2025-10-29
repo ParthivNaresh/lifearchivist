@@ -8,6 +8,7 @@ Provides operations for:
 - Message metadata
 """
 
+import json
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -148,7 +149,11 @@ class MessageService:
                     if parent_uuid:
                         data["parent_message_id"] = parent_uuid
                     if metadata:
-                        data["metadata"] = metadata
+                        data["metadata"] = (
+                            json.dumps(metadata)
+                            if isinstance(metadata, dict)
+                            else metadata
+                        )
 
                     # Insert message
                     query, values = build_insert_query("messages", data)

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Life Archivist Desktop Application",
-  "main": "main.js",
+  "main": "main.cjs",
   "scripts": {
     "start": "electron .",
     "dev": "concurrently \"npm run dev-server\" \"wait-on http://localhost:3000 && NODE_ENV=development electron .\"",
@@ -57,6 +57,7 @@
     "@radix-ui/react-dropdown-menu": "^2.0.0",
     "@radix-ui/react-select": "^2.0.0",
     "@radix-ui/react-tabs": "^1.0.0",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.90.5",
     "@tanstack/react-query-devtools": "^5.90.2",
     "@tanstack/react-virtual": "^3.13.12",
@@ -81,7 +82,8 @@
     },
     "files": [
       "build/**/*",
-      "main.js",
+      "main.cjs",
+      "preload.js",
       "package.json"
     ],
     "mac": {

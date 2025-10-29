@@ -15,7 +15,9 @@ import redis.asyncio as redis
 from qdrant_client import QdrantClient
 
 from ..config.settings import Settings
+from ..llm import LLMProviderManager
 from ..storage.bm25_index_service import BM25IndexService
+from ..storage.credential_service import CredentialService
 from ..storage.database import ConversationService, MessageService
 from ..storage.redis_document_tracker import RedisDocumentTracker
 from ..storage.vault.vault import Vault
@@ -103,6 +105,10 @@ class ServiceContainer:
         self.conversation_service: Optional["ConversationService"] = None
         self.message_service: Optional["MessageService"] = None
 
+        # LLM provider services
+        self.credential_service: Optional["CredentialService"] = None
+        self.llm_provider_manager: Optional["LLMProviderManager"] = None
+
     async def initialize(self) -> None:
         """
         Initialize all services in correct dependency order.
@@ -146,6 +152,10 @@ class ServiceContainer:
             await self._init_doc_tracker()
             await self._init_bm25()
 
+            # Phase 3.5: LLM provider services (depend on Redis)
+            await self._init_credential_service()
+            await self._init_llm_provider_manager()
+
             # Phase 4: High-level services (depend on everything)
             await self._init_llamaindex()
             self._init_conversation_service()
@@ -163,6 +173,8 @@ class ServiceContainer:
                         "vault",
                         "doc_tracker",
                         "bm25",
+                        "credential_service",
+                        "llm_provider_manager",
                         "llamaindex",
                         "conversation",
                         "message",
@@ -505,6 +517,72 @@ class ServiceContainer:
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize message service: {str(e)}"
+            ) from e
+
+    async def _init_credential_service(self) -> None:
+        """
+        Initialize credential service for API key storage.
+
+        Stores provider credentials in Redis for persistence across restarts.
+        """
+        try:
+            from ..storage.credential_service import CredentialService
+
+            if not self.redis_client:
+                raise ServiceInitializationError(
+                    "Redis client must be initialized before credential service"
+                )
+
+            self.credential_service = CredentialService(redis_client=self.redis_client)
+
+            log_event("credential_service_initialized")
+
+        except Exception as e:
+            raise ServiceInitializationError(
+                f"Failed to initialize credential service: {str(e)}"
+            ) from e
+
+    async def _init_llm_provider_manager(self) -> None:
+        """Initialize LLM provider manager with stored providers."""
+        try:
+            from ..llm import ProviderManagerFactory
+
+            if not self.credential_service:
+                raise ServiceInitializationError(
+                    "Credential service must be initialized before provider manager"
+                )
+
+            if not self.redis_client:
+                raise ServiceInitializationError(
+                    "Redis client must be initialized before provider manager"
+                )
+
+            # Create manager with all services and load stored providers
+            self.llm_provider_manager = (
+                await ProviderManagerFactory.create_with_stored_providers(
+                    credential_service=self.credential_service,
+                    redis_client=self.redis_client,
+                    enable_cost_tracking=True,
+                    enable_health_monitoring=True,
+                )
+            )
+
+            provider_count = self.llm_provider_manager.registry.count()
+            default_provider = self.llm_provider_manager.registry.get_default_id()
+
+            log_event(
+                "llm_provider_manager_initialized",
+                {
+                    "providers_loaded": provider_count,
+                    "default_provider": default_provider,
+                    "cost_tracking": True,
+                    "health_monitoring": True,
+                },
+            )
+
+        except Exception as e:
+            raise ServiceInitializationError(
+                f"Failed to initialize LLM provider manager: {str(e)}"
             ) from e
 
     @property
