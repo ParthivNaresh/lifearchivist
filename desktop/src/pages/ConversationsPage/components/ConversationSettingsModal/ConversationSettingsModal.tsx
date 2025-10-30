@@ -1,22 +1,21 @@
-import { useState } from 'react';
-import { X, Brain, Settings, Trash2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { X, Settings, Trash2 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
-import { useModelSettings } from './hooks';
 import { useProviderManagement } from './hooks/useProviderManagement';
-import { ModelTab, DangerZoneTab, DeleteConfirmDialog } from './components';
+import { useAllProviderModels } from '../../providers-hooks';
+import { DangerZoneTab, DeleteConfirmDialog } from './components';
 import { ProvidersTabWrapper } from './components/ProvidersTabWrapper';
+import { ProviderDeleteConfirmDialog } from './components/ProviderDeleteConfirmDialog';
 import type { ConversationSettingsModalProps } from './types';
 
 export const ConversationSettingsModal: React.FC<ConversationSettingsModalProps> = ({
   open,
   onOpenChange,
   onDeleteAllConversations,
+  onProvidersChanged,
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const { availableModels, currentModel, saving, modelError, handleModelChange } =
-    useModelSettings(open);
 
   const {
     providers,
@@ -29,15 +28,65 @@ export const ConversationSettingsModal: React.FC<ConversationSettingsModalProps>
     testingProviders,
     isSubmitting,
     isSettingDefault,
+    isDeleting,
+    deleteConfirmState,
+    hasDeletedProvider,
+    setHasDeletedProvider,
     updateField,
     handleShowAddForm,
     handleHideAddForm,
     handleAddProvider,
     handleDeleteProvider,
+    confirmDeleteProvider,
+    cancelDeleteProvider,
     handleTestProvider,
     handleSetDefault,
     toggleProviderExpanded,
   } = useProviderManagement();
+
+  const { data: allModels } = useAllProviderModels();
+
+  const defaultProviderInfo = useMemo(() => {
+    if (!deleteConfirmState) return undefined;
+    
+    const currentDefault = providers.find(p => p.is_default);
+    
+    if (currentDefault?.id === deleteConfirmState.providerId) {
+      const ollamaProvider = providers.find(p => p.id === 'ollama-default');
+      if (ollamaProvider) {
+        const ollamaModels = allModels?.filter(m => m.provider_id === 'ollama-default') ?? [];
+        const firstModel = ollamaModels[0];
+        return {
+          id: 'ollama-default',
+          name: 'Ollama',
+          model: firstModel?.id || 'llama3.2:1b',
+        };
+      }
+      return {
+        id: 'ollama-default',
+        name: 'Ollama',
+        model: 'llama3.2:1b',
+      };
+    }
+    
+    if (!currentDefault) return undefined;
+
+    const providerModels = allModels?.filter(m => m.provider_id === currentDefault.id) ?? [];
+    const firstModel = providerModels[0];
+
+    return {
+      id: currentDefault.id,
+      name: currentDefault.name || currentDefault.type,
+      model: firstModel?.id || 'llama3.2:1b',
+    };
+  }, [providers, allModels, deleteConfirmState]);
+
+  useEffect(() => {
+    if (!open && hasDeletedProvider && onProvidersChanged) {
+      onProvidersChanged();
+      setHasDeletedProvider(false);
+    }
+  }, [open, hasDeletedProvider, onProvidersChanged, setHasDeletedProvider]);
 
   const confirmDeleteAll = () => {
     onDeleteAllConversations();
@@ -67,15 +116,8 @@ export const ConversationSettingsModal: React.FC<ConversationSettingsModalProps>
             </Dialog.Close>
           </div>
 
-          <Tabs.Root defaultValue="model" className="w-full">
+          <Tabs.Root defaultValue="providers" className="w-full">
             <Tabs.List className="flex gap-2 border-b border-border mb-6">
-              <Tabs.Trigger
-                value="model"
-                className="px-4 py-2 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary transition-colors"
-              >
-                <Brain className="h-4 w-4 inline mr-2" />
-                Model
-              </Tabs.Trigger>
               <Tabs.Trigger
                 value="providers"
                 className="px-4 py-2 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary transition-colors"
@@ -91,14 +133,6 @@ export const ConversationSettingsModal: React.FC<ConversationSettingsModalProps>
                 Danger Zone
               </Tabs.Trigger>
             </Tabs.List>
-
-            <ModelTab
-              availableModels={availableModels}
-              currentModel={currentModel}
-              saving={saving}
-              modelError={modelError}
-              onModelChange={(model) => void handleModelChange(model)}
-            />
 
             <ProvidersTabWrapper
               providers={providers}
@@ -128,6 +162,19 @@ export const ConversationSettingsModal: React.FC<ConversationSettingsModalProps>
             <DeleteConfirmDialog
               onConfirm={confirmDeleteAll}
               onCancel={() => setShowDeleteConfirm(false)}
+            />
+          )}
+
+          {deleteConfirmState && (
+            <ProviderDeleteConfirmDialog
+              isOpen
+              providerId={deleteConfirmState.providerId}
+              conversationCount={deleteConfirmState.conversationCount}
+              sampleConversations={deleteConfirmState.sampleConversations}
+              defaultProvider={defaultProviderInfo}
+              isDeleting={isDeleting}
+              onConfirm={confirmDeleteProvider}
+              onCancel={cancelDeleteProvider}
             />
           )}
         </Dialog.Content>

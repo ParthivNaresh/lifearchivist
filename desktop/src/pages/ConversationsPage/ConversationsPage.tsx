@@ -11,16 +11,21 @@ import { MessageList } from './components/MessageList';
 import { MessageInput } from './components/MessageInput';
 import { EditableTitle } from './components/EditableTitle';
 import { ModelSelector } from './components/ModelSelector';
+import { useProviders } from './providers-hooks';
+import { settingsApi } from './components/ConversationSettingsModal/api';
 
 const ConversationsPage: React.FC = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  
+  const { data: providersData } = useProviders();
 
   const {
     conversations,
     setConversations,
     loading: conversationsLoading,
     error: _conversationsError,
+    reload: reloadConversations,
     createConversation,
     deleteConversation,
   } = useConversations();
@@ -38,8 +43,22 @@ const ConversationsPage: React.FC = () => {
 
   const handleNewConversation = async () => {
     try {
-      // Create with defaults - backend will use default provider/model
-      const newConv = await createConversation('New Conversation');
+      const defaultProvider = providersData?.providers.find(p => p.is_default && !p.is_admin);
+      let model = undefined;
+      let providerId = undefined;
+      
+      if (defaultProvider) {
+        providerId = defaultProvider.id;
+        
+        try {
+          const settings = await settingsApi.getSettings();
+          model = settings.data?.llm_model;
+        } catch {
+          model = undefined;
+        }
+      }
+      
+      const newConv = await createConversation('New Conversation', providerId, model);
       setSelectedConversationId(newConv.id);
     } catch (err) {
       console.error('Failed to create conversation:', err);
@@ -132,6 +151,12 @@ const ConversationsPage: React.FC = () => {
         onUpdateTitle={handleUpdateTitle}
         onDeleteAll={() => {
           void handleDeleteAllConversations();
+        }}
+        onProvidersChanged={() => {
+          void reloadConversations();
+          if (selectedConversationId) {
+            void reloadConversation();
+          }
         }}
         loading={conversationsLoading}
       />

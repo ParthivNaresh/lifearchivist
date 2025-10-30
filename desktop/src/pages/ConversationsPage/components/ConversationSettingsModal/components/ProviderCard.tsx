@@ -12,6 +12,7 @@ import {
   Info,
 } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import { DefaultProviderModelSelector } from './DefaultProviderModelSelector';
 import type { Provider } from '../../../providers-types';
 
 interface ProviderCardProps {
@@ -59,7 +60,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
             </button>
           )}
 
-          {!provider.is_default && (
+          {!provider.is_default && !provider.is_admin && (
             <button
               onClick={onSetDefault}
               disabled={isSettingDefault}
@@ -179,6 +180,13 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
           )}
         </div>
       </div>
+
+      {provider.is_default && !provider.is_admin && (
+        <DefaultProviderModelSelector
+          providerId={provider.id}
+          providerName={provider.name || provider.type}
+        />
+      )}
 
       {isExpanded && hasCapabilities && (
         <div className="px-4 pb-4 pt-2 border-t border-border/30 bg-card/30 backdrop-blur-sm">

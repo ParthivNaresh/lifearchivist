@@ -146,10 +146,13 @@ class ApplicationServer:
             # Phase 4: Initialize tool registry
             await self._init_tool_registry()
 
-            # Phase 5: Initialize folder watcher
+            # Phase 5: Initialize RAG service with activity manager
+            await self._init_rag_service()
+
+            # Phase 6: Initialize folder watcher
             await self._init_folder_watcher()
 
-            # Phase 6: Initialize agents (if enabled)
+            # Phase 7: Initialize agents (if enabled)
             if self.settings.enable_agents:
                 await self._init_agents()
 
@@ -427,6 +430,28 @@ class ApplicationServer:
 
         tool_count = len(self.tool_registry.tools)
         log_event("tool_registry_initialized", {"tools_registered": tool_count})
+
+    async def _init_rag_service(self):
+        """Initialize RAG service with activity manager."""
+        if not self.service_container:
+            log_event(
+                "rag_service_init_skipped",
+                {"reason": "service_container_not_available"},
+                level=logging.WARNING,
+            )
+            return
+
+        try:
+            await self.service_container.init_rag_service(
+                activity_manager=self.activity_manager
+            )
+            log_event("rag_service_initialized_with_activity_manager")
+        except Exception as e:
+            log_event(
+                "rag_service_init_failed",
+                {"error": str(e)},
+                level=logging.WARNING,
+            )
 
     async def _init_folder_watcher(self):
         """Initialize folder watching service."""

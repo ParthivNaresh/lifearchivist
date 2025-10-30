@@ -20,4 +20,5 @@ export interface ConversationSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleteAllConversations: () => void;
+  onProvidersChanged?: () => void;
 }

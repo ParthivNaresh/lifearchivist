@@ -13,7 +13,8 @@ import type {
   SendMessageResponse,
   SSECallbacks,
   SSEUserMessageEvent,
-  SSEIntentCheckEvent,
+  SSEIntentEvent,
+  SSEContextEvent,
   SSESourceEvent,
   SSEChunkEvent,
   SSEMetadataEvent,
@@ -173,9 +174,14 @@ export const conversationsApi = {
                     callbacks.onUserMessage?.(data);
                     break;
                   }
-                  case 'intent_check': {
-                    const data = JSON.parse(currentData) as SSEIntentCheckEvent;
-                    callbacks.onIntentCheck?.(data);
+                  case 'intent': {
+                    const data = JSON.parse(currentData) as SSEIntentEvent;
+                    callbacks.onIntent?.(data);
+                    break;
+                  }
+                  case 'context': {
+                    const data = JSON.parse(currentData) as SSEContextEvent;
+                    callbacks.onContext?.(data);
                     break;
                   }
                   case 'sources': {
@@ -202,7 +208,7 @@ export const conversationsApi = {
                   }
                   case 'error': {
                     const data = JSON.parse(currentData) as SSEErrorEvent;
-                    callbacks.onError?.(data.error ?? 'Unknown error');
+                    callbacks.onError?.(data.message ?? 'Unknown error');
                     return;
                   }
                   default:

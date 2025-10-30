@@ -100,15 +100,30 @@ export function useAddProvider() {
 }
 
 /**
+ * Hook to check provider usage
+ */
+export function useCheckProviderUsage() {
+  return useMutation({
+    mutationFn: (providerId: string) => providersApi.checkUsage(providerId),
+  });
+}
+
+/**
  * Hook to delete a provider
  */
 export function useDeleteProvider() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (providerId: string) => providersApi.delete(providerId),
-    onSuccess: () => {
+    mutationFn: ({ providerId, updateConversations }: { providerId: string; updateConversations: boolean }) => 
+      providersApi.delete(providerId, updateConversations),
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: PROVIDERS_QUERY_KEY });
+      
+      if (variables.updateConversations) {
+        void queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        void queryClient.invalidateQueries({ queryKey: ['conversation'] });
+      }
     },
   });
 }
@@ -129,7 +144,7 @@ export function useSetDefaultProvider() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (providerId: string) => providersApi.setDefault({ provider_id: providerId }),
+    mutationFn: (data: { provider_id: string; default_model?: string }) => providersApi.setDefault(data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: PROVIDERS_QUERY_KEY });
     },

@@ -25,7 +25,9 @@ from ..utils.logging import log_event
 
 if TYPE_CHECKING:
     # Import for type checking only to avoid runtime circular import
+    from ..rag import ConversationRAGService
     from ..storage.llamaindex_service import LlamaIndexService
+    from .activity_manager import ActivityManager
 
 
 @dataclass
@@ -109,6 +111,9 @@ class ServiceContainer:
         self.credential_service: Optional["CredentialService"] = None
         self.llm_provider_manager: Optional["LLMProviderManager"] = None
 
+        # RAG service
+        self.rag_service: Optional["ConversationRAGService"] = None
+
     async def initialize(self) -> None:
         """
         Initialize all services in correct dependency order.
@@ -161,6 +166,8 @@ class ServiceContainer:
             self._init_conversation_service()
             self._init_message_service()
 
+            # Note: RAG service will be initialized later with activity_manager from ApplicationServer
+
             self._initialized = True
 
             log_event(
@@ -178,6 +185,7 @@ class ServiceContainer:
                         "llamaindex",
                         "conversation",
                         "message",
+                        "rag_service",
                     ],
                     "status": "ready",
                 },
@@ -208,6 +216,7 @@ class ServiceContainer:
         log_event("service_container_cleanup_start")
 
         # Cleanup in reverse order
+        # RAG service doesn't need explicit cleanup
         # Conversation service doesn't need explicit cleanup (uses db_pool)
 
         if self.llamaindex_service:
@@ -633,3 +642,66 @@ class ServiceContainer:
             return url
         except Exception:
             return "postgresql://****:****@****:****/****"
+
+    async def init_rag_service(
+        self, activity_manager: Optional["ActivityManager"] = None
+    ) -> None:
+        """
+        Initialize RAG service with dependencies.
+
+        This is called separately after ServiceContainer initialization
+        to allow passing in the ActivityManager from ApplicationServer.
+
+        Args:
+            activity_manager: Optional activity manager for event tracking
+        """
+        try:
+            from ..rag import ConversationRAGService
+
+            if not self._initialized:
+                raise ServiceInitializationError(
+                    "ServiceContainer must be initialized before RAG service"
+                )
+
+            if not self.llamaindex_service:
+                raise ServiceInitializationError(
+                    "LlamaIndex service must be initialized before RAG service"
+                )
+
+            if not self.llm_provider_manager:
+                raise ServiceInitializationError(
+                    "LLM provider manager must be initialized before RAG service"
+                )
+
+            if not self.conversation_service:
+                raise ServiceInitializationError(
+                    "Conversation service must be initialized before RAG service"
+                )
+
+            if not self.message_service:
+                raise ServiceInitializationError(
+                    "Message service must be initialized before RAG service"
+                )
+
+            if not self.llamaindex_service.query_service:
+                raise ServiceInitializationError(
+                    "LlamaIndex query service must be initialized before RAG service"
+                )
+
+            self.rag_service = ConversationRAGService(
+                query_service=self.llamaindex_service.query_service,
+                provider_manager=self.llm_provider_manager,
+                conversation_service=self.conversation_service,
+                message_service=self.message_service,
+                activity_manager=activity_manager,
+            )
+
+            log_event(
+                "rag_service_initialized",
+                {"has_activity_manager": activity_manager is not None},
+            )
+
+        except Exception as e:
+            raise ServiceInitializationError(
+                f"Failed to initialize RAG service: {str(e)}"
+            ) from e

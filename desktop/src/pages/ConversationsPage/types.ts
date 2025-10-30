@@ -126,17 +126,32 @@ export interface SSEUserMessageEvent {
   created_at: string;
 }
 
-export interface SSEIntentCheckEvent {
+export interface SSEIntentEvent {
   is_document_query: boolean;
+  requires_context: boolean;
+  query_type?: string;
+}
+
+export interface SSEContextEvent {
+  citations: {
+    document_id: string;
+    chunk_id: string;
+    relevance_score: number;
+    text_snippet: string;
+    metadata: Record<string, any>;
+  }[];
+  total_chunks: number;
+  context_length: number;
+  avg_relevance_score: number;
 }
 
 export interface SSESourceEvent {
   document_id: string;
   chunk_id: string;
-  score: number;
-  snippet: string;
-  title?: string;
-  file_name?: string;
+  relevance_score: number;
+  text_snippet: string;
+  metadata: Record<string, any>;
+  confidence?: number;
 }
 
 export interface SSEChunkEvent {
@@ -145,26 +160,37 @@ export interface SSEChunkEvent {
 
 export interface SSEMetadataEvent {
   model: string;
-  temperature: number;
-  max_tokens: number;
+  provider_id: string | null;
+  confidence_score: number;
+  response_mode: string;
+  num_sources: number;
+  context_length: number;
+  answer_length: number;
+  unique_documents: number;
+  processing_time_ms: number;
+  tokens_used?: number;
+  cost_usd?: number;
   [key: string]: unknown;
 }
 
 export interface SSECompleteEvent {
-  user_message: Message;
-  assistant_message: Message;
-  latency_ms: number;
+  status?: string;
+  user_message?: Message;
+  assistant_message?: Message;
+  latency_ms?: number;
 }
 
 export interface SSEErrorEvent {
-  error: string;
-  code?: string;
-  details?: unknown;
+  error_type: string;
+  message: string;
+  details?: Record<string, any>;
+  recoverable?: boolean;
 }
 
 export interface SSECallbacks {
   onUserMessage?: (message: SSEUserMessageEvent) => void;
-  onIntentCheck?: (data: SSEIntentCheckEvent) => void;
+  onIntent?: (data: SSEIntentEvent) => void;
+  onContext?: (data: SSEContextEvent) => void;
   onSources?: (sources: SSESourceEvent[]) => void;
   onChunk?: (text: string) => void;
   onMetadata?: (metadata: SSEMetadataEvent) => void;

@@ -79,6 +79,9 @@ class SetDefaultRequest(BaseModel):
     provider_id: str = Field(
         ..., min_length=1, description="Provider ID to set as default"
     )
+    default_model: Optional[str] = Field(
+        None, description="Default model to use with this provider"
+    )
 
 
 # Helper Functions
@@ -284,12 +287,77 @@ async def get_provider(provider_id: str):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
+@router.get("/{provider_id}/usage-check")
+async def check_provider_usage(provider_id: str):
+    """
+    Check if a provider is being used by any conversations.
+
+    Returns the count of conversations using this provider.
+    """
+    server = get_server()
+
+    if (
+        not server.service_container
+        or not server.service_container.conversation_service
+    ):
+        raise HTTPException(
+            status_code=503, detail="Conversation service not available"
+        )
+
+    try:
+        db_pool = server.service_container.conversation_service.db_pool
+
+        async with db_pool.acquire() as conn:
+            count = await conn.fetchval(
+                "SELECT COUNT(*) FROM conversations WHERE provider_id = $1 AND archived_at IS NULL",
+                provider_id,
+            )
+
+            conversations = await conn.fetch(
+                "SELECT id, title, model FROM conversations WHERE provider_id = $1 AND archived_at IS NULL LIMIT 5",
+                provider_id,
+            )
+
+            return {
+                "success": True,
+                "provider_id": provider_id,
+                "conversation_count": count or 0,
+                "sample_conversations": (
+                    [
+                        {
+                            "id": str(conv["id"]),
+                            "title": conv["title"] or "Untitled",
+                            "model": conv["model"],
+                        }
+                        for conv in conversations
+                    ]
+                    if conversations
+                    else []
+                ),
+            }
+
+    except Exception as e:
+        import logging
+
+        logging.error(f"Failed to check provider usage: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to check provider usage: {str(e)}"
+        ) from e
+
+
 @router.delete("/{provider_id}")
-async def delete_provider(provider_id: str):
+async def delete_provider(
+    provider_id: str,
+    update_conversations: bool = Query(
+        default=False,
+        description="Update affected conversations to use default provider",
+    ),
+):
     """
     Delete a provider.
 
     Removes from manager, cleans up resources, and deletes stored credentials.
+    Optionally updates affected conversations to use the default provider.
     """
     server = get_server()
 
@@ -300,6 +368,89 @@ async def delete_provider(provider_id: str):
         raise HTTPException(status_code=503, detail="Credential service not available")
 
     try:
+        affected_conversations = 0
+
+        if (
+            update_conversations
+            and server.service_container
+            and server.service_container.conversation_service
+        ):
+            current_default = server.llm_manager.get_provider(None)
+            is_deleting_default = (
+                current_default and current_default.provider_id == provider_id
+            )
+
+            if is_deleting_default:
+                fallback_provider_id = "ollama-default"
+                fallback_model = "llama3.2:1b"
+
+                ollama_provider = server.llm_manager.get_provider("ollama-default")
+                if ollama_provider:
+                    try:
+                        models_result = await server.llm_manager.list_models(
+                            provider_id="ollama-default"
+                        )
+                        if models_result.is_success():
+                            models = models_result.unwrap()
+                            if models:
+                                fallback_model = models[0].id
+                    except Exception as e:
+                        import logging
+
+                        logging.warning(
+                            f"Failed to fetch Ollama models for fallback: {e}"
+                        )
+            else:
+                if current_default:
+                    fallback_provider_id = current_default.provider_id
+                    fallback_model = None
+
+                    try:
+                        models_result = await server.llm_manager.list_models(
+                            provider_id=current_default.provider_id
+                        )
+                        if models_result.is_success():
+                            models = models_result.unwrap()
+                            if models:
+                                fallback_model = models[0].id
+                    except Exception as e:
+                        import logging
+
+                        logging.warning(
+                            f"Failed to fetch models for fallback provider {current_default.provider_id}: {e}"
+                        )
+
+                    if not fallback_model:
+                        import logging
+
+                        logging.warning(
+                            f"No models available for provider {current_default.provider_id}, falling back to ollama-default"
+                        )
+                        fallback_provider_id = "ollama-default"
+                        fallback_model = "llama3.2:1b"
+                else:
+                    fallback_provider_id = "ollama-default"
+                    fallback_model = "llama3.2:1b"
+
+            async with (
+                server.service_container.conversation_service.db_pool.acquire() as conn
+            ):
+                result = await conn.execute(
+                    """
+                    UPDATE conversations 
+                    SET provider_id = $1, model = $2, updated_at = NOW()
+                    WHERE provider_id = $3 AND archived_at IS NULL
+                    """,
+                    (
+                        fallback_provider_id
+                        if fallback_provider_id != "ollama-default"
+                        else None
+                    ),
+                    fallback_model,
+                    provider_id,
+                )
+                affected_conversations = int(result.split()[-1]) if result else 0
+
         # Remove from manager (cleans up resources)
         remove_result = await server.llm_manager.remove_provider(provider_id)
 
@@ -322,6 +473,9 @@ async def delete_provider(provider_id: str):
             "success": True,
             "provider_id": provider_id,
             "message": "Provider deleted successfully",
+            "affected_conversations": affected_conversations,
+            "conversations_updated": update_conversations
+            and affected_conversations > 0,
         }
 
     except HTTPException:
@@ -618,9 +772,10 @@ async def generate_text(request: GenerateRequest):
 @router.post("/default")
 async def set_default_provider(request: SetDefaultRequest):
     """
-    Set the default provider.
+    Set the default provider and optionally a default model.
 
     The default provider is used when no explicit provider is specified.
+    Admin providers cannot be set as default since they cannot provide inference.
     """
     server = get_server()
 
@@ -628,6 +783,27 @@ async def set_default_provider(request: SetDefaultRequest):
         raise HTTPException(status_code=503, detail="LLM manager not available")
 
     try:
+        provider = server.llm_manager.get_provider(request.provider_id)
+        if not provider:
+            raise HTTPException(
+                status_code=404, detail=f"Provider '{request.provider_id}' not found"
+            )
+
+        provider_info = next(
+            (
+                p
+                for p in server.llm_manager.list_providers()
+                if p["id"] == request.provider_id
+            ),
+            None,
+        )
+
+        if provider_info and provider_info.get("is_admin"):
+            raise HTTPException(
+                status_code=400,
+                detail="Admin providers cannot be set as default. Admin keys are for analytics only and cannot provide inference.",
+            )
+
         result = server.llm_manager.set_default_provider(request.provider_id)
 
         if result.is_failure():
@@ -636,9 +812,16 @@ async def set_default_provider(request: SetDefaultRequest):
                 status_code=result.status_code,
             )
 
+        if request.default_model:
+            from lifearchivist.config import get_settings
+
+            settings = get_settings()
+            settings.llm_model = request.default_model
+
         return {
             "success": True,
             "provider_id": request.provider_id,
+            "default_model": request.default_model,
             "message": "Default provider updated",
         }
 

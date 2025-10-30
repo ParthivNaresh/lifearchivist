@@ -15,7 +15,7 @@ interface MessageListProps {
 }
 
 function isErrorMessage(message: Message): boolean {
-  if (!message.metadata) return false;
+  if (!message?.metadata) return false;
   const metadata = typeof message.metadata === 'string' 
     ? JSON.parse(message.metadata) 
     : message.metadata;
@@ -52,7 +52,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, loading }) =
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.map((message) => {
+      {messages.filter(Boolean).map((message) => {
         const isError = isErrorMessage(message);
 
         return (

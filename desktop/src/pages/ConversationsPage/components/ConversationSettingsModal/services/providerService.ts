@@ -9,9 +9,22 @@ export class ProviderValidationError extends Error {
   }
 }
 
-export const validateProviderForm = (formState: ProviderFormState): void => {
-  if (!formState.providerId.trim()) {
+export const validateProviderForm = (
+  formState: ProviderFormState,
+  existingProviderIds?: string[]
+): void => {
+  const providerId = formState.providerId.trim();
+  
+  if (!providerId) {
     throw new ProviderValidationError('Provider ID is required');
+  }
+
+  if (!/^[a-zA-Z0-9-_]+$/.test(providerId)) {
+    throw new ProviderValidationError('Provider ID can only contain letters, numbers, hyphens, and underscores');
+  }
+
+  if (existingProviderIds?.includes(providerId)) {
+    throw new ProviderValidationError(`Provider ID '${providerId}' already exists. Please choose a unique identifier.`);
   }
 
   switch (formState.providerType) {

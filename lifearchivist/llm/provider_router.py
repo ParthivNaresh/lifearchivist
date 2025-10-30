@@ -125,20 +125,43 @@ class ProviderRouter:
         return Success(providers)
 
     def _route_explicit(self, provider_id: str) -> Result[BaseLLMProvider, str]:
-        """Route to explicitly specified provider."""
+        """Route to explicitly specified provider with fallback to default."""
         provider = self.registry.get(provider_id)
 
         if provider is None:
-            available = [p.provider_id for p in self.registry.list_all()]
-            return Failure(
-                error=f"Provider not found: {provider_id}",
-                error_type="ProviderNotFound",
-                status_code=404,
-                context={
-                    "provider_id": provider_id,
-                    "available_providers": available,
+            log_event(
+                "provider_not_found_falling_back",
+                {
+                    "requested_provider_id": provider_id,
+                    "reason": "Provider deleted or unavailable",
+                },
+                level=logging.WARNING,
+            )
+
+            default_provider = self.registry.get(None)
+            if default_provider is None:
+                available = [p.provider_id for p in self.registry.list_all()]
+                return Failure(
+                    error=f"Provider '{provider_id}' not found and no default provider available",
+                    error_type="ProviderNotFound",
+                    status_code=404,
+                    context={
+                        "provider_id": provider_id,
+                        "available_providers": available,
+                        "fallback_attempted": True,
+                    },
+                )
+
+            log_event(
+                "provider_fallback_to_default",
+                {
+                    "requested_provider_id": provider_id,
+                    "fallback_provider_id": default_provider.provider_id,
+                    "fallback_provider_type": default_provider.provider_type.value,
                 },
             )
+
+            return Success(default_provider)
 
         log_event(
             "provider_routed_explicit",

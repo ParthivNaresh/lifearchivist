@@ -87,11 +87,13 @@ export interface ListModelsResponse {
 
 export interface SetDefaultProviderRequest {
   provider_id: string;
+  default_model?: string;
 }
 
 export interface SetDefaultProviderResponse {
   success: boolean;
   provider_id: string;
+  default_model?: string;
   message: string;
 }
 

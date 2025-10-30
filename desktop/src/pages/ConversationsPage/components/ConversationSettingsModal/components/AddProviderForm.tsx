@@ -84,8 +84,12 @@ export const AddProviderForm: React.FC<AddProviderFormProps> = ({
             value={providerId}
             onChange={(e) => onProviderIdChange(e.target.value)}
             placeholder={`my-${providerType}`}
+            pattern="[a-zA-Z0-9-_]+"
             className="w-full px-3 py-2 border border-input rounded-md bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Must be unique. Use letters, numbers, hyphens, and underscores only.
+          </p>
         </div>
       </div>
 

@@ -95,10 +95,33 @@ export const providersApi = {
   },
 
   /**
+   * Check provider usage in conversations
+   */
+  async checkUsage(providerId: string): Promise<{
+    success: boolean;
+    provider_id: string;
+    conversation_count: number;
+    sample_conversations: {
+      id: string;
+      title: string;
+      model: string;
+    }[];
+  }> {
+    const response = await fetch(`${API_BASE}/${providerId}/usage-check`);
+
+    if (!response.ok) {
+      await handleErrorResponse(response, 'Failed to check provider usage');
+    }
+
+    return response.json();
+  },
+
+  /**
    * Delete a provider
    */
-  async delete(providerId: string): Promise<DeleteProviderResponse> {
-    const response = await fetch(`${API_BASE}/${providerId}`, {
+  async delete(providerId: string, updateConversations = false): Promise<DeleteProviderResponse> {
+    const params = updateConversations ? '?update_conversations=true' : '';
+    const response = await fetch(`${API_BASE}/${providerId}${params}`, {
       method: 'DELETE',
     });
 

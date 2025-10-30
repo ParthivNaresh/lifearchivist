@@ -80,6 +80,15 @@ class CredentialService:
             Result with provider data or error
         """
         try:
+            redis_key = self._get_provider_key(provider_id)
+            existing = await self.redis.get(redis_key)
+
+            if existing:
+                return Failure(
+                    error=f"Provider ID '{provider_id}' already exists. Please choose a unique identifier.",
+                    error_type="DuplicateProvider",
+                    status_code=409,
+                )
             # Serialize config to dict
             config_dict = config.to_dict()
 

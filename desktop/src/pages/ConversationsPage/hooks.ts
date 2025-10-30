@@ -262,8 +262,8 @@ export function useConversation(conversationId: string | null) {
                 message_id: streamingAssistantMessage.id,
                 document_id: source.document_id,
                 chunk_id: source.chunk_id,
-                score: source.score,
-                snippet: source.snippet,
+                score: source.relevance_score,
+                snippet: source.text_snippet,
                 position: index,
                 created_at: new Date().toISOString(),
               }));
@@ -274,19 +274,24 @@ export function useConversation(conversationId: string | null) {
               );
             },
             onComplete: (data) => {
-              // Replace temporary messages with final persisted ones
-              // This ensures correct IDs and no duplicates
-              setMessages((prev) =>
-                prev.map((m): Message => {
-                  if (m.id === optimisticUserMessage.id) {
-                    return data.user_message;
-                  }
-                  if (m.id === streamingAssistantMessage.id) {
-                    return data.assistant_message;
-                  }
-                  return m;
-                })
-              );
+              // If we have the full messages, replace temporary ones
+              if (data.user_message && data.assistant_message) {
+                setMessages((prev) =>
+                  prev.map((m): Message => {
+                    if (m.id === optimisticUserMessage.id && data.user_message) {
+                      return data.user_message;
+                    }
+                    if (m.id === streamingAssistantMessage.id && data.assistant_message) {
+                      return data.assistant_message;
+                    }
+                    return m;
+                  })
+                );
+              }
+              // Otherwise just reload to get the persisted messages
+              else {
+                void loadConversation();
+              }
 
               // Auto-generate title from first message
               if (messages.length === 0 && conversation) {
@@ -343,7 +348,7 @@ export function useConversation(conversationId: string | null) {
       // Return abort function for cleanup
       return () => abortController.abort();
     },
-    [conversationId, messages.length, conversation]
+    [conversationId, messages.length, conversation, loadConversation]
   );
 
   return {

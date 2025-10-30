@@ -16,6 +16,7 @@ interface ConversationListProps {
   onNew: () => void;
   onUpdateTitle: (id: string, title: string) => Promise<void>;
   onDeleteAll: () => void;
+  onProvidersChanged?: () => void;
   loading?: boolean;
 }
 
@@ -26,6 +27,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   onNew,
   onUpdateTitle,
   onDeleteAll,
+  onProvidersChanged,
   loading,
 }) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -155,6 +157,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         onDeleteAllConversations={onDeleteAll}
+        onProvidersChanged={onProvidersChanged}
       />
     </div>
   );

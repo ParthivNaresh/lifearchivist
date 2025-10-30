@@ -552,15 +552,17 @@ async def send_message_streaming(
 
     This endpoint:
     1. Saves user message
-    2. Streams AI response token-by-token
-    3. Saves complete assistant message with citations
-    4. Returns SSE stream with events:
+    2. Uses RAG service for context-aware streaming
+    3. Streams AI response token-by-token
+    4. Saves complete assistant message with citations
+    5. Returns SSE stream with events:
        - user_message: User message saved
-       - intent_check: Query classification
+       - intent: Query classification
+       - context: Retrieved document context
        - sources: Retrieved document chunks
-       - chunk: Individual tokens
+       - token: Individual tokens
        - metadata: Final statistics
-       - complete: Final saved message
+       - done: Processing complete
        - error: Any errors
 
     Returns:
@@ -571,18 +573,70 @@ async def send_message_streaming(
     if not server.service_container:
         raise HTTPException(status_code=503, detail="Services not available")
 
-    conv_service = server.service_container.conversation_service
-    msg_service = server.service_container.message_service
-    llamaindex_service = server.service_container.llamaindex_service
+    rag_service = server.service_container.rag_service
 
-    if not conv_service or not msg_service:
-        raise HTTPException(status_code=503, detail="Message service not available")
+    if not rag_service:
+        # Fallback to old implementation if RAG service not available
+        conv_service = server.service_container.conversation_service
+        msg_service = server.service_container.message_service
+        llamaindex_service = server.service_container.llamaindex_service
 
-    if not llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        if not conv_service or not msg_service:
+            raise HTTPException(status_code=503, detail="Message service not available")
+
+        if not llamaindex_service:
+            raise HTTPException(
+                status_code=503, detail="LlamaIndex service not available"
+            )
 
     async def event_generator():
         """Generate SSE events for streaming response."""
+        # Use RAG service if available
+        if rag_service:
+            from lifearchivist.rag import ContextConfig, StreamEventType
+
+            # Create context configuration
+            context_config = ContextConfig(
+                enable_rag=True,
+                similarity_top_k=request.context_limit,
+                similarity_threshold=0.45,
+                max_context_tokens=4000,
+                include_metadata=True,
+                include_conversation_history=True,
+                conversation_history_limit=3,
+            )
+
+            # Stream events from RAG service
+            async for event in rag_service.process_message_with_rag(
+                conversation_id=conversation_id,
+                message_content=request.content,
+                context_config=context_config,
+                user_id="default",
+            ):
+                # Convert RAG events to SSE format
+                event_dict = event.to_dict()
+                event_type = event.type
+
+                if event_type == StreamEventType.USER_MESSAGE:
+                    yield f"event: user_message\ndata: {json.dumps(serialize_for_json(event_dict['data']))}\n\n"
+                elif event_type == StreamEventType.INTENT:
+                    yield f"event: intent\ndata: {json.dumps(event_dict['data'])}\n\n"
+                elif event_type == StreamEventType.CONTEXT:
+                    yield f"event: context\ndata: {json.dumps(event_dict['data'])}\n\n"
+                elif event_type == StreamEventType.SOURCES:
+                    yield f"event: sources\ndata: {json.dumps(event_dict['data'])}\n\n"
+                elif event_type == StreamEventType.TOKEN:
+                    yield f"event: chunk\ndata: {json.dumps({'text': event_dict['data']})}\n\n"
+                elif event_type == StreamEventType.METADATA:
+                    yield f"event: metadata\ndata: {json.dumps(event_dict['data'])}\n\n"
+                elif event_type == StreamEventType.DONE:
+                    yield f"event: complete\ndata: {json.dumps({'status': 'done'})}\n\n"
+                elif event_type == StreamEventType.ERROR:
+                    yield f"event: error\ndata: {json.dumps(event_dict['data'])}\n\n"
+
+            return
+
+        # Fallback to old implementation
         start_time = time.time()
         conversation = None
         provider_id = None
