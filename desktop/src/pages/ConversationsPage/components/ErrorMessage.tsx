@@ -1,26 +1,17 @@
 import { useState } from 'react';
 import { AlertCircle, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
-import type { Message, ErrorMessageMetadata } from '../types';
+import type { Message } from '../types';
+import { getErrorMetadata } from '../utils/metadata';
 
 interface ErrorMessageProps {
   message: Message;
   onRetry?: () => void;
 }
 
-function isErrorMetadata(metadata: unknown): metadata is ErrorMessageMetadata {
-  if (!metadata || typeof metadata !== 'object') return false;
-  const meta = metadata as Record<string, unknown>;
-  return meta.is_error === true;
-}
-
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onRetry }) => {
   const [showDetails, setShowDetails] = useState(false);
 
-  const metadata = typeof message.metadata === 'string' 
-    ? JSON.parse(message.metadata) 
-    : message.metadata;
-
-  const errorMeta = isErrorMetadata(metadata) ? metadata : null;
+  const errorMeta = getErrorMetadata(message.metadata);
 
   if (!errorMeta) {
     return null;

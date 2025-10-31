@@ -9,7 +9,7 @@ Provides configuration management for:
 - System information
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -42,6 +42,23 @@ class SettingsResponse(BaseModel):
     )
     search_results_limit: int = Field(
         default=25, description="Default search results limit"
+    )
+
+    # Conversation Defaults
+    temperature: float = Field(
+        default=0.7, ge=0, le=2, description="Default temperature for conversations"
+    )
+    max_output_tokens: int = Field(
+        default=2000, ge=1, le=1000000, description="Default max tokens for responses"
+    )
+    response_format: str = Field(
+        default="concise", description="Default response format (concise/verbose)"
+    )
+    context_window_size: int = Field(
+        default=10, ge=1, le=50, description="Number of messages to include in context"
+    )
+    response_timeout: int = Field(
+        default=30, ge=5, le=300, description="Response timeout in seconds"
     )
 
     # File Management
@@ -79,6 +96,13 @@ class SettingsUpdateRequest(BaseModel):
     embedding_model: Optional[str] = None
     search_results_limit: Optional[int] = Field(None, ge=1, le=1000)
 
+    # Conversation Defaults
+    temperature: Optional[float] = Field(None, ge=0, le=2)
+    max_output_tokens: Optional[int] = Field(None, ge=1, le=1000000)
+    response_format: Optional[str] = Field(None, pattern="^(concise|verbose)$")
+    context_window_size: Optional[int] = Field(None, ge=1, le=50)
+    response_timeout: Optional[int] = Field(None, ge=5, le=300)
+
     # File Management
     auto_organize_by_date: Optional[bool] = None
     duplicate_detection: Optional[bool] = None
@@ -108,6 +132,7 @@ async def get_settings():
     Returns all configuration including:
     - Document processing preferences
     - AI model selections
+    - Conversation defaults
     - File management settings
     - UI appearance
     - System paths (read-only)
@@ -117,6 +142,34 @@ async def get_settings():
     try:
         settings = server.settings
 
+        # Get user preferences from database
+        temperature = 0.7
+        max_output_tokens = 2000
+        response_format = "concise"
+        context_window_size = 10
+        response_timeout = 30
+
+        if server.service_container and server.service_container.conversation_service:
+            db_pool = server.service_container.conversation_service.db_pool
+
+            async with db_pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO user_preferences (user_id)
+                    VALUES ('default')
+                    ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
+                    RETURNING temperature, max_output_tokens, response_format, 
+                              context_window_size, response_timeout
+                    """
+                )
+
+                if row:
+                    temperature = row["temperature"]
+                    max_output_tokens = row["max_output_tokens"]
+                    response_format = row["response_format"]
+                    context_window_size = row["context_window_size"]
+                    response_timeout = row["response_timeout"]
+
         return SettingsResponse(
             auto_extract_dates=True,
             generate_text_previews=True,
@@ -124,6 +177,11 @@ async def get_settings():
             llm_model=settings.llm_model,
             embedding_model=settings.embedding_model,
             search_results_limit=25,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+            response_format=response_format,
+            context_window_size=context_window_size,
+            response_timeout=response_timeout,
             auto_organize_by_date=False,
             duplicate_detection=True,
             default_import_location="~/Documents",
@@ -199,6 +257,90 @@ async def update_settings(request: SettingsUpdateRequest):
             updated_fields.append("default_import_location")
         if request.interface_density is not None:
             updated_fields.append("interface_density")
+
+        # Update conversation defaults in database
+        if any(
+            [
+                request.temperature is not None,
+                request.max_output_tokens is not None,
+                request.response_format is not None,
+                request.context_window_size is not None,
+                request.response_timeout is not None,
+            ]
+        ):
+            server = get_server()
+            if (
+                server.service_container
+                and server.service_container.conversation_service
+            ):
+                db_pool = server.service_container.conversation_service.db_pool
+
+                async with db_pool.acquire() as conn:
+                    # Build update query dynamically
+                    updates = []
+                    values: List[Union[float, int, str]] = []
+                    param_count = 1
+
+                    if request.temperature is not None:
+                        updates.append(f"temperature = ${param_count}")
+                        values.append(request.temperature)
+                        param_count += 1
+                        updated_fields.append("temperature")
+
+                    if request.max_output_tokens is not None:
+                        updates.append(f"max_output_tokens = ${param_count}")
+                        values.append(request.max_output_tokens)
+                        param_count += 1
+                        updated_fields.append("max_output_tokens")
+
+                    if request.response_format is not None:
+                        updates.append(f"response_format = ${param_count}")
+                        values.append(request.response_format)
+                        param_count += 1
+                        updated_fields.append("response_format")
+
+                    if request.context_window_size is not None:
+                        updates.append(f"context_window_size = ${param_count}")
+                        values.append(request.context_window_size)
+                        param_count += 1
+                        updated_fields.append("context_window_size")
+
+                    if request.response_timeout is not None:
+                        updates.append(f"response_timeout = ${param_count}")
+                        values.append(request.response_timeout)
+                        param_count += 1
+                        updated_fields.append("response_timeout")
+
+                    if updates:
+                        updates.append("updated_at = NOW()")
+                        # Use UPDATE directly since we know the record exists (created by schema.sql)
+                        query = f"""
+                            UPDATE user_preferences 
+                            SET {', '.join(updates)}
+                            WHERE user_id = 'default'
+                        """
+                        await conn.execute(query, *values)
+
+                        # Optionally update existing conversations that are using defaults
+                        if request.temperature is not None:
+                            await conn.execute(
+                                """
+                                UPDATE conversations 
+                                SET temperature = $1, updated_at = NOW()
+                                WHERE temperature = 0.7 AND archived_at IS NULL
+                                """,
+                                request.temperature,
+                            )
+
+                        if request.max_output_tokens is not None:
+                            await conn.execute(
+                                """
+                                UPDATE conversations 
+                                SET max_tokens = $1, updated_at = NOW()
+                                WHERE max_tokens = 2000 AND archived_at IS NULL
+                                """,
+                                request.max_output_tokens,
+                            )
 
         if not updated_fields:
             raise HTTPException(

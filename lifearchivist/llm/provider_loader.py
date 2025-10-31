@@ -6,7 +6,7 @@ Handles deserialization, validation, and instantiation of provider instances.
 """
 
 import logging
-from typing import Dict, List
+from typing import Dict, List, cast
 
 from ..storage.credential_service import CredentialService
 from ..utils.logging import log_event, track
@@ -130,7 +130,7 @@ class ProviderLoader:
                 },
                 level=logging.ERROR,
             )
-            return config_result
+            return cast(Result[BaseLLMProvider, str], config_result)
 
         config = config_result.unwrap()
 
@@ -374,7 +374,7 @@ class ProviderLoader:
                 level=logging.ERROR,
             )
 
-        return result
+        return cast(Result[BaseLLMProvider, str], result)
 
     def validate_config(
         self,

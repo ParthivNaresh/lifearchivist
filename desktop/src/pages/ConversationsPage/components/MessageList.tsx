@@ -7,6 +7,7 @@ import { User, Bot } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import type { Message } from '../types';
 import { ErrorMessage } from './ErrorMessage';
+import { getErrorMetadata } from '../utils/metadata';
 
 interface MessageListProps {
   messages: Message[];
@@ -16,10 +17,7 @@ interface MessageListProps {
 
 function isErrorMessage(message: Message): boolean {
   if (!message?.metadata) return false;
-  const metadata = typeof message.metadata === 'string' 
-    ? JSON.parse(message.metadata) 
-    : message.metadata;
-  return metadata?.is_error === true;
+  return getErrorMetadata(message.metadata) !== null;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
@@ -95,7 +93,9 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, loading }) =
                         <div key={citation.id} className="text-xs opacity-80">
                           <span className="font-medium">{citation.document_id}</span>
                           {citation.score && (
-                            <span className="ml-2">({Math.round(citation.score * 100)}% match)</span>
+                            <span className="ml-2">
+                              ({Math.round(citation.score * 100)}% match)
+                            </span>
                           )}
                         </div>
                       ))}

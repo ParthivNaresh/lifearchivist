@@ -317,9 +317,7 @@ export function useConversation(conversationId: string | null) {
             },
             onError: (_errorMsg) => {
               // Remove temporary assistant message - backend has saved the error message
-              setMessages((prev) =>
-                prev.filter((m) => m.id !== streamingAssistantMessage.id)
-              );
+              setMessages((prev) => prev.filter((m) => m.id !== streamingAssistantMessage.id));
               // Reload conversation to get the properly formatted error message from backend
               void loadConversation();
             },

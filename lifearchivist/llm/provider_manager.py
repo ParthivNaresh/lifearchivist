@@ -7,7 +7,7 @@ This is the main entry point for all LLM operations.
 
 import logging
 from datetime import datetime
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
 from ..utils.logging import log_event, track
 from ..utils.result import Failure, Result, Success
@@ -240,7 +240,9 @@ class LLMProviderManager:
                     else True
                 ),
                 "is_admin": (
-                    provider.metadata.is_admin_key if provider.metadata else False
+                    getattr(provider.metadata, "is_admin_key", False)
+                    if provider.metadata
+                    else False
                 ),
             }
             for provider in providers
@@ -299,7 +301,12 @@ class LLMProviderManager:
         )
 
         if route_result.is_failure():
-            return route_result
+            error_msg = route_result.error_or("Failed to route request")
+            return Failure(
+                error=error_msg,
+                error_type="RoutingError",
+                status_code=503,
+            )
 
         provider = route_result.unwrap()
 
@@ -326,7 +333,12 @@ class LLMProviderManager:
 
             budget_check = await self.cost_tracker.check_budget(user_id, estimated_cost)
             if budget_check.is_failure():
-                return budget_check
+                error_msg = budget_check.error_or("Budget check failed")
+                return Failure(
+                    error=error_msg,
+                    error_type="BudgetExceeded",
+                    status_code=402,
+                )
 
         # Execute request
         try:
@@ -443,13 +455,13 @@ class LLMProviderManager:
         )
 
         if route_result.is_failure():
-            error = route_result.error
+            error_msg = route_result.error_or("Failed to route request")
             log_event(
                 "llm_stream_routing_failed",
-                {"error": error},
+                {"error": error_msg},
                 level=logging.ERROR,
             )
-            raise RuntimeError(f"Failed to route request: {error}")
+            raise RuntimeError(f"Failed to route request: {error_msg}")
 
         provider = route_result.unwrap()
 
@@ -464,7 +476,8 @@ class LLMProviderManager:
 
             budget_check = await self.cost_tracker.check_budget(user_id, estimated_cost)
             if budget_check.is_failure():
-                raise RuntimeError(f"Budget exceeded: {budget_check.error}")
+                error_msg = budget_check.error_or("Budget exceeded")
+                raise RuntimeError(f"Budget exceeded: {error_msg}")
 
         log_event(
             "llm_stream_start",
@@ -480,13 +493,17 @@ class LLMProviderManager:
         total_tokens = 0
 
         try:
-            async for chunk in provider.generate_stream(
-                messages=messages,
-                model=model,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                **kwargs,
-            ):
+            stream = cast(
+                AsyncGenerator[LLMStreamChunk, None],
+                provider.generate_stream(
+                    messages=messages,
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    **kwargs,
+                ),
+            )
+            async for chunk in stream:
                 chunk_count += 1
                 if chunk.tokens_used:
                     total_tokens = chunk.tokens_used

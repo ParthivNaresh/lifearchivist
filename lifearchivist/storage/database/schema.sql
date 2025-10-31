@@ -240,6 +240,48 @@ CREATE INDEX idx_tags_conversation_id ON conversation_tags(conversation_id);
 CREATE INDEX idx_tags_name ON conversation_tags(tag_name);
 
 -- ============================================================================
+-- USER PREFERENCES (for conversation defaults)
+-- ============================================================================
+
+CREATE TABLE user_preferences (
+    user_id VARCHAR(255) PRIMARY KEY DEFAULT 'default',
+    
+    -- Conversation defaults
+    temperature FLOAT DEFAULT 0.7,
+    max_output_tokens INTEGER DEFAULT 2000,
+    response_format VARCHAR(20) DEFAULT 'concise',
+    context_window_size INTEGER DEFAULT 10,
+    response_timeout INTEGER DEFAULT 30,
+    
+    -- Timestamps
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    
+    -- Constraints
+    CONSTRAINT valid_pref_temperature CHECK (temperature >= 0 AND temperature <= 2),
+    CONSTRAINT valid_pref_max_tokens CHECK (max_output_tokens > 0 AND max_output_tokens <= 1000000),
+    CONSTRAINT valid_pref_format CHECK (response_format IN ('concise', 'verbose')),
+    CONSTRAINT valid_pref_context CHECK (context_window_size > 0 AND context_window_size <= 50),
+    CONSTRAINT valid_pref_timeout CHECK (response_timeout >= 5 AND response_timeout <= 300)
+);
+
+-- Trigger to update updated_at
+CREATE OR REPLACE FUNCTION update_user_preferences_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER user_preferences_updated_at
+    BEFORE UPDATE ON user_preferences
+    FOR EACH ROW
+    EXECUTE FUNCTION update_user_preferences_updated_at();
+
+-- Insert default user preferences
+INSERT INTO user_preferences (user_id) VALUES ('default') ON CONFLICT DO NOTHING;
+
+-- ============================================================================
 -- VIEWS FOR COMMON QUERIES
 -- ============================================================================
 

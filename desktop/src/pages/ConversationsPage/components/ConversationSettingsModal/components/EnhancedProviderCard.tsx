@@ -1,4 +1,14 @@
-import { ChevronDown, ChevronUp, Trash2, Check, Loader2, AlertCircle, Zap, Globe, Eye } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  Check,
+  Loader2,
+  AlertCircle,
+  Zap,
+  Globe,
+  Eye,
+} from 'lucide-react';
 import type { Provider } from '../../../providers-types';
 import { getProviderMetadata } from '../constants';
 
@@ -26,7 +36,7 @@ export const EnhancedProviderCard: React.FC<EnhancedProviderCardProps> = ({
   onDelete,
 }) => {
   const metadata = getProviderMetadata(provider.type);
-  
+
   const getFeatureIcon = () => {
     if (metadata.features.fastInference) return <Zap className="h-3 w-3 text-yellow-500" />;
     if (metadata.features.localOption) return <Globe className="h-3 w-3 text-blue-500" />;
@@ -42,13 +52,9 @@ export const EnhancedProviderCard: React.FC<EnhancedProviderCardProps> = ({
             onClick={onToggleExpand}
             className="p-1 hover:bg-accent rounded transition-colors"
           >
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
-          
+
           <div>
             <div className="flex items-center gap-2">
               <h4 className="font-medium">{provider.name}</h4>
@@ -64,9 +70,7 @@ export const EnhancedProviderCard: React.FC<EnhancedProviderCardProps> = ({
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {metadata.description}
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">{metadata.description}</p>
           </div>
         </div>
 
@@ -77,26 +81,18 @@ export const EnhancedProviderCard: React.FC<EnhancedProviderCardProps> = ({
               disabled={isSettingDefault}
               className="px-3 py-1.5 text-xs border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
             >
-              {isSettingDefault ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                'Set Default'
-              )}
+              {isSettingDefault ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Set Default'}
             </button>
           )}
-          
+
           <button
             onClick={onTestConnection}
             disabled={isTestingConnection}
             className="px-3 py-1.5 text-xs border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
           >
-            {isTestingConnection ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              'Test'
-            )}
+            {isTestingConnection ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Test'}
           </button>
-          
+
           <button
             onClick={onDelete}
             className="p-1.5 text-destructive hover:bg-destructive/10 rounded transition-colors"
@@ -139,7 +135,7 @@ export const EnhancedProviderCard: React.FC<EnhancedProviderCardProps> = ({
               <span className="ml-2 font-mono">{provider.id}</span>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
             {metadata.features.streaming && (
               <span className="px-2 py-1 text-xs bg-accent rounded">Streaming</span>
@@ -156,12 +152,10 @@ export const EnhancedProviderCard: React.FC<EnhancedProviderCardProps> = ({
               </span>
             )}
             {metadata.features.localOption && (
-              <span className="px-2 py-1 text-xs bg-blue-500/10 text-blue-500 rounded">
-                Local
-              </span>
+              <span className="px-2 py-1 text-xs bg-blue-500/10 text-blue-500 rounded">Local</span>
             )}
           </div>
-          
+
           {metadata.pricing && (
             <div className="text-xs text-muted-foreground">
               <span className="font-medium">Pricing:</span> {metadata.pricing.note}

@@ -1,0 +1,7 @@
+# Development process management with honcho/foreman
+# Install: pip install honcho
+# Run: honcho start -f Procfile.dev
+
+backend: python dev.py
+frontend: cd desktop && npm run dev-server
+worker: poetry run arq lifearchivist.workers.settings.WorkerSettings --watch lifearchivist

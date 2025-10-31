@@ -13,7 +13,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
 from ..utils.logging import log_event, track
 from .base_provider import BaseLLMProvider
@@ -416,7 +416,8 @@ class ProviderHealthMonitor:
         if provider is None:
             return None
 
-        return await self._check_provider(provider)
+        result = await self._check_provider(provider)
+        return cast(Optional[HealthCheck], result)
 
     @property
     def is_running(self) -> bool:

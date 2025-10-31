@@ -1,5 +1,10 @@
 import axios from 'axios';
-import type { AvailableModels, SettingsResponse } from './types';
+import type {
+  AvailableModels,
+  SettingsResponse,
+  SettingsUpdateRequest,
+  SettingsUpdateResponse,
+} from './types';
 
 const API_BASE = 'http://localhost:8000/api';
 
@@ -9,4 +14,7 @@ export const settingsApi = {
   getSettings: () => axios.get<SettingsResponse>(`${API_BASE}/settings`),
 
   updateModel: (model: string) => axios.put(`${API_BASE}/settings`, { llm_model: model }),
+
+  updateSettings: (settings: SettingsUpdateRequest) =>
+    axios.put<SettingsUpdateResponse>(`${API_BASE}/settings`, settings),
 };

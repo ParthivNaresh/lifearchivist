@@ -6,7 +6,7 @@ Supports Admin API features when admin keys are provided.
 
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import aiohttp
 
@@ -117,15 +117,17 @@ class AnthropicMetadata(BaseProviderMetadata):
             return await super().get_usage(start_time, end_time, **filters)
 
         try:
-            params = {
+            params: Dict[str, Union[str, List[str]]] = {
                 "starting_at": start_time.isoformat(),
                 "ending_at": end_time.isoformat(),
                 "bucket_width": "1d",
             }
 
             if "workspace_ids" in filters:
+                workspace_list: List[str] = []
                 for ws_id in filters["workspace_ids"]:
-                    params.setdefault("workspace_ids[]", []).append(ws_id)
+                    workspace_list.append(ws_id)
+                params["workspace_ids[]"] = workspace_list
 
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -190,14 +192,16 @@ class AnthropicMetadata(BaseProviderMetadata):
             return await super().get_costs(start_time, end_time, **filters)
 
         try:
-            params = {
+            params: Dict[str, Union[str, List[str]]] = {
                 "starting_at": start_time.isoformat(),
                 "ending_at": end_time.isoformat(),
             }
 
             if "workspace_ids" in filters:
+                workspace_list: List[str] = []
                 for ws_id in filters["workspace_ids"]:
-                    params.setdefault("workspace_ids[]", []).append(ws_id)
+                    workspace_list.append(ws_id)
+                params["workspace_ids[]"] = workspace_list
 
             async with aiohttp.ClientSession() as session:
                 async with session.get(
@@ -219,7 +223,7 @@ class AnthropicMetadata(BaseProviderMetadata):
                     buckets = data.get("data", [])
 
                     total_cost = 0.0
-                    breakdown = {}
+                    breakdown: Dict[str, float] = {}
 
                     for bucket in buckets:
                         cost_cents = float(bucket.get("amount", "0"))

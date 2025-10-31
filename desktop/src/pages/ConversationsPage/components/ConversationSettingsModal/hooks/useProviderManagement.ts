@@ -9,7 +9,11 @@ import {
 } from '../../../providers-hooks';
 import { useProviderForm } from './useProviderForm';
 import { useProviderTestResults } from '../hooks';
-import { validateProviderForm, buildProviderConfig, ProviderValidationError } from '../services/providerService';
+import {
+  validateProviderForm,
+  buildProviderConfig,
+  ProviderValidationError,
+} from '../services/providerService';
 
 interface DeleteConfirmState {
   providerId: string;
@@ -60,10 +64,10 @@ export const useProviderManagement = () => {
     setProviderError(null);
 
     try {
-      const existingProviderIds = providersData?.providers.map(p => p.id) ?? [];
+      const existingProviderIds = providersData?.providers.map((p) => p.id) ?? [];
       validateProviderForm(formState, existingProviderIds);
       const request = buildProviderConfig(formState);
-      
+
       await addProviderMutation.mutateAsync(request);
       resetForm();
       setShowAddForm(false);
@@ -78,30 +82,33 @@ export const useProviderManagement = () => {
     }
   }, [formState, addProviderMutation, resetForm, providersData]);
 
-  const handleDeleteProvider = useCallback(async (providerId: string) => {
-    setProviderError(null);
-    
-    try {
-      const usage = await checkUsageMutation.mutateAsync(providerId);
-      
-      if (usage.conversation_count > 0) {
-        setDeleteConfirmState({
-          providerId,
-          conversationCount: usage.conversation_count,
-          sampleConversations: usage.sample_conversations,
-        });
-      } else {
-        clearTestResult(providerId);
-        await deleteProviderMutation.mutateAsync({ providerId, updateConversations: false });
+  const handleDeleteProvider = useCallback(
+    async (providerId: string) => {
+      setProviderError(null);
+
+      try {
+        const usage = await checkUsageMutation.mutateAsync(providerId);
+
+        if (usage.conversation_count > 0) {
+          setDeleteConfirmState({
+            providerId,
+            conversationCount: usage.conversation_count,
+            sampleConversations: usage.sample_conversations,
+          });
+        } else {
+          clearTestResult(providerId);
+          await deleteProviderMutation.mutateAsync({ providerId, updateConversations: false });
+        }
+      } catch (err) {
+        setProviderError(err instanceof Error ? err.message : 'Failed to delete provider');
       }
-    } catch (err) {
-      setProviderError(err instanceof Error ? err.message : 'Failed to delete provider');
-    }
-  }, [checkUsageMutation, deleteProviderMutation, clearTestResult]);
+    },
+    [checkUsageMutation, deleteProviderMutation, clearTestResult]
+  );
 
   const confirmDeleteProvider = useCallback(async () => {
     if (!deleteConfirmState) return;
-    
+
     const { providerId } = deleteConfirmState;
     setProviderError(null);
     clearTestResult(providerId);
@@ -119,44 +126,60 @@ export const useProviderManagement = () => {
     setDeleteConfirmState(null);
   }, []);
 
-  const handleTestProvider = useCallback(async (providerId: string) => {
-    if (testingProviders[providerId]) {
-      return;
-    }
-
-    setProviderError(null);
-    setTestResult(providerId, null);
-    setTesting(providerId, true);
-
-    try {
-      const result = await testProviderMutation.mutateAsync(providerId);
-      setTestResult(providerId, { success: result.is_valid, message: result.message });
-
-      if (result.is_valid) {
-        setTimeout(() => {
-          setTestResult(providerId, { success: true, message: result.message, isExiting: true });
-          setTimeout(() => clearTestResult(providerId), 300);
-        }, 2700);
+  const handleTestProvider = useCallback(
+    async (providerId: string) => {
+      if (testingProviders[providerId]) {
+        return;
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Connection test failed';
-      setTestResult(providerId, { success: false, message: errorMessage });
-    } finally {
-      startTestCooldown(providerId);
-    }
-  }, [testingProviders, testProviderMutation, setTestResult, setTesting, clearTestResult, startTestCooldown]);
 
-  const handleSetDefault = useCallback(async (providerId: string, defaultModel?: string) => {
-    setProviderError(null);
-    try {
-      await setDefaultMutation.mutateAsync({ provider_id: providerId, default_model: defaultModel });
-    } catch (err) {
-      setProviderError(err instanceof Error ? err.message : 'Failed to set default provider');
-    }
-  }, [setDefaultMutation]);
+      setProviderError(null);
+      setTestResult(providerId, null);
+      setTesting(providerId, true);
+
+      try {
+        const result = await testProviderMutation.mutateAsync(providerId);
+        setTestResult(providerId, { success: result.is_valid, message: result.message });
+
+        if (result.is_valid) {
+          setTimeout(() => {
+            setTestResult(providerId, { success: true, message: result.message, isExiting: true });
+            setTimeout(() => clearTestResult(providerId), 300);
+          }, 2700);
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Connection test failed';
+        setTestResult(providerId, { success: false, message: errorMessage });
+      } finally {
+        startTestCooldown(providerId);
+      }
+    },
+    [
+      testingProviders,
+      testProviderMutation,
+      setTestResult,
+      setTesting,
+      clearTestResult,
+      startTestCooldown,
+    ]
+  );
+
+  const handleSetDefault = useCallback(
+    async (providerId: string, defaultModel?: string) => {
+      setProviderError(null);
+      try {
+        await setDefaultMutation.mutateAsync({
+          provider_id: providerId,
+          default_model: defaultModel,
+        });
+      } catch (err) {
+        setProviderError(err instanceof Error ? err.message : 'Failed to set default provider');
+      }
+    },
+    [setDefaultMutation]
+  );
 
   const toggleProviderExpanded = useCallback((providerId: string) => {
-    setExpandedProviders(prev => ({ ...prev, [providerId]: !prev[providerId] }));
+    setExpandedProviders((prev) => ({ ...prev, [providerId]: !prev[providerId] }));
   }, []);
 
   return {

@@ -11,7 +11,7 @@ Responsible for:
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Awaitable, Dict, Optional, cast
 
 from redis.asyncio import Redis
 
@@ -154,8 +154,10 @@ class CostTracker:
                 "request_id": record.request_id or "",
             }
 
-            await self.redis.hset(record_key, mapping=record_data)
-            await self.redis.expire(record_key, 90 * 24 * 3600)  # 90 days retention
+            await cast(Awaitable[int], self.redis.hset(record_key, mapping=record_data))
+            await cast(
+                Awaitable[bool], self.redis.expire(record_key, 90 * 24 * 3600)
+            )  # 90 days retention
 
             # Update aggregated counters
             await self._update_aggregates(record)
@@ -198,34 +200,63 @@ class CostTracker:
         daily_key = (
             f"{COST_DAILY_PREFIX}{record.user_id}:{record.timestamp.strftime('%Y%m%d')}"
         )
-        await self.redis.hincrbyfloat(daily_key, "total_cost", record.cost_usd)
-        await self.redis.hincrby(daily_key, "total_requests", 1)
-        await self.redis.hincrby(
-            daily_key, "total_tokens", record.prompt_tokens + record.completion_tokens
+        await cast(
+            Awaitable[float],
+            self.redis.hincrbyfloat(daily_key, "total_cost", record.cost_usd),
         )
-        await self.redis.hincrbyfloat(
-            daily_key, f"provider:{record.provider_id}", record.cost_usd
+        await cast(Awaitable[int], self.redis.hincrby(daily_key, "total_requests", 1))
+        await cast(
+            Awaitable[int],
+            self.redis.hincrby(
+                daily_key,
+                "total_tokens",
+                record.prompt_tokens + record.completion_tokens,
+            ),
         )
-        await self.redis.hincrbyfloat(
-            daily_key, f"model:{record.model}", record.cost_usd
+        await cast(
+            Awaitable[float],
+            self.redis.hincrbyfloat(
+                daily_key, f"provider:{record.provider_id}", record.cost_usd
+            ),
         )
-        await self.redis.expire(daily_key, 90 * 24 * 3600)  # 90 days
+        await cast(
+            Awaitable[float],
+            self.redis.hincrbyfloat(
+                daily_key, f"model:{record.model}", record.cost_usd
+            ),
+        )
+        await cast(
+            Awaitable[bool], self.redis.expire(daily_key, 90 * 24 * 3600)
+        )  # 90 days
 
         # Monthly aggregate
         monthly_key = (
             f"{COST_MONTHLY_PREFIX}{record.user_id}:{record.timestamp.strftime('%Y%m')}"
         )
-        await self.redis.hincrbyfloat(monthly_key, "total_cost", record.cost_usd)
-        await self.redis.hincrby(monthly_key, "total_requests", 1)
-        await self.redis.hincrby(
-            monthly_key, "total_tokens", record.prompt_tokens + record.completion_tokens
+        await cast(
+            Awaitable[float],
+            self.redis.hincrbyfloat(monthly_key, "total_cost", record.cost_usd),
         )
-        await self.redis.expire(monthly_key, 365 * 24 * 3600)  # 1 year
+        await cast(Awaitable[int], self.redis.hincrby(monthly_key, "total_requests", 1))
+        await cast(
+            Awaitable[int],
+            self.redis.hincrby(
+                monthly_key,
+                "total_tokens",
+                record.prompt_tokens + record.completion_tokens,
+            ),
+        )
+        await cast(
+            Awaitable[bool], self.redis.expire(monthly_key, 365 * 24 * 3600)
+        )  # 1 year
 
         # User total
         user_key = f"{COST_USER_PREFIX}{record.user_id}"
-        await self.redis.hincrbyfloat(user_key, "total_cost", record.cost_usd)
-        await self.redis.hincrby(user_key, "total_requests", 1)
+        await cast(
+            Awaitable[float],
+            self.redis.hincrbyfloat(user_key, "total_cost", record.cost_usd),
+        )
+        await cast(Awaitable[int], self.redis.hincrby(user_key, "total_requests", 1))
 
     @track(
         operation="cost_tracker_check_budget",
@@ -329,7 +360,9 @@ class CostTracker:
         else:
             raise ValueError(f"Invalid budget period: {period}")
 
-        cost_str = await self.redis.hget(key, "total_cost")
+        cost_str = await cast(
+            Awaitable[Optional[str]], self.redis.hget(key, "total_cost")
+        )
         return float(cost_str) if cost_str else 0.0
 
     async def get_summary(
@@ -359,7 +392,7 @@ class CostTracker:
             # For now, return daily summary
             # In production, would aggregate across date range
             daily_key = f"{COST_DAILY_PREFIX}{user_id}:{end_date.strftime('%Y%m%d')}"
-            data = await self.redis.hgetall(daily_key)
+            data = await cast(Awaitable[Dict], self.redis.hgetall(daily_key))
 
             if not data:
                 return Success(

@@ -23,10 +23,10 @@ export interface Conversation {
   message_count?: number;
 }
 
-export type MessageMetadata = Record<string, string | number | boolean | null>;
+export type MessageMetadata = Record<string, string | number | boolean | null | undefined>;
 
-export interface ErrorMessageMetadata {
-  is_error: boolean;
+export interface ErrorMessageMetadata extends MessageMetadata {
+  is_error: true;
   error_type: string;
   provider_id: string;
   model: string;
@@ -138,7 +138,7 @@ export interface SSEContextEvent {
     chunk_id: string;
     relevance_score: number;
     text_snippet: string;
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
   }[];
   total_chunks: number;
   context_length: number;
@@ -150,7 +150,7 @@ export interface SSESourceEvent {
   chunk_id: string;
   relevance_score: number;
   text_snippet: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   confidence?: number;
 }
 
@@ -183,7 +183,7 @@ export interface SSECompleteEvent {
 export interface SSEErrorEvent {
   error_type: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   recoverable?: boolean;
 }
 

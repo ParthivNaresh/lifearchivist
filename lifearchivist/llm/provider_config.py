@@ -5,7 +5,7 @@ Provides type-safe configuration with validation and defaults.
 """
 
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 from .base_provider import ProviderType
 
@@ -249,7 +249,7 @@ class MistralConfig(BaseProviderConfig):
 
 
 # Type mapping for provider configs
-PROVIDER_CONFIG_TYPES = {
+PROVIDER_CONFIG_TYPES: Dict[ProviderType, Type[BaseProviderConfig]] = {
     ProviderType.OLLAMA: OllamaConfig,
     ProviderType.OPENAI: OpenAIConfig,
     ProviderType.ANTHROPIC: AnthropicConfig,

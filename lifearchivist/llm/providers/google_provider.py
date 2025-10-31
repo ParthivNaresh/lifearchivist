@@ -6,7 +6,7 @@ Provides access to Google's Gemini models via the Google AI API with simple API 
 
 import json
 import logging
-from typing import AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import aiohttp
 
@@ -179,7 +179,7 @@ class GoogleProvider(BaseHTTPProvider, BaseLLMProvider):
         session = self._ensure_session()
         contents = self._convert_messages(messages)
 
-        payload = {
+        payload: Dict[str, Any] = {
             "contents": contents,
             "generationConfig": {
                 "temperature": temperature,
@@ -636,7 +636,7 @@ class GoogleProvider(BaseHTTPProvider, BaseLLMProvider):
             context_window=context_window,
             max_output_tokens=DEFAULT_CAPABILITIES["max_output"],
             supports_streaming=True,
-            supports_functions=DEFAULT_CAPABILITIES["supports_functions"],
+            supports_functions=bool(DEFAULT_CAPABILITIES["supports_functions"]),
             supports_vision=supports_vision,
             cost_per_1k_input=pricing["input"] / 1000,
             cost_per_1k_output=pricing["output"] / 1000,
@@ -826,7 +826,7 @@ class GoogleProvider(BaseHTTPProvider, BaseLLMProvider):
                     return message or response_text[:500]
                 elif isinstance(error, str):
                     return error
-                return data.get("message", response_text[:500])
+                return str(data.get("message", response_text[:500]))
         except json.JSONDecodeError:
             pass
 

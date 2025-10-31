@@ -48,7 +48,7 @@ class ContextConfig:
     filters: Optional[Dict[str, Any]] = None
     rerank: bool = False
     include_conversation_history: bool = True
-    conversation_history_limit: int = 3
+    conversation_history_limit: int = 10
 
     def __post_init__(self):
         if self.similarity_top_k < 1:
@@ -238,6 +238,7 @@ class StreamEvent:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary for serialization."""
+        data_dict: Any
         if isinstance(self.data, str):
             data_dict = self.data
         elif isinstance(self.data, list):

@@ -5,3 +5,4 @@ export { AddProviderForm } from './AddProviderForm';
 export { ProviderCard } from './ProviderCard';
 export { EnhancedProviderCard } from './EnhancedProviderCard';
 export { DefaultProviderModelSelector } from './DefaultProviderModelSelector';
+export { AdvancedSettingsTab } from './AdvancedSettingsTab';

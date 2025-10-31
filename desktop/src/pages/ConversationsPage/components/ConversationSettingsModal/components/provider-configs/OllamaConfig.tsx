@@ -1,9 +1,6 @@
 import type { ProviderConfigProps } from './types';
 
-export const OllamaConfig: React.FC<ProviderConfigProps> = ({
-  baseUrl,
-  onBaseUrlChange,
-}) => {
+export const OllamaConfig: React.FC<ProviderConfigProps> = ({ baseUrl, onBaseUrlChange }) => {
   return (
     <>
       <div>

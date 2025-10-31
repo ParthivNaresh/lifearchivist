@@ -81,7 +81,8 @@ class OpenAIProvider(BaseHTTPProvider, BaseLLMProvider):
     Uses persistent HTTP session with connection pooling for optimal performance.
     """
 
-    config: OpenAIConfig  # Type hint for IDE/type checker
+    config: OpenAIConfig
+    metadata: OpenAIMetadata
 
     def __init__(self, provider_id: str, config: OpenAIConfig):
         """
@@ -619,8 +620,8 @@ class OpenAIProvider(BaseHTTPProvider, BaseLLMProvider):
             context_window=capabilities["context_window"],
             max_output_tokens=capabilities["max_output"],
             supports_streaming=True,
-            supports_functions=capabilities["supports_functions"],
-            supports_vision=capabilities["supports_vision"],
+            supports_functions=bool(capabilities["supports_functions"]),
+            supports_vision=bool(capabilities["supports_vision"]),
             cost_per_1k_input=pricing["input"] / 1000,  # Convert to per 1K
             cost_per_1k_output=pricing["output"] / 1000,
             metadata=metadata,

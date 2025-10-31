@@ -85,6 +85,12 @@ server-dev:
     lsof -ti:8000 | xargs kill -9 2>/dev/null || true
     poetry run uvicorn lifearchivist.server.main:create_app --host localhost --port 8000 --reload --factory
 
+# Start backend with better hot reload using watchdog
+server-hot:
+    @echo "🔄 Starting server with enhanced hot reload..."
+    @lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+    poetry run python dev.py
+
 # Test the server health endpoint
 health:
     curl -s http://localhost:8000/health | python -m json.tool
@@ -121,11 +127,40 @@ clean-desktop:
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🚀 Development Workflows
-# ────────────────────────────────────────────────────────────────────────────────
+# ─────���──────────────────────────────────────────────────────────────────────────
 
 # Quick start: services + server
 start: services
     poetry run uvicorn lifearchivist.server.main:create_app --host localhost --port 8000 --reload --factory
+
+# NEW: Full stack with BETTER hot reload (services + enhanced backend + UI)
+dev: services
+    #!/usr/bin/env bash
+    echo "🚀 Starting Life Archivist with enhanced hot reload..."
+    echo "🔄 Clearing ports 8000 and 3000..."
+    lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+    lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+    sleep 1
+    echo "📱 Starting backend with smart hot reload..."
+    export TOKENIZERS_PARALLELISM=false
+    poetry run python dev.py &
+    SERVER_PID=$!
+    echo "⏳ Waiting for backend to start..."
+    sleep 3
+    echo "🎨 Starting Electron Desktop App..."
+    cd desktop && npm run dev &
+    UI_PID=$!
+    echo ""
+    echo "✅ Development environment ready with enhanced hot reload!"
+    echo "📊 Backend: http://localhost:8000 (PID: $SERVER_PID) - Auto-restarts on Python changes"
+    echo "⚡ Frontend: Electron app starting (PID: $UI_PID) - Hot reload already built-in"
+    echo "🐳 Docker services: Running"
+    echo ""
+    echo "💡 Python files will auto-restart the server"
+    echo "💡 React files will hot-reload in the UI"
+    echo ""
+    echo "Press Ctrl+C to stop all processes"
+    wait
 
 # API-only mode: services + server (no UI)
 api-only: services
@@ -202,11 +237,26 @@ start-all: services
 # Stop all background processes
 stop-all: services-stop
     @echo "🛑 Stopping all Life Archivist processes..."
-    pkill -f "lifearchivist server" || true
+    pkill -f "lifearchivist.server" || true
+    pkill -f "dev.py" || true
     pkill -f "vite" || true
     pkill -f "electron" || true
     pkill -f "uvicorn" || true
+    pkill -f "watchdog" || true
     @echo "✅ All processes stopped"
+
+# Stop processes but keep data (quick restart)
+stop:
+    @echo "🛑 Stopping processes (keeping Docker services and data)..."
+    pkill -f "dev.py" || true
+    pkill -f "uvicorn" || true
+    pkill -f "vite" || true
+    pkill -f "electron" || true
+    @echo "✅ Processes stopped. Run 'just dev' to restart."
+
+# Stop and clean everything (full reset)
+stop-clean: stop-all clean-data
+    @echo "✅ Everything stopped and cleaned"
 
 # Clean all data (WARNING: Deletes all documents, vectors, and cached data)
 clean-data:
@@ -357,7 +407,7 @@ ui-check:
     cd desktop && npm run check
 
 # Development workflow: fix code and run tests
-dev: lint-fix test
+dev-check: lint-fix test
     @echo "✅ Code fixed and tests passed"
 
 # Full CI check (lint + test)

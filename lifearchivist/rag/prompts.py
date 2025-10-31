@@ -7,6 +7,7 @@ Handles formatting of context, conversation history, and system prompts.
 from typing import List, Optional
 
 from ..llm.base_provider import LLMMessage
+from ..server.api.prompt_utils import PromptFormatter
 
 
 class PromptBuilder:
@@ -44,6 +45,7 @@ Please use this information to answer the following question."""
         context: str = "",
         conversation_history: Optional[List[LLMMessage]] = None,
         system_prompt: Optional[str] = None,
+        response_format: Optional[str] = None,
     ) -> List[LLMMessage]:
         """
         Build message list for LLM with RAG context.
@@ -53,17 +55,22 @@ Please use this information to answer the following question."""
             context: Retrieved document context
             conversation_history: Previous messages
             system_prompt: Custom system prompt
+            response_format: User preference for response format
 
         Returns:
             Formatted message list for LLM
         """
         messages = []
 
-        effective_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
+        base_prompt = system_prompt or self.DEFAULT_SYSTEM_PROMPT
+        effective_prompt = PromptFormatter.apply_response_format(
+            base_prompt, response_format
+        )
         messages.append(LLMMessage(role="system", content=effective_prompt))
 
         if conversation_history:
-            for msg in conversation_history[-6:]:
+            # Include all provided history (already limited by caller)
+            for msg in conversation_history:
                 messages.append(msg)
 
         if context:

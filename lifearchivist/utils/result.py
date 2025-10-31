@@ -135,6 +135,18 @@ class Success(Generic[T]):
         """String representation."""
         return f"Success({self.value})"
 
+    def error_or(self, default: E) -> E:
+        """
+        Get error value or default (always returns default for Success).
+
+        Args:
+            default: Default error value to return
+
+        Returns:
+            The default value (always, since this is Success)
+        """
+        return default
+
 
 @dataclass
 class Failure(Generic[E]):
@@ -245,6 +257,18 @@ class Failure(Generic[E]):
     def __repr__(self) -> str:
         """String representation."""
         return f"Failure({self.error_type}: {self.error})"
+
+    def error_or(self, default: E) -> E:
+        """
+        Get error value or default.
+
+        Args:
+            default: Default error value (unused for Failure)
+
+        Returns:
+            The error value
+        """
+        return self.error
 
 
 # Type alias for Result

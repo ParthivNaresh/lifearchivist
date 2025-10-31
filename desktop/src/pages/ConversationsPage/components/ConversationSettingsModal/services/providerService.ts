@@ -14,17 +14,21 @@ export const validateProviderForm = (
   existingProviderIds?: string[]
 ): void => {
   const providerId = formState.providerId.trim();
-  
+
   if (!providerId) {
     throw new ProviderValidationError('Provider ID is required');
   }
 
   if (!/^[a-zA-Z0-9-_]+$/.test(providerId)) {
-    throw new ProviderValidationError('Provider ID can only contain letters, numbers, hyphens, and underscores');
+    throw new ProviderValidationError(
+      'Provider ID can only contain letters, numbers, hyphens, and underscores'
+    );
   }
 
   if (existingProviderIds?.includes(providerId)) {
-    throw new ProviderValidationError(`Provider ID '${providerId}' already exists. Please choose a unique identifier.`);
+    throw new ProviderValidationError(
+      `Provider ID '${providerId}' already exists. Please choose a unique identifier.`
+    );
   }
 
   switch (formState.providerType) {
@@ -38,8 +42,10 @@ export const validateProviderForm = (
     case 'mistral':
       validateApiKeyProvider(formState);
       break;
-    default:
-      throw new ProviderValidationError(`Unknown provider type: ${formState.providerType}`);
+    default: {
+      const exhaustiveCheck: never = formState.providerType;
+      throw new ProviderValidationError(`Unknown provider type: ${exhaustiveCheck as string}`);
+    }
   }
 };
 
@@ -81,7 +87,7 @@ export const buildProviderConfig = (formState: ProviderFormState): AddProviderRe
         ...baseRequest,
         config: { base_url: formState.baseUrl.trim() },
       };
-    
+
     case 'openai': {
       const config: Record<string, unknown> = {
         api_key: formState.apiKey.trim(),
@@ -94,7 +100,7 @@ export const buildProviderConfig = (formState: ProviderFormState): AddProviderRe
       }
       return { ...baseRequest, config };
     }
-    
+
     default: {
       const config: Record<string, unknown> = {
         api_key: formState.apiKey.trim(),

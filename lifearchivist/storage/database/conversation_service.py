@@ -69,8 +69,8 @@ class ConversationService:
         provider_id: Optional[str] = None,
         context_documents: Optional[List[str]] = None,
         system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 2000,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Result[Dict[str, Any], str]:
         """
@@ -83,14 +83,33 @@ class ConversationService:
             provider_id: LLM provider ID (e.g., "my-openai"). NULL = use default
             context_documents: List of document IDs for context
             system_prompt: Custom system prompt
-            temperature: LLM temperature (0-2)
-            max_tokens: Maximum tokens per response
+            temperature: LLM temperature (0-2, uses user preferences if None)
+            max_tokens: Maximum tokens per response (uses user preferences if None)
             metadata: Additional metadata
 
         Returns:
             Success with conversation dict, or Failure with error
         """
         try:
+            # Get user preferences if temperature or max_tokens not specified
+            if temperature is None or max_tokens is None:
+                async with self.db_pool.acquire() as conn:
+                    # Get or create user preferences
+                    prefs = await conn.fetchrow(
+                        """
+                        INSERT INTO user_preferences (user_id)
+                        VALUES ($1)
+                        ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
+                        RETURNING temperature, max_output_tokens
+                        """,
+                        user_id,
+                    )
+
+                    if temperature is None:
+                        temperature = prefs["temperature"]
+                    if max_tokens is None:
+                        max_tokens = prefs["max_output_tokens"]
+
             # Use current settings if model not specified
             if model is None:
                 settings = get_settings()

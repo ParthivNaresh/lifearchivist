@@ -3,7 +3,6 @@ import { ProvidersTab } from './ProvidersTab';
 import type { Provider } from '../../../providers-types';
 import type { ProviderFormState } from '../hooks/useProviderForm';
 
-
 interface ProvidersTabWrapperProps {
   providers: Provider[];
   isLoading: boolean;

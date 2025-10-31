@@ -6,10 +6,10 @@ usage tracking, and cost reporting. Each provider implements only what they supp
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 
 
 class MetadataCapability(Enum):
@@ -25,11 +25,7 @@ class Workspace:
     id: str
     name: str
     is_default: bool = False
-    metadata: Dict = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -51,11 +47,7 @@ class UsageReport:
     output_tokens: int
     cached_tokens: int = 0
     requests_count: int = 0
-    metadata: Dict = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -65,11 +57,7 @@ class CostReport:
     total_cost_usd: float
     breakdown: Dict[str, float]
     currency: str = "USD"
-    metadata: Dict = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 class ProviderMetadataProtocol(Protocol):

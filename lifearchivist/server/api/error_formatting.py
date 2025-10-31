@@ -27,7 +27,7 @@ def format_llm_error(error: Exception, model: str) -> str:
     """
     if isinstance(error, LLMProviderError):
         if hasattr(error, "get_user_message"):
-            return error.get_user_message()
+            return str(error.get_user_message())
         return error.message
 
     if isinstance(error, InvalidRequestError):

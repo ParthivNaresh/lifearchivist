@@ -53,13 +53,18 @@ export function useProviders() {
                 ]);
 
                 if (workspacesMetadata.workspaces && workspacesMetadata.workspaces.length > 0) {
-                  const defaultWorkspace = workspacesMetadata.workspaces.find((ws) => ws.is_default);
+                  const defaultWorkspace = workspacesMetadata.workspaces.find(
+                    (ws) => ws.is_default
+                  );
                   if (defaultWorkspace) {
                     enriched.workspace_name = defaultWorkspace.name;
                   }
                 }
               } catch (workspaceErr) {
-                console.warn(`Failed to fetch workspaces for provider ${provider.id}:`, workspaceErr);
+                console.warn(
+                  `Failed to fetch workspaces for provider ${provider.id}:`,
+                  workspaceErr
+                );
               }
             }
 
@@ -115,11 +120,16 @@ export function useDeleteProvider() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ providerId, updateConversations }: { providerId: string; updateConversations: boolean }) => 
-      providersApi.delete(providerId, updateConversations),
+    mutationFn: ({
+      providerId,
+      updateConversations,
+    }: {
+      providerId: string;
+      updateConversations: boolean;
+    }) => providersApi.delete(providerId, updateConversations),
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: PROVIDERS_QUERY_KEY });
-      
+
       if (variables.updateConversations) {
         void queryClient.invalidateQueries({ queryKey: ['conversations'] });
         void queryClient.invalidateQueries({ queryKey: ['conversation'] });
@@ -144,7 +154,8 @@ export function useSetDefaultProvider() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { provider_id: string; default_model?: string }) => providersApi.setDefault(data),
+    mutationFn: (data: { provider_id: string; default_model?: string }) =>
+      providersApi.setDefault(data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: PROVIDERS_QUERY_KEY });
     },

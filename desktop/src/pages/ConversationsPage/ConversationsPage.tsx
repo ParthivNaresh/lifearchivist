@@ -17,7 +17,7 @@ import { settingsApi } from './components/ConversationSettingsModal/api';
 const ConversationsPage: React.FC = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  
+
   const { data: providersData } = useProviders();
 
   const {
@@ -43,13 +43,13 @@ const ConversationsPage: React.FC = () => {
 
   const handleNewConversation = async () => {
     try {
-      const defaultProvider = providersData?.providers.find(p => p.is_default && !p.is_admin);
+      const defaultProvider = providersData?.providers.find((p) => p.is_default && !p.is_admin);
       let model = undefined;
       let providerId = undefined;
-      
+
       if (defaultProvider) {
         providerId = defaultProvider.id;
-        
+
         try {
           const settings = await settingsApi.getSettings();
           model = settings.data?.llm_model;
@@ -57,7 +57,7 @@ const ConversationsPage: React.FC = () => {
           model = undefined;
         }
       }
-      
+
       const newConv = await createConversation('New Conversation', providerId, model);
       setSelectedConversationId(newConv.id);
     } catch (err) {

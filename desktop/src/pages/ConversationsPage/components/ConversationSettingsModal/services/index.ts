@@ -1,5 +1,5 @@
-export { 
-  validateProviderForm, 
-  buildProviderConfig, 
-  ProviderValidationError 
+export {
+  validateProviderForm,
+  buildProviderConfig,
+  ProviderValidationError,
 } from './providerService';

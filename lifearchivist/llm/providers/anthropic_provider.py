@@ -50,6 +50,7 @@ class AnthropicProvider(BaseHTTPProvider, BaseLLMProvider):
     """
 
     config: AnthropicConfig
+    metadata: AnthropicMetadata
 
     def __init__(self, provider_id: str, config: AnthropicConfig):
         """
@@ -641,7 +642,7 @@ class AnthropicProvider(BaseHTTPProvider, BaseLLMProvider):
             max_output_tokens=DEFAULT_CAPABILITIES["max_output"],
             supports_streaming=True,
             supports_functions=False,
-            supports_vision=DEFAULT_CAPABILITIES["supports_vision"],
+            supports_vision=bool(DEFAULT_CAPABILITIES["supports_vision"]),
             cost_per_1k_input=pricing["input"] / 1000,
             cost_per_1k_output=pricing["output"] / 1000,
             metadata=metadata,

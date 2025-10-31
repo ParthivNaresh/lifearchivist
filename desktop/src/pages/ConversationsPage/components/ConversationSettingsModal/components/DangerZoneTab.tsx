@@ -7,7 +7,7 @@ interface DangerZoneTabProps {
 
 export const DangerZoneTab: React.FC<DangerZoneTabProps> = ({ onDeleteAll }) => {
   return (
-    <Tabs.Content value="danger" className="space-y-4">
+    <Tabs.Content value="danger" className="space-y-4 overflow-y-auto h-full">
       <div className="bg-destructive/5 backdrop-blur-sm rounded-lg border border-destructive/20 p-6">
         <h3 className="text-base font-medium mb-2 text-destructive flex items-center space-x-2">
           <Trash2 className="h-5 w-5" />

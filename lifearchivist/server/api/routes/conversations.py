@@ -26,6 +26,7 @@ from lifearchivist.llm import LLMMessage
 
 from ..dependencies import get_server
 from ..error_formatting import create_error_metadata, format_llm_error
+from ..prompt_utils import PromptFormatter
 
 router = APIRouter(prefix="/api", tags=["conversations"])
 
@@ -66,9 +67,14 @@ class CreateConversationRequest(BaseModel):
         None, description="Document IDs for context"
     )
     system_prompt: Optional[str] = Field(None, description="Custom system prompt")
-    temperature: float = Field(default=0.7, ge=0, le=2, description="LLM temperature")
-    max_tokens: int = Field(
-        default=2000, ge=1, le=100000, description="Max tokens per response"
+    temperature: Optional[float] = Field(
+        None, ge=0, le=2, description="LLM temperature (uses user preferences if None)"
+    )
+    max_tokens: Optional[int] = Field(
+        None,
+        ge=1,
+        le=100000,
+        description="Max tokens per response (uses user preferences if None)",
     )
 
 
@@ -118,7 +124,7 @@ async def create_conversation(request: CreateConversationRequest):
 
     service = server.service_container.conversation_service
 
-    # Create conversation
+    # Create conversation (pass None for temperature/max_tokens to use user preferences)
     result = await service.create_conversation(
         user_id="default",  # Single-user mode for now
         title=request.title,
@@ -126,8 +132,8 @@ async def create_conversation(request: CreateConversationRequest):
         provider_id=request.provider_id,
         context_documents=request.context_documents,
         system_prompt=request.system_prompt,
-        temperature=request.temperature,
-        max_tokens=request.max_tokens,
+        temperature=request.temperature,  # Will be None if not provided
+        max_tokens=request.max_tokens,  # Will be None if not provided
     )
 
     # Handle result
@@ -368,6 +374,11 @@ async def send_message(
 
     try:
         # Verify conversation exists
+        if not conv_service:
+            raise HTTPException(
+                status_code=503, detail="Conversation service not available"
+            )
+
         conv_result = await conv_service.get_conversation(conversation_id)
         if conv_result.is_failure():
             return JSONResponse(
@@ -378,6 +389,9 @@ async def send_message(
         conversation = conv_result.unwrap()
 
         # Add user message
+        if not msg_service:
+            raise HTTPException(status_code=503, detail="Message service not available")
+
         user_msg_result = await msg_service.add_message(
             conversation_id=conversation_id,
             role="user",
@@ -421,10 +435,25 @@ async def send_message(
         # Step 2: Build LLM messages with RAG context
         messages = []
 
-        # System message with context
-        system_prompt = (
+        # Get response format preference
+        response_format = None
+        if server.service_container and server.service_container.conversation_service:
+            db_pool = server.service_container.conversation_service.db_pool
+            async with db_pool.acquire() as conn:
+                prefs = await conn.fetchrow(
+                    "SELECT response_format FROM user_preferences WHERE user_id = 'default'"
+                )
+                if prefs:
+                    response_format = prefs["response_format"]
+
+        # System message with context and format
+        base_system_prompt = (
             conversation.get("system_prompt")
             or "You are a helpful assistant that answers questions based on the provided context."
+        )
+
+        system_prompt = PromptFormatter.apply_response_format(
+            base_system_prompt, response_format
         )
 
         if sources:
@@ -450,8 +479,27 @@ async def send_message(
 
         provider_id = conversation.get("provider_id")
         model = conversation.get("model") or get_settings().llm_model
+
+        # Get user preferences for defaults
         temperature = conversation.get("temperature", 0.7)
         max_tokens = conversation.get("max_tokens", 2000)
+
+        # If conversation is using defaults, check for user preferences
+        if temperature == 0.7 or max_tokens == 2000:
+            if (
+                server.service_container
+                and server.service_container.conversation_service
+            ):
+                db_pool = server.service_container.conversation_service.db_pool
+                async with db_pool.acquire() as conn:
+                    prefs = await conn.fetchrow(
+                        "SELECT temperature, max_output_tokens FROM user_preferences WHERE user_id = 'default'"
+                    )
+                    if prefs:
+                        if temperature == 0.7:
+                            temperature = prefs["temperature"]
+                        if max_tokens == 2000:
+                            max_tokens = prefs["max_output_tokens"]
 
         gen_result = await provider_manager.generate(
             messages=messages,
@@ -595,6 +643,20 @@ async def send_message_streaming(
         if rag_service:
             from lifearchivist.rag import ContextConfig, StreamEventType
 
+            # Get context window preference
+            context_window_size = 10  # Default
+            if (
+                server.service_container
+                and server.service_container.conversation_service
+            ):
+                db_pool = server.service_container.conversation_service.db_pool
+                async with db_pool.acquire() as conn:
+                    prefs = await conn.fetchrow(
+                        "SELECT context_window_size FROM user_preferences WHERE user_id = 'default'"
+                    )
+                    if prefs and prefs["context_window_size"]:
+                        context_window_size = prefs["context_window_size"]
+
             # Create context configuration
             context_config = ContextConfig(
                 enable_rag=True,
@@ -603,7 +665,7 @@ async def send_message_streaming(
                 max_context_tokens=4000,
                 include_metadata=True,
                 include_conversation_history=True,
-                conversation_history_limit=3,
+                conversation_history_limit=context_window_size,
             )
 
             # Stream events from RAG service
@@ -644,6 +706,10 @@ async def send_message_streaming(
 
         try:
             # Verify conversation exists
+            if not conv_service:
+                yield f"event: error\ndata: {json.dumps({'error': 'Conversation service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
+                return
+
             conv_result = await conv_service.get_conversation(conversation_id)
             if conv_result.is_failure():
                 yield f"event: error\ndata: {json.dumps({'error': 'Conversation not found', 'error_type': 'NotFound'})}\n\n"
@@ -654,6 +720,10 @@ async def send_message_streaming(
             model = conversation.get("model") or get_settings().llm_model
 
             # Add user message
+            if not msg_service:
+                yield f"event: error\ndata: {json.dumps({'error': 'Message service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
+                return
+
             user_msg_result = await msg_service.add_message(
                 conversation_id=conversation_id,
                 role="user",
@@ -673,6 +743,10 @@ async def send_message_streaming(
             filters = None
             if conversation.get("context_documents"):
                 filters = {"document_id": {"$in": conversation["context_documents"]}}
+
+            if not llamaindex_service:
+                yield f"event: error\ndata: {json.dumps({'error': 'LlamaIndex service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
+                return
 
             search_results = await llamaindex_service.semantic_search(
                 query=request.content,
@@ -699,9 +773,27 @@ async def send_message_streaming(
             # Step 2: Build LLM messages with RAG context
             messages = []
 
-            system_prompt = (
+            # Get response format preference
+            response_format = None
+            if (
+                server.service_container
+                and server.service_container.conversation_service
+            ):
+                db_pool = server.service_container.conversation_service.db_pool
+                async with db_pool.acquire() as conn:
+                    prefs = await conn.fetchrow(
+                        "SELECT response_format FROM user_preferences WHERE user_id = 'default'"
+                    )
+                    if prefs:
+                        response_format = prefs["response_format"]
+
+            base_system_prompt = (
                 conversation.get("system_prompt")
                 or "You are a helpful assistant that answers questions based on the provided context."
+            )
+
+            system_prompt = PromptFormatter.apply_response_format(
+                base_system_prompt, response_format
             )
 
             if sources_data:
@@ -719,6 +811,13 @@ async def send_message_streaming(
             messages.append(LLMMessage(role="user", content=request.content))
 
             # Step 3: Stream response using provider manager
+            if (
+                not server.service_container
+                or not server.service_container.llm_provider_manager
+            ):
+                yield f"event: error\ndata: {json.dumps({'error': 'LLM provider manager not available', 'error_type': 'ServiceUnavailable'})}\n\n"
+                return
+
             provider_manager = server.service_container.llm_provider_manager
             if not provider_manager:
                 yield f"event: error\ndata: {json.dumps({'error': 'LLM provider manager not available', 'error_type': 'ServiceUnavailable'})}\n\n"
@@ -726,15 +825,48 @@ async def send_message_streaming(
 
             provider_id = conversation.get("provider_id")
             model = conversation.get("model") or get_settings().llm_model
+
+            # Get user preferences for defaults
             temperature = conversation.get("temperature", 0.7)
             max_tokens = conversation.get("max_tokens", 2000)
+
+            # If conversation is using defaults, check for user preferences
+            if temperature == 0.7 or max_tokens == 2000:
+                if (
+                    server.service_container
+                    and server.service_container.conversation_service
+                ):
+                    db_pool = server.service_container.conversation_service.db_pool
+                    async with db_pool.acquire() as conn:
+                        prefs = await conn.fetchrow(
+                            "SELECT temperature, max_output_tokens FROM user_preferences WHERE user_id = 'default'"
+                        )
+                        if prefs:
+                            if temperature == 0.7:
+                                temperature = prefs["temperature"]
+                            if max_tokens == 2000:
+                                max_tokens = prefs["max_output_tokens"]
+
+            # Get response timeout preference
+            response_timeout = 30  # Default
+            if (
+                server.service_container
+                and server.service_container.conversation_service
+            ):
+                db_pool = server.service_container.conversation_service.db_pool
+                async with db_pool.acquire() as conn:
+                    timeout_prefs = await conn.fetchrow(
+                        "SELECT response_timeout FROM user_preferences WHERE user_id = 'default'"
+                    )
+                    if timeout_prefs and timeout_prefs["response_timeout"]:
+                        response_timeout = timeout_prefs["response_timeout"]
 
             accumulated_text = ""
             tokens_used = 0
             finish_reason = None
 
             try:
-                async with asyncio.timeout(120):  # 2 minute timeout
+                async with asyncio.timeout(response_timeout):
                     async for chunk in provider_manager.generate_stream(
                         messages=messages,
                         model=model,
@@ -754,21 +886,22 @@ async def send_message_streaming(
 
             except asyncio.TimeoutError as e:
                 latency_ms = int((time.time() - start_time) * 1000)
-                user_friendly_message = "Query timeout after 120 seconds. Please try again with a shorter query."
+                user_friendly_message = f"Query timeout after {response_timeout} seconds. Please try again with a shorter query or increase the timeout in settings."
                 error_metadata = create_error_metadata(
                     e, provider_id or "default", model
                 )
 
-                await msg_service.add_message(
-                    conversation_id=conversation_id,
-                    role="assistant",
-                    content=user_friendly_message,
-                    model=model,
-                    confidence=0.0,
-                    method="error",
-                    latency_ms=latency_ms,
-                    metadata=error_metadata,
-                )
+                if msg_service:
+                    await msg_service.add_message(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=user_friendly_message,
+                        model=model,
+                        confidence=0.0,
+                        method="error",
+                        latency_ms=latency_ms,
+                        metadata=error_metadata,
+                    )
 
                 yield f"event: error\ndata: {json.dumps({'error': user_friendly_message, 'error_type': 'TimeoutError'})}\n\n"
                 return
@@ -779,16 +912,17 @@ async def send_message_streaming(
                     e, provider_id or "default", model
                 )
 
-                await msg_service.add_message(
-                    conversation_id=conversation_id,
-                    role="assistant",
-                    content=user_friendly_message,
-                    model=model,
-                    confidence=0.0,
-                    method="error",
-                    latency_ms=latency_ms,
-                    metadata=error_metadata,
-                )
+                if msg_service:
+                    await msg_service.add_message(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=user_friendly_message,
+                        model=model,
+                        confidence=0.0,
+                        method="error",
+                        latency_ms=latency_ms,
+                        metadata=error_metadata,
+                    )
 
                 yield f"event: error\ndata: {json.dumps({'error': user_friendly_message, 'error_type': type(e).__name__})}\n\n"
                 return
@@ -809,6 +943,10 @@ async def send_message_streaming(
             # Save complete assistant message
             confidence = metadata_info["confidence_score"]
             method = metadata_info["method"]
+
+            if not msg_service:
+                yield f"event: error\ndata: {json.dumps({'error': 'Message service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
+                return
 
             assistant_msg_result = await msg_service.add_message(
                 conversation_id=conversation_id,
@@ -840,13 +978,14 @@ async def send_message_streaming(
                         }
                     )
 
-                citation_result = await msg_service.add_citations(
-                    message_id=str(assistant_message["id"]),
-                    citations=citations,
-                )
+                if msg_service:
+                    citation_result = await msg_service.add_citations(
+                        message_id=str(assistant_message["id"]),
+                        citations=citations,
+                    )
 
-                if citation_result.is_success():
-                    assistant_message["citations"] = citation_result.unwrap()
+                    if citation_result.is_success():
+                        assistant_message["citations"] = citation_result.unwrap()
 
             # Send completion event with final message (serialize all types)
             completion_data = serialize_for_json(
@@ -872,16 +1011,17 @@ async def send_message_streaming(
                     e, final_provider_id, final_model
                 )
 
-                await msg_service.add_message(
-                    conversation_id=conversation_id,
-                    role="assistant",
-                    content=user_friendly_message,
-                    model=final_model,
-                    confidence=0.0,
-                    method="error",
-                    latency_ms=latency_ms,
-                    metadata=error_metadata,
-                )
+                if msg_service:
+                    await msg_service.add_message(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=user_friendly_message,
+                        model=final_model,
+                        confidence=0.0,
+                        method="error",
+                        latency_ms=latency_ms,
+                        metadata=error_metadata,
+                    )
             except Exception as save_error:
                 logging.error(
                     f"Failed to save error message: {save_error}", exc_info=True

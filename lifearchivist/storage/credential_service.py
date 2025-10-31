@@ -7,7 +7,7 @@ For local desktop apps, credentials are stored in plain text.
 
 import json
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from redis.asyncio import Redis
 
@@ -106,7 +106,7 @@ class CredentialService:
             await self.redis.set(redis_key, json.dumps(provider_data))
 
             # Add to provider list
-            await self.redis.sadd(PROVIDER_LIST_KEY, provider_id)
+            await cast(Any, self.redis.sadd(PROVIDER_LIST_KEY, provider_id))
 
             log_event(
                 "provider_added",
@@ -256,7 +256,7 @@ class CredentialService:
         """
         try:
             # Get all provider IDs
-            provider_ids = await self.redis.smembers(PROVIDER_LIST_KEY)
+            provider_ids = await cast(Any, self.redis.smembers(PROVIDER_LIST_KEY))
 
             if not provider_ids:
                 return Success([])
@@ -322,7 +322,7 @@ class CredentialService:
             await self.redis.delete(redis_key)
 
             # Remove from provider list
-            await self.redis.srem(PROVIDER_LIST_KEY, provider_id)
+            await cast(Any, self.redis.srem(PROVIDER_LIST_KEY, provider_id))
 
             log_event(
                 "provider_deleted",
@@ -370,7 +370,7 @@ class CredentialService:
             # Get existing provider metadata
             result = await self.get_provider_metadata(provider_id)
             if result.is_failure():
-                return result
+                return cast(Result[Dict, str], result)
 
             provider_data = result.unwrap()
 

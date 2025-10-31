@@ -75,7 +75,7 @@ export const ProvidersTab: React.FC<ProvidersTabProps> = ({
   onDeleteProvider,
 }) => {
   return (
-    <Tabs.Content value="providers" className="space-y-4">
+    <Tabs.Content value="providers" className="space-y-4 overflow-y-auto h-full">
       <div className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/30 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>

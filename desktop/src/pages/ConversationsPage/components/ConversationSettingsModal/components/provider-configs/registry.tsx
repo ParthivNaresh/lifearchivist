@@ -7,10 +7,7 @@ import { GroqConfig } from './GroqConfig';
 import { MistralConfig } from './MistralConfig';
 import { OllamaConfig } from './OllamaConfig';
 
-export const PROVIDER_CONFIGS: Record<
-  ProviderType,
-  React.ComponentType<ProviderConfigProps>
-> = {
+export const PROVIDER_CONFIGS: Record<ProviderType, React.ComponentType<ProviderConfigProps>> = {
   openai: OpenAIConfig,
   anthropic: AnthropicConfig,
   google: GoogleConfig,

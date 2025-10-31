@@ -40,16 +40,18 @@ export const ProviderDeleteConfirmDialog: React.FC<ProviderDeleteConfirmDialogPr
               <AlertTriangle className="h-5 w-5 text-destructive" />
             </div>
             <div className="flex-1">
-              <Dialog.Title className="text-lg font-semibold mb-2">
-                Delete Provider
-              </Dialog.Title>
-              
+              <Dialog.Title className="text-lg font-semibold mb-2">Delete Provider</Dialog.Title>
+
               {conversationCount > 0 ? (
                 <>
                   <Dialog.Description className="text-sm text-muted-foreground mb-4">
-                    This provider is currently being used by <span className="font-semibold text-foreground">{conversationCount} conversation{conversationCount !== 1 ? 's' : ''}</span>.
+                    This provider is currently being used by{' '}
+                    <span className="font-semibold text-foreground">
+                      {conversationCount} conversation{conversationCount !== 1 ? 's' : ''}
+                    </span>
+                    .
                   </Dialog.Description>
-                  
+
                   {sampleConversations.length > 0 && (
                     <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border/50">
                       <p className="text-xs font-medium text-muted-foreground mb-2">
@@ -69,9 +71,10 @@ export const ProviderDeleteConfirmDialog: React.FC<ProviderDeleteConfirmDialogPr
                       </ul>
                     </div>
                   )}
-                  
+
                   <p className="text-sm text-muted-foreground mb-4">
-                    If you delete this provider, these conversations will automatically switch to the default provider{' '}
+                    If you delete this provider, these conversations will automatically switch to
+                    the default provider{' '}
                     {defaultProvider ? (
                       <>
                         (<span className="font-medium">{defaultProvider.name}</span>) with the model{' '}
@@ -79,12 +82,13 @@ export const ProviderDeleteConfirmDialog: React.FC<ProviderDeleteConfirmDialogPr
                       </>
                     ) : (
                       <>
-                        (Ollama) with the model <span className="font-mono text-xs">llama3.2:1b</span>
+                        (Ollama) with the model{' '}
+                        <span className="font-mono text-xs">llama3.2:1b</span>
                       </>
                     )}
                     .
                   </p>
-                  
+
                   <p className="text-sm font-medium">
                     Are you sure you want to delete this provider?
                   </p>
@@ -92,12 +96,14 @@ export const ProviderDeleteConfirmDialog: React.FC<ProviderDeleteConfirmDialogPr
               ) : (
                 <>
                   <Dialog.Description className="text-sm text-muted-foreground mb-4">
-                    Are you sure you want to delete the provider <span className="font-mono text-xs">{providerId}</span>? This action cannot be undone.
+                    Are you sure you want to delete the provider{' '}
+                    <span className="font-mono text-xs">{providerId}</span>? This action cannot be
+                    undone.
                   </Dialog.Description>
                 </>
               )}
             </div>
-            
+
             <Dialog.Close asChild>
               <button
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -108,7 +114,7 @@ export const ProviderDeleteConfirmDialog: React.FC<ProviderDeleteConfirmDialogPr
               </button>
             </Dialog.Close>
           </div>
-          
+
           <div className="flex gap-3 mt-6 justify-end">
             <button
               onClick={onCancel}

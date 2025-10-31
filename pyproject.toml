@@ -104,6 +104,8 @@ docker = "*"
 urllib3 = "*"
 types-aiofiles = "^24.1.0.20250708"
 types-PyYAML = "*"
+watchdog = "^6.0.0"
+honcho = "^1.1.0"
 
 [build-system]
 requires = ["poetry-core"]

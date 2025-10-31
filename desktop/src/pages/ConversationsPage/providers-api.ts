@@ -113,7 +113,16 @@ export const providersApi = {
       await handleErrorResponse(response, 'Failed to check provider usage');
     }
 
-    return response.json();
+    return response.json() as Promise<{
+      success: boolean;
+      provider_id: string;
+      conversation_count: number;
+      sample_conversations: {
+        id: string;
+        title: string;
+        model: string;
+      }[];
+    }>;
   },
 
   /**

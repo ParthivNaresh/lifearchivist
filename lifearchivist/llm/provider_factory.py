@@ -233,17 +233,19 @@ class ProviderManagerFactory:
         # Initialize manager
         init_result = await manager.initialize()
         if init_result.is_failure():
-            raise RuntimeError(f"Failed to initialize manager: {init_result.error}")
+            error_msg = init_result.error_or("Unknown error")
+            raise RuntimeError(f"Failed to initialize manager: {error_msg}")
 
         # Load all stored providers
         loader = ProviderLoader(credential_service)
         load_result = await loader.load_all_providers(user_id)
 
         if load_result.is_failure():
+            error_msg = load_result.error_or("Unknown error")
             log_event(
                 "provider_factory_load_failed",
                 {
-                    "error": load_result.error,
+                    "error": error_msg,
                     "user_id": user_id,
                 },
                 level=logging.ERROR,
@@ -257,11 +259,12 @@ class ProviderManagerFactory:
         for provider in providers:
             add_result = await manager.add_provider(provider)
             if add_result.is_failure():
+                error_msg = add_result.error_or("Unknown error")
                 log_event(
                     "provider_factory_add_failed",
                     {
                         "provider_id": provider.provider_id,
-                        "error": add_result.error,
+                        "error": error_msg,
                     },
                     level=logging.WARNING,
                 )
@@ -313,15 +316,17 @@ class ProviderManagerFactory:
                             },
                         )
                     else:
+                        error_msg = store_result.error_or("Unknown error")
                         log_event(
                             "default_ollama_provider_store_failed",
-                            {"error": store_result.error},
+                            {"error": error_msg},
                             level=logging.WARNING,
                         )
                 else:
+                    error_msg = add_result.error_or("Unknown error")
                     log_event(
                         "default_ollama_provider_add_failed",
-                        {"error": add_result.error},
+                        {"error": error_msg},
                         level=logging.WARNING,
                     )
             except Exception as e:
