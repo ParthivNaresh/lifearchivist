@@ -1,6 +1,22 @@
 name: SonarCloud Analysis
 
 on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'lifearchivist/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'sonar-project.properties'
+      - '.github/workflows/sonarqube.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'lifearchivist/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'sonar-project.properties'
+      - '.github/workflows/sonarqube.yml'
   workflow_call:
     inputs:
       unit-coverage-artifact:
@@ -8,6 +24,10 @@ on:
         required: false
         type: string
         default: "unit-tests-coverage"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   sonarcloud:

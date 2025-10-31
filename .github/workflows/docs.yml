@@ -1,12 +1,32 @@
 name: Documentation
 
 on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'docs/**'
+      - 'lifearchivist/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'docs/**'
+      - 'lifearchivist/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - '.github/workflows/docs.yml'
   workflow_call:
     inputs:
       deploy:
         required: false
         type: boolean
         default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-docs:

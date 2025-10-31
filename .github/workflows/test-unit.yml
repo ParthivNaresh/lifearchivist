@@ -1,12 +1,33 @@
 name: Unit Tests
 
 on:
-  # Only trigger via workflow_call from ci.yml to avoid duplicate runs
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'lifearchivist/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'pytest.ini'
+      - '.github/workflows/test-unit.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'lifearchivist/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'pytest.ini'
+      - '.github/workflows/test-unit.yml'
   workflow_call:
     outputs:
       coverage-artifact:
         description: "Coverage report artifact name"
         value: ${{ jobs.unit-tests.outputs.coverage-artifact }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   unit-tests:
