@@ -2,7 +2,7 @@
  * Type definitions for VaultPage
  */
 
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 export interface Document {
   id: string;
@@ -20,29 +20,30 @@ export interface Document {
   confidence_level?: string;
   classification?: string;
   pattern_or_phrase?: string;
-  
+
   // Subtheme fields (e.g., Banking, Investment, Insurance)
   subthemes?: string[];
   primary_subtheme?: string;
-  
+
   // Subclassification fields (e.g., Bank Statement, Brokerage Statement)
   subclassifications?: string[];
   primary_subclassification?: string;
   subclassification_confidence?: number;
-  
+
   // Category mapping for UI
   category_mapping?: Record<string, string>;
 }
 
 export interface VaultInfo {
   vault_path: string;
-  directories: {
-    [key: string]: {
+  directories: Record<
+    string,
+    {
       file_count: number;
       total_size_bytes: number;
       total_size_mb: number;
-    };
-  };
+    }
+  >;
 }
 
 export interface FileSystemItem {
@@ -57,7 +58,6 @@ export interface FileSystemItem {
   wordCount?: number;
   mimeType?: string;
   primaryTheme?: string;
-  themes?: string[];
   themeConfidence?: number;
   subthemes?: string[];
   primarySubtheme?: string;
@@ -67,11 +67,11 @@ export interface FileSystemItem {
   children?: FileSystemItem[];
   itemCount?: number;
   processingCount?: number;
-  
+
   // Hierarchy information
   hierarchyLevel?: 'theme' | 'category' | 'subclassification';
-  useColoredCard?: boolean;  // Whether to render as SubthemeCard (colored) or ThemeCard
-  
+  useColoredCard?: boolean; // Whether to render as SubthemeCard (colored) or ThemeCard
+
   // Parent references
   parentTheme?: string;
   parentCategory?: string;
@@ -98,6 +98,22 @@ export interface SubthemeStyles {
 export interface CurrentStats {
   folders: number;
   files: number;
-  totalDocuments: number;  // Total documents including those in subfolders
+  totalDocuments: number; // Total documents including those in subfolders
   totalSize: number;
+}
+
+// Location state type for navigation
+export interface VaultLocationState {
+  navigationPath?: string[];
+  displayPath?: string[];
+  searchTerm?: string;
+  viewMode?: ViewMode;
+  from?: string;
+  returnPath?: string;
+  returnState?: {
+    navigationPath: string[];
+    displayPath: string[];
+    searchTerm: string;
+    viewMode: ViewMode;
+  };
 }

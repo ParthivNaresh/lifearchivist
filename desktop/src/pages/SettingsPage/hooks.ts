@@ -3,53 +3,38 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { 
-  SystemHealth, 
-  VaultStats, 
-  Settings, 
-  AvailableModels,
-  SettingKey 
-} from './types';
-import { fetchAllData, saveSettingsToServer } from './api';
+import { useTheme } from '../../contexts/useTheme';
+import { type Settings, type SettingKey } from './types';
+import { fetchSettings, saveSettingsToServer } from './api';
 import { UI_TEXT } from './constants';
 
 /**
  * Hook to manage all settings data and loading state
  */
 export const useSettingsData = () => {
-  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
-  const [vaultStats, setVaultStats] = useState<VaultStats | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [originalSettings, setOriginalSettings] = useState<Settings | null>(null);
-  const [availableModels, setAvailableModels] = useState<AvailableModels | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchAllData();
-        setSystemHealth(data.systemHealth);
-        setVaultStats(data.vaultStats);
-        setSettings(data.settings);
-        setOriginalSettings(data.settings);
-        setAvailableModels(data.availableModels);
+        const data = await fetchSettings();
+        setSettings(data);
+        setOriginalSettings(data);
       } catch (error) {
-        console.error('Failed to fetch data:', error);
+        console.error('Failed to fetch settings:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
+    void loadData();
   }, []);
 
   return {
-    systemHealth,
-    vaultStats,
     settings,
     originalSettings,
-    availableModels,
     loading,
     setSettings,
     setOriginalSettings,
@@ -73,22 +58,25 @@ export const useSettingsManager = (
     return JSON.stringify(settings) !== JSON.stringify(originalSettings);
   }, [settings, originalSettings]);
 
-  const handleSettingChange = useCallback((key: SettingKey, value: any) => {
-    if (settings) {
-      console.log(`Setting changed: ${key} = ${value}`);
-      setSettings({ ...settings, [key]: value });
-    }
-  }, [settings, setSettings]);
+  const handleSettingChange = useCallback(
+    (key: SettingKey, value: unknown) => {
+      if (settings) {
+        console.log(`Setting changed: ${key} = ${String(value)}`);
+        setSettings({ ...settings, [key]: value as Settings[SettingKey] });
+      }
+    },
+    [settings, setSettings]
+  );
 
   const saveSettings = useCallback(async () => {
     if (!settings) return;
-    
+
     setSaving(true);
     setSaveMessage(null);
-    
+
     try {
       const response = await saveSettingsToServer(settings);
-      
+
       if (response.success) {
         setSaveMessage(UI_TEXT.SAVE_SUCCESS);
         setOriginalSettings(settings);
@@ -128,14 +116,17 @@ export const useThemeSettings = (
 ) => {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
-  const handleThemeChange = useCallback((newTheme: 'light' | 'dark' | 'system') => {
-    setTheme(newTheme);
-    
-    // Also update the settings state
-    if (settings) {
-      setSettings({ ...settings, theme: newTheme });
-    }
-  }, [settings, setSettings, setTheme]);
+  const handleThemeChange = useCallback(
+    (newTheme: 'light' | 'dark' | 'system') => {
+      setTheme(newTheme);
+
+      // Also update the settings state
+      if (settings) {
+        setSettings({ ...settings, theme: newTheme });
+      }
+    },
+    [settings, setSettings, setTheme]
+  );
 
   return {
     theme,

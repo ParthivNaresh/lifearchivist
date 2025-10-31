@@ -2,8 +2,8 @@
  * Utilities for flattening timeline data for virtualization
  */
 
-import { TimelineData } from './types';
-import { VirtualItem, VirtualizationState } from './virtualization-types';
+import { type TimelineData } from './types';
+import { type VirtualItem, type VirtualizationState } from './virtualization-types';
 import { getMonthName, sortYears, sortMonths } from './utils';
 
 /**
@@ -15,11 +15,13 @@ export function flattenTimelineData(
 ): VirtualItem[] {
   const items: VirtualItem[] = [];
   const years = sortYears(Object.keys(timelineData.by_year));
-  
-  years.forEach(year => {
+
+  years.forEach((year) => {
     const yearData = timelineData.by_year[year];
+    if (!yearData) return;
+
     const isYearExpanded = state.expandedYears.has(year);
-    
+
     // Add year item
     items.push({
       id: `year-${year}`,
@@ -28,14 +30,15 @@ export function flattenTimelineData(
       count: yearData.count,
       isExpanded: isYearExpanded,
     });
-    
+
     // If year is expanded, add months and documents
     if (isYearExpanded) {
       const months = sortMonths(Object.keys(yearData.months));
-      
-      months.forEach(month => {
+
+      months.forEach((month) => {
         const monthData = yearData.months[month];
-        
+        if (!monthData) return; // Skip if month data doesn't exist
+
         // Add month item
         items.push({
           id: `month-${year}-${month}`,
@@ -45,9 +48,9 @@ export function flattenTimelineData(
           monthName: getMonthName(month),
           count: monthData.count,
         });
-        
+
         // Add document items
-        monthData.documents.forEach((doc, index) => {
+        monthData.documents.forEach((doc) => {
           items.push({
             id: `doc-${year}-${month}-${doc.id}`,
             type: 'document',
@@ -59,25 +62,22 @@ export function flattenTimelineData(
       });
     }
   });
-  
+
   return items;
 }
 
 /**
  * Toggle year expansion state
  */
-export function toggleYearExpansion(
-  year: string,
-  state: VirtualizationState
-): VirtualizationState {
+export function toggleYearExpansion(year: string, state: VirtualizationState): VirtualizationState {
   const newExpandedYears = new Set(state.expandedYears);
-  
+
   if (newExpandedYears.has(year)) {
     newExpandedYears.delete(year);
   } else {
     newExpandedYears.add(year);
   }
-  
+
   return {
     expandedYears: newExpandedYears,
   };
@@ -88,16 +88,16 @@ export function toggleYearExpansion(
  */
 export function initializeVirtualizationState(
   timelineData: TimelineData,
-  allExpanded: boolean = true
+  allExpanded = true
 ): VirtualizationState {
   const expandedYears = new Set<string>();
-  
+
   if (allExpanded) {
-    Object.keys(timelineData.by_year).forEach(year => {
+    Object.keys(timelineData.by_year).forEach((year) => {
       expandedYears.add(year);
     });
   }
-  
+
   return {
     expandedYears,
   };

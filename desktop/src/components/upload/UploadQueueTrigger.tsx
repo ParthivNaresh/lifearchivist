@@ -1,6 +1,5 @@
-import React from 'react';
-import { Upload, X, Minimize2, Maximize2 } from 'lucide-react';
-import { useUploadQueue } from '../../contexts/UploadQueueContext';
+import { Upload } from 'lucide-react';
+import { useUploadQueue } from '../../contexts/useUploadQueue';
 
 const UploadQueueTrigger: React.FC = () => {
   const { state, toggleVisibility, toggleMinimized } = useUploadQueue();
@@ -18,24 +17,27 @@ const UploadQueueTrigger: React.FC = () => {
             }
           }}
           className="group relative w-14 h-14 floating-button-glass rounded-full transition-all duration-300"
-          title={!state.isVisible ? "Show upload queue" : "Expand upload queue"}
+          title={!state.isVisible ? 'Show upload queue' : 'Expand upload queue'}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          
+
           <div className="relative flex items-center justify-center">
             <Upload className="w-5 h-5 text-white/80 group-hover:text-white transition-colors" />
-            
+
             {(state.activeUploads > 0 || state.batches.length > 0) && (
               <>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-xs font-medium text-white">
-                    {state.activeUploads > 0 
-                      ? (state.activeUploads > 99 ? '99+' : state.activeUploads)
-                      : state.batches.length > 99 ? '99+' : state.batches.length
-                    }
+                    {state.activeUploads > 0
+                      ? state.activeUploads > 99
+                        ? '99+'
+                        : state.activeUploads
+                      : state.batches.length > 99
+                        ? '99+'
+                        : state.batches.length}
                   </span>
                 </div>
-                
+
                 {state.activeUploads > 0 && (
                   <div className="absolute inset-0 rounded-full border-2 border-purple-500/30">
                     <svg

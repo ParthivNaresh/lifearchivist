@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   useQAState,
   useQAConversation,
@@ -22,19 +21,15 @@ const QAPage: React.FC = () => {
     setShowClearConfirm,
   } = useQAState();
 
-  const {
-    messages,
-    addMessage,
-    clearConversation,
-    conversationStats,
-  } = useQAConversation();
+  const { messages, addMessage, clearConversation, conversationStats } = useQAConversation();
 
   const { handleSubmit } = useQuestionSubmit(
     currentQuestion,
     contextLimit,
     setCurrentQuestion,
     setIsLoading,
-    addMessage
+    addMessage,
+    isLoading
   );
 
   const { handleClearConversation } = useClearConfirmation(
@@ -54,16 +49,13 @@ const QAPage: React.FC = () => {
         onClearConversation={handleClearConversation}
       />
 
-      <MessageArea
-        messages={messages}
-        isLoading={isLoading}
-      />
+      <MessageArea messages={messages} isLoading={isLoading} />
 
       <InputArea
         currentQuestion={currentQuestion}
         isLoading={isLoading}
         onQuestionChange={setCurrentQuestion}
-        onSubmit={handleSubmit}
+        onSubmit={(e) => void handleSubmit(e)}
       />
     </div>
   );

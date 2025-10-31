@@ -2,13 +2,12 @@
  * TabNavigation component - renders tab navigation
  */
 
-import React from 'react';
 import { FileText, Link, Clock } from 'lucide-react';
-import { TAB_CONFIG } from '../constants';
+import { TAB_CONFIG, type TabType } from '../index';
 
 interface TabNavigationProps {
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
 }
 
 const tabs = [
@@ -17,10 +16,7 @@ const tabs = [
   { id: TAB_CONFIG.ACTIVITY, label: 'Activity', icon: Clock },
 ];
 
-export const TabNavigation: React.FC<TabNavigationProps> = ({
-  activeTab,
-  onTabChange
-}) => {
+export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {
   return (
     <div className="border-b border-border mb-6">
       <nav className="flex space-x-8">

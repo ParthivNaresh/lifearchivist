@@ -54,22 +54,24 @@
     @apply border-border;
     transition: border-color 0.2s ease;
   }
-  
+
   body {
     @apply bg-background text-foreground;
     /* Dramatic gradient background for glass-morphism - Light theme */
-    background: 
+    background:
       radial-gradient(circle at 20% 50%, rgba(120, 113, 255, 0.3) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, rgba(255, 113, 145, 0.3) 0%, transparent 50%),
       radial-gradient(circle at 40% 80%, rgba(113, 255, 193, 0.3) 0%, transparent 50%),
       linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
     min-height: 100vh;
-    transition: background 0.3s ease, color 0.2s ease;
+    transition:
+      background 0.3s ease,
+      color 0.2s ease;
   }
-  
+
   .dark body {
     /* Dark theme gradient with deep purples and blues */
-    background: 
+    background:
       radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
       radial-gradient(circle at 40% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
@@ -86,7 +88,7 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
   }
-  
+
   .dark .glass-card {
     background: rgba(17, 24, 39, 0.25);
     backdrop-filter: blur(20px) saturate(200%);
@@ -99,7 +101,7 @@
     background: rgba(15, 23, 42, 0.15);
     backdrop-filter: blur(32px) saturate(180%);
     border: 1px solid rgba(99, 102, 241, 0.15);
-    box-shadow: 
+    box-shadow:
       0 25px 60px rgba(0, 0, 0, 0.5),
       0 0 0 1px rgba(255, 255, 255, 0.03),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -107,7 +109,7 @@
 
   .upload-queue-glass:hover {
     border-color: rgba(99, 102, 241, 0.25);
-    box-shadow: 
+    box-shadow:
       0 32px 80px rgba(0, 0, 0, 0.6),
       0 0 0 1px rgba(255, 255, 255, 0.05),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -122,11 +124,13 @@
   }
 
   .progress-fill {
-    background: linear-gradient(90deg, 
-      rgba(168, 85, 247, 0.8) 0%, 
-      rgba(99, 102, 241, 0.9) 50%, 
-      rgba(59, 130, 246, 0.8) 100%);
-    box-shadow: 
+    background: linear-gradient(
+      90deg,
+      rgba(168, 85, 247, 0.8) 0%,
+      rgba(99, 102, 241, 0.9) 50%,
+      rgba(59, 130, 246, 0.8) 100%
+    );
+    box-shadow:
       0 0 20px rgba(99, 102, 241, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
@@ -150,7 +154,7 @@
     background: rgba(15, 23, 42, 0.2);
     backdrop-filter: blur(24px) saturate(200%);
     border: 1px solid rgba(99, 102, 241, 0.2);
-    box-shadow: 
+    box-shadow:
       0 20px 40px rgba(0, 0, 0, 0.4),
       0 0 0 1px rgba(255, 255, 255, 0.05),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -159,7 +163,7 @@
   .floating-button-glass:hover {
     background: rgba(15, 23, 42, 0.3);
     border-color: rgba(99, 102, 241, 0.4);
-    box-shadow: 
+    box-shadow:
       0 25px 50px rgba(0, 0, 0, 0.5),
       0 0 0 1px rgba(255, 255, 255, 0.08),
       inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -187,7 +191,31 @@
     background-size: 200px 100%;
     animation: shimmer 2s infinite;
   }
-  
+
+  /* Fade in animation for test results */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Fade out animation for test results */
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+  }
+
   /* Enhanced drop zone with glass effect */
   .glass-dropzone {
     background: rgba(255, 255, 255, 0.35);
@@ -197,20 +225,20 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
   }
-  
+
   .glass-dropzone:hover {
     background: rgba(255, 255, 255, 0.45);
     border-color: rgba(107, 114, 128, 0.9);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
   }
-  
+
   .dark .glass-dropzone {
     background: rgba(31, 41, 55, 0.75);
     backdrop-filter: blur(10px);
     border-color: rgba(75, 85, 99, 0.6);
   }
-  
+
   .dark .glass-dropzone:hover {
     background: rgba(31, 41, 55, 0.85);
     border-color: rgba(107, 114, 128, 0.8);

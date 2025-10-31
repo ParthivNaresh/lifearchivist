@@ -1,102 +1,41 @@
 /**
  * Activity Page - System activity feed
- * 
+ *
  * Displays recent system events with real-time WebSocket updates.
  * Shows folder watch events, uploads, deletions, Q&A queries, etc.
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  Activity, 
-  FolderOpen, 
-  Upload, 
-  Trash2, 
-  MessageCircle, 
-  Search, 
+import { useState, useMemo } from 'react';
+import {
+  Activity,
+  FolderOpen,
+  Upload,
+  Trash2,
+  MessageCircle,
+  Search,
   AlertCircle,
   CheckCircle2,
   Clock,
   RefreshCw,
   XCircle,
-  Filter
 } from 'lucide-react';
 import { cn } from '../utils/cn';
-
-interface ActivityEvent {
-  id: string;
-  type: string;
-  data: Record<string, any>;
-  timestamp: string;
-}
+import { useActivityFeed, type ActivityEvent } from '../hooks/useActivityFeed';
 
 type FilterType = 'all' | 'uploads' | 'folder_watch' | 'errors' | 'other';
 
 const ActivityPage: React.FC = () => {
-  const [events, setEvents] = useState<ActivityEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
-  // Fetch initial events
-  const fetchEvents = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:8000/api/activity/events?limit=50');
-      const data = await response.json();
-      
-      if (data.success) {
-        setEvents(data.events);
-        setError(null);
-      } else {
-        setError(data.error || 'Failed to load activity events');
-      }
-    } catch (err) {
-      console.error('Failed to fetch activity events:', err);
-      setError('Failed to connect to server');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // WebSocket connection for real-time updates
-  useEffect(() => {
-    fetchEvents();
-
-    // Connect to WebSocket
-    const ws = new WebSocket('ws://localhost:8000/ws/activity_feed');
-
-    ws.onopen = () => {
-      console.log('🔌 Activity feed WebSocket connected');
-      setWsConnected(true);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        if (message.type === 'activity_event' && message.event) {
-          // Add new event to the top of the list
-          setEvents(prev => [message.event, ...prev].slice(0, 50));
-        }
-      } catch (err) {
-        console.error('Failed to parse WebSocket message:', err);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('Activity feed WebSocket error:', error);
-      setWsConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log('Activity feed WebSocket disconnected');
-      setWsConnected(false);
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, [fetchEvents]);
+  // Use shared activity feed hook
+  const {
+    events,
+    isLoading: loading,
+    error,
+    refetch: fetchEvents,
+  } = useActivityFeed({
+    limit: 50,
+  });
 
   // Format timestamp
   const formatTimestamp = (timestamp: string): string => {
@@ -112,7 +51,7 @@ const ActivityPage: React.FC = () => {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
+
     return date.toLocaleDateString();
   };
 
@@ -188,26 +127,28 @@ const ActivityPage: React.FC = () => {
   // Get file name from path
   const getFileName = (path: string): string => {
     const parts = path.split('/');
-    return parts[parts.length - 1] || path;
+    return parts[parts.length - 1] ?? path;
   };
 
   // Filter events based on active filter
   const filteredEvents = useMemo(() => {
     if (activeFilter === 'all') return events;
 
-    return events.filter(event => {
+    return events.filter((event) => {
       switch (activeFilter) {
         case 'uploads':
           return event.type === 'files_uploaded';
         case 'folder_watch':
           return event.type.startsWith('folder_watch_');
         case 'errors':
-          return event.type.includes('failed') || event.type.includes('error');
+          return event.type.includes('failed') ?? event.type.includes('error');
         case 'other':
-          return !event.type.startsWith('folder_watch_') && 
-                 event.type !== 'files_uploaded' &&
-                 !event.type.includes('failed') &&
-                 !event.type.includes('error');
+          return (
+            !event.type.startsWith('folder_watch_') &&
+            event.type !== 'files_uploaded' &&
+            !event.type.includes('failed') &&
+            !event.type.includes('error')
+          );
         default:
           return true;
       }
@@ -218,14 +159,15 @@ const ActivityPage: React.FC = () => {
   const filterCounts = useMemo(() => {
     return {
       all: events.length,
-      uploads: events.filter(e => e.type === 'files_uploaded').length,
-      folder_watch: events.filter(e => e.type.startsWith('folder_watch_')).length,
-      errors: events.filter(e => e.type.includes('failed') || e.type.includes('error')).length,
-      other: events.filter(e => 
-        !e.type.startsWith('folder_watch_') && 
-        e.type !== 'files_uploaded' &&
-        !e.type.includes('failed') &&
-        !e.type.includes('error')
+      uploads: events.filter((e) => e.type === 'files_uploaded').length,
+      folder_watch: events.filter((e) => e.type.startsWith('folder_watch_')).length,
+      errors: events.filter((e) => e.type.includes('failed') ?? e.type.includes('error')).length,
+      other: events.filter(
+        (e) =>
+          !e.type.startsWith('folder_watch_') &&
+          e.type !== 'files_uploaded' &&
+          !e.type.includes('failed') &&
+          !e.type.includes('error')
       ).length,
     };
   }, [events]);
@@ -254,21 +196,19 @@ const ActivityPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold">Activity</h1>
-              <p className="text-sm text-muted-foreground">
-                Recent system events and actions
-              </p>
+              <p className="text-sm text-muted-foreground">Recent system events and actions</p>
             </div>
           </div>
 
           {/* Refresh Button */}
           <div className="flex items-center space-x-4">
             <button
-              onClick={fetchEvents}
+              onClick={() => void fetchEvents()}
               disabled={loading}
               className="p-2 hover:bg-secondary rounded-lg transition-colors disabled:opacity-50"
               title="Refresh"
             >
-              <RefreshCw className={cn("h-5 w-5", loading && "animate-spin")} />
+              <RefreshCw className={cn('h-5 w-5', loading && 'animate-spin')} />
             </button>
           </div>
         </div>
@@ -278,25 +218,23 @@ const ActivityPage: React.FC = () => {
           <button
             onClick={() => setActiveFilter('all')}
             className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
               activeFilter === 'all'
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             )}
           >
             All
-            {filterCounts.all > 0 && (
-              <span className="ml-2 opacity-70">({filterCounts.all})</span>
-            )}
+            {filterCounts.all > 0 && <span className="ml-2 opacity-70">({filterCounts.all})</span>}
           </button>
 
           <button
             onClick={() => setActiveFilter('uploads')}
             className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2',
               activeFilter === 'uploads'
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             )}
           >
             <Upload className="h-4 w-4" />
@@ -309,10 +247,10 @@ const ActivityPage: React.FC = () => {
           <button
             onClick={() => setActiveFilter('folder_watch')}
             className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2',
               activeFilter === 'folder_watch'
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             )}
           >
             <FolderOpen className="h-4 w-4" />
@@ -325,27 +263,25 @@ const ActivityPage: React.FC = () => {
           <button
             onClick={() => setActiveFilter('errors')}
             className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2',
               activeFilter === 'errors'
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             )}
           >
             <XCircle className="h-4 w-4" />
             Errors
-            {filterCounts.errors > 0 && (
-              <span className="opacity-70">({filterCounts.errors})</span>
-            )}
+            {filterCounts.errors > 0 && <span className="opacity-70">({filterCounts.errors})</span>}
           </button>
 
           {filterCounts.other > 0 && (
             <button
               onClick={() => setActiveFilter('other')}
               className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2",
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2',
                 activeFilter === 'other'
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
               )}
             >
               <Activity className="h-4 w-4" />
@@ -374,7 +310,7 @@ const ActivityPage: React.FC = () => {
               {events.length === 0 ? 'No activity yet' : 'No matching events'}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {events.length === 0 
+              {events.length === 0
                 ? 'System events will appear here as they happen'
                 : 'Try selecting a different filter'}
             </p>
@@ -388,10 +324,13 @@ const ActivityPage: React.FC = () => {
 
               // Render upload/folder watch events with detailed card
               if (type === 'files_uploaded' || type === 'folder_watch_file_ingested') {
-                const fileName = getFileName(data.file_name || '');
-                const fullPath = data.file_name || '';
-                const fileSize = data.file_size ? formatFileSize(data.file_size) : null;
-                const source = type === 'folder_watch_file_ingested' ? 'Watched Folder' : 'Manual Upload';
+                const fileNameValue = data.file_name as string | undefined;
+                const fileName = getFileName(fileNameValue ?? '');
+                const fullPath = fileNameValue ?? '';
+                const fileSizeValue = data.file_size as number | undefined;
+                const fileSize = fileSizeValue ? formatFileSize(fileSizeValue) : null;
+                const source =
+                  type === 'folder_watch_file_ingested' ? 'Watched Folder' : 'Manual Upload';
 
                 return (
                   <div
@@ -400,7 +339,7 @@ const ActivityPage: React.FC = () => {
                   >
                     <div className="flex items-start space-x-3">
                       {/* Icon */}
-                      <div className={cn("flex-shrink-0 mt-1", color)}>
+                      <div className={cn('flex-shrink-0 mt-1', color)}>
                         <Icon className="h-5 w-5" />
                       </div>
 
@@ -422,15 +361,11 @@ const ActivityPage: React.FC = () => {
 
                         {/* Metadata row */}
                         <div className="flex items-center gap-3 text-xs">
-                          <span className="text-muted-foreground">
-                            {source}
-                          </span>
+                          <span className="text-muted-foreground">{source}</span>
                           {fileSize && (
                             <>
                               <span className="text-muted-foreground">•</span>
-                              <span className="text-muted-foreground font-medium">
-                                {fileSize}
-                              </span>
+                              <span className="text-muted-foreground font-medium">{fileSize}</span>
                             </>
                           )}
                         </div>
@@ -450,7 +385,7 @@ const ActivityPage: React.FC = () => {
                 >
                   <div className="flex items-start space-x-3">
                     {/* Icon */}
-                    <div className={cn("flex-shrink-0 mt-0.5", color)}>
+                    <div className={cn('flex-shrink-0 mt-0.5', color)}>
                       <Icon className="h-5 w-5" />
                     </div>
 

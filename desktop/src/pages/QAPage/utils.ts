@@ -28,8 +28,9 @@ export const getConfidenceColor = (confidence: number): string => {
  * Get human-readable description for method
  */
 export const getMethodDescription = (method?: string): string => {
-  if (!method) return METHOD_DESCRIPTIONS.default;
-  return METHOD_DESCRIPTIONS[method] || METHOD_DESCRIPTIONS.default;
+  if (!method) return METHOD_DESCRIPTIONS.default ?? 'Response generated';
+  const description = METHOD_DESCRIPTIONS[method];
+  return description ?? METHOD_DESCRIPTIONS.default ?? 'Response generated';
 };
 
 /**

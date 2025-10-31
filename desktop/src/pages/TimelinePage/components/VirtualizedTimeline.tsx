@@ -3,10 +3,11 @@
  * Renders only visible items for performance with large datasets
  */
 
-import React, { useRef } from 'react';
+import { useRef } from 'react';
+
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
-import { VirtualItem } from '../virtualization-types';
+import { type VirtualItem } from '../virtualization-types';
 import { getThemeColors } from '../theme-config';
 import { useTimelineNavigation } from '../hooks';
 
@@ -22,11 +23,13 @@ export const VirtualizedTimeline: React.FC<VirtualizedTimelineProps> = ({
   const parentRef = useRef<HTMLDivElement>(null);
   const { handleDocumentClick } = useTimelineNavigation();
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
     estimateSize: (index) => {
       const item = items[index];
+      if (!item) return 100; // Default size if item is undefined
       if (item.type === 'year') return 80;
       if (item.type === 'month') return 60;
       return 100; // document card
@@ -60,7 +63,9 @@ export const VirtualizedTimeline: React.FC<VirtualizedTimelineProps> = ({
         return (
           <div className="mb-4">
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-3 mb-4 border-b border-border/50">
-              <h3 className="text-xl font-bold">{item.monthName} {item.year}</h3>
+              <h3 className="text-xl font-bold">
+                {item.monthName} {item.year}
+              </h3>
               <p className="text-sm text-muted-foreground">
                 {item.count} {item.count === 1 ? 'document' : 'documents'}
               </p>
@@ -68,10 +73,10 @@ export const VirtualizedTimeline: React.FC<VirtualizedTimelineProps> = ({
           </div>
         );
 
-      case 'document':
+      case 'document': {
         const doc = item.document;
         const themeColors = getThemeColors(doc.theme);
-        
+
         return (
           <button
             onClick={() => handleDocumentClick(doc.id)}
@@ -79,12 +84,14 @@ export const VirtualizedTimeline: React.FC<VirtualizedTimelineProps> = ({
           >
             {/* Theme icon */}
             <span className="text-2xl flex-shrink-0">{themeColors.icon}</span>
-            
+
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{doc.title}</p>
               <div className="flex items-center gap-2 text-sm mt-1">
                 {doc.theme && (
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${themeColors.badge}`}>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${themeColors.badge}`}
+                  >
                     {doc.theme}
                   </span>
                 )}
@@ -93,10 +100,11 @@ export const VirtualizedTimeline: React.FC<VirtualizedTimelineProps> = ({
                 </span>
               </div>
             </div>
-            
+
             <FileText className={`h-5 w-5 transition-colors flex-shrink-0 ${themeColors.text}`} />
           </button>
         );
+      }
 
       default:
         return null;
@@ -119,7 +127,8 @@ export const VirtualizedTimeline: React.FC<VirtualizedTimelineProps> = ({
       >
         {virtualizer.getVirtualItems().map((virtualItem) => {
           const item = items[virtualItem.index];
-          
+          if (!item) return null; // Guard against undefined item
+
           return (
             <div
               key={virtualItem.key}

@@ -2,7 +2,7 @@
  * Breadcrumbs component - navigation breadcrumbs
  */
 
-import React from 'react';
+import { Fragment } from 'react';
 import { Home, ChevronRight } from 'lucide-react';
 
 interface BreadcrumbsProps {
@@ -10,10 +10,7 @@ interface BreadcrumbsProps {
   onNavigate: (index: number) => void;
 }
 
-export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
-  currentPath,
-  onNavigate
-}) => {
+export const Breadcrumbs = ({ currentPath, onNavigate }: BreadcrumbsProps) => {
   return (
     <div className="glass-card p-3 rounded-lg">
       <div className="flex items-center space-x-2">
@@ -24,18 +21,21 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
           <Home className="h-4 w-4" />
           <span className="text-sm font-medium">All Documents</span>
         </button>
-        
-        {currentPath.slice(1).map((path, index) => (
-          <React.Fragment key={index}>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <button
-              onClick={() => onNavigate(index + 1)}
-              className="text-sm font-medium hover:text-primary transition-colors"
-            >
-              {path}
-            </button>
-          </React.Fragment>
-        ))}
+
+        {currentPath.slice(1).map((path, index) => {
+          const pathKey = currentPath.slice(0, index + 2).join('/');
+          return (
+            <Fragment key={pathKey}>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <button
+                onClick={() => onNavigate(index + 1)}
+                className="text-sm font-medium hover:text-primary transition-colors"
+              >
+                {path}
+              </button>
+            </Fragment>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
 import { STATUS_STYLES, FILE_TYPE_EMOJIS } from './constants';
 
@@ -51,7 +50,7 @@ export const getMimeTypeIcon = (mimeType: string | null | undefined): string => 
   if (!mimeType) {
     return FILE_TYPE_EMOJIS.default;
   }
-  
+
   if (mimeType.startsWith('image/')) {
     return FILE_TYPE_EMOJIS.image;
   } else if (mimeType.includes('pdf')) {
@@ -63,7 +62,7 @@ export const getMimeTypeIcon = (mimeType: string | null | undefined): string => 
   } else if (mimeType.includes('video')) {
     return FILE_TYPE_EMOJIS.video;
   }
-  
+
   return FILE_TYPE_EMOJIS.default;
 };
 
@@ -73,5 +72,5 @@ export const getMimeTypeIcon = (mimeType: string | null | undefined): string => 
 export const getFileName = (path: string): string => {
   if (!path) return 'Unknown File';
   const parts = path.split('/');
-  return parts[parts.length - 1] || 'Unknown File';
+  return parts[parts.length - 1] ?? 'Unknown File';
 };

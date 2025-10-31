@@ -1,77 +1,78 @@
-import React from 'react';
-import { 
-  X, 
-  Minimize2, 
-  Maximize2, 
-  Upload, 
-  Trash2, 
+import {
+  X,
+  Minimize2,
+  Upload,
+  Trash2,
   RotateCcw,
   CheckCircle2,
   CheckCircle,
   Clock,
   AlertCircle,
-  Copy
+  Copy,
 } from 'lucide-react';
-import { useUploadQueue } from '../../contexts/UploadQueueContext';
+import { useState } from 'react';
+import { useUploadQueue } from '../../contexts/useUploadQueue';
 import { useUploadManager } from '../../hooks/useUploadManager';
 import { UploadBatch } from './UploadBatch';
 
 const UploadQueue: React.FC = () => {
-  const { 
-    state, 
-    toggleVisibility, 
-    toggleMinimized, 
-    clearCompleted, 
-    removeBatch, 
+  const {
+    state,
+    toggleVisibility,
+    toggleMinimized,
+    clearCompleted,
+    removeBatch,
     updateItemStatus,
-    resetQueue
+    resetQueue,
   } = useUploadQueue();
-  
+
   const { uploadFile } = useUploadManager();
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   if (!state.isVisible || state.isMinimized) return null;
 
-  const activeBatches = state.batches.filter(batch => batch.status === 'active');
-  const completedBatches = state.batches.filter(batch => batch.status === 'completed');
-  const duplicateBatches = state.batches.filter(batch => batch.status === 'duplicate');
-  const partialBatches = state.batches.filter(batch => batch.status === 'partial');
-  const errorBatches = state.batches.filter(batch => batch.status === 'error');
+  const activeBatches = state.batches.filter((batch) => batch.status === 'active');
+  const completedBatches = state.batches.filter((batch) => batch.status === 'completed');
+  const duplicateBatches = state.batches.filter((batch) => batch.status === 'duplicate');
+  const partialBatches = state.batches.filter((batch) => batch.status === 'partial');
+  const errorBatches = state.batches.filter((batch) => batch.status === 'error');
 
   const totalFiles = state.batches.reduce((acc, batch) => acc + batch.totalFiles, 0);
   const completedFiles = state.batches.reduce((acc, batch) => acc + batch.completedFiles, 0);
-  const duplicateFiles = state.batches.reduce((acc, batch) => 
-    acc + batch.items.filter(item => item.status === 'duplicate').length, 0
+  const duplicateFiles = state.batches.reduce(
+    (acc, batch) => acc + batch.items.filter((item) => item.status === 'duplicate').length,
+    0
   );
   const errorFiles = state.batches.reduce((acc, batch) => acc + batch.errorFiles, 0);
 
   const handleRetryItem = async (itemId: string) => {
     console.log(`🔄 Retrying item ${itemId}`);
-    
+
     // Find the item in the batches
     let itemToRetry = null;
     for (const batch of state.batches) {
-      const item = batch.items.find(i => i.id === itemId);
+      const item = batch.items.find((i) => i.id === itemId);
       if (item) {
         itemToRetry = item;
         break;
       }
     }
-    
+
     if (!itemToRetry) {
       console.error(`❌ Item ${itemId} not found for retry`);
       return;
     }
-    
+
     console.log(`✅ Found item to retry:`, {
       id: itemId,
       fileName: itemToRetry.file instanceof File ? itemToRetry.file.name : itemToRetry.file.name,
       hasPath: 'path' in itemToRetry.file && itemToRetry.file.path,
-      status: itemToRetry.status
+      status: itemToRetry.status,
     });
-    
+
     // Reset the item status to pending
     updateItemStatus(itemId, 'pending');
-    
+
     // Actually retry the upload using the upload manager
     try {
       console.log(`📤 Calling uploadFile for item ${itemId}`);
@@ -82,55 +83,58 @@ const UploadQueue: React.FC = () => {
       updateItemStatus(itemId, 'error', 'Retry failed');
     }
   };
-  
+
   const handleRetryBatch = async (batchId: string) => {
-    const batch = state.batches.find(b => b.id === batchId);
+    const batch = state.batches.find((b) => b.id === batchId);
     if (!batch) {
       console.error(`Batch ${batchId} not found for retry`);
       return;
     }
-    
+
     // Find all failed items in the batch
-    const failedItems = batch.items.filter(item => item.status === 'error');
-    
+    const failedItems = batch.items.filter((item) => item.status === 'error');
+
     // Retry items concurrently with same limit as initial uploads (6)
     const concurrencyLimit = 6;
     for (let i = 0; i < failedItems.length; i += concurrencyLimit) {
       const batchItems = failedItems.slice(i, i + concurrencyLimit);
-      await Promise.all(batchItems.map(item => handleRetryItem(item.id)));
+      await Promise.all(batchItems.map((item) => handleRetryItem(item.id)));
     }
   };
-  
+
   const handleRetryAll = async () => {
     console.log('🔄 Retry All clicked');
-    
+
     // Find all failed items across all batches
-    const failedItems = state.batches.flatMap(batch => 
-      batch.items.filter(item => item.status === 'error')
+    const failedItems = state.batches.flatMap((batch) =>
+      batch.items.filter((item) => item.status === 'error')
     );
-    
-    console.log(`📊 Found ${failedItems.length} failed items to retry:`, 
-      failedItems.map(item => ({
+
+    console.log(
+      `📊 Found ${failedItems.length} failed items to retry:`,
+      failedItems.map((item) => ({
         id: item.id,
         fileName: item.file instanceof File ? item.file.name : item.file.name,
-        status: item.status
+        status: item.status,
       }))
     );
-    
+
     if (failedItems.length === 0) {
       console.warn('⚠️ No failed items found to retry');
       return;
     }
-    
+
     // Retry items concurrently with same limit as initial uploads (6)
     // This matches the browser WebSocket connection limit
     const concurrencyLimit = 6;
     for (let i = 0; i < failedItems.length; i += concurrencyLimit) {
       const batchItems = failedItems.slice(i, i + concurrencyLimit);
-      console.log(`📦 Processing batch ${Math.floor(i / concurrencyLimit) + 1}: ${batchItems.length} items`);
-      await Promise.all(batchItems.map(item => handleRetryItem(item.id)));
+      console.log(
+        `📦 Processing batch ${Math.floor(i / concurrencyLimit) + 1}: ${batchItems.length} items`
+      );
+      await Promise.all(batchItems.map((item) => handleRetryItem(item.id)));
     }
-    
+
     console.log('✅ Retry All completed');
   };
 
@@ -186,7 +190,7 @@ const UploadQueue: React.FC = () => {
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
-                        strokeDasharray={`${state.totalProgress * 88 / 100}, 88`}
+                        strokeDasharray={`${(state.totalProgress * 88) / 100}, 88`}
                         className="text-purple-400 transition-all duration-300"
                       />
                     </svg>
@@ -206,7 +210,7 @@ const UploadQueue: React.FC = () => {
               >
                 <Minimize2 className="w-4 h-4 text-white/60 hover:text-white/80" />
               </button>
-              
+
               <button
                 onClick={toggleVisibility}
                 className="p-2 rounded-lg hover:bg-white/10 transition-colors"
@@ -245,12 +249,14 @@ const UploadQueue: React.FC = () => {
                     <span>{partialBatches.length} mixed</span>
                   </div>
                 )}
-                {duplicateFiles > 0 && duplicateBatches.length === 0 && partialBatches.length === 0 && (
-                  <div className="flex items-center space-x-1">
-                    <Copy className="w-4 h-4 text-amber-400" />
-                    <span>{duplicateFiles} duplicates</span>
-                  </div>
-                )}
+                {duplicateFiles > 0 &&
+                  duplicateBatches.length === 0 &&
+                  partialBatches.length === 0 && (
+                    <div className="flex items-center space-x-1">
+                      <Copy className="w-4 h-4 text-amber-400" />
+                      <span>{duplicateFiles} duplicates</span>
+                    </div>
+                  )}
                 {errorBatches.length > 0 && (
                   <div className="flex items-center space-x-1">
                     <AlertCircle className="w-4 h-4 text-red-400" />
@@ -262,15 +268,17 @@ const UploadQueue: React.FC = () => {
               <div className="flex items-center space-x-1">
                 {errorFiles > 0 && (
                   <button
-                    onClick={handleRetryAll}
+                    onClick={() => void handleRetryAll()}
                     className="px-3 py-1 text-xs bg-amber-500/20 text-amber-300 rounded-lg hover:bg-amber-500/30 transition-colors flex items-center space-x-1"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>Retry All</span>
                   </button>
                 )}
-                
-                {(completedBatches.length > 0 || duplicateBatches.length > 0 || partialBatches.length > 0) && (
+
+                {(completedBatches.length > 0 ||
+                  duplicateBatches.length > 0 ||
+                  partialBatches.length > 0) && (
                   <button
                     onClick={clearCompleted}
                     className="px-3 py-1 text-xs bg-white/10 text-white/60 rounded-lg hover:bg-white/20 hover:text-white/80 transition-colors flex items-center space-x-1"
@@ -279,14 +287,10 @@ const UploadQueue: React.FC = () => {
                     <span>Clear</span>
                   </button>
                 )}
-                
+
                 {state.batches.length > 0 && (
                   <button
-                    onClick={() => {
-                      if (confirm('Reset upload queue? This will clear all upload history.')) {
-                        resetQueue();
-                      }
-                    }}
+                    onClick={() => setShowResetConfirm(true)}
                     className="px-3 py-1 text-xs bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors flex items-center space-x-1"
                     title="Reset entire upload queue"
                   >
@@ -319,8 +323,8 @@ const UploadQueue: React.FC = () => {
                   key={batch.id}
                   batch={batch}
                   onRemove={() => removeBatch(batch.id)}
-                  onRetryBatch={() => handleRetryBatch(batch.id)}
-                  onRetryItem={handleRetryItem}
+                  onRetryBatch={() => void handleRetryBatch(batch.id)}
+                  onRetryItem={(itemId) => void handleRetryItem(itemId)}
                 />
               ))}
 
@@ -330,8 +334,8 @@ const UploadQueue: React.FC = () => {
                   key={batch.id}
                   batch={batch}
                   onRemove={() => removeBatch(batch.id)}
-                  onRetryBatch={() => handleRetryBatch(batch.id)}
-                  onRetryItem={handleRetryItem}
+                  onRetryBatch={() => void handleRetryBatch(batch.id)}
+                  onRetryItem={(itemId) => void handleRetryItem(itemId)}
                 />
               ))}
 
@@ -341,14 +345,51 @@ const UploadQueue: React.FC = () => {
                   key={batch.id}
                   batch={batch}
                   onRemove={() => removeBatch(batch.id)}
-                  onRetryBatch={() => handleRetryBatch(batch.id)}
-                  onRetryItem={handleRetryItem}
+                  onRetryBatch={() => void handleRetryBatch(batch.id)}
+                  onRetryItem={(itemId) => void handleRetryItem(itemId)}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 z-[60]"
+            onClick={() => setShowResetConfirm(false)}
+          />
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-white/10 rounded-lg shadow-xl w-full max-w-md">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Reset Upload Queue?</h3>
+                <p className="text-sm text-white/60 mb-6">
+                  This will clear all upload history. This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowResetConfirm(false)}
+                    className="px-4 py-2 text-sm font-medium text-white/60 rounded-lg hover:bg-white/10 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      resetQueue();
+                      setShowResetConfirm(false);
+                    }}
+                    className="px-4 py-2 text-sm font-medium bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors"
+                  >
+                    Reset Queue
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

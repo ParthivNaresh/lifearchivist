@@ -158,6 +158,72 @@ class LlamaIndexQueryService(QueryService):
                 level=logging.WARNING,
             )
 
+    def _is_document_query(self, question: str) -> bool:
+        """
+        Determine if a query requires document retrieval.
+
+        Returns False for:
+        - Greetings (hi, hello, hey)
+        - Very short queries (< 3 words)
+        - Generic chitchat
+
+        Returns True for:
+        - Questions about documents
+        - Specific information requests
+        - Queries with context words
+        """
+        question_lower = question.lower().strip()
+
+        # Greetings and chitchat
+        chitchat_patterns = [
+            "hi",
+            "hello",
+            "hey",
+            "thanks",
+            "thank you",
+            "bye",
+            "goodbye",
+            "how are you",
+            "what's up",
+            "sup",
+            "yo",
+        ]
+
+        if question_lower in chitchat_patterns:
+            return False
+
+        # Very short queries (likely not document-related)
+        word_count = len(question.split())
+        if word_count < 3 and "?" not in question:
+            return False
+
+        # Document-related keywords
+        document_keywords = [
+            "document",
+            "file",
+            "pdf",
+            "show",
+            "find",
+            "search",
+            "what",
+            "when",
+            "where",
+            "who",
+            "how",
+            "why",
+            "tell me",
+            "explain",
+            "describe",
+            "list",
+            "summary",
+            "summarize",
+            "based on",
+            "according to",
+            "in my",
+        ]
+
+        return any(keyword in question_lower for keyword in document_keywords)
+
     @track(
         operation="query_execution",
         include_args=["similarity_top_k", "response_mode"],
@@ -176,9 +242,10 @@ class LlamaIndexQueryService(QueryService):
         Execute a query and generate a response using RAG.
 
         This method orchestrates the entire Q&A pipeline:
-        1. Builds context by retrieving relevant documents
-        2. Generates an answer using the LLM
-        3. Formats the response with sources and metadata
+        1. Classifies query intent (document vs. chitchat)
+        2. Builds context by retrieving relevant documents
+        3. Generates an answer using the LLM
+        4. Formats the response with sources and metadata
 
         Returns:
             Success with response dict (answer, sources, metadata), or Failure with error
@@ -199,6 +266,32 @@ class LlamaIndexQueryService(QueryService):
                     "has_filters": bool(filters),
                 },
             )
+
+            # Check if this is a document query
+            if not self._is_document_query(question):
+                log_event(
+                    "query_classified_as_chitchat",
+                    {"question": question[:100]},
+                )
+
+                # Return a friendly response without RAG
+                return Success(
+                    {
+                        "answer": "Hello! I'm here to help you find information in your documents. Ask me questions about your files, and I'll search through them to find answers.",
+                        "sources": [],
+                        "method": "direct_response",
+                        "context_used": "",
+                        "num_chunks_used": 0,
+                        "confidence_score": 1.0,
+                        "statistics": {
+                            "answer_length": 0,
+                            "context_length": 0,
+                            "num_sources": 0,
+                            "unique_documents": 0,
+                            "avg_relevance_score": 0,
+                        },
+                    }
+                )
 
             # Update query engine parameters
             if hasattr(self.query_engine, "retriever"):
@@ -320,7 +413,7 @@ class LlamaIndexQueryService(QueryService):
                 search_result = await self.search_service.semantic_search(
                     query=question,
                     top_k=top_k,
-                    similarity_threshold=0.3,  # Lower threshold for context building
+                    similarity_threshold=0.45,  # Minimum relevance threshold
                     filters=filters,
                 )
 
@@ -605,38 +698,261 @@ class LlamaIndexQueryService(QueryService):
     # Filter matching now uses shared utility
     # Removed _matches_filters method - using MetadataFilterUtils.matches_filters instead
 
-    async def query_with_streaming(
+    async def query_streaming(
         self,
         question: str,
         similarity_top_k: int = 5,
         response_mode: str = "tree_summarize",
         filters: Optional[Dict[str, Any]] = None,
-    ) -> AsyncGenerator[Result[Dict[str, Any], str], None]:
+    ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Execute a query with streaming response.
 
-        This is a placeholder for future streaming implementation.
-        Yields Result objects containing response chunks as they're generated.
+        Yields events as they occur:
+        1. intent_check: Query classification result
+        2. sources: Retrieved document chunks
+        3. chunk: Individual tokens from LLM
+        4. metadata: Final statistics and confidence
+        5. error: Any errors that occur
+
+        Args:
+            question: The user's question
+            similarity_top_k: Number of similar chunks to retrieve
+            response_mode: Response synthesis mode
+            filters: Optional metadata filters
 
         Yields:
-            Result objects with response data or errors
+            Dict events with type and data fields
         """
-        # TODO: Implement streaming response
-        # This would require using streaming_query instead of query
-        # and yielding response chunks as they come in
+        if not self.query_engine:
+            yield {
+                "type": "error",
+                "data": {
+                    "error": "Query engine not available",
+                    "error_type": "ServiceUnavailable",
+                },
+            }
+            return
 
-        log_event(
-            "streaming_query_requested",
-            {"status": "not_implemented"},
-            level=logging.INFO,
-        )
+        try:
+            log_event(
+                "streaming_query_started",
+                {
+                    "question_length": len(question),
+                    "question_preview": question[:100],
+                    "similarity_top_k": similarity_top_k,
+                    "response_mode": response_mode,
+                    "has_filters": bool(filters),
+                },
+            )
 
-        # For now, just return the regular response
-        result = await self.query(
-            question=question,
-            similarity_top_k=similarity_top_k,
-            response_mode=response_mode,
-            filters=filters,
-        )
+            # Check if this is a document query
+            if not self._is_document_query(question):
+                log_event(
+                    "streaming_query_classified_as_chitchat",
+                    {"question": question[:100]},
+                )
 
-        yield result
+                # Yield intent classification
+                yield {
+                    "type": "intent_check",
+                    "data": {"is_document_query": False},
+                }
+
+                # Stream friendly response character by character for UX
+                friendly_response = "Hello! I'm here to help you find information in your documents. Ask me questions about your files, and I'll search through them to find answers."
+
+                for char in friendly_response:
+                    yield {"type": "chunk", "data": char}
+
+                # Yield completion metadata
+                yield {
+                    "type": "metadata",
+                    "data": {
+                        "confidence_score": 1.0,
+                        "method": "direct_response",
+                        "num_sources": 0,
+                        "answer_length": len(friendly_response),
+                    },
+                }
+                return
+
+            # Yield intent classification
+            yield {
+                "type": "intent_check",
+                "data": {"is_document_query": True},
+            }
+
+            # Build context (retrieve relevant chunks)
+            context_result = await self.build_context(
+                question=question,
+                top_k=similarity_top_k,
+                filters=filters,
+            )
+
+            if context_result.is_failure():
+                yield {
+                    "type": "error",
+                    "data": {
+                        "error": str(context_result.error),
+                        "error_type": "ContextBuildingError",
+                    },
+                }
+                return
+
+            context_tuple: Tuple[str, List[Dict[str, Any]]] = context_result.value
+            context, source_chunks = context_tuple
+
+            # Yield sources immediately
+            formatted_sources = self._format_sources(source_chunks)
+            yield {
+                "type": "sources",
+                "data": formatted_sources,
+            }
+
+            # Stream LLM response
+            accumulated_text = ""
+            async for chunk in self._generate_response_streaming(
+                question=question,
+                context=context,
+                response_mode=response_mode,
+            ):
+                accumulated_text += chunk
+                yield {"type": "chunk", "data": chunk}
+
+            # Calculate final metadata
+            confidence_score = ConfidenceCalculator.calculate_confidence(
+                answer=accumulated_text,
+                sources=formatted_sources,
+                context=context,
+            )
+
+            # Yield final metadata
+            yield {
+                "type": "metadata",
+                "data": {
+                    "confidence_score": confidence_score,
+                    "response_mode": response_mode,
+                    "num_sources": len(formatted_sources),
+                    "context_length": len(context),
+                    "answer_length": len(accumulated_text),
+                    "unique_documents": len(
+                        set(s.get("document_id", "") for s in formatted_sources)
+                    ),
+                    "avg_relevance_score": (
+                        sum(s.get("score", 0) for s in formatted_sources)
+                        / len(formatted_sources)
+                        if formatted_sources
+                        else 0
+                    ),
+                },
+            }
+
+            log_event(
+                "streaming_query_completed",
+                {
+                    "answer_length": len(accumulated_text),
+                    "num_sources": len(formatted_sources),
+                    "confidence_score": confidence_score,
+                },
+            )
+
+        except Exception as e:
+            log_event(
+                "streaming_query_failed",
+                {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "question_preview": question[:100],
+                },
+                level=logging.ERROR,
+            )
+            yield {
+                "type": "error",
+                "data": {
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+            }
+
+    async def _generate_response_streaming(
+        self,
+        question: str,
+        context: str,
+        response_mode: str,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Generate a streaming response using the query engine.
+
+        This method handles streaming LLM calls through LlamaIndex.
+        LlamaIndex supports streaming via the streaming_response property.
+
+        Args:
+            question: The user's question
+            context: Retrieved context
+            response_mode: Response synthesis mode
+
+        Yields:
+            Individual text chunks/tokens from the LLM
+        """
+        try:
+            engine = self.query_engine
+            if engine is None:
+                raise RuntimeError("Query engine not available")
+
+            # Execute query (LlamaIndex handles streaming internally)
+            response = engine.query(question)
+
+            # Check if response supports streaming
+            if hasattr(response, "response_gen"):
+                # Stream tokens as they arrive
+                log_event(
+                    "streaming_response_started",
+                    {"response_mode": response_mode},
+                    level=logging.DEBUG,
+                )
+
+                token_count = 0
+                # Check if it's an async generator
+                import inspect
+                from typing import AsyncGenerator, Generator, cast
+
+                response_gen = response.response_gen
+                if inspect.isasyncgen(response_gen):
+                    # Type narrow to AsyncGenerator
+                    async_gen = cast(AsyncGenerator[str, None], response_gen)
+                    async for token in async_gen:
+                        yield str(token)
+                        token_count += 1
+                else:
+                    # Type narrow to sync Generator
+                    sync_gen = cast(Generator[str, None, None], response_gen)
+                    for token in sync_gen:
+                        yield str(token)
+                        token_count += 1
+
+                log_event(
+                    "streaming_response_completed",
+                    {"token_count": token_count},
+                    level=logging.DEBUG,
+                )
+
+            else:
+                # Fallback: yield entire response at once
+                log_event(
+                    "streaming_fallback_to_complete",
+                    {"reason": "no_response_gen"},
+                    level=logging.WARNING,
+                )
+                yield str(getattr(response, "response", ""))
+
+        except Exception as e:
+            log_event(
+                "streaming_response_generation_failed",
+                {
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                },
+                level=logging.ERROR,
+            )
+            raise

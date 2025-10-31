@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useCache } from '../hooks/useCache';
-import { 
+import {
   fetchDocuments,
   useDocumentFilter,
   useTagNavigation,
@@ -9,7 +9,7 @@ import {
   DocumentsHeader,
   DocumentCount,
   DocumentsList,
-  CACHE_CONFIG
+  CACHE_CONFIG,
 } from './DocumentsPage/index';
 
 const DocumentsPage: React.FC = () => {
@@ -24,11 +24,12 @@ const DocumentsPage: React.FC = () => {
   }, [selectedStatus]);
 
   // Use cache hook
-  const { data: documents, loading, error, refresh } = useCache(
-    `documents-${selectedStatus}`,
-    fetchDocumentsCallback,
-    CACHE_CONFIG.DOCUMENTS_TTL
-  );
+  const {
+    data: documents,
+    loading,
+    error,
+    refresh,
+  } = useCache(`documents-${selectedStatus}`, fetchDocumentsCallback, CACHE_CONFIG.DOCUMENTS_TTL);
 
   // Render loading state
   if (loading) {
@@ -43,7 +44,7 @@ const DocumentsPage: React.FC = () => {
   if (error) {
     return (
       <div className="p-6">
-        <ErrorState error={error} onRetry={refresh} />
+        <ErrorState error={error} onRetry={() => void refresh()} />
       </div>
     );
   }
@@ -51,12 +52,9 @@ const DocumentsPage: React.FC = () => {
   return (
     <div className="p-6">
       <div className="max-w-6xl mx-auto">
-        <DocumentsHeader
-          selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
-        />
+        <DocumentsHeader selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
 
-        <DocumentCount count={documents?.length || 0} />
+        <DocumentCount count={documents?.length ?? 0} />
 
         <DocumentsList
           documents={documents}

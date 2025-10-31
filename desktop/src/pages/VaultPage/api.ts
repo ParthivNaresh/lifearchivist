@@ -3,7 +3,7 @@
  */
 
 import axios from 'axios';
-import { VaultInfo, Document } from './types';
+import { type VaultInfo, type Document } from './types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -18,7 +18,7 @@ export const fetchVaultInfo = async (): Promise<VaultInfo> => {
 /**
  * Fetch all documents with optional limit
  */
-export const fetchDocuments = async (limit: number = 500): Promise<Document[]> => {
+export const fetchDocuments = async (limit = 500): Promise<Document[]> => {
   try {
     const response = await axios.get<{ documents: Document[] }>(
       `${API_BASE_URL}/documents?limit=${limit}`
@@ -39,7 +39,7 @@ export const clearVault = async (): Promise<void> => {
 
 /**
  * Reconcile vault files with metadata stores
- * 
+ *
  * Checks all documents in Redis and removes metadata for any documents
  * whose vault files are missing. Ensures data consistency.
  */

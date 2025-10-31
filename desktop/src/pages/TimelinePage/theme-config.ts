@@ -90,46 +90,65 @@ export const THEME_COLORS: Record<string, ThemeColors> = {
  * Get theme colors for a given theme name
  */
 export function getThemeColors(theme: string | null | undefined): ThemeColors {
-  if (!theme || !THEME_COLORS[theme]) {
-    return THEME_COLORS.Unclassified;
+  const defaultColors = THEME_COLORS.Unclassified ?? {
+    bg: 'bg-gray-50/50 dark:bg-gray-900/20',
+    bgHover: 'hover:bg-gray-100/70 dark:hover:bg-gray-900/40',
+    border: 'border-gray-200 dark:border-gray-700/50',
+    borderHover: 'hover:border-gray-400 dark:hover:border-gray-600',
+    accent: 'bg-gray-500',
+    text: 'text-gray-700 dark:text-gray-300',
+    badge: 'bg-gray-100 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300',
+    icon: '📄',
+  };
+
+  if (!theme) {
+    return defaultColors;
   }
-  return THEME_COLORS[theme];
+
+  const colors = THEME_COLORS[theme];
+  if (!colors) {
+    return defaultColors;
+  }
+
+  return colors;
 }
 
 /**
  * Get the dominant theme from a list of documents
  */
-export function getDominantTheme(documents: Array<{ theme: string | null }>): string {
+export function getDominantTheme(documents: { theme: string | null }[]): string {
   const themeCounts: Record<string, number> = {};
-  
-  documents.forEach(doc => {
-    const theme = doc.theme || 'Unclassified';
-    themeCounts[theme] = (themeCounts[theme] || 0) + 1;
+
+  documents.forEach((doc) => {
+    const theme = doc.theme ?? 'Unclassified';
+    themeCounts[theme] = (themeCounts[theme] ?? 0) + 1;
   });
-  
+
   let dominantTheme = 'Unclassified';
   let maxCount = 0;
-  
+
   Object.entries(themeCounts).forEach(([theme, count]) => {
     if (count > maxCount) {
       maxCount = count;
       dominantTheme = theme;
     }
   });
-  
+
   return dominantTheme;
 }
 
 /**
  * Get theme distribution for a list of documents
  */
-export function getThemeDistribution(documents: Array<{ theme: string | null }>): Record<string, number> {
+export function getThemeDistribution(
+  documents: { theme: string | null }[]
+): Record<string, number> {
   const distribution: Record<string, number> = {};
-  
-  documents.forEach(doc => {
-    const theme = doc.theme || 'Unclassified';
-    distribution[theme] = (distribution[theme] || 0) + 1;
+
+  documents.forEach((doc) => {
+    const theme = doc.theme ?? 'Unclassified';
+    distribution[theme] = (distribution[theme] ?? 0) + 1;
   });
-  
+
   return distribution;
 }

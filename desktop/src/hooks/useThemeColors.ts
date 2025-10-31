@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
-import { 
-  getThemeColors, 
-  getSubthemeColors, 
+import { useTheme } from '../contexts/useTheme';
+import {
+  getThemeColors,
+  getSubthemeColors,
   createThemeCardStyles,
   createGlassStyles,
-  ColorScheme 
+  type ColorScheme,
 } from '../utils/theme-colors';
 
 /**
@@ -28,7 +28,7 @@ export function useThemeColors(themeName: string) {
     colors,
     cardStyles,
     glassStyles,
-    isDark
+    isDark,
   };
 }
 
@@ -46,7 +46,7 @@ export function useSubthemeColors(subthemeName: string) {
 
   return {
     colors,
-    isDark
+    isDark,
   };
 }
 
@@ -59,28 +59,26 @@ export function useThemeClasses() {
 
   return {
     // Glass morphism classes
-    glass: isDark 
-      ? 'bg-gray-900/20 backdrop-blur-xl border-gray-700/30' 
+    glass: isDark
+      ? 'bg-gray-900/20 backdrop-blur-xl border-gray-700/30'
       : 'bg-white/70 backdrop-blur-xl border-gray-200/50',
-    
+
     glassHover: isDark
       ? 'hover:bg-gray-900/30 hover:border-gray-600/40'
       : 'hover:bg-white/80 hover:border-gray-300/60',
-    
+
     // Card classes
-    card: isDark
-      ? 'bg-gray-800/50 border-gray-700/50'
-      : 'bg-white/90 border-gray-200/70',
-    
+    card: isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white/90 border-gray-200/70',
+
     cardHover: isDark
       ? 'hover:bg-gray-800/60 hover:border-gray-600/60'
       : 'hover:bg-white/95 hover:border-gray-300/80',
-    
+
     // Text classes
     textPrimary: isDark ? 'text-gray-100' : 'text-gray-900',
     textSecondary: isDark ? 'text-gray-300' : 'text-gray-700',
     textMuted: isDark ? 'text-gray-400' : 'text-gray-600',
-    
+
     // Status classes
     success: isDark ? 'text-green-400' : 'text-green-600',
     warning: isDark ? 'text-yellow-400' : 'text-yellow-600',

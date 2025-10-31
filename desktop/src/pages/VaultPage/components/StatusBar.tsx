@@ -2,9 +2,8 @@
  * StatusBar component - displays document count and storage info
  */
 
-import React from 'react';
 import { HardDrive } from 'lucide-react';
-import { CurrentStats, VaultInfo } from '../types';
+import { type CurrentStats, type VaultInfo } from '../types';
 import { formatFileSize } from '../utils';
 
 interface StatusBarProps {
@@ -18,7 +17,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   currentPath,
   currentStats,
   documentsCount,
-  vaultInfo
+  vaultInfo,
 }) => {
   // Determine what to display based on the current level
   const getStatusText = () => {
@@ -34,15 +33,22 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       // Folder level - show subfolders and total documents within
       return (
         <>
-          <span>{currentStats.folders} {currentStats.folders === 1 ? 'folder' : 'folders'}</span>
-          <span>{currentStats.totalDocuments} {currentStats.totalDocuments === 1 ? 'document' : 'documents'}</span>
+          <span>
+            {currentStats.folders} {currentStats.folders === 1 ? 'folder' : 'folders'}
+          </span>
+          <span>
+            {currentStats.totalDocuments}{' '}
+            {currentStats.totalDocuments === 1 ? 'document' : 'documents'}
+          </span>
         </>
       );
     } else if (currentStats.files > 0) {
       // File level - show direct files
       return (
         <>
-          <span>{currentStats.files} {currentStats.files === 1 ? 'document' : 'documents'}</span>
+          <span>
+            {currentStats.files} {currentStats.files === 1 ? 'document' : 'documents'}
+          </span>
         </>
       );
     } else {
@@ -50,7 +56,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       return <span>Empty folder</span>;
     }
   };
-  
+
   return (
     <div className="flex items-center justify-between text-sm text-muted-foreground">
       <div className="flex items-center space-x-4">
@@ -61,7 +67,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <div className="flex items-center space-x-2">
           <HardDrive className="h-3 w-3" />
           <span>
-            {formatFileSize(vaultInfo.directories?.content?.total_size_bytes || 0)} total storage used
+            {formatFileSize(vaultInfo.directories?.content?.total_size_bytes ?? 0)} total storage
+            used
           </span>
         </div>
       )}

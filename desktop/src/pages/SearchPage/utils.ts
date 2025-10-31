@@ -26,11 +26,20 @@ export const formatDate = (dateString: string | null): string => {
  * Get emoji icon for MIME type
  */
 export const getMimeTypeIcon = (mimeType: string | null | undefined): string => {
-  if (!mimeType) return MIME_TYPE_ICONS.default;
-  if (mimeType.startsWith('text/')) return MIME_TYPE_ICONS['text/'];
-  if (mimeType === 'application/pdf') return MIME_TYPE_ICONS['application/pdf'];
-  if (mimeType.startsWith('image/')) return MIME_TYPE_ICONS['image/'];
-  return MIME_TYPE_ICONS.default;
+  const defaultIcon = MIME_TYPE_ICONS.default ?? '📄';
+  if (!mimeType) return defaultIcon;
+
+  if (mimeType.startsWith('text/')) {
+    return MIME_TYPE_ICONS['text/'] ?? defaultIcon;
+  }
+  if (mimeType === 'application/pdf') {
+    return MIME_TYPE_ICONS['application/pdf'] ?? defaultIcon;
+  }
+  if (mimeType.startsWith('image/')) {
+    return MIME_TYPE_ICONS['image/'] ?? defaultIcon;
+  }
+
+  return defaultIcon;
 };
 
 /**
@@ -40,8 +49,8 @@ export const parseTagsFromUrl = (urlTags: string | null): string[] => {
   if (!urlTags) return [];
   return urlTags
     .split(',')
-    .map(tag => decodeURIComponent(tag.trim()))
-    .filter(tag => tag);
+    .map((tag) => decodeURIComponent(tag.trim()))
+    .filter((tag) => tag);
 };
 
 /**
@@ -57,5 +66,5 @@ export const formatScore = (score: number): string => {
 export const getFileType = (mimeType: string | null | undefined): string => {
   if (!mimeType) return 'unknown';
   const parts = mimeType.split('/');
-  return parts[1] || 'unknown';
+  return parts[1] ?? 'unknown';
 };

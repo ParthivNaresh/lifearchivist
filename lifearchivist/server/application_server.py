@@ -146,10 +146,13 @@ class ApplicationServer:
             # Phase 4: Initialize tool registry
             await self._init_tool_registry()
 
-            # Phase 5: Initialize folder watcher
-            self._init_folder_watcher()
+            # Phase 5: Initialize RAG service with activity manager
+            await self._init_rag_service()
 
-            # Phase 6: Initialize agents (if enabled)
+            # Phase 6: Initialize folder watcher
+            await self._init_folder_watcher()
+
+            # Phase 7: Initialize agents (if enabled)
             if self.settings.enable_agents:
                 await self._init_agents()
 
@@ -214,6 +217,18 @@ class ApplicationServer:
                     level=logging.WARNING,
                 )
 
+        # Cleanup LLM provider manager (before service container)
+        if self.service_container and self.service_container.llm_provider_manager:
+            try:
+                await self.service_container.llm_provider_manager.shutdown()
+                log_event("llm_provider_manager_cleaned_up")
+            except Exception as e:
+                log_event(
+                    "llm_provider_manager_cleanup_error",
+                    {"error": str(e)},
+                    level=logging.WARNING,
+                )
+
         # Cleanup core infrastructure
         if self.service_container:
             try:
@@ -240,6 +255,7 @@ class ApplicationServer:
         config = ServiceConfig(
             redis_url=self.settings.redis_url,
             qdrant_url=self.settings.qdrant_url,
+            database_url=self.settings.database_url,
             vault_path=vault_path,
             settings=self.settings,
         )
@@ -415,7 +431,29 @@ class ApplicationServer:
         tool_count = len(self.tool_registry.tools)
         log_event("tool_registry_initialized", {"tools_registered": tool_count})
 
-    def _init_folder_watcher(self):
+    async def _init_rag_service(self):
+        """Initialize RAG service with activity manager."""
+        if not self.service_container:
+            log_event(
+                "rag_service_init_skipped",
+                {"reason": "service_container_not_available"},
+                level=logging.WARNING,
+            )
+            return
+
+        try:
+            await self.service_container.init_rag_service(
+                activity_manager=self.activity_manager
+            )
+            log_event("rag_service_initialized_with_activity_manager")
+        except Exception as e:
+            log_event(
+                "rag_service_init_failed",
+                {"error": str(e)},
+                level=logging.WARNING,
+            )
+
+    async def _init_folder_watcher(self):
         """Initialize folder watching service."""
         try:
             from ..storage.folder_watcher import FolderWatcherService
@@ -426,10 +464,24 @@ class ApplicationServer:
             self.folder_watcher = FolderWatcherService(
                 vault=self.service_container.vault,
                 server=self,  # Pass self for tool execution
-                debounce_seconds=2.0,
+                redis_url=self.settings.redis_url,
+                debounce_seconds=self.settings.folder_watch_debounce_seconds,
+                ingestion_concurrency=self.settings.folder_watch_concurrency,
+                max_folders=self.settings.folder_watch_max_folders,
             )
 
-            log_event("folder_watcher_initialized")
+            # Initialize the service (async)
+            await self.folder_watcher.initialize()
+
+            log_event(
+                "folder_watcher_initialized",
+                {
+                    "debounce_seconds": self.settings.folder_watch_debounce_seconds,
+                    "ingestion_concurrency": self.settings.folder_watch_concurrency,
+                    "max_folders": self.settings.folder_watch_max_folders,
+                    "auto_resume": self.settings.folder_watch_auto_resume,
+                },
+            )
         except Exception as e:
             log_event(
                 "folder_watcher_init_failed",
@@ -581,6 +633,35 @@ class ApplicationServer:
             if self.service_container
             else None
         )
+
+    @property
+    def credential_service(self):
+        """Get credential service from service container."""
+        return (
+            self.service_container.credential_service
+            if self.service_container
+            else None
+        )
+
+    @property
+    def llm_manager(self):
+        """Get LLM provider manager from service container (alias for compatibility)."""
+        return (
+            self.service_container.llm_provider_manager
+            if self.service_container
+            else None
+        )
+
+    @property
+    def provider_loader(self):
+        """Get provider loader (created on-demand from credential service)."""
+        if not self.credential_service:
+            return None
+
+        # Create loader on-demand
+        from ..llm import ProviderLoader
+
+        return ProviderLoader(self.credential_service)
 
     @property
     def is_initialized(self) -> bool:

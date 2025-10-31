@@ -1,262 +1,388 @@
 """
-Folder watching API endpoints.
+Multi-folder watching API endpoints.
 
-Provides endpoints for managing automatic folder watching and ingestion.
+Provides RESTful endpoints for managing multiple watched folders
+and automatic document ingestion.
 """
 
+import logging
 from pathlib import Path
-from typing import Optional
 
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException
+from fastapi import Path as PathParam
+
+from lifearchivist.models.folder_watch import (
+    AddFolderRequest,
+    AggregateStatusResponse,
+    FolderListResponse,
+    FolderResponse,
+    FolderScanResponse,
+    UpdateFolderRequest,
+    WatchedFolder,
+)
 
 from ..dependencies import get_server
 
 router = APIRouter(prefix="/api/folder-watch", tags=["folder-watch"])
+logger = logging.getLogger(__name__)
 
 
-class StartWatchRequest(BaseModel):
-    """Request to start watching a folder."""
-
-    folder_path: str = Field(
-        description="Absolute path to folder to watch",
-        examples=["/Users/username/Documents"],
-    )
+# ============================================================================
+# Helper Functions
+# ============================================================================
 
 
-class FolderWatchStatus(BaseModel):
-    """Status of folder watching service."""
-
-    enabled: bool = Field(description="Whether folder watching is enabled")
-    watched_path: Optional[str] = Field(
-        None, description="Path currently being watched"
-    )
-    pending_files: int = Field(description="Number of files pending ingestion")
-    supported_extensions: list[str] = Field(
-        description="List of supported file extensions"
-    )
-    debounce_seconds: float = Field(description="Debounce delay in seconds")
-
-
-@router.get("/status", response_model=FolderWatchStatus)
-async def get_folder_watch_status():
+def _folder_to_response(folder: WatchedFolder) -> FolderResponse:
     """
-    Get current status of folder watching service.
+    Convert WatchedFolder to FolderResponse.
 
-    Returns:
-        Current status including enabled state, watched path, and statistics
-    """
-    server = get_server()
-
-    if not server.folder_watcher:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Folder watcher not initialized",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
-
-    try:
-        status = server.folder_watcher.get_status()
-        return {
-            "success": True,
-            **status,
-        }
-    except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to get status: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
-
-
-@router.post("/start")
-async def start_folder_watch(request: StartWatchRequest):
-    """
-    Start watching a folder for new documents.
+    Centralizes the conversion logic to avoid duplication.
 
     Args:
-        request: Folder path to watch
+        folder: WatchedFolder instance
 
     Returns:
-        Success status and watched folder information
+        FolderResponse for API
+    """
+    return FolderResponse(
+        id=folder.id,
+        path=str(folder.path),
+        enabled=folder.enabled,
+        created_at=folder.created_at.isoformat(),
+        status=folder.status.value,
+        health=folder.stats.get_health_status().value,
+        is_active=folder.is_active(),
+        success_rate=folder.stats.get_success_rate(),
+        stats=folder.stats.to_dict(),
+    )
 
-    Notes:
-        - Only one folder can be watched at a time (MVP limitation)
-        - Folder must exist and be readable
-        - Watches recursively (includes subdirectories)
-        - Automatically ingests supported file types
+
+# ============================================================================
+# Folder Management Endpoints
+# ============================================================================
+
+
+@router.post("/folders", response_model=FolderResponse, status_code=201)
+async def add_folder(request: AddFolderRequest):
+    """
+    Add a new folder to watch.
+
+    Args:
+        request: Folder path and configuration
+
+    Returns:
+        Created folder details with UUID
+
+    Raises:
+        400: Invalid folder path or already watched
+        503: Folder watcher not initialized
+        500: Internal server error
     """
     server = get_server()
 
     if not server.folder_watcher:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Folder watcher not initialized",
-                "error_type": "ServiceUnavailable",
-            },
+        raise HTTPException(
             status_code=503,
+            detail="Folder watcher service not initialized",
         )
 
-    # Validate folder path
-    folder_path = Path(request.folder_path).expanduser().resolve()
-
-    if not folder_path.exists():
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Folder does not exist: {folder_path}",
-                "error_type": "ValidationError",
-            },
+    # Validate and normalize path
+    try:
+        folder_path = Path(request.folder_path).expanduser().resolve()
+    except Exception as e:
+        raise HTTPException(
             status_code=400,
-        )
-
-    if not folder_path.is_dir():
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Path is not a directory: {folder_path}",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
-        )
+            detail=f"Invalid folder path: {str(e)}",
+        ) from e
 
     try:
-        # Start watching
-        success = await server.folder_watcher.start(folder_path)
+        # Add folder to watcher
+        folder_id = await server.folder_watcher.add_folder(
+            path=folder_path,
+            enabled=request.enabled,
+        )
 
-        if success:
-            return {
-                "success": True,
-                "message": "Folder watching started",
-                "watched_path": str(folder_path),
-                "recursive": True,
-                "supported_extensions": list(
-                    server.folder_watcher.SUPPORTED_EXTENSIONS
-                ),
-            }
-        else:
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "error": "Failed to start folder watching",
-                    "error_type": "ServiceError",
-                },
+        # Get folder details
+        folder = await server.folder_watcher.get_folder(folder_id)
+        if not folder:
+            raise HTTPException(
                 status_code=500,
+                detail="Folder was added but could not be retrieved",
             )
 
+        return _folder_to_response(folder)
+
+    except ValueError as e:
+        # Validation errors (duplicate, limit reached, etc.)
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to start folder watching: {str(e)}",
-                "error_type": type(e).__name__,
-            },
+        raise HTTPException(
             status_code=500,
-        )
+            detail=f"Failed to add folder: {str(e)}",
+        ) from e
 
 
-@router.post("/stop")
-async def stop_folder_watch():
+@router.get("/folders", response_model=FolderListResponse)
+async def list_folders(enabled_only: bool = False):
     """
-    Stop watching the current folder.
+    List all watched folders.
+
+    Args:
+        enabled_only: If true, only return enabled folders
 
     Returns:
-        Success status
+        List of watched folders with statistics
 
-    Notes:
-        - Cancels all pending file ingestions
-        - Safe to call even if not currently watching
+    Raises:
+        503: Folder watcher not initialized
+        500: Internal server error
     """
     server = get_server()
 
     if not server.folder_watcher:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Folder watcher not initialized",
-                "error_type": "ServiceUnavailable",
-            },
+        raise HTTPException(
             status_code=503,
+            detail="Folder watcher service not initialized",
         )
 
     try:
-        await server.folder_watcher.stop()
+        folders = await server.folder_watcher.list_folders(enabled_only=enabled_only)
+        folder_responses = [_folder_to_response(folder) for folder in folders]
+
+        return FolderListResponse(
+            success=True,
+            folders=folder_responses,
+            total=len(folder_responses),
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list folders: {str(e)}",
+        ) from e
+
+
+@router.get("/folders/{folder_id}", response_model=FolderResponse)
+async def get_folder(folder_id: str = PathParam(..., description="Folder UUID")):
+    """
+    Get details for a specific watched folder.
+
+    Args:
+        folder_id: Folder UUID
+
+    Returns:
+        Folder details with statistics
+
+    Raises:
+        404: Folder not found
+        503: Folder watcher not initialized
+        500: Internal server error
+    """
+    server = get_server()
+
+    if not server.folder_watcher:
+        raise HTTPException(
+            status_code=503,
+            detail="Folder watcher service not initialized",
+        )
+
+    try:
+        folder = await server.folder_watcher.get_folder(folder_id)
+
+        if not folder:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Folder not found: {folder_id}",
+            )
+
+        return _folder_to_response(folder)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get folder: {str(e)}",
+        ) from e
+
+
+@router.delete("/folders/{folder_id}")
+async def remove_folder(folder_id: str = PathParam(..., description="Folder UUID")):
+    """
+    Remove a watched folder.
+
+    Args:
+        folder_id: Folder UUID
+
+    Returns:
+        Success confirmation
+
+    Raises:
+        404: Folder not found
+        503: Folder watcher not initialized
+        500: Internal server error
+
+    Notes:
+        - Stops watching if currently active
+        - Cancels all pending file ingestions for this folder
+        - Removes folder configuration from persistence
+    """
+    server = get_server()
+
+    if not server.folder_watcher:
+        raise HTTPException(
+            status_code=503,
+            detail="Folder watcher service not initialized",
+        )
+
+    try:
+        removed = await server.folder_watcher.remove_folder(folder_id)
+
+        if not removed:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Folder not found: {folder_id}",
+            )
 
         return {
             "success": True,
-            "message": "Folder watching stopped",
+            "message": "Folder removed successfully",
+            "folder_id": folder_id,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to stop folder watching: {str(e)}",
-                "error_type": type(e).__name__,
-            },
+        raise HTTPException(
             status_code=500,
-        )
+            detail=f"Failed to remove folder: {str(e)}",
+        ) from e
 
 
-@router.post("/scan")
-async def scan_folder_now():
+@router.patch("/folders/{folder_id}", response_model=FolderResponse)
+async def update_folder(
+    request: UpdateFolderRequest,
+    folder_id: str = PathParam(..., description="Folder UUID"),
+):
     """
-    Manually trigger a scan of the watched folder.
+    Update folder configuration.
+
+    Args:
+        folder_id: Folder UUID
+        request: Update parameters (enabled status)
 
     Returns:
-        Number of files found and queued for ingestion
+        Updated folder details
+
+    Raises:
+        404: Folder not found
+        503: Folder watcher not initialized
+        500: Internal server error
 
     Notes:
-        - Only works if folder watching is currently enabled
-        - Scans for all supported file types
-        - Respects deduplication (won't re-ingest existing files)
+        - Currently only supports enabling/disabling watching
+        - Enabling starts the observer immediately
+        - Disabling stops the observer and cancels pending ingestions
     """
     server = get_server()
 
     if not server.folder_watcher:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Folder watcher not initialized",
-                "error_type": "ServiceUnavailable",
-            },
+        raise HTTPException(
             status_code=503,
-        )
-
-    if not server.folder_watcher.enabled:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Folder watching is not enabled",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
+            detail="Folder watcher service not initialized",
         )
 
     try:
-        watched_path = server.folder_watcher.watched_path
-        if not watched_path:
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "error": "No folder is being watched",
-                    "error_type": "ValidationError",
-                },
+        # Check if folder exists
+        folder = await server.folder_watcher.get_folder(folder_id)
+        if not folder:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Folder not found: {folder_id}",
+            )
+
+        # Update enabled status if provided
+        if request.enabled is not None:
+            if request.enabled:
+                await server.folder_watcher.enable_folder(folder_id)
+            else:
+                await server.folder_watcher.disable_folder(folder_id)
+
+        # Return updated folder details (in-memory state is already updated)
+        return _folder_to_response(folder)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update folder: {str(e)}",
+        ) from e
+
+
+# ============================================================================
+# Folder Operations
+# ============================================================================
+
+
+@router.post("/folders/{folder_id}/scan", response_model=FolderScanResponse)
+async def scan_folder(folder_id: str = PathParam(..., description="Folder UUID")):
+    """
+    Manually trigger a scan of a specific folder.
+
+    Args:
+        folder_id: Folder UUID
+
+    Returns:
+        Scan results (files found and queued)
+
+    Raises:
+        404: Folder not found
+        400: Folder not enabled or not accessible
+        503: Folder watcher not initialized
+        500: Internal server error
+
+    Notes:
+        - Scans recursively for all supported file types
+        - Respects deduplication (won't re-ingest existing files)
+        - Files are queued with debounce delay
+        - Folder must be enabled to scan
+    """
+    server = get_server()
+
+    if not server.folder_watcher:
+        raise HTTPException(
+            status_code=503,
+            detail="Folder watcher service not initialized",
+        )
+
+    try:
+        # Get folder
+        folder = await server.folder_watcher.get_folder(folder_id)
+        if not folder:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Folder not found: {folder_id}",
+            )
+
+        # Check if folder is enabled
+        if not folder.enabled:
+            raise HTTPException(
                 status_code=400,
+                detail="Folder must be enabled to scan",
+            )
+
+        # Check if folder path still exists
+        if not folder.path.exists() or not folder.path.is_dir():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Folder path no longer accessible: {folder.path}",
             )
 
         # Scan folder for supported files
         files_found = []
         for ext in server.folder_watcher.SUPPORTED_EXTENSIONS:
-            files_found.extend(watched_path.rglob(f"*{ext}"))
+            files_found.extend(folder.path.rglob(f"*{ext}"))
 
         # Filter out hidden/temp files
         files_found = [
@@ -266,22 +392,115 @@ async def scan_folder_now():
         ]
 
         # Schedule each file for ingestion
+        files_queued = 0
+        failed_files = 0
         for file_path in files_found:
-            await server.folder_watcher.schedule_ingestion(file_path)
+            try:
+                await server.folder_watcher.schedule_ingestion(folder_id, file_path)
+                files_queued += 1
+            except Exception as e:
+                # Log error but continue with other files
+                logger.warning(
+                    f"Failed to queue file {file_path.name} for ingestion: {e}"
+                )
+                failed_files += 1
 
-        return {
-            "success": True,
-            "message": "Manual scan completed",
-            "files_found": len(files_found),
-            "watched_path": str(watched_path),
-        }
+        return FolderScanResponse(
+            success=True,
+            folder_id=folder_id,
+            folder_path=str(folder.path),
+            files_found=len(files_found),
+            files_queued=files_queued,
+            message=f"Scanned folder and queued {files_queued} files for ingestion",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to scan folder: {str(e)}",
+        ) from e
+
+
+# ============================================================================
+# Status Endpoints
+# ============================================================================
+
+
+@router.get("/status", response_model=AggregateStatusResponse)
+async def get_aggregate_status():
+    """
+    Get aggregate status across all watched folders.
+
+    Returns:
+        System-wide statistics and folder summaries
+
+    Raises:
+        503: Folder watcher not initialized
+        500: Internal server error
+
+    Notes:
+        - Includes totals for all folders combined
+        - Lists individual folder details
+        - Shows supported file extensions
+        - Displays concurrency settings
+    """
+    server = get_server()
+
+    if not server.folder_watcher:
+        raise HTTPException(
+            status_code=503,
+            detail="Folder watcher service not initialized",
+        )
+
+    try:
+        # Get aggregate stats
+        aggregate = await server.folder_watcher.get_aggregate_status()
+
+        # Get individual folder details
+        folders = await server.folder_watcher.list_folders()
+        folder_responses = [_folder_to_response(folder) for folder in folders]
+
+        return AggregateStatusResponse(
+            success=True,
+            total_folders=aggregate["total_folders"],
+            active_folders=aggregate["active_folders"],
+            total_pending=aggregate["total_pending"],
+            total_detected=aggregate["total_detected"],
+            total_ingested=aggregate["total_ingested"],
+            total_failed=aggregate["total_failed"],
+            total_bytes_processed=aggregate["total_bytes_processed"],
+            folders=folder_responses,
+            supported_extensions=aggregate["supported_extensions"],
+            ingestion_concurrency=aggregate["ingestion_concurrency"],
+        )
 
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to scan folder: {str(e)}",
-                "error_type": type(e).__name__,
-            },
+        raise HTTPException(
             status_code=500,
-        )
+            detail=f"Failed to get status: {str(e)}",
+        ) from e
+
+
+@router.get("/folders/{folder_id}/status", response_model=FolderResponse)
+async def get_folder_status(folder_id: str = PathParam(..., description="Folder UUID")):
+    """
+    Get detailed status for a specific folder.
+
+    Args:
+        folder_id: Folder UUID
+
+    Returns:
+        Folder status with detailed statistics
+
+    Raises:
+        404: Folder not found
+        503: Folder watcher not initialized
+        500: Internal server error
+
+    Notes:
+        - Alias for GET /folders/{folder_id}
+        - Provided for semantic clarity
+    """
+    return await get_folder(folder_id)

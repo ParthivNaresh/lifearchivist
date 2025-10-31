@@ -2,7 +2,6 @@
  * SearchStates component - loading, error, and empty states
  */
 
-import React from 'react';
 import { Search } from 'lucide-react';
 import { UI_TEXT } from '../constants';
 
@@ -12,11 +11,11 @@ interface LoadingStateProps {
 
 export const LoadingState: React.FC<LoadingStateProps> = ({ query }) => {
   if (!query) return null;
-  
+
   return (
     <div className="text-center py-12">
       <div className="flex items-center justify-center mb-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
       </div>
       <p className="text-muted-foreground">{UI_TEXT.SEARCHING}</p>
     </div>
@@ -29,7 +28,7 @@ interface ErrorStateProps {
 
 export const ErrorState: React.FC<ErrorStateProps> = ({ error }) => {
   if (!error) return null;
-  
+
   return (
     <div className="text-center py-12">
       <div className="text-red-500 mb-2">⚠️</div>
@@ -47,7 +46,7 @@ interface EmptyStateProps {
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ query, selectedTags, hasSearched }) => {
   if (!hasSearched) return null;
-  
+
   const getDescription = () => {
     if (query && selectedTags.length > 0) {
       return UI_TEXT.NO_RESULTS_DESCRIPTION.WITH_QUERY_AND_TAGS;
@@ -60,7 +59,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ query, selectedTags, has
     }
     return '';
   };
-  
+
   return (
     <div className="text-center py-12">
       <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

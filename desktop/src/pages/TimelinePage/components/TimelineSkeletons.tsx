@@ -2,8 +2,6 @@
  * Skeleton loading states for timeline
  */
 
-import React from 'react';
-
 /**
  * Skeleton for a single document card
  */
@@ -11,7 +9,7 @@ export const DocumentCardSkeleton: React.FC = () => (
   <div className="w-full flex items-center gap-4 p-4 backdrop-blur-xl rounded-lg border-l-4 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 mb-3 animate-pulse">
     {/* Icon skeleton */}
     <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0" />
-    
+
     <div className="flex-1 min-w-0">
       {/* Title skeleton */}
       <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2" />
@@ -21,7 +19,7 @@ export const DocumentCardSkeleton: React.FC = () => (
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24" />
       </div>
     </div>
-    
+
     {/* Icon skeleton */}
     <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded flex-shrink-0" />
   </div>
@@ -37,7 +35,7 @@ export const MonthSectionSkeleton: React.FC = () => (
       <div className="h-7 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-2" />
       <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32" />
     </div>
-    
+
     {/* Document cards */}
     <div className="space-y-3">
       <DocumentCardSkeleton />
@@ -58,7 +56,7 @@ export const YearSectionSkeleton: React.FC = () => (
       <div className="h-9 bg-gray-200 dark:bg-gray-700 rounded w-32" />
       <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-24" />
     </div>
-    
+
     {/* Month sections */}
     <MonthSectionSkeleton />
     <MonthSectionSkeleton />

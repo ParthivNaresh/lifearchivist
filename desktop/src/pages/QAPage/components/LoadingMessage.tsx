@@ -2,7 +2,6 @@
  * LoadingMessage component - shown while processing
  */
 
-import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { UI_TEXT } from '../constants';
 

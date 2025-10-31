@@ -1,6 +1,6 @@
 /**
  * Custom hooks for VaultPage
- * 
+ *
  * Hierarchy:
  * - Theme (e.g., Financial, Healthcare)
  *   - Category/Subtheme (e.g., Insurance, Loan, Banking)
@@ -10,19 +10,16 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useCache, clearCacheKey } from '../../hooks/useCache';
-import { 
-  Document, 
-  VaultInfo, 
-  FileSystemItem, 
-  ViewMode,
-  CurrentStats 
+import { useQueryClient } from '@tanstack/react-query';
+import { useCache } from '../../hooks/useCache';
+import {
+  type Document,
+  type FileSystemItem,
+  type ViewMode,
+  type CurrentStats,
+  type VaultLocationState,
 } from './types';
-import { 
-  CACHE_DURATIONS,
-  THEME_CONFIG,
-  THEME_ORDER
-} from './constants';
+import { CACHE_DURATIONS, THEME_CONFIG, THEME_ORDER, type ThemeName } from './constants';
 import {
   getDocumentTheme,
   getSubthemeCategory,
@@ -31,7 +28,7 @@ import {
   getFileName,
   getFileIcon,
   hasProcessingDocuments,
-  sortDocumentsByDate
+  sortDocumentsByDate,
 } from './utils';
 import * as api from './api';
 
@@ -39,36 +36,31 @@ import * as api from './api';
  * Hook for managing vault data fetching
  */
 export const useVaultData = () => {
-  const fetchVaultInfo = useCallback(api.fetchVaultInfo, []);
+  const queryClient = useQueryClient();
+  const fetchVaultInfo = useCallback(() => api.fetchVaultInfo(), []);
   const fetchDocuments = useCallback(() => api.fetchDocuments(500), []);
 
-  const { 
-    data: vaultInfo, 
-    refresh: refreshInfo 
-  } = useCache(
+  const { data: vaultInfo, refresh: refreshInfo } = useCache(
     'vault-info',
     fetchVaultInfo,
     CACHE_DURATIONS.VAULT_INFO
   );
 
-  const { 
-    data: documents, 
-    refresh: refreshDocuments, 
-    loading: documentsLoading 
-  } = useCache(
-    'documents-vault',
-    fetchDocuments,
-    CACHE_DURATIONS.DOCUMENTS
-  );
+  const {
+    data: documents,
+    refresh: refreshDocuments,
+    loading: documentsLoading,
+  } = useCache('documents-vault', fetchDocuments, CACHE_DURATIONS.DOCUMENTS);
 
   const manualRefresh = useCallback(async () => {
-    // Clear the cache to force fresh data
-    clearCacheKey('vault-info');
-    clearCacheKey('documents-vault');
-    
-    // Refresh both info and documents
-    await Promise.all([refreshInfo(), refreshDocuments()]);
-  }, [refreshInfo, refreshDocuments]);
+    // Invalidate and refetch
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['vault-info'] }),
+      queryClient.invalidateQueries({ queryKey: ['documents-vault'] }),
+      refreshInfo(),
+      refreshDocuments(),
+    ]);
+  }, [queryClient, refreshInfo, refreshDocuments]);
 
   return {
     vaultInfo,
@@ -76,25 +68,28 @@ export const useVaultData = () => {
     documentsLoading,
     refreshInfo,
     refreshDocuments,
-    manualRefresh
+    manualRefresh,
   };
 };
 
 /**
  * Extract primary subclassification and category from document
  */
-const extractDocumentClassification = (doc: Document): { 
-  primarySubclassification?: string; 
+const extractDocumentClassification = (
+  doc: Document
+): {
+  primarySubclassification?: string;
   category?: string;
 } => {
   if (!doc.primary_subclassification) {
     return { primarySubclassification: undefined, category: undefined };
   }
-  
+
   const primarySubclassification = doc.primary_subclassification;
-  const category = doc.category_mapping?.[primarySubclassification] || 
-                  getSubthemeCategory(primarySubclassification);
-  
+  const category =
+    doc.category_mapping?.[primarySubclassification] ??
+    getSubthemeCategory(primarySubclassification);
+
   return { primarySubclassification, category };
 };
 
@@ -103,7 +98,7 @@ const extractDocumentClassification = (doc: Document): {
  */
 const createFileItem = (doc: Document, themeName: string): FileSystemItem => {
   const { primarySubclassification } = extractDocumentClassification(doc);
-  
+
   return {
     name: doc.file_hash,
     displayName: getFileName(doc.original_path),
@@ -115,14 +110,13 @@ const createFileItem = (doc: Document, themeName: string): FileSystemItem => {
     wordCount: doc.word_count,
     mimeType: doc.mime_type,
     primaryTheme: themeName,
-    themes: doc.themes,
     themeConfidence: doc.theme_confidence,
     subthemes: doc.subthemes,
     primarySubtheme: doc.primary_subtheme,
     subclassifications: doc.subclassifications,
     primarySubclassification,
     subclassificationConfidence: doc.subclassification_confidence,
-    icon: getFileIcon(doc.mime_type)
+    icon: getFileIcon(doc.mime_type),
   };
 };
 
@@ -138,85 +132,109 @@ export const useFileSystem = (documents: Document[] | undefined) => {
       try {
         // Group documents by theme
         const themeGroups = new Map<string, Document[]>();
-        
-        documents.forEach(doc => {
+
+        documents.forEach((doc) => {
           const theme = getDocumentTheme(doc);
           if (!themeGroups.has(theme)) {
             themeGroups.set(theme, []);
           }
           themeGroups.get(theme)?.push(doc);
         });
-        
+
         // Sort themes by predefined order
         const sortedThemes = Array.from(themeGroups.keys()).sort((a, b) => {
-          const aIndex = THEME_ORDER.indexOf(a as any);
-          const bIndex = THEME_ORDER.indexOf(b as any);
-          
-          if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-          if (aIndex !== -1) return -1;
-          if (bIndex !== -1) return 1;
+          // Type guard: check if theme is in THEME_ORDER
+          const isAKnown = THEME_ORDER.includes(a as ThemeName);
+          const isBKnown = THEME_ORDER.includes(b as ThemeName);
+
+          if (isAKnown && isBKnown) {
+            const aIndex = THEME_ORDER.indexOf(a as ThemeName);
+            const bIndex = THEME_ORDER.indexOf(b as ThemeName);
+            return aIndex - bIndex;
+          }
+
+          // Known themes come before unknown
+          if (isAKnown) return -1;
+          if (isBKnown) return 1;
+
+          // Both unknown: alphabetical
           return a.localeCompare(b);
         });
-        
+
         // Build the file system structure
-        return sortedThemes.map(themeName => {
-          const docs = themeGroups.get(themeName) || [];
-          const config = THEME_CONFIG[themeName] || THEME_CONFIG['Unclassified'];
-          
+        return sortedThemes.map((themeName) => {
+          const docs = themeGroups.get(themeName) ?? [];
+          const config = THEME_CONFIG[themeName as ThemeName] ?? THEME_CONFIG.Unclassified;
+
+          // Ensure config is never undefined
+          if (!config) {
+            throw new Error(`Theme config not found for: ${themeName}`);
+          }
+
           // Count processing documents
-          const processingCount = docs.filter(d => 
-            d.status === 'processing' || d.status === 'pending'
+          const processingCount = docs.filter(
+            (d) => d.status === 'processing' || d.status === 'pending'
           ).length;
-          
+
           // Group documents by category, then by subclassification
           const categoryGroups = new Map<string, Map<string, Document[]>>();
           const uncategorizedDocs: Document[] = [];
-          
+
           // Categorize documents
-          docs.forEach(doc => {
+          docs.forEach((doc) => {
             const { primarySubclassification, category } = extractDocumentClassification(doc);
-            
+
             if (primarySubclassification && category) {
               if (!categoryGroups.has(category)) {
                 categoryGroups.set(category, new Map<string, Document[]>());
               }
-              
-              const subclassificationGroups = categoryGroups.get(category)!;
+
+              const subclassificationGroups = categoryGroups.get(category);
+              if (!subclassificationGroups) {
+                console.error(`Category groups not found for category: ${category}`);
+                uncategorizedDocs.push(doc);
+                return;
+              }
               if (!subclassificationGroups.has(primarySubclassification)) {
                 subclassificationGroups.set(primarySubclassification, []);
               }
-              
+
               subclassificationGroups.get(primarySubclassification)?.push(doc);
             } else {
               uncategorizedDocs.push(doc);
             }
           });
-          
+
           // Build children array
           const children: FileSystemItem[] = [];
-          
+
           // Process categorized documents
           const sortedCategories = Array.from(categoryGroups.keys()).sort();
-          
-          sortedCategories.forEach(categoryName => {
-            const subclassificationGroups = categoryGroups.get(categoryName)!;
+
+          sortedCategories.forEach((categoryName) => {
+            const subclassificationGroups = categoryGroups.get(categoryName);
+            if (!subclassificationGroups) {
+              console.warn(`No subclassification groups found for category: ${categoryName}`);
+              return;
+            }
             const categoryConfig = getSubthemeCategoryConfig(categoryName);
-            
+
             // Build subclassification folders
             const categoryChildren: FileSystemItem[] = [];
             let categoryDocCount = 0;
             let categorySize = 0;
-            
+
             const sortedSubclassifications = Array.from(subclassificationGroups.keys()).sort();
-            
-            sortedSubclassifications.forEach(subclassificationName => {
-              const subclassificationDocs = subclassificationGroups.get(subclassificationName) || [];
+
+            sortedSubclassifications.forEach((subclassificationName) => {
+              const subclassificationDocs =
+                subclassificationGroups.get(subclassificationName) ?? [];
               const sortedDocs = sortDocumentsByDate(subclassificationDocs);
               const subclassificationConfig = getSubclassificationConfig(subclassificationName);
-              
+
               categoryDocCount += sortedDocs.length;
               categorySize += sortedDocs.reduce((sum, doc) => sum + doc.size_bytes, 0);
-              
+
               // Create subclassification folder
               const subclassificationFolder: FileSystemItem = {
                 name: `${themeName}-${categoryName}-${subclassificationName}`,
@@ -226,15 +244,15 @@ export const useFileSystem = (documents: Document[] | undefined) => {
                 itemCount: sortedDocs.length,
                 size: sortedDocs.reduce((sum, doc) => sum + doc.size_bytes, 0),
                 hierarchyLevel: 'subclassification',
-                useColoredCard: true,  // Renders as SubthemeCard
+                useColoredCard: true, // Renders as SubthemeCard
                 parentTheme: themeName,
                 parentCategory: categoryName,
-                children: sortedDocs.map(doc => createFileItem(doc, themeName))
+                children: sortedDocs.map((doc) => createFileItem(doc, themeName)),
               };
-              
+
               categoryChildren.push(subclassificationFolder);
             });
-            
+
             // Create category folder
             const categoryFolder: FileSystemItem = {
               name: `${themeName}-${categoryName}`,
@@ -244,20 +262,20 @@ export const useFileSystem = (documents: Document[] | undefined) => {
               itemCount: categoryDocCount,
               size: categorySize,
               hierarchyLevel: 'category',
-              useColoredCard: true,  // Renders as SubthemeCard
+              useColoredCard: true, // Renders as SubthemeCard
               parentTheme: themeName,
-              children: categoryChildren
+              children: categoryChildren,
             };
-            
+
             children.push(categoryFolder);
           });
-          
+
           // Add uncategorized documents directly under theme
           const sortedUncategorizedDocs = sortDocumentsByDate(uncategorizedDocs);
-          sortedUncategorizedDocs.forEach(doc => {
+          sortedUncategorizedDocs.forEach((doc) => {
             children.push(createFileItem(doc, themeName));
           });
-          
+
           // Create theme folder
           const themeFolder: FileSystemItem = {
             name: themeName,
@@ -268,10 +286,10 @@ export const useFileSystem = (documents: Document[] | undefined) => {
             processingCount,
             size: docs.reduce((sum, doc) => sum + doc.size_bytes, 0),
             hierarchyLevel: 'theme',
-            useColoredCard: false,  // Renders as ThemeCard
-            children
+            useColoredCard: false, // Renders as ThemeCard
+            children,
           };
-          
+
           return themeFolder;
         });
       } catch (error) {
@@ -285,18 +303,33 @@ export const useFileSystem = (documents: Document[] | undefined) => {
 };
 
 /**
+ * Type guard for VaultLocationState
+ */
+const isVaultLocationState = (state: unknown): state is VaultLocationState => {
+  if (!state || typeof state !== 'object') return false;
+  const s = state as Partial<VaultLocationState>;
+  return (
+    (s.navigationPath === undefined || Array.isArray(s.navigationPath)) &&
+    (s.displayPath === undefined || Array.isArray(s.displayPath)) &&
+    (s.searchTerm === undefined || typeof s.searchTerm === 'string') &&
+    (s.viewMode === undefined || s.viewMode === 'grid' || s.viewMode === 'list')
+  );
+};
+
+/**
  * Hook for managing vault navigation
  */
 export const useVaultNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+  const locationState = isVaultLocationState(location.state) ? location.state : null;
+
   // Store both the actual path (for navigation) and display path (for breadcrumbs)
   const [navigationPath, setNavigationPath] = useState<string[]>(
-    location.state?.navigationPath || ['All Documents']
+    locationState?.navigationPath ?? ['All Documents']
   );
   const [displayPath, setDisplayPath] = useState<string[]>(
-    location.state?.displayPath || ['All Documents']
+    locationState?.displayPath ?? ['All Documents']
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -310,11 +343,11 @@ export const useVaultNavigation = () => {
 
   const navigateToFolder = useCallback((folder: FileSystemItem) => {
     if (folder.type !== 'folder') return;
-    
+
     setIsTransitioning(true);
     setTimeout(() => {
-      setNavigationPath(prev => [...prev, folder.name]);
-      setDisplayPath(prev => [...prev, folder.displayName]);
+      setNavigationPath((prev) => [...prev, folder.name]);
+      setDisplayPath((prev) => [...prev, folder.displayName]);
       setIsTransitioning(false);
     }, 150);
   }, []);
@@ -322,31 +355,34 @@ export const useVaultNavigation = () => {
   const navigateToBreadcrumb = useCallback((index: number) => {
     setIsTransitioning(true);
     setTimeout(() => {
-      setNavigationPath(prev => prev.slice(0, index + 1));
-      setDisplayPath(prev => prev.slice(0, index + 1));
+      setNavigationPath((prev) => prev.slice(0, index + 1));
+      setDisplayPath((prev) => prev.slice(0, index + 1));
       setIsTransitioning(false);
     }, 150);
   }, []);
 
-  const handleFileClick = useCallback((item: FileSystemItem, viewMode: ViewMode, searchTerm: string) => {
-    if (item.type === 'folder') {
-      navigateToFolder(item);
-    } else if (item.documentId) {
-      // Pass state to indicate we came from vault
-      navigate(`/vault/${item.documentId}/details`, {
-        state: { 
-          from: 'vault',
-          returnPath: location.pathname,
-          returnState: { 
-            navigationPath, 
-            displayPath,
-            searchTerm, 
-            viewMode 
-          }
-        }
-      });
-    }
-  }, [navigate, location.pathname, navigationPath, displayPath, navigateToFolder]);
+  const handleFileClick = useCallback(
+    (item: FileSystemItem, viewMode: ViewMode, searchTerm: string) => {
+      if (item.type === 'folder') {
+        navigateToFolder(item);
+      } else if (item.documentId) {
+        // Pass state to indicate we came from vault
+        navigate(`/vault/${item.documentId}/details`, {
+          state: {
+            from: 'vault',
+            returnPath: location.pathname,
+            returnState: {
+              navigationPath,
+              displayPath,
+              searchTerm,
+              viewMode,
+            },
+          },
+        });
+      }
+    },
+    [navigate, location.pathname, navigationPath, displayPath, navigateToFolder]
+  );
 
   const resetPath = useCallback(() => {
     setNavigationPath(['All Documents']);
@@ -354,13 +390,13 @@ export const useVaultNavigation = () => {
   }, []);
 
   return {
-    currentPath: displayPath,  // For breadcrumbs display
-    navigationPath,  // For actual navigation
+    currentPath: displayPath, // For breadcrumbs display
+    navigationPath, // For actual navigation
     isTransitioning,
     navigateToFolder,
     navigateToBreadcrumb,
     handleFileClick,
-    resetPath
+    resetPath,
   };
 };
 
@@ -369,9 +405,8 @@ export const useVaultNavigation = () => {
  */
 export const useVaultSearch = () => {
   const location = useLocation();
-  const [searchTerm, setSearchTerm] = useState(
-    location.state?.searchTerm || ''
-  );
+  const locationState = isVaultLocationState(location.state) ? location.state : null;
+  const [searchTerm, setSearchTerm] = useState(locationState?.searchTerm ?? '');
   const [isSearching, setIsSearching] = useState(false);
 
   const clearSearch = useCallback(() => {
@@ -379,14 +414,15 @@ export const useVaultSearch = () => {
     setSearchTerm('');
   }, []);
 
-  const filterItems = useCallback((items: FileSystemItem[]) => {
-    if (!searchTerm) return items;
-    
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return items.filter(item => 
-      item.displayName.toLowerCase().includes(lowerSearchTerm)
-    );
-  }, [searchTerm]);
+  const filterItems = useCallback(
+    (items: FileSystemItem[]) => {
+      if (!searchTerm) return items;
+
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      return items.filter((item) => item.displayName.toLowerCase().includes(lowerSearchTerm));
+    },
+    [searchTerm]
+  );
 
   return {
     searchTerm,
@@ -394,7 +430,7 @@ export const useVaultSearch = () => {
     isSearching,
     setIsSearching,
     clearSearch,
-    filterItems
+    filterItems,
   };
 };
 
@@ -403,13 +439,12 @@ export const useVaultSearch = () => {
  */
 export const useVaultViewMode = () => {
   const location = useLocation();
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    location.state?.viewMode || 'grid'
-  );
+  const locationState = isVaultLocationState(location.state) ? location.state : null;
+  const [viewMode, setViewMode] = useState<ViewMode>(locationState?.viewMode ?? 'grid');
 
   return {
     viewMode,
-    setViewMode
+    setViewMode,
   };
 };
 
@@ -419,6 +454,7 @@ export const useVaultViewMode = () => {
 export const useVaultActions = (manualRefresh: () => Promise<void>, resetPath: () => void) => {
   const [refreshing, setRefreshing] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -434,20 +470,17 @@ export const useVaultActions = (manualRefresh: () => Promise<void>, resetPath: (
     }
   }, [manualRefresh]);
 
-  const handleClearVault = useCallback(async () => {
-    const confirmed = window.confirm(
-      'Are you sure you want to clear the entire vault? ' +
-      'This will permanently delete all files and their associated document records. ' +
-      'This cannot be undone.'
-    );
-    
-    if (!confirmed) return;
+  const handleClearVault = useCallback(() => {
+    setShowClearConfirm(true);
+  }, []);
 
+  const confirmClearVault = useCallback(async () => {
     try {
       setClearing(true);
       await api.clearVault();
       await manualRefresh();
       resetPath();
+      setShowClearConfirm(false);
     } catch (err) {
       console.error('Failed to clear vault:', err);
       // Could add user notification here
@@ -456,11 +489,18 @@ export const useVaultActions = (manualRefresh: () => Promise<void>, resetPath: (
     }
   }, [manualRefresh, resetPath]);
 
+  const cancelClearVault = useCallback(() => {
+    setShowClearConfirm(false);
+  }, []);
+
   return {
     refreshing,
     clearing,
+    showClearConfirm,
     handleRefresh,
-    handleClearVault
+    handleClearVault,
+    confirmClearVault,
+    cancelClearVault,
   };
 };
 
@@ -472,7 +512,7 @@ export const useCurrentStats = (filteredItems: FileSystemItem[]): CurrentStats =
     // Helper function to recursively count documents
     const countDocumentsRecursively = (items: FileSystemItem[]): number => {
       let count = 0;
-      items.forEach(item => {
+      items.forEach((item) => {
         if (item.type === 'file') {
           count++;
         } else if (item.type === 'folder' && item.children) {
@@ -481,28 +521,28 @@ export const useCurrentStats = (filteredItems: FileSystemItem[]): CurrentStats =
       });
       return count;
     };
-    
+
     // Helper function to recursively calculate total size
     const calculateTotalSize = (items: FileSystemItem[]): number => {
       let size = 0;
-      items.forEach(item => {
+      items.forEach((item) => {
         if (item.type === 'file') {
-          size += item.size || 0;
+          size += item.size ?? 0;
         } else if (item.type === 'folder' && item.children) {
           size += calculateTotalSize(item.children);
         }
       });
       return size;
     };
-    
+
     const stats = {
       folders: 0,
       files: 0,
-      totalDocuments: 0,  // Total documents including those in subfolders
-      totalSize: 0
+      totalDocuments: 0, // Total documents including those in subfolders
+      totalSize: 0,
     };
-    
-    filteredItems.forEach(item => {
+
+    filteredItems.forEach((item) => {
       if (item.type === 'folder') {
         stats.folders++;
         // Count all documents within this folder
@@ -514,10 +554,10 @@ export const useCurrentStats = (filteredItems: FileSystemItem[]): CurrentStats =
         stats.totalDocuments++;
       }
     });
-    
+
     // Calculate total size
     stats.totalSize = calculateTotalSize(filteredItems);
-    
+
     return stats;
   }, [filteredItems]);
 };
@@ -525,15 +565,19 @@ export const useCurrentStats = (filteredItems: FileSystemItem[]): CurrentStats =
 /**
  * Hook for auto-refresh when documents are processing
  */
-export const useAutoRefresh = (documents: Document[] | undefined, refreshDocuments: () => Promise<any>) => {
+export const useAutoRefresh = (
+  documents: Document[] | undefined,
+  refreshDocuments: () => Promise<void>
+) => {
   useEffect(() => {
     if (!hasProcessingDocuments(documents)) return;
-    
+
     // Set up polling interval for processing documents
     const interval = setInterval(() => {
-      refreshDocuments();
+      // Explicitly mark as fire-and-forget - we don't want to await in polling
+      void refreshDocuments();
     }, CACHE_DURATIONS.POLLING_INTERVAL);
-    
+
     return () => clearInterval(interval);
   }, [documents, refreshDocuments]);
 };
@@ -541,7 +585,10 @@ export const useAutoRefresh = (documents: Document[] | undefined, refreshDocumen
 /**
  * Hook to get current directory items based on navigation path
  */
-export const useCurrentItems = (fileSystem: FileSystemItem[], navigationPath: string[]): FileSystemItem[] => {
+export const useCurrentItems = (
+  fileSystem: FileSystemItem[],
+  navigationPath: string[]
+): FileSystemItem[] => {
   return useMemo(() => {
     if (navigationPath.length === 1) {
       return fileSystem;
@@ -549,7 +596,7 @@ export const useCurrentItems = (fileSystem: FileSystemItem[], navigationPath: st
 
     let current = fileSystem;
     for (let i = 1; i < navigationPath.length; i++) {
-      const folder = current.find(item => item.name === navigationPath[i]);
+      const folder = current.find((item) => item.name === navigationPath[i]);
       if (folder?.children) {
         current = folder.children;
       } else {

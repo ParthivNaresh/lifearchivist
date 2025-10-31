@@ -1,18 +1,8 @@
-import React from 'react';
-import {
-  FileText,
-  Download,
-  FileType,
-  HardDrive,
-  Calendar,
-  Tag,
-  Plus,
-  X,
-  AlertCircle,
-  ExternalLink
-} from 'lucide-react';
-import { formatFileSize, formatDate, formatDateOnly, getFileTypeName, willFileDownload } from '../utils';
-import { DocumentAnalysis } from '../types';
+import { FileText, FileType, HardDrive, Calendar, Tag, Plus, X, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { formatDateOnly, willFileDownload } from '../utils';
+import { type DocumentAnalysis } from '../types';
+import { DocumentViewer } from './DocumentViewers';
 
 interface OverviewTabProps {
   analysis: DocumentAnalysis | undefined;
@@ -33,10 +23,10 @@ interface OverviewTabProps {
   getFileTypeName: (mimeType: string) => string;
 }
 
-export const OverviewTab: React.FC<OverviewTabProps> = ({ 
-  analysis, 
-  loading, 
-  error, 
+export const OverviewTab: React.FC<OverviewTabProps> = ({
+  analysis,
+  loading,
+  error,
   tags,
   isAddingTag,
   setIsAddingTag,
@@ -44,21 +34,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   setNewTag,
   handleAddTag,
   handleRemoveTag,
-  handleDownload,
-  handleDelete,
-  handleShare,
   formatFileSize,
   formatDate,
-  getFileTypeName
+  getFileTypeName,
 }) => {
   // Create a stable timestamp that only changes when the file hash changes
-  const [pdfTimestamp] = React.useState(() => Date.now());
-  
+  const [pdfTimestamp] = useState(() => Date.now());
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
           <p className="mt-2 text-muted-foreground">Loading document details...</p>
         </div>
       </div>
@@ -74,11 +61,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     );
   }
 
-  const metadata = analysis?.metadata || {};
-  const classifications = metadata?.classifications || {};
+  const metadata = analysis?.metadata ?? {};
+  const classifications = metadata?.classifications ?? {};
   const fileHash = metadata?.file_hash;
-  const mimeType = metadata?.mime_type || '';
-  
+  const mimeType = metadata?.mime_type ?? '';
+
   // Files that will definitely download when clicked
   const willDownload = willFileDownload(mimeType);
 
@@ -91,59 +78,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
         <div className="relative">
           {fileHash ? (
-            // Show original file based on type
             <div className="w-full h-[800px] bg-gray-50 dark:bg-gray-900">
-              {willDownload ? (
-                // For Word/Excel/RTF files that will download
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <FileText className="h-12 w-12 mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">
-                    {mimeType.includes('word') ? 'Word Document' : 
-                     mimeType.includes('rtf') ? 'RTF Document' :
-                     'Spreadsheet'}
-                  </p>
-                  <p className="text-sm mb-4">This file type cannot be displayed in the browser</p>
-                  <a 
-                    href={`http://localhost:8000/api/vault/file/${fileHash}`}
-                    download
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 flex items-center"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Original File
-                  </a>
-                </div>
-              ) : mimeType.includes('pdf') ? (
-                // Use object tag for PDFs - more reliable than iframe
-                // Use stable timestamp to prevent reloading on every render
-                <object
-                  data={`http://localhost:8000/api/vault/file/${fileHash}?t=${pdfTimestamp}`}
-                  type="application/pdf"
-                  className="w-full h-full"
-                  aria-label="PDF Document"
-                >
-                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                    <FileText className="h-12 w-12 mb-4 opacity-50" />
-                    <p className="text-lg font-medium mb-2">PDF Preview Not Available</p>
-                    <p className="text-sm mb-4">Your browser may not support inline PDF viewing</p>
-                    <a 
-                      href={`http://localhost:8000/api/vault/file/${fileHash}?t=${pdfTimestamp}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center"
-                    >
-                      Open PDF in new tab
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </div>
-                </object>
-              ) : (
-                // Use iframe for images and text files
-                <iframe
-                  src={`http://localhost:8000/api/vault/file/${fileHash}`}
-                  className="w-full h-full border-0"
-                  title="Original Document"
-                />
-              )}
+              <DocumentViewer
+                fileHash={fileHash}
+                mimeType={mimeType}
+                willDownload={willDownload}
+                pdfTimestamp={pdfTimestamp}
+              />
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
@@ -169,7 +110,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 Theme
               </div>
               <p className="text-sm font-medium">
-                {classifications.theme || 'Not detected'}
+                {classifications.theme ?? 'Not detected'}
                 {classifications.confidence && (
                   <span className="text-xs text-muted-foreground ml-1">
                     ({(classifications.confidence * 100).toFixed(0)}%)
@@ -182,19 +123,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 </p>
               )}
             </div>
-            
+
             {classifications.primary_subtheme && (
               <div>
                 <div className="flex items-center text-xs text-muted-foreground mb-1">
                   <FileType className="h-3 w-3 mr-1.5" />
                   Category
                 </div>
-                <p className="text-sm font-medium">
-                  {classifications.primary_subtheme}
-                </p>
+                <p className="text-sm font-medium">{classifications.primary_subtheme}</p>
               </div>
             )}
-            
+
             {classifications.primary_subclassification && (
               <div>
                 <div className="flex items-center text-xs text-muted-foreground mb-1">
@@ -216,38 +155,40 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 )}
               </div>
             )}
-            
+
             <div>
               <div className="flex items-center text-xs text-muted-foreground mb-1">
                 <FileType className="h-3 w-3 mr-1.5" />
                 Format
               </div>
-              <p className="text-sm font-medium">{getFileTypeName(metadata.mime_type)}</p>
+              <p className="text-sm font-medium">{getFileTypeName(metadata.mime_type ?? '')}</p>
             </div>
-            
+
             <div>
               <div className="flex items-center text-xs text-muted-foreground mb-1">
                 <HardDrive className="h-3 w-3 mr-1.5" />
                 Size
               </div>
-              <p className="text-sm font-medium">{formatFileSize(metadata.size_bytes || 0)}</p>
+              <p className="text-sm font-medium">{formatFileSize(metadata.size_bytes ?? 0)}</p>
             </div>
-            
+
             <div>
               <div className="flex items-center text-xs text-muted-foreground mb-1">
                 <Calendar className="h-3 w-3 mr-1.5" />
                 Added
               </div>
-              <p className="text-sm font-medium">{formatDate(metadata.uploaded_at || metadata.created_at)}</p>
+              <p className="text-sm font-medium">
+                {formatDate(metadata.uploaded_at ?? metadata.created_at ?? '')}
+              </p>
             </div>
-            
+
             <div>
               <div className="flex items-center text-xs text-muted-foreground mb-1">
                 <Calendar className="h-3 w-3 mr-1.5" />
                 Document Created
               </div>
               <p className="text-sm font-medium">
-                {metadata.document_created_at 
+                {metadata.document_created_at
                   ? formatDateOnly(metadata.document_created_at)
                   : 'Not detected'}
               </p>
@@ -259,9 +200,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <div className="bg-white/25 dark:bg-gray-900/25 backdrop-blur-xl border border-white/50 dark:border-gray-700/50 shadow-lg p-6 rounded-lg">
           <h3 className="text-lg font-semibold mb-4">Tags</h3>
           <div className="flex flex-wrap gap-2">
-            {tags.map(tag => (
-              <span 
-                key={tag} 
+            {tags.map((tag) => (
+              <span
+                key={tag}
                 className="inline-flex items-center px-3 py-1 bg-primary/10 text-primary rounded-full text-sm group"
               >
                 <Tag className="h-3 w-3 mr-1" />
@@ -274,14 +215,14 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 </button>
               </span>
             ))}
-            
+
             {isAddingTag ? (
               <div className="inline-flex items-center">
                 <input
                   type="text"
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
                   onBlur={handleAddTag}
                   className="px-3 py-1 border border-border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground placeholder:text-muted-foreground"
                   placeholder="Enter tag..."

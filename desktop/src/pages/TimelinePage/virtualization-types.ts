@@ -2,7 +2,7 @@
  * Types for virtualized timeline
  */
 
-import { TimelineDocument } from './types';
+import { type TimelineDocument } from './types';
 
 export type VirtualItemType = 'year' | 'month' | 'document';
 

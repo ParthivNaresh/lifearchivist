@@ -2,7 +2,7 @@
  * Constants for DocumentsPage
  */
 
-import { StatusOption } from './types';
+import { type StatusOption } from './types';
 
 // Cache configuration
 export const CACHE_CONFIG = {
@@ -49,7 +49,7 @@ export const FILE_TYPE_EMOJIS = {
 
 // API configuration
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  BASE_URL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api',
 } as const;
 
 // UI text constants

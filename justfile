@@ -37,17 +37,17 @@ setup: install services init-models
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🐳 Docker Services Management
-# ───────────────────────────────────────────────────────────────────────# Start development services (Qdrant, Redis, Ollama)
+# ───────────────────────────────────────────────────────────────────────# Start development services (Postgres, Qdrant, Redis, Ollama)
 services:
     @echo "🐳 Starting Docker services..."
-    docker-compose up -d ollama
+    docker-compose up -d postgres ollama
     @echo "🔍 Checking if llama3.2:1b model is available..."
     @docker exec lifearchivist-ollama-1 ollama list 2>/dev/null | grep -q "llama3.2:1b" || \
         (echo "📥 Model not found, pulling llama3.2:1b (this may take a few minutes)..." && \
          docker exec -it lifearchivist-ollama-1 ollama pull llama3.2:1b) || \
         echo "✅ Model llama3.2:1b already available"
-    docker-compose up -d qdrant redis ollama
-    @echo "✅ All services started"
+    docker-compose up -d postgres qdrant redis ollama
+    @echo "✅ All services started (Postgres, Qdrant, Redis, Ollama)"
 
 # Stop development services
 services-stop:
@@ -63,6 +63,7 @@ check-docker:
     docker ps -a
     @echo ""
     @echo "Checking service health..."
+    @echo "Postgres:" && docker exec lifearchivist-postgres-1 pg_isready -U lifearchivist 2>/dev/null || echo "❌ Not responding"
     @echo "Qdrant:" && curl -s http://localhost:6333 | python -c "import sys,json; print('✅ Running' if 'qdrant' in json.load(sys.stdin).get('title','').lower() else '❌ Error')" || echo "❌ Not responding"
     @echo "Redis:" && redis-cli -h localhost -p 6379 ping || echo "❌ Not responding" 
     @echo "Ollama:" && curl -s http://localhost:11434/api/version || echo "❌ Not responding"
@@ -83,6 +84,12 @@ server-dev:
     @echo "🔄 Clearing port 8000..."
     lsof -ti:8000 | xargs kill -9 2>/dev/null || true
     poetry run uvicorn lifearchivist.server.main:create_app --host localhost --port 8000 --reload --factory
+
+# Start backend with better hot reload using watchdog
+server-hot:
+    @echo "🔄 Starting server with enhanced hot reload..."
+    @lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+    poetry run python dev.py
 
 # Test the server health endpoint
 health:
@@ -120,11 +127,40 @@ clean-desktop:
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🚀 Development Workflows
-# ────────────────────────────────────────────────────────────────────────────────
+# ─────���──────────────────────────────────────────────────────────────────────────
 
 # Quick start: services + server
 start: services
     poetry run uvicorn lifearchivist.server.main:create_app --host localhost --port 8000 --reload --factory
+
+# NEW: Full stack with BETTER hot reload (services + enhanced backend + UI)
+dev: services
+    #!/usr/bin/env bash
+    echo "🚀 Starting Life Archivist with enhanced hot reload..."
+    echo "🔄 Clearing ports 8000 and 3000..."
+    lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+    lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+    sleep 1
+    echo "📱 Starting backend with smart hot reload..."
+    export TOKENIZERS_PARALLELISM=false
+    poetry run python dev.py &
+    SERVER_PID=$!
+    echo "⏳ Waiting for backend to start..."
+    sleep 3
+    echo "🎨 Starting Electron Desktop App..."
+    cd desktop && npm run dev &
+    UI_PID=$!
+    echo ""
+    echo "✅ Development environment ready with enhanced hot reload!"
+    echo "📊 Backend: http://localhost:8000 (PID: $SERVER_PID) - Auto-restarts on Python changes"
+    echo "⚡ Frontend: Electron app starting (PID: $UI_PID) - Hot reload already built-in"
+    echo "🐳 Docker services: Running"
+    echo ""
+    echo "💡 Python files will auto-restart the server"
+    echo "💡 React files will hot-reload in the UI"
+    echo ""
+    echo "Press Ctrl+C to stop all processes"
+    wait
 
 # API-only mode: services + server (no UI)
 api-only: services
@@ -201,31 +237,53 @@ start-all: services
 # Stop all background processes
 stop-all: services-stop
     @echo "🛑 Stopping all Life Archivist processes..."
-    pkill -f "lifearchivist server" || true
+    pkill -f "lifearchivist.server" || true
+    pkill -f "dev.py" || true
     pkill -f "vite" || true
     pkill -f "electron" || true
     pkill -f "uvicorn" || true
+    pkill -f "watchdog" || true
     @echo "✅ All processes stopped"
+
+# Stop processes but keep data (quick restart)
+stop:
+    @echo "🛑 Stopping processes (keeping Docker services and data)..."
+    pkill -f "dev.py" || true
+    pkill -f "uvicorn" || true
+    pkill -f "vite" || true
+    pkill -f "electron" || true
+    @echo "✅ Processes stopped. Run 'just dev' to restart."
+
+# Stop and clean everything (full reset)
+stop-clean: stop-all clean-data
+    @echo "✅ Everything stopped and cleaned"
 
 # Clean all data (WARNING: Deletes all documents, vectors, and cached data)
 clean-data:
-    @echo "⚠️  WARNING: This will delete ALL data including:"
-    @echo "   - All documents and files in vault"
-    @echo "   - All vector embeddings in Qdrant"
-    @echo "   - All document metadata in Redis"
-    @echo "   - All cached models and storage"
-    @echo ""
-    @read -p "Are you sure? Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ] || (echo "Cancelled" && exit 1)
-    @echo "🧹 Cleaning all data..."
-    @echo "🛑 Stopping services..."
-    docker-compose down
-    @echo "🗑️  Removing Docker volumes..."
+    #!/usr/bin/env bash
+    echo "⚠️  WARNING: This will delete ALL data including:"
+    echo "   - All documents and files in vault"
+    echo "   - All vector embeddings in Qdrant"
+    echo "   - All document metadata in Redis"
+    echo "   - All conversation history in Postgres"
+    echo "   - All cached models and storage"
+    echo ""
+    read -p "Are you sure? Type 'yes' to continue: " confirm
+    if [ "$confirm" != "yes" ]; then
+        echo "Cancelled"
+        exit 1
+    fi
+    echo "🧹 Cleaning all data..."
+    echo "🛑 Stopping services..."
+    docker-compose down -v
+    echo "🗑️  Removing Docker volumes..."
+    docker volume rm lifearchivist_postgres_data 2>/dev/null || true
     docker volume rm lifearchivist_redis_data 2>/dev/null || true
     docker volume rm lifearchivist_qdrant_data 2>/dev/null || true
-    @echo "🗑️  Removing local data..."
+    echo "🗑️  Removing local data..."
     rm -rf ~/.lifearchivist/vault
     rm -rf ~/.lifearchivist/llamaindex_storage
-    @echo "✅ All data cleaned! Run 'just fullstack' to start fresh"
+    echo "✅ All data cleaned! Run 'just fullstack' to start fresh"
 
 # Check everything is working
 verify: check-docker test-cli health
@@ -299,21 +357,57 @@ test-unit-coverage:
 # 🎯 Code Quality
 # ────────────────────────────────────────────────────────────────────────────────
 
-# Code quality checks
+# Lint backend, then frontend (stops on first failure)
 lint:
-    poetry run black --check lifearchivist/
-    poetry run isort --check-only lifearchivist/
-    poetry run ruff check lifearchivist/
-    poetry run mypy lifearchivist/
+    @echo "🔍 Linting backend..."
+    @poetry run black --check lifearchivist/
+    @poetry run isort --check-only lifearchivist/
+    @poetry run ruff check lifearchivist/
+    @poetry run mypy lifearchivist/
+    @echo "✅ Backend linting passed"
+    @echo "🔍 Linting frontend..."
+    @cd desktop && npm run lint
+    @cd desktop && npm run type-check
+    @echo "✅ All linting checks passed"
 
-# Fix code formatting and imports
+# Fix backend, then frontend
 lint-fix:
-    poetry run black lifearchivist/
-    poetry run isort lifearchivist/
-    poetry run ruff check --fix lifearchivist/
+    @echo "🔧 Fixing backend..."
+    @poetry run black lifearchivist/
+    @poetry run isort lifearchivist/
+    @poetry run ruff check --fix lifearchivist/
+    @echo "✅ Backend fixed"
+    @echo "🔧 Fixing frontend..."
+    @cd desktop && npm run lint:fix
+    @cd desktop && npm run format 2>&1 | grep -E "(error|warning|✖|ms \(formatted\))" || echo "All files formatted"
+    @echo "✅ All code fixed"
+
+# Frontend: Lint UI code only
+ui-lint:
+    cd desktop && npm run lint
+
+# Frontend: Fix UI linting issues only
+ui-lint-fix:
+    cd desktop && npm run lint:fix
+
+# Frontend: Format UI code only
+ui-format:
+    cd desktop && npm run format
+
+# Frontend: Check UI formatting only
+ui-format-check:
+    cd desktop && npm run format:check
+
+# Frontend: Type check UI only
+ui-type-check:
+    cd desktop && npm run type-check
+
+# Frontend: Run all UI checks only
+ui-check:
+    cd desktop && npm run check
 
 # Development workflow: fix code and run tests
-dev: lint-fix test
+dev-check: lint-fix test
     @echo "✅ Code fixed and tests passed"
 
 # Full CI check (lint + test)

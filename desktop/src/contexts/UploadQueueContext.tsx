@@ -1,9 +1,15 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { UploadQueueState, UploadQueueAction, UploadQueueContextType, UploadBatch, UploadItem } from '../types/upload';
+import { useReducer, useEffect, useCallback } from 'react';
+import {
+  type UploadQueueState,
+  type UploadQueueAction,
+  type UploadQueueContextType,
+  type UploadBatch,
+  type UploadItem,
+  type UploadResult,
+} from '../types/upload';
+import { UploadQueueContext } from './UploadQueueContextDef';
 
 const STORAGE_KEY = 'lifearchivist-upload-queue';
-const AUTO_CLEAR_DELAY = 30000; // 30 seconds
-const AUTO_MINIMIZE_DELAY = 10000; // 10 seconds
 
 const initialState: UploadQueueState = {
   batches: [],
@@ -28,30 +34,35 @@ function uploadQueueReducer(state: UploadQueueState, action: UploadQueueAction):
 
     case 'UPDATE_ITEM_STATUS': {
       const { itemId, status, error, result } = action.payload;
-      
-      const updatedBatches = state.batches.map(batch => {
-        const itemIndex = batch.items.findIndex(item => item.id === itemId);
+
+      const updatedBatches = state.batches.map((batch) => {
+        const itemIndex = batch.items.findIndex((item) => item.id === itemId);
         if (itemIndex === -1) return batch;
 
         const updatedItems = [...batch.items];
         const item = updatedItems[itemIndex];
-        
+
+        if (!item) return batch; // Guard against undefined item
+
         updatedItems[itemIndex] = {
           ...item,
           status,
           error,
           result,
-          completedTime: status === 'completed' || status === 'error' || status === 'duplicate' ? Date.now() : undefined,
-        };
+          completedTime:
+            status === 'completed' || status === 'error' || status === 'duplicate'
+              ? Date.now()
+              : item.completedTime,
+        } as UploadItem;
 
-        const completedFiles = updatedItems.filter(item => item.status === 'completed').length;
-        const duplicateFiles = updatedItems.filter(item => item.status === 'duplicate').length;
-        const errorFiles = updatedItems.filter(item => item.status === 'error').length;
+        const completedFiles = updatedItems.filter((item) => item.status === 'completed').length;
+        const duplicateFiles = updatedItems.filter((item) => item.status === 'duplicate').length;
+        const errorFiles = updatedItems.filter((item) => item.status === 'error').length;
         const finishedFiles = completedFiles + duplicateFiles;
-        
+
         // Smart batch status logic
         let batchStatus: 'active' | 'completed' | 'error' | 'partial' | 'duplicate';
-        
+
         if (finishedFiles + errorFiles < updatedItems.length) {
           // Still processing
           batchStatus = 'active';
@@ -78,8 +89,12 @@ function uploadQueueReducer(state: UploadQueueState, action: UploadQueueAction):
         };
       });
 
-      const activeUploads = updatedBatches.reduce((acc, batch) => 
-        acc + batch.items.filter(item => item.status === 'uploading' || item.status === 'processing').length, 0
+      const activeUploads = updatedBatches.reduce(
+        (acc, batch) =>
+          acc +
+          batch.items.filter((item) => item.status === 'uploading' || item.status === 'processing')
+            .length,
+        0
       );
 
       const newState = {
@@ -87,22 +102,24 @@ function uploadQueueReducer(state: UploadQueueState, action: UploadQueueAction):
         batches: updatedBatches,
         activeUploads,
       };
-      
+
       return calculateTotalProgress(newState);
     }
 
     case 'UPDATE_ITEM_PROGRESS': {
       const { itemId, progress, stage, message } = action.payload;
-      
-      const updatedBatches = state.batches.map(batch => ({
+
+      const updatedBatches = state.batches.map((batch) => ({
         ...batch,
-        items: batch.items.map(item =>
-          item.id === itemId ? { 
-            ...item, 
-            progress,
-            progressStage: stage,
-            progressMessage: message
-          } : item
+        items: batch.items.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                progress,
+                progressStage: stage,
+                progressMessage: message,
+              }
+            : item
         ),
       }));
 
@@ -110,12 +127,12 @@ function uploadQueueReducer(state: UploadQueueState, action: UploadQueueAction):
         ...state,
         batches: updatedBatches,
       };
-      
+
       return calculateTotalProgress(newState);
     }
 
     case 'REMOVE_BATCH': {
-      const updatedBatches = state.batches.filter(batch => batch.id !== action.payload);
+      const updatedBatches = state.batches.filter((batch) => batch.id !== action.payload);
       const newState = {
         ...state,
         batches: updatedBatches,
@@ -125,7 +142,7 @@ function uploadQueueReducer(state: UploadQueueState, action: UploadQueueAction):
     }
 
     case 'CLEAR_COMPLETED': {
-      const activeBatches = state.batches.filter(batch => batch.status === 'active');
+      const activeBatches = state.batches.filter((batch) => batch.status === 'active');
       const newState = {
         ...state,
         batches: activeBatches,
@@ -149,9 +166,9 @@ function uploadQueueReducer(state: UploadQueueState, action: UploadQueueAction):
 }
 
 function calculateTotalProgress(state: UploadQueueState): UploadQueueState {
-  const allItems = state.batches.flatMap(batch => batch.items);
+  const allItems = state.batches.flatMap((batch) => batch.items);
   const totalItems = allItems.length;
-  
+
   if (totalItems === 0) {
     return { ...state, totalProgress: 0 };
   }
@@ -176,11 +193,12 @@ function generateId(): string {
 function persistState(state: UploadQueueState): void {
   try {
     const persistable = {
-      batches: state.batches.map(batch => ({
+      batches: state.batches.map((batch) => ({
         ...batch,
-        items: batch.items.map(item => ({
+        items: batch.items.map((item) => ({
           ...item,
-          file: item.file instanceof File ? { name: item.file.name, size: item.file.size } : item.file,
+          file:
+            item.file instanceof File ? { name: item.file.name, size: item.file.size } : item.file,
         })),
       })),
       isVisible: state.isVisible,
@@ -192,58 +210,70 @@ function persistState(state: UploadQueueState): void {
   }
 }
 
+interface PersistedState {
+  batches?: UploadBatch[];
+  isVisible?: boolean;
+  isMinimized?: boolean;
+}
+
 function loadPersistedState(): Partial<UploadQueueState> {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return {};
 
-    const parsed = JSON.parse(stored);
-    
+    const parsed = JSON.parse(stored) as PersistedState;
+
     // More aggressive filtering to handle stuck uploads
     const now = Date.now();
     const oneHourAgo = now - 60 * 60 * 1000;
     const thirtyMinutesAgo = now - 30 * 60 * 1000;
-    
-    const validBatches = (parsed.batches || []).filter((batch: UploadBatch) => {
+
+    const validBatches = (parsed.batches ?? []).filter((batch: UploadBatch) => {
       // Always keep recent batches (less than 30 minutes old)
       if (batch.createdAt > thirtyMinutesAgo) {
         return true;
       }
-      
+
       // For older batches, only keep if completed successfully
       if (batch.createdAt > oneHourAgo && batch.status === 'completed') {
         return true;
       }
-      
+
       // Remove all older batches and stuck active batches (older than 30 minutes)
       return false;
     });
 
     // Clean up items in remaining batches - remove stuck processing items
-    const cleanedBatches = validBatches.map((batch: UploadBatch) => ({
-      ...batch,
-      items: batch.items.filter((item: any) => {
-        // Keep recently started items (less than 30 minutes)
-        if (item.startTime > thirtyMinutesAgo) {
-          return true;
-        }
-        
-        // Remove old processing/uploading items that are clearly stuck
-        if ((item.status === 'uploading' || item.status === 'processing') && 
-            item.startTime < thirtyMinutesAgo) {
-          console.log(`Removing stuck upload item: ${item.file.name} (started ${new Date(item.startTime)})`);
-          return false;
-        }
-        
-        // Keep completed and error items for a while
-        return item.status === 'completed' || item.status === 'error';
-      })
-    })).filter((batch: UploadBatch) => batch.items.length > 0); // Remove empty batches
+    const cleanedBatches = validBatches
+      .map((batch: UploadBatch) => ({
+        ...batch,
+        items: batch.items.filter((item: UploadItem) => {
+          // Keep recently started items (less than 30 minutes)
+          if (item.startTime > thirtyMinutesAgo) {
+            return true;
+          }
+
+          // Remove old processing/uploading items that are clearly stuck
+          if (
+            (item.status === 'uploading' || item.status === 'processing') &&
+            item.startTime < thirtyMinutesAgo
+          ) {
+            console.log(
+              `Removing stuck upload item: ${item.file.name} (started ${new Date(item.startTime).toISOString()})`
+            );
+            return false;
+          }
+
+          // Keep completed and error items for a while
+          return item.status === 'completed' || item.status === 'error';
+        }),
+      }))
+      .filter((batch: UploadBatch) => batch.items.length > 0); // Remove empty batches
 
     return {
       batches: cleanedBatches,
       isVisible: cleanedBatches.length > 0 && parsed.isVisible,
-      isMinimized: parsed.isMinimized || false,
+      isMinimized: parsed.isMinimized ?? false,
     };
   } catch (error) {
     console.error('Failed to load persisted upload queue state:', error);
@@ -251,16 +281,6 @@ function loadPersistedState(): Partial<UploadQueueState> {
     return {};
   }
 }
-
-const UploadQueueContext = createContext<UploadQueueContextType | null>(null);
-
-export const useUploadQueue = (): UploadQueueContextType => {
-  const context = useContext(UploadQueueContext);
-  if (!context) {
-    throw new Error('useUploadQueue must be used within an UploadQueueProvider');
-  }
-  return context;
-};
 
 interface UploadQueueProviderProps {
   children: React.ReactNode;
@@ -286,47 +306,59 @@ export const UploadQueueProvider: React.FC<UploadQueueProviderProps> = ({ childr
 
   // Note: Removed auto-minimize and auto-clear behaviors to give users full control
 
-  const addBatch = useCallback((files: (File | { name: string; size?: number; path?: string })[], batchName?: string): { batchId: string; itemIds: string[] } => {
-    const batchId = generateId();
-    const now = Date.now();
-    
-    const batchDisplayName = batchName || 
-      (files.length === 1 ? files[0].name : `${files.length} Files`);
+  const addBatch = useCallback(
+    (
+      files: (File | { name: string; size?: number; path?: string })[],
+      batchName?: string
+    ): { batchId: string; itemIds: string[] } => {
+      const batchId = generateId();
+      const now = Date.now();
 
-    const items: UploadItem[] = files.map(file => ({
-      id: generateId(),
-      file,
-      status: 'pending',
-      progress: 0,
-      batchId,
-      startTime: now,
-    }));
+      const batchDisplayName =
+        batchName ?? (files.length === 1 && files[0] ? files[0].name : `${files.length} Files`);
 
-    const batch: UploadBatch = {
-      id: batchId,
-      name: batchDisplayName,
-      items,
-      status: 'active',
-      createdAt: now,
-      totalFiles: files.length,
-      completedFiles: 0,
-      errorFiles: 0,
-    };
+      const items: UploadItem[] = files.map((file) => ({
+        id: generateId(),
+        file,
+        status: 'pending',
+        progress: 0,
+        batchId,
+        startTime: now,
+      }));
 
-    dispatch({ type: 'ADD_BATCH', payload: batch });
-    return { 
-      batchId, 
-      itemIds: items.map(item => item.id) 
-    };
-  }, []);
+      const batch: UploadBatch = {
+        id: batchId,
+        name: batchDisplayName,
+        items,
+        status: 'active',
+        createdAt: now,
+        totalFiles: files.length,
+        completedFiles: 0,
+        errorFiles: 0,
+      };
 
-  const updateItemStatus = useCallback((itemId: string, status: UploadItem['status'], error?: string, result?: any) => {
-    dispatch({ type: 'UPDATE_ITEM_STATUS', payload: { itemId, status, error, result } });
-  }, []);
+      dispatch({ type: 'ADD_BATCH', payload: batch });
+      return {
+        batchId,
+        itemIds: items.map((item) => item.id),
+      };
+    },
+    []
+  );
 
-  const updateItemProgress = useCallback((itemId: string, progress: number, stage?: string, message?: string) => {
-    dispatch({ type: 'UPDATE_ITEM_PROGRESS', payload: { itemId, progress, stage, message } });
-  }, []);
+  const updateItemStatus = useCallback(
+    (itemId: string, status: UploadItem['status'], error?: string, result?: UploadResult) => {
+      dispatch({ type: 'UPDATE_ITEM_STATUS', payload: { itemId, status, error, result } });
+    },
+    []
+  );
+
+  const updateItemProgress = useCallback(
+    (itemId: string, progress: number, stage?: string, message?: string) => {
+      dispatch({ type: 'UPDATE_ITEM_PROGRESS', payload: { itemId, progress, stage, message } });
+    },
+    []
+  );
 
   const removeBatch = useCallback((batchId: string) => {
     dispatch({ type: 'REMOVE_BATCH', payload: batchId });
@@ -344,19 +376,22 @@ export const UploadQueueProvider: React.FC<UploadQueueProviderProps> = ({ childr
     dispatch({ type: 'SET_MINIMIZED', payload: !state.isMinimized });
   }, [state.isMinimized]);
 
-  const retryFailedUploads = useCallback((batchId?: string) => {
-    const batchesToRetry = batchId 
-      ? state.batches.filter(batch => batch.id === batchId)
-      : state.batches;
+  const retryFailedUploads = useCallback(
+    (batchId?: string) => {
+      const batchesToRetry = batchId
+        ? state.batches.filter((batch) => batch.id === batchId)
+        : state.batches;
 
-    batchesToRetry.forEach(batch => {
-      batch.items
-        .filter(item => item.status === 'error')
-        .forEach(item => {
-          updateItemStatus(item.id, 'pending');
-        });
-    });
-  }, [state.batches, updateItemStatus]);
+      batchesToRetry.forEach((batch) => {
+        batch.items
+          .filter((item) => item.status === 'error')
+          .forEach((item) => {
+            updateItemStatus(item.id, 'pending');
+          });
+      });
+    },
+    [state.batches, updateItemStatus]
+  );
 
   const clearAllData = useCallback(() => {
     try {
@@ -400,9 +435,5 @@ export const UploadQueueProvider: React.FC<UploadQueueProviderProps> = ({ childr
     resetQueue,
   };
 
-  return (
-    <UploadQueueContext.Provider value={contextValue}>
-      {children}
-    </UploadQueueContext.Provider>
-  );
+  return <UploadQueueContext.Provider value={contextValue}>{children}</UploadQueueContext.Provider>;
 };
