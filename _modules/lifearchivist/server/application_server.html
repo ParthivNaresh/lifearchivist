@@ -318,10 +318,13 @@
             <span class="c1"># Phase 4: Initialize tool registry</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_tool_registry</span><span class="p">()</span>
 
-            <span class="c1"># Phase 5: Initialize folder watcher</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_init_folder_watcher</span><span class="p">()</span>
+            <span class="c1"># Phase 5: Initialize RAG service with activity manager</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_rag_service</span><span class="p">()</span>
 
-            <span class="c1"># Phase 6: Initialize agents (if enabled)</span>
+            <span class="c1"># Phase 6: Initialize folder watcher</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_folder_watcher</span><span class="p">()</span>
+
+            <span class="c1"># Phase 7: Initialize agents (if enabled)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_agents</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_agents</span><span class="p">()</span>
 
@@ -389,6 +392,18 @@
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
                 <span class="p">)</span>
 
+        <span class="c1"># Cleanup LLM provider manager (before service container)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;llm_provider_manager_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;llm_provider_manager_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+
         <span class="c1"># Cleanup core infrastructure</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
@@ -416,6 +431,7 @@
         <span class="n">config</span> <span class="o">=</span> <span class="n">ServiceConfig</span><span class="p">(</span>
             <span class="n">redis_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
             <span class="n">qdrant_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">qdrant_url</span><span class="p">,</span>
+            <span class="n">database_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">database_url</span><span class="p">,</span>
             <span class="n">vault_path</span><span class="o">=</span><span class="n">vault_path</span><span class="p">,</span>
             <span class="n">settings</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span>
         <span class="p">)</span>
@@ -591,7 +607,29 @@
         <span class="n">tool_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="o">.</span><span class="n">tools</span><span class="p">)</span>
         <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;tool_registry_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;tools_registered&quot;</span><span class="p">:</span> <span class="n">tool_count</span><span class="p">})</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_init_folder_watcher</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_rag_service</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize RAG service with activity manager.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;rag_service_init_skipped&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;service_container_not_available&quot;</span><span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">init_rag_service</span><span class="p">(</span>
+                <span class="n">activity_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span>
+            <span class="p">)</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;rag_service_initialized_with_activity_manager&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;rag_service_init_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_folder_watcher</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize folder watching service.&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.folder_watcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">FolderWatcherService</span>
@@ -602,10 +640,24 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">folder_watcher</span> <span class="o">=</span> <span class="n">FolderWatcherService</span><span class="p">(</span>
                 <span class="n">vault</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span>
                 <span class="n">server</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>  <span class="c1"># Pass self for tool execution</span>
-                <span class="n">debounce_seconds</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
+                <span class="n">redis_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+                <span class="n">debounce_seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">folder_watch_debounce_seconds</span><span class="p">,</span>
+                <span class="n">ingestion_concurrency</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">folder_watch_concurrency</span><span class="p">,</span>
+                <span class="n">max_folders</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">folder_watch_max_folders</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;folder_watcher_initialized&quot;</span><span class="p">)</span>
+            <span class="c1"># Initialize the service (async)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder_watcher</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;folder_watcher_initialized&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;debounce_seconds&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">folder_watch_debounce_seconds</span><span class="p">,</span>
+                    <span class="s2">&quot;ingestion_concurrency&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">folder_watch_concurrency</span><span class="p">,</span>
+                    <span class="s2">&quot;max_folders&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">folder_watch_max_folders</span><span class="p">,</span>
+                    <span class="s2">&quot;auto_resume&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">folder_watch_auto_resume</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">log_event</span><span class="p">(</span>
                 <span class="s2">&quot;folder_watcher_init_failed&quot;</span><span class="p">,</span>
@@ -763,6 +815,35 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span>
             <span class="k">else</span> <span class="kc">None</span>
         <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">credential_service</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get credential service from service container.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">credential_service</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">llm_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get LLM provider manager from service container (alias for compatibility).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llm_provider_manager</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provider_loader</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get provider loader (created on-demand from credential service).&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">credential_service</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Create loader on-demand</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProviderLoader</span>
+
+        <span class="k">return</span> <span class="n">ProviderLoader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">credential_service</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

@@ -174,10 +174,12 @@
 <span class="sd">- System information</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">HTTPException</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_settings</span> <span class="k">as</span> <span class="n">get_app_settings</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_server</span>
 
@@ -207,6 +209,23 @@
     <span class="p">)</span>
     <span class="n">search_results_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Default search results limit&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Conversation Defaults</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Default temperature for conversations&quot;</span>
+    <span class="p">)</span>
+    <span class="n">max_output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Default max tokens for responses&quot;</span>
+    <span class="p">)</span>
+    <span class="n">response_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;concise&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Default response format (concise/verbose)&quot;</span>
+    <span class="p">)</span>
+    <span class="n">context_window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of messages to include in context&quot;</span>
+    <span class="p">)</span>
+    <span class="n">response_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Response timeout in seconds&quot;</span>
     <span class="p">)</span>
 
     <span class="c1"># File Management</span>
@@ -247,6 +266,13 @@
     <span class="n">embedding_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">search_results_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
 
+    <span class="c1"># Conversation Defaults</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">max_output_tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1000000</span><span class="p">)</span>
+    <span class="n">response_format</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="s2">&quot;^(concise|verbose)$&quot;</span><span class="p">)</span>
+    <span class="n">context_window_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">response_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+
     <span class="c1"># File Management</span>
     <span class="n">auto_organize_by_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">duplicate_detection</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -282,6 +308,7 @@
 <span class="sd">    Returns all configuration including:</span>
 <span class="sd">    - Document processing preferences</span>
 <span class="sd">    - AI model selections</span>
+<span class="sd">    - Conversation defaults</span>
 <span class="sd">    - File management settings</span>
 <span class="sd">    - UI appearance</span>
 <span class="sd">    - System paths (read-only)</span>
@@ -291,6 +318,34 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="n">settings</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">settings</span>
 
+        <span class="c1"># Get user preferences from database</span>
+        <span class="n">temperature</span> <span class="o">=</span> <span class="mf">0.7</span>
+        <span class="n">max_output_tokens</span> <span class="o">=</span> <span class="mi">2000</span>
+        <span class="n">response_format</span> <span class="o">=</span> <span class="s2">&quot;concise&quot;</span>
+        <span class="n">context_window_size</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="n">response_timeout</span> <span class="o">=</span> <span class="mi">30</span>
+
+        <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">service_container</span> <span class="ow">and</span> <span class="n">server</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">conversation_service</span><span class="p">:</span>
+            <span class="n">db_pool</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">conversation_service</span><span class="o">.</span><span class="n">db_pool</span>
+
+            <span class="k">async</span> <span class="k">with</span> <span class="n">db_pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span>
+<span class="w">                    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                    INSERT INTO user_preferences (user_id)</span>
+<span class="sd">                    VALUES (&#39;default&#39;)</span>
+<span class="sd">                    ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id</span>
+<span class="sd">                    RETURNING temperature, max_output_tokens, response_format, </span>
+<span class="sd">                              context_window_size, response_timeout</span>
+<span class="sd">                    &quot;&quot;&quot;</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">row</span><span class="p">:</span>
+                    <span class="n">temperature</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">]</span>
+                    <span class="n">max_output_tokens</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;max_output_tokens&quot;</span><span class="p">]</span>
+                    <span class="n">response_format</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span>
+                    <span class="n">context_window_size</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;context_window_size&quot;</span><span class="p">]</span>
+                    <span class="n">response_timeout</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;response_timeout&quot;</span><span class="p">]</span>
+
         <span class="k">return</span> <span class="n">SettingsResponse</span><span class="p">(</span>
             <span class="n">auto_extract_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">generate_text_previews</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -298,6 +353,11 @@
             <span class="n">llm_model</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span><span class="p">,</span>
             <span class="n">embedding_model</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">embedding_model</span><span class="p">,</span>
             <span class="n">search_results_limit</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">max_output_tokens</span><span class="o">=</span><span class="n">max_output_tokens</span><span class="p">,</span>
+            <span class="n">response_format</span><span class="o">=</span><span class="n">response_format</span><span class="p">,</span>
+            <span class="n">context_window_size</span><span class="o">=</span><span class="n">context_window_size</span><span class="p">,</span>
+            <span class="n">response_timeout</span><span class="o">=</span><span class="n">response_timeout</span><span class="p">,</span>
             <span class="n">auto_organize_by_date</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">duplicate_detection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">default_import_location</span><span class="o">=</span><span class="s2">&quot;~/Documents&quot;</span><span class="p">,</span>
@@ -325,8 +385,14 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Update application settings.</span>
 
-<span class="sd">    Note: Currently stores updates in memory only.</span>
-<span class="sd">    Persistence to configuration file will be added in a future update.</span>
+<span class="sd">    Updates are applied to the global settings instance and will affect:</span>
+<span class="sd">    - New conversation creation (llm_model)</span>
+<span class="sd">    - File size validation (max_file_size_mb)</span>
+<span class="sd">    - UI theme (theme)</span>
+<span class="sd">    - Other runtime behavior</span>
+
+<span class="sd">    Note: Settings are stored in memory only. Changes persist until server restart.</span>
+<span class="sd">    For permanent changes, update environment variables or .env file.</span>
 
 <span class="sd">    Validates:</span>
 <span class="sd">    - File size limits (1-1000 MB)</span>
@@ -335,19 +401,31 @@
 <span class="sd">    - Interface density (compact/comfortable/spacious)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
+        <span class="n">settings</span> <span class="o">=</span> <span class="n">get_app_settings</span><span class="p">()</span>
         <span class="n">updated_fields</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="c1"># Track all fields that would be updated</span>
+        <span class="c1"># Update settings in memory</span>
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">max_file_size_mb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">settings</span><span class="o">.</span><span class="n">max_file_size_mb</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">max_file_size_mb</span>
+            <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;max_file_size_mb&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">llm_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">llm_model</span>
+            <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;llm_model&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">embedding_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">settings</span><span class="o">.</span><span class="n">embedding_model</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">embedding_model</span>
+            <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;embedding_model&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">theme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">settings</span><span class="o">.</span><span class="n">theme</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">theme</span>
+            <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;theme&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Track other fields (not yet persisted to settings object)</span>
         <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">auto_extract_dates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;auto_extract_dates&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">generate_text_previews</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;generate_text_previews&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">max_file_size_mb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;max_file_size_mb&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">llm_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;llm_model&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">embedding_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;embedding_model&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">search_results_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;search_results_limit&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">auto_organize_by_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -356,10 +434,92 @@
             <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;duplicate_detection&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">default_import_location</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;default_import_location&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">theme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;theme&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">interface_density</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;interface_density&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Update conversation defaults in database</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">temperature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">max_output_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">response_format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">context_window_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">response_timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">server</span><span class="o">.</span><span class="n">service_container</span>
+                <span class="ow">and</span> <span class="n">server</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">conversation_service</span>
+            <span class="p">):</span>
+                <span class="n">db_pool</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">conversation_service</span><span class="o">.</span><span class="n">db_pool</span>
+
+                <span class="k">async</span> <span class="k">with</span> <span class="n">db_pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+                    <span class="c1"># Build update query dynamically</span>
+                    <span class="n">updates</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">values</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">param_count</span> <span class="o">=</span> <span class="mi">1</span>
+
+                    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">temperature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;temperature = $</span><span class="si">{</span><span class="n">param_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">temperature</span><span class="p">)</span>
+                        <span class="n">param_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">max_output_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;max_output_tokens = $</span><span class="si">{</span><span class="n">param_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">max_output_tokens</span><span class="p">)</span>
+                        <span class="n">param_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;max_output_tokens&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">response_format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;response_format = $</span><span class="si">{</span><span class="n">param_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">response_format</span><span class="p">)</span>
+                        <span class="n">param_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;response_format&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">context_window_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;context_window_size = $</span><span class="si">{</span><span class="n">param_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">context_window_size</span><span class="p">)</span>
+                        <span class="n">param_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;context_window_size&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">response_timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;response_timeout = $</span><span class="si">{</span><span class="n">param_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">response_timeout</span><span class="p">)</span>
+                        <span class="n">param_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">updated_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;response_timeout&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">updates</span><span class="p">:</span>
+                        <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;updated_at = NOW()&quot;</span><span class="p">)</span>
+                        <span class="c1"># Use UPDATE directly since we know the record exists (created by schema.sql)</span>
+                        <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                            UPDATE user_preferences </span>
+<span class="s2">                            SET </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">updates</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">                            WHERE user_id = &#39;default&#39;</span>
+<span class="s2">                        &quot;&quot;&quot;</span>
+                        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="n">values</span><span class="p">)</span>
+
+                        <span class="c1"># Optionally update existing conversations that are using defaults</span>
+                        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">temperature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+<span class="w">                                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                                UPDATE conversations </span>
+<span class="sd">                                SET temperature = $1, updated_at = NOW()</span>
+<span class="sd">                                WHERE temperature = 0.7 AND archived_at IS NULL</span>
+<span class="sd">                                &quot;&quot;&quot;</span><span class="p">,</span>
+                                <span class="n">request</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+                            <span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">max_output_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+<span class="w">                                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                                UPDATE conversations </span>
+<span class="sd">                                SET max_tokens = $1, updated_at = NOW()</span>
+<span class="sd">                                WHERE max_tokens = 2000 AND archived_at IS NULL</span>
+<span class="sd">                                &quot;&quot;&quot;</span><span class="p">,</span>
+                                <span class="n">request</span><span class="o">.</span><span class="n">max_output_tokens</span><span class="p">,</span>
+                            <span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">updated_fields</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
@@ -370,7 +530,8 @@
             <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
             <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Settings updated successfully&quot;</span><span class="p">,</span>
             <span class="s2">&quot;updated_fields&quot;</span><span class="p">:</span> <span class="n">updated_fields</span><span class="p">,</span>
-            <span class="s2">&quot;note&quot;</span><span class="p">:</span> <span class="s2">&quot;Settings updates are currently stored in memory only. Persistence will be added in a future update.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;current_llm_model&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">llm_model</span><span class="p">,</span>
+            <span class="s2">&quot;note&quot;</span><span class="p">:</span> <span class="s2">&quot;Settings are stored in memory and persist until server restart. For permanent changes, update environment variables.&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
     <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
@@ -387,39 +548,60 @@
 <span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/settings/models&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">AvailableModelsResponse</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_available_models</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Get available LLM and embedding models.</span>
+<span class="sd">    Get available LLM and embedding models from all providers.</span>
 
 <span class="sd">    Returns lists of:</span>
-<span class="sd">    - LLM models for text generation and Q&amp;A</span>
+<span class="sd">    - LLM models from all registered providers (Ollama, OpenAI, etc.)</span>
 <span class="sd">    - Embedding models for semantic search</span>
 
-<span class="sd">    Future enhancement: Query Ollama API for dynamically available models.</span>
+<span class="sd">    Queries the provider manager to get real-time model availability.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">llm_models</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;llama3.2:1b&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Llama 3.2 1B&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Fast, lightweight model for basic tasks&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="s2">&quot;1B parameters&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;performance&quot;</span><span class="p">:</span> <span class="s2">&quot;fast&quot;</span><span class="p">,</span>
-            <span class="p">},</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;llama3.2:3b&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Llama 3.2 3B&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Balanced performance and accuracy&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="s2">&quot;3B parameters&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;performance&quot;</span><span class="p">:</span> <span class="s2">&quot;balanced&quot;</span><span class="p">,</span>
-            <span class="p">},</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;llama3.1:8b&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Llama 3.1 8B&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;High accuracy for complex tasks&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="s2">&quot;8B parameters&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;performance&quot;</span><span class="p">:</span> <span class="s2">&quot;accurate&quot;</span><span class="p">,</span>
-            <span class="p">},</span>
-        <span class="p">]</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
 
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">llm_models</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Get models from all providers</span>
+        <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">service_container</span> <span class="ow">and</span> <span class="n">server</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="p">:</span>
+            <span class="n">provider_manager</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llm_provider_manager</span>
+            <span class="n">providers</span> <span class="o">=</span> <span class="n">provider_manager</span><span class="o">.</span><span class="n">list_providers</span><span class="p">()</span>
+
+            <span class="c1"># Fetch models from each provider</span>
+            <span class="k">for</span> <span class="n">provider_info</span> <span class="ow">in</span> <span class="n">providers</span><span class="p">:</span>
+                <span class="n">provider_id</span> <span class="o">=</span> <span class="n">provider_info</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+                <span class="n">provider_type</span> <span class="o">=</span> <span class="n">provider_info</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span>
+
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">models_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider_manager</span><span class="o">.</span><span class="n">list_models</span><span class="p">(</span><span class="n">provider_id</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">models_result</span><span class="o">.</span><span class="n">is_success</span><span class="p">():</span>
+                        <span class="n">models</span> <span class="o">=</span> <span class="n">models_result</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
+
+                        <span class="c1"># Convert ModelInfo to dict format</span>
+                        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+                            <span class="n">llm_models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                <span class="p">{</span>
+                                    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                    <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">provider_type</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2"> model&quot;</span><span class="p">,</span>
+                                    <span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="n">provider_type</span><span class="p">,</span>
+                                    <span class="s2">&quot;provider_id&quot;</span><span class="p">:</span> <span class="n">provider_id</span><span class="p">,</span>
+                                    <span class="s2">&quot;context_window&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">context_window</span><span class="p">,</span>
+                                    <span class="s2">&quot;supports_streaming&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_streaming</span><span class="p">,</span>
+                                    <span class="s2">&quot;cost_per_1k_input&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">cost_per_1k_input</span><span class="p">,</span>
+                                    <span class="s2">&quot;cost_per_1k_output&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">cost_per_1k_output</span><span class="p">,</span>
+                                <span class="p">}</span>
+                            <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="c1"># Log but don&#39;t fail if one provider fails</span>
+                    <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Failed to fetch models from provider </span><span class="si">{</span><span class="n">provider_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">continue</span>
+
+        <span class="c1"># Hardcoded embedding models (these are local sentence-transformers)</span>
         <span class="n">embedding_models</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
                 <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;all-MiniLM-L6-v2&quot;</span><span class="p">,</span>

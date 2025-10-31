@@ -225,6 +225,8 @@
 </li>
         <li><a href="api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.__init__">(lifearchivist.server.ServiceContainer method)</a>
 </li>
+        <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService.__init__">(lifearchivist.storage.CredentialService method)</a>
+</li>
         <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.Vault.__init__">(lifearchivist.storage.Vault method)</a>
 </li>
         <li><a href="api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.Vault.__init__">(lifearchivist.storage.vault.Vault method)</a>
@@ -283,6 +285,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.smart_logger.BaseOperationTracker.add_metric">add_metric() (lifearchivist.utils.logging.smart_logger.BaseOperationTracker method)</a>
+</li>
+      <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService.add_provider">add_provider() (lifearchivist.storage.CredentialService method)</a>
 </li>
       <li><a href="api/lifearchivist.agents.html#lifearchivist.agents.query.QueryAgent.answer_question">answer_question() (lifearchivist.agents.query.QueryAgent method)</a>
 
@@ -432,18 +436,20 @@
         <li><a href="api/lifearchivist.server.html#lifearchivist.server.ProgressManager.clear_all_progress">(lifearchivist.server.ProgressManager method)</a>
 </li>
       </ul></li>
+      <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService.clear_all_providers">clear_all_providers() (lifearchivist.storage.CredentialService method)</a>
+</li>
       <li><a href="api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.clear_directory_files">clear_directory_files() (in module lifearchivist.storage.vault.vault_utils)</a>
 </li>
       <li><a href="api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.COMPLETE">COMPLETE (lifearchivist.server.progress_manager.ProcessingStage attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.complete_progress">complete_progress() (lifearchivist.server.progress_manager.ProgressManager method)</a>
 
       <ul>
         <li><a href="api/lifearchivist.server.html#lifearchivist.server.ProgressManager.complete_progress">(lifearchivist.server.ProgressManager method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.confidence_scores">confidence_scores (lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse attribute)</a>
 </li>
       <li><a href="api/lifearchivist.config.html#lifearchivist.config.settings.configure_logging">configure_logging() (in module lifearchivist.config.settings)</a>
@@ -460,6 +466,12 @@
         <li><a href="api/lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.ContentDateExtractionTool">(class in lifearchivist.tools.date_extract)</a>
 </li>
         <li><a href="api/lifearchivist.tools.date_extract.html#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool">(class in lifearchivist.tools.date_extract.date_extraction_tool)</a>
+</li>
+      </ul></li>
+      <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsResponse.context_window_size">context_window_size (lifearchivist.server.api.routes.settings.SettingsResponse attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsUpdateRequest.context_window_size">(lifearchivist.server.api.routes.settings.SettingsUpdateRequest attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.count_directory_files">count_directory_files() (in module lifearchivist.storage.vault.vault_utils)</a>
@@ -510,6 +522,10 @@
         <li><a href="api/lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.created_at">(lifearchivist.tools.ollama.ollama_utils.OllamaResponse attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.credential_service">credential_service (lifearchivist.server.ApplicationServer property)</a>
+</li>
+      <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService">CredentialService (class in lifearchivist.storage)</a>
+</li>
       <li><a href="api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.smart_logger.LogConfig.CRITICAL_OPS">CRITICAL_OPS (lifearchivist.utils.logging.smart_logger.LogConfig attribute)</a>
 </li>
       <li><a href="api/lifearchivist.models.html#lifearchivist.models.core.EntityType.CUSTOM">CUSTOM (lifearchivist.models.core.EntityType attribute)</a>
@@ -553,6 +569,8 @@
 </li>
       </ul></li>
       <li><a href="api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.delete_file_safely">delete_file_safely() (in module lifearchivist.storage.vault.vault_utils)</a>
+</li>
+      <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService.delete_provider">delete_provider() (lifearchivist.storage.CredentialService method)</a>
 </li>
       <li><a href="api/lifearchivist.tools.html#lifearchivist.tools.base.ToolMetadata.description">description (lifearchivist.tools.base.ToolMetadata attribute)</a>
 </li>
@@ -822,8 +840,6 @@
         <li><a href="api/lifearchivist.models.html#lifearchivist.models.Document.file_hash">(lifearchivist.models.Document attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.file_id">file_id (lifearchivist.server.progress_manager.ProgressUpdate attribute)</a>
 </li>
       <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.upload.BulkIngestRequest.file_paths">file_paths (lifearchivist.server.api.routes.upload.BulkIngestRequest attribute)</a>
@@ -836,6 +852,8 @@
         <li><a href="api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_tool.FileImportTool">(class in lifearchivist.tools.file_import.file_import_tool)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.models.html#lifearchivist.models.core.SearchRequest.filters">filters (lifearchivist.models.core.SearchRequest attribute)</a>
 
       <ul>
@@ -846,6 +864,36 @@
 </li>
       <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.upload.BulkIngestRequest.folder_path">folder_path (lifearchivist.server.api.routes.upload.BulkIngestRequest attribute)</a>
 </li>
+      <li><a href="api/lifearchivist.config.html#lifearchivist.config.Settings.folder_watch_auto_resume">folder_watch_auto_resume (lifearchivist.config.Settings attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.config.html#lifearchivist.config.settings.Settings.folder_watch_auto_resume">(lifearchivist.config.settings.Settings attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/lifearchivist.config.html#lifearchivist.config.Settings.folder_watch_concurrency">folder_watch_concurrency (lifearchivist.config.Settings attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.config.html#lifearchivist.config.settings.Settings.folder_watch_concurrency">(lifearchivist.config.settings.Settings attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/lifearchivist.config.html#lifearchivist.config.Settings.folder_watch_debounce_seconds">folder_watch_debounce_seconds (lifearchivist.config.Settings attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.config.html#lifearchivist.config.settings.Settings.folder_watch_debounce_seconds">(lifearchivist.config.settings.Settings attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/lifearchivist.config.html#lifearchivist.config.Settings.folder_watch_health_check_interval">folder_watch_health_check_interval (lifearchivist.config.Settings attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.config.html#lifearchivist.config.settings.Settings.folder_watch_health_check_interval">(lifearchivist.config.settings.Settings attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/lifearchivist.config.html#lifearchivist.config.Settings.folder_watch_max_folders">folder_watch_max_folders (lifearchivist.config.Settings attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.config.html#lifearchivist.config.settings.Settings.folder_watch_max_folders">(lifearchivist.config.settings.Settings attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.format_system_user_prompt">format_system_user_prompt() (in module lifearchivist.tools.ollama.ollama_utils)</a>
 </li>
   </ul></td>
@@ -902,16 +950,20 @@
 </li>
       <li><a href="api/lifearchivist.utils.logging.html#lifearchivist.utils.logging.context.get_operation_context">get_operation_context() (in module lifearchivist.utils.logging.context)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.get_platform_creation_date">get_platform_creation_date() (in module lifearchivist.tools.file_import.file_import_utils)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.get_progress">get_progress() (lifearchivist.server.progress_manager.ProgressManager method)</a>
 
       <ul>
         <li><a href="api/lifearchivist.server.html#lifearchivist.server.ProgressManager.get_progress">(lifearchivist.server.ProgressManager method)</a>
 </li>
       </ul></li>
+      <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService.get_provider_config">get_provider_config() (lifearchivist.storage.CredentialService method)</a>
+</li>
+      <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService.get_provider_metadata">get_provider_metadata() (lifearchivist.storage.CredentialService method)</a>
+</li>
       <li><a href="api/lifearchivist.server.api.html#lifearchivist.server.api.dependencies.get_server">get_server() (in module lifearchivist.server.api.dependencies)</a>
 </li>
       <li><a href="api/lifearchivist.config.html#lifearchivist.config.get_settings">get_settings() (in module lifearchivist.config)</a>
@@ -1038,6 +1090,8 @@
         <li><a href="api/lifearchivist.models.html#lifearchivist.models.core.IngestRequest">(class in lifearchivist.models.core)</a>
 </li>
       </ul></li>
+      <li><a href="api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.init_rag_service">init_rag_service() (lifearchivist.server.ServiceContainer method)</a>
+</li>
       <li><a href="api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.initialize">initialize() (lifearchivist.server.ApplicationServer method)</a>
 
       <ul>
@@ -1511,6 +1565,8 @@
       </ul></li>
       <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.documents.list_documents">list_documents() (in module lifearchivist.server.api.routes.documents)</a>
 </li>
+      <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService.list_providers">list_providers() (lifearchivist.storage.CredentialService method)</a>
+</li>
       <li><a href="api/lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.list_tools">list_tools() (lifearchivist.tools.registry.ToolRegistry method)</a>
 
       <ul>
@@ -1533,6 +1589,8 @@
         <li><a href="api/lifearchivist.storage.llamaindex_service.html#lifearchivist.storage.llamaindex_service.LlamaIndexService">(in module lifearchivist.storage.llamaindex_service)</a>
 </li>
       </ul></li>
+      <li><a href="api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.llm_manager">llm_manager (lifearchivist.server.ApplicationServer property)</a>
+</li>
       <li><a href="api/lifearchivist.config.html#lifearchivist.config.Settings.llm_model">llm_model (lifearchivist.config.Settings attribute)</a>
 
       <ul>
@@ -1603,6 +1661,12 @@
         <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsResponse.max_file_size_mb">(lifearchivist.server.api.routes.settings.SettingsResponse attribute)</a>
 </li>
         <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsUpdateRequest.max_file_size_mb">(lifearchivist.server.api.routes.settings.SettingsUpdateRequest attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsResponse.max_output_tokens">max_output_tokens (lifearchivist.server.api.routes.settings.SettingsResponse attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsUpdateRequest.max_output_tokens">(lifearchivist.server.api.routes.settings.SettingsUpdateRequest attribute)</a>
 </li>
       </ul></li>
       <li><a href="api/lifearchivist.config.html#lifearchivist.config.Settings.max_vault_size_gb">max_vault_size_gb (lifearchivist.config.Settings attribute)</a>
@@ -1950,14 +2014,14 @@
 </li>
       <li><a href="api/lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.primary_subtheme">primary_subtheme (lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest.primary_theme">primary_theme (lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest attribute)</a>
 
       <ul>
         <li><a href="api/lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse.primary_theme">(lifearchivist.schemas.tool_schemas.SubthemeClassificationResponse attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.agents.html#lifearchivist.agents.ingestion.IngestionAgent.process">process() (lifearchivist.agents.ingestion.IngestionAgent method)</a>
 
       <ul>
@@ -1991,6 +2055,8 @@
       <li><a href="api/lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.prompt_eval_count">prompt_eval_count (lifearchivist.tools.ollama.ollama_utils.OllamaResponse attribute)</a>
 </li>
       <li><a href="api/lifearchivist.tools.ollama.html#lifearchivist.tools.ollama.ollama_utils.OllamaResponse.prompt_eval_duration">prompt_eval_duration (lifearchivist.tools.ollama.ollama_utils.OllamaResponse attribute)</a>
+</li>
+      <li><a href="api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.provider_loader">provider_loader (lifearchivist.server.ApplicationServer property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -2042,18 +2108,30 @@
         <li><a href="api/lifearchivist.tools.html#lifearchivist.tools.ToolRegistry.register_all">(lifearchivist.tools.ToolRegistry method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.register_tool">register_tool() (lifearchivist.tools.registry.ToolRegistry method)</a>
 
       <ul>
         <li><a href="api/lifearchivist.tools.html#lifearchivist.tools.ToolRegistry.register_tool">(lifearchivist.tools.ToolRegistry method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.require_initialized">require_initialized() (lifearchivist.server.ServiceContainer method)</a>
 </li>
       <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.reset_settings">reset_settings() (in module lifearchivist.server.api.routes.settings)</a>
 </li>
+      <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsResponse.response_format">response_format (lifearchivist.server.api.routes.settings.SettingsResponse attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsUpdateRequest.response_format">(lifearchivist.server.api.routes.settings.SettingsUpdateRequest attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsResponse.response_timeout">response_timeout (lifearchivist.server.api.routes.settings.SettingsResponse attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsUpdateRequest.response_timeout">(lifearchivist.server.api.routes.settings.SettingsUpdateRequest attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/lifearchivist.models.html#lifearchivist.models.core.JobStatus.result">result (lifearchivist.models.core.JobStatus attribute)</a>
 
       <ul>
@@ -2276,6 +2354,12 @@
         <li><a href="api/lifearchivist.html#lifearchivist.SearchResult.tags">(lifearchivist.SearchResult attribute)</a>
 </li>
       </ul></li>
+      <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsResponse.temperature">temperature (lifearchivist.server.api.routes.settings.SettingsResponse attribute)</a>
+
+      <ul>
+        <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.SettingsUpdateRequest.temperature">(lifearchivist.server.api.routes.settings.SettingsUpdateRequest attribute)</a>
+</li>
+      </ul></li>
       <li><a href="api/lifearchivist.schemas.html#lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest.text">text (lifearchivist.schemas.tool_schemas.SubthemeClassificationRequest attribute)</a>
 </li>
       <li><a href="api/lifearchivist.html#lifearchivist.Document.text_content">text_content (lifearchivist.Document attribute)</a>
@@ -2370,6 +2454,8 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/lifearchivist.storage.html#lifearchivist.storage.CredentialService.update_provider">update_provider() (lifearchivist.storage.CredentialService method)</a>
+</li>
       <li><a href="api/lifearchivist.server.api.routes.html#lifearchivist.server.api.routes.settings.update_settings">update_settings() (in module lifearchivist.server.api.routes.settings)</a>
 </li>
       <li><a href="api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.UPLOAD">UPLOAD (lifearchivist.server.progress_manager.ProcessingStage attribute)</a>

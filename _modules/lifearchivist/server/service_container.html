@@ -175,18 +175,24 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncpg</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">redis.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">redis</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qdrant_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">QdrantClient</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..config.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">Settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLMProviderManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.bm25_index_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">BM25IndexService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..storage.credential_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">CredentialService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..storage.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConversationService</span><span class="p">,</span> <span class="n">MessageService</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.redis_document_tracker</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisDocumentTracker</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.vault.vault</span><span class="w"> </span><span class="kn">import</span> <span class="n">Vault</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="c1"># Import for type checking only to avoid runtime circular import</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..rag</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConversationRAGService</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.llamaindex_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">LlamaIndexService</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.activity_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ActivityManager</span>
 
 
 <span class="nd">@dataclass</span>
@@ -200,6 +206,7 @@
 
     <span class="n">redis_url</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">qdrant_url</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">database_url</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">vault_path</span><span class="p">:</span> <span class="n">Path</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">Settings</span>
 
@@ -259,10 +266,22 @@
         <span class="c1"># Core services - will be initialized, never None after initialize()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qdrant_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QdrantClient</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">asyncpg</span><span class="o">.</span><span class="n">Pool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Vault</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">doc_tracker</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RedisDocumentTracker</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BM25IndexService</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LlamaIndexService&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LlamaIndexService&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Conversation services</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conversation_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ConversationService&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;MessageService&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># LLM provider services</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">credential_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialService&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LLMProviderManager&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># RAG service</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rag_service</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ConversationRAGService&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="ServiceContainer.initialize">
@@ -293,6 +312,7 @@
                 <span class="p">{</span>
                     <span class="s2">&quot;redis_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
                     <span class="s2">&quot;qdrant_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">qdrant_url</span><span class="p">,</span>
+                    <span class="s2">&quot;database_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_db_password</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">database_url</span><span class="p">),</span>
                     <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
                 <span class="p">},</span>
             <span class="p">)</span>
@@ -300,6 +320,7 @@
             <span class="c1"># Phase 1: External connections</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_redis</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_init_qdrant</span><span class="p">()</span>  <span class="c1"># Synchronous - Qdrant client is not async</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_database</span><span class="p">()</span>
 
             <span class="c1"># Phase 2: Storage services</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_vault</span><span class="p">()</span>
@@ -308,8 +329,16 @@
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_doc_tracker</span><span class="p">()</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_bm25</span><span class="p">()</span>
 
+            <span class="c1"># Phase 3.5: LLM provider services (depend on Redis)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_credential_service</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_llm_provider_manager</span><span class="p">()</span>
+
             <span class="c1"># Phase 4: High-level services (depend on everything)</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_llamaindex</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_conversation_service</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_init_message_service</span><span class="p">()</span>
+
+            <span class="c1"># Note: RAG service will be initialized later with activity_manager from ApplicationServer</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -319,10 +348,16 @@
                     <span class="s2">&quot;services&quot;</span><span class="p">:</span> <span class="p">[</span>
                         <span class="s2">&quot;redis&quot;</span><span class="p">,</span>
                         <span class="s2">&quot;qdrant&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;database&quot;</span><span class="p">,</span>
                         <span class="s2">&quot;vault&quot;</span><span class="p">,</span>
                         <span class="s2">&quot;doc_tracker&quot;</span><span class="p">,</span>
                         <span class="s2">&quot;bm25&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;credential_service&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;llm_provider_manager&quot;</span><span class="p">,</span>
                         <span class="s2">&quot;llamaindex&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;conversation&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;message&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;rag_service&quot;</span><span class="p">,</span>
                     <span class="p">],</span>
                     <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ready&quot;</span><span class="p">,</span>
                 <span class="p">},</span>
@@ -356,6 +391,9 @@
         <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;service_container_cleanup_start&quot;</span><span class="p">)</span>
 
         <span class="c1"># Cleanup in reverse order</span>
+        <span class="c1"># RAG service doesn&#39;t need explicit cleanup</span>
+        <span class="c1"># Conversation service doesn&#39;t need explicit cleanup (uses db_pool)</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
@@ -390,6 +428,17 @@
                 <span class="p">)</span>
 
         <span class="c1"># Vault doesn&#39;t need explicit cleanup currently</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;database_pool_cleaned_up&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;database_cleanup_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
@@ -482,6 +531,66 @@
                 <span class="sa">f</span><span class="s2">&quot;Failed to initialize Qdrant: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_database</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize PostgreSQL connection pool.</span>
+
+<span class="sd">        Creates an asyncpg connection pool with production-grade settings:</span>
+<span class="sd">        - Connection pooling for performance</span>
+<span class="sd">        - Automatic reconnection on failure</span>
+<span class="sd">        - Statement caching for repeated queries</span>
+<span class="sd">        - Prepared statement support</span>
+<span class="sd">        - Connection timeout handling</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncpg</span><span class="o">.</span><span class="n">create_pool</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">database_url</span><span class="p">,</span>
+                <span class="n">min_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>  <span class="c1"># Minimum connections to maintain</span>
+                <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>  <span class="c1"># Maximum connections (adjust based on load)</span>
+                <span class="n">max_queries</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span>  <span class="c1"># Recycle connection after N queries</span>
+                <span class="n">max_inactive_connection_lifetime</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span>  <span class="c1"># 5 minutes</span>
+                <span class="n">command_timeout</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>  <span class="c1"># Query timeout</span>
+                <span class="n">server_settings</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;application_name&quot;</span><span class="p">:</span> <span class="s2">&quot;lifearchivist&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;jit&quot;</span><span class="p">:</span> <span class="s2">&quot;off&quot;</span><span class="p">,</span>  <span class="c1"># Disable JIT for faster simple queries</span>
+                    <span class="s2">&quot;timezone&quot;</span><span class="p">:</span> <span class="s2">&quot;UTC&quot;</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Test connection</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+                <span class="n">version</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">&quot;SELECT version()&quot;</span><span class="p">)</span>
+                <span class="n">pool_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="o">.</span><span class="n">get_size</span><span class="p">()</span>
+
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;database_initialized&quot;</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_db_password</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">database_url</span><span class="p">),</span>
+                        <span class="s2">&quot;pool_min_size&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+                        <span class="s2">&quot;pool_max_size&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                        <span class="s2">&quot;pool_current_size&quot;</span><span class="p">:</span> <span class="n">pool_size</span><span class="p">,</span>
+                        <span class="s2">&quot;postgres_version&quot;</span><span class="p">:</span> <span class="p">(</span>
+                            <span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">version</span> <span class="k">else</span> <span class="s2">&quot;unknown&quot;</span>
+                        <span class="p">),</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">asyncpg</span><span class="o">.</span><span class="n">InvalidCatalogNameError</span><span class="p">:</span>
+            <span class="c1"># Database doesn&#39;t exist - provide helpful error</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="s2">&quot;Database does not exist. Please ensure PostgreSQL is running &quot;</span>
+                <span class="s2">&quot;and the database has been created. &quot;</span>
+                <span class="s2">&quot;Run: docker-compose up postgres -d&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">except</span> <span class="n">asyncpg</span><span class="o">.</span><span class="n">InvalidPasswordError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid database credentials. Check LIFEARCH_DATABASE_URL.&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize database pool: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_vault</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize vault storage.&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
@@ -563,6 +672,110 @@
                 <span class="sa">f</span><span class="s2">&quot;Failed to initialize LlamaIndex service: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_conversation_service</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize conversation service with database pool.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConversationService</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Database pool must be initialized before conversation service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">conversation_service</span> <span class="o">=</span> <span class="n">ConversationService</span><span class="p">(</span><span class="n">db_pool</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="p">)</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;conversation_service_initialized&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize conversation service: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_message_service</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize message service with database pool.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">MessageService</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Database pool must be initialized before message service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">message_service</span> <span class="o">=</span> <span class="n">MessageService</span><span class="p">(</span><span class="n">db_pool</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="p">)</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;message_service_initialized&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize message service: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_credential_service</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize credential service for API key storage.</span>
+
+<span class="sd">        Stores provider credentials in Redis for persistence across restarts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..storage.credential_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">CredentialService</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Redis client must be initialized before credential service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">credential_service</span> <span class="o">=</span> <span class="n">CredentialService</span><span class="p">(</span><span class="n">redis_client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">)</span>
+
+            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;credential_service_initialized&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize credential service: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_init_llm_provider_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize LLM provider manager with stored providers.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProviderManagerFactory</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">credential_service</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Credential service must be initialized before provider manager&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Redis client must be initialized before provider manager&quot;</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Create manager with all services and load stored providers</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">llm_provider_manager</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="k">await</span> <span class="n">ProviderManagerFactory</span><span class="o">.</span><span class="n">create_with_stored_providers</span><span class="p">(</span>
+                    <span class="n">credential_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">credential_service</span><span class="p">,</span>
+                    <span class="n">redis_client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">,</span>
+                    <span class="n">enable_cost_tracking</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">enable_health_monitoring</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="n">provider_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+            <span class="n">default_provider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">get_default_id</span><span class="p">()</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;llm_provider_manager_initialized&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;providers_loaded&quot;</span><span class="p">:</span> <span class="n">provider_count</span><span class="p">,</span>
+                    <span class="s2">&quot;default_provider&quot;</span><span class="p">:</span> <span class="n">default_provider</span><span class="p">,</span>
+                    <span class="s2">&quot;cost_tracking&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;health_monitoring&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize LLM provider manager: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if container is initialized.&quot;&quot;&quot;</span>
@@ -584,6 +797,101 @@
                 <span class="s2">&quot;ServiceContainer not initialized. &quot;</span>
                 <span class="s2">&quot;Call await container.initialize() first.&quot;</span>
             <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mask_db_password</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mask password in database URL for logging.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            url: Database URL (e.g., postgresql://user:pass@host:port/db)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            URL with password masked (e.g., postgresql://user:****@host:port/db)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;://&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">url</span>
+
+            <span class="n">protocol</span><span class="p">,</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;://&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rest</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">url</span>  <span class="c1"># No credentials</span>
+
+            <span class="n">credentials</span><span class="p">,</span> <span class="n">host_part</span> <span class="o">=</span> <span class="n">rest</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">credentials</span><span class="p">:</span>
+                <span class="n">username</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">credentials</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">protocol</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="n">username</span><span class="si">}</span><span class="s2">:****@</span><span class="si">{</span><span class="n">host_part</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="k">return</span> <span class="n">url</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;postgresql://****:****@****:****/****&quot;</span>
+
+<div class="viewcode-block" id="ServiceContainer.init_rag_service">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ServiceContainer.init_rag_service">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_rag_service</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">activity_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ActivityManager&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize RAG service with dependencies.</span>
+
+<span class="sd">        This is called separately after ServiceContainer initialization</span>
+<span class="sd">        to allow passing in the ActivityManager from ApplicationServer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            activity_manager: Optional activity manager for event tracking</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..rag</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConversationRAGService</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;ServiceContainer must be initialized before RAG service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;LlamaIndex service must be initialized before RAG service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;LLM provider manager must be initialized before RAG service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">conversation_service</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Conversation service must be initialized before RAG service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_service</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Message service must be initialized before RAG service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_service</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                    <span class="s2">&quot;LlamaIndex query service must be initialized before RAG service&quot;</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">rag_service</span> <span class="o">=</span> <span class="n">ConversationRAGService</span><span class="p">(</span>
+                <span class="n">query_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_service</span><span class="p">,</span>
+                <span class="n">provider_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="p">,</span>
+                <span class="n">conversation_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conversation_service</span><span class="p">,</span>
+                <span class="n">message_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">message_service</span><span class="p">,</span>
+                <span class="n">activity_manager</span><span class="o">=</span><span class="n">activity_manager</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;rag_service_initialized&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;has_activity_manager&quot;</span><span class="p">:</span> <span class="n">activity_manager</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to initialize RAG service: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 </div>
 
 </pre></div>

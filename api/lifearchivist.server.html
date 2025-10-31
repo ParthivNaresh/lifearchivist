@@ -493,6 +493,12 @@
 <dd><p>Cleanup all services in reverse initialization order.</p>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="lifearchivist.server.ApplicationServer.credential_service">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">credential_service</span></span><a class="headerlink" href="#lifearchivist.server.ApplicationServer.credential_service" title="Link to this definition"></a></dt>
+<dd><p>Get credential service from service container.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="lifearchivist.server.ApplicationServer.execute_tool">
 <em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute_tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tool_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/server/application_server.html#ApplicationServer.execute_tool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.server.ApplicationServer.execute_tool" title="Link to this definition"></a></dt>
@@ -532,6 +538,18 @@
 <dt class="sig sig-object py" id="lifearchivist.server.ApplicationServer.llamaindex_service">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">llamaindex_service</span></span><a class="headerlink" href="#lifearchivist.server.ApplicationServer.llamaindex_service" title="Link to this definition"></a></dt>
 <dd><p>Get LlamaIndex service from service container.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lifearchivist.server.ApplicationServer.llm_manager">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">llm_manager</span></span><a class="headerlink" href="#lifearchivist.server.ApplicationServer.llm_manager" title="Link to this definition"></a></dt>
+<dd><p>Get LLM provider manager from service container (alias for compatibility).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lifearchivist.server.ApplicationServer.provider_loader">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">provider_loader</span></span><a class="headerlink" href="#lifearchivist.server.ApplicationServer.provider_loader" title="Link to this definition"></a></dt>
+<dd><p>Get provider loader (created on-demand from credential service).</p>
 </dd></dl>
 
 <dl class="py method">
@@ -618,6 +636,19 @@ await container.cleanup()</p>
 <dd><p>Cleanup all services in reverse initialization order.</p>
 <p>This ensures proper resource cleanup even if some services
 failed to initialize.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.server.ServiceContainer.init_rag_service">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">init_rag_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">activity_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ActivityManager</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/server/service_container.html#ServiceContainer.init_rag_service"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.server.ServiceContainer.init_rag_service" title="Link to this definition"></a></dt>
+<dd><p>Initialize RAG service with dependencies.</p>
+<p>This is called separately after ServiceContainer initialization
+to allow passing in the ActivityManager from ApplicationServer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>activity_manager</strong> – Optional activity manager for event tracking</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
