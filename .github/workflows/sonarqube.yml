@@ -59,7 +59,7 @@ jobs:
         fi
 
     - name: SonarQube Scan
-      uses: SonarSource/sonarqube-scan-action@v4.1.0
+      uses: SonarSource/sonarqube-scan-action@v5
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: https://sonarcloud.io
