@@ -66,16 +66,7 @@ jobs:
     - name: Run unit tests with coverage
       run: just test-unit-coverage
 
-    - name: Upload coverage to Codecov
-      id: upload-coverage
-      if: matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: unit-tests
-        name: unit-tests-coverage
-
-    - name: Upload coverage reports for SonarQube
+    - name: Upload coverage reports for SonarCloud
       id: unit-artifacts
       if: matrix.python-version == '3.11'
       uses: actions/upload-artifact@v4

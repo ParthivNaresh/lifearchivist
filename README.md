@@ -10,8 +10,8 @@
 [![Code Linting](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/lint.yml/badge.svg)](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/lint.yml)
 [![Documentation](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/docs.yml/badge.svg)](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/docs.yml)
 [![SonarCloud Analysis](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/sonarqube.yml/badge.svg)](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/sonarqube.yml)
-[![codecov](https://codecov.io/gh/ParthivNaresh/lifearchivist/branch/main/graph/badge.svg)](https://codecov.io/gh/ParthivNaresh/lifearchivist)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ParthivNaresh_lifearchivist&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ParthivNaresh_lifearchivist)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ParthivNaresh_lifearchivist&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ParthivNaresh_lifearchivist)
 
 ### Code Standards
 
