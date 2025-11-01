@@ -11,6 +11,7 @@ on:
       - 'sonar-project.properties'
       - '.github/workflows/sonarqube.yml'
   pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - 'lifearchivist/**'
       - 'tests/**'
@@ -68,32 +69,19 @@ jobs:
         if [ -f coverage.xml ]; then
           echo "✓ coverage.xml found"
           echo "File size: $(du -h coverage.xml)"
-          echo "First 10 lines:"
-          head -10 coverage.xml
         else
           echo "✗ coverage.xml not found"
           ls -la
           exit 1
         fi
 
-    - name: SonarCloud Scan
-      uses: SonarSource/sonarcloud-scan-action@v3.1.0
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v4.1.0
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        args: >
-          -Dsonar.projectKey=ParthivNaresh_lifearchivist
-          -Dsonar.organization=parthivnaresh
-          -Dsonar.python.coverage.reportPaths=coverage.xml
-          -Dsonar.sources=lifearchivist/
-          -Dsonar.tests=tests/
-          -Dsonar.python.version=3.11
-          -Dsonar.exclusions=**/__pycache__/**,**/*.pyc
-          -Dsonar.test.exclusions=tests/**
-          -Dsonar.coverage.exclusions=**/utils/logging/**
+        SONAR_HOST_URL: https://sonarcloud.io
 
-    - name: SonarCloud Quality Gate
+    - name: SonarQube Quality Gate
       uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
       timeout-minutes: 5
       env:
