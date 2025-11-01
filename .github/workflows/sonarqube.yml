@@ -1,45 +1,100 @@
 name: SonarCloud Analysis
 
 on:
-  workflow_run:
-    workflows: ["Unit Tests"]
-    types:
-      - completed
-    branches: [ main, develop ]
+  push:
+    paths:
+      - 'lifearchivist/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'pytest.ini'
+      - 'sonar-project.properties'
+      - '.github/workflows/sonarqube.yml'
+  pull_request:
+    paths:
+      - 'lifearchivist/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - 'pytest.ini'
+      - 'sonar-project.properties'
+      - '.github/workflows/sonarqube.yml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   sonarcloud:
     name: "SonarCloud Analysis"
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
     
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.workflow_run.head_sha }}
         fetch-depth: 0
 
-    - name: Download unit test coverage
-      uses: actions/download-artifact@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
       with:
-        name: unit-tests-coverage
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        run-id: ${{ github.event.workflow_run.id }}
-        path: ./
+        python-version: '3.11'
 
-    - name: List coverage files
+    - name: Install Just
+      uses: extractions/setup-just@v3
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      run: just install
+
+    - name: Run unit tests with coverage
+      run: just test-unit-coverage
+
+    - name: Verify coverage file exists
       run: |
-        echo "Available coverage files:"
-        find . -name "*.xml" -o -name "htmlcov*" | sort
-        echo "File sizes:"
-        du -h *.xml 2>/dev/null || echo "No XML files found"
+        echo "Checking for coverage.xml..."
+        if [ -f coverage.xml ]; then
+          echo "✓ coverage.xml found"
+          echo "File size: $(du -h coverage.xml)"
+          echo "First 10 lines:"
+          head -10 coverage.xml
+        else
+          echo "✗ coverage.xml not found"
+          ls -la
+          exit 1
+        fi
 
     - name: SonarCloud Scan
-      uses: SonarSource/sonarqube-scan-action@v5.3.1
+      uses: SonarSource/sonarcloud-scan-action@v3.1.0
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        args: >
+          -Dsonar.projectKey=ParthivNaresh_lifearchivist
+          -Dsonar.organization=parthivnaresh
+          -Dsonar.python.coverage.reportPaths=coverage.xml
+          -Dsonar.sources=lifearchivist/
+          -Dsonar.tests=tests/
+          -Dsonar.python.version=3.11
+          -Dsonar.exclusions=**/__pycache__/**,**/*.pyc
+          -Dsonar.test.exclusions=tests/**
+          -Dsonar.coverage.exclusions=**/utils/logging/**
+
+    - name: SonarCloud Quality Gate
+      uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
+      timeout-minutes: 5
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
