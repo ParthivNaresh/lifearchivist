@@ -1,0 +1,127 @@
+# Version Control
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.qodo/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+.nox/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+docs/
+*.md
+README.md
+LICENSE
+COMMANDS.md
+PROJECT_SUMMARY.md
+SYSTEM_DEPENDENCIES.md
+
+# Tests
+tests/
+pytest.ini
+.coveragerc
+
+# Development Files
+dev.py
+examples/
+scripts/
+Procfile.dev
+justfile
+
+# Desktop App (not needed in backend container)
+desktop/
+
+# Environment Files (security)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Database Files (should be in volumes)
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary Files
+*.tmp
+*.temp
+.cache/
+
+# Build Artifacts
+*.pyc
+*.pyo
+*.pyd
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Poetry (only need lock file, not cache)
+poetry.toml
+
+# Linting/Formatting Configs
+.flake8
+.prettierrc
+.prettierignore
+.eslintrc*
+mypy.ini
+pyproject.toml.bak
+
+# SonarCloud
+sonar-project.properties
+.scannerwork/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Requirements (using Poetry)
+requirements*.txt
