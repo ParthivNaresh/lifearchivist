@@ -1,12 +1,15 @@
 name: Documentation
 
 on:
-  workflow_call:
-    inputs:
-      deploy:
-        required: false
-        type: boolean
-        default: false
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-docs:
@@ -50,7 +53,7 @@ jobs:
 
   deploy-docs:
     name: "Deploy Documentation"
-    if: inputs.deploy == true
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-docs
     runs-on: ubuntu-latest
     permissions:

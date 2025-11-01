@@ -1,21 +1,23 @@
 name: Unit Tests
 
 on:
-  # Only trigger via workflow_call from ci.yml to avoid duplicate runs
-  workflow_call:
-    outputs:
-      coverage-artifact:
-        description: "Coverage report artifact name"
-        value: ${{ jobs.unit-tests.outputs.coverage-artifact }}
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   unit-tests:
     name: "Unit Tests (Python ${{ matrix.python-version }})"
     runs-on: ubuntu-latest
-    outputs:
-      coverage-artifact: ${{ steps.unit-artifacts.outputs.artifact-id }}
     
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.10', '3.11', '3.12']
 
@@ -47,24 +49,5 @@ jobs:
     - name: Install dependencies
       run: just install
 
-    - name: Run unit tests with coverage
-      run: just test-unit-coverage
-
-    - name: Upload coverage to Codecov
-      id: upload-coverage
-      if: matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: unit-tests
-        name: unit-tests-coverage
-
-    - name: Upload coverage reports for SonarQube
-      id: unit-artifacts
-      if: matrix.python-version == '3.11'
-      uses: actions/upload-artifact@v4
-      with:
-        name: unit-tests-coverage
-        path: |
-          coverage.xml
-          htmlcov/
+    - name: Run unit tests
+      run: just test-unit

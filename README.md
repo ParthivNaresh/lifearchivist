@@ -6,11 +6,12 @@
 
 ### Build & Quality
 
-[![CI Pipeline](https://github.com/parthivnaresh/lifearchivist/actions/workflows/ci.yml/badge.svg)](https://github.com/parthivnaresh/lifearchivist/actions/workflows/ci.yml)
-[![Unit Tests](https://github.com/parthivnaresh/lifearchivist/actions/workflows/test-unit.yml/badge.svg)](https://github.com/parthivnaresh/lifearchivist/actions/workflows/test-unit.yml)
-[![Code Linting](https://github.com/parthivnaresh/lifearchivist/actions/workflows/lint.yml/badge.svg)](https://github.com/parthivnaresh/lifearchivist/actions/workflows/lint.yml)
-[![codecov](https://codecov.io/gh/parthivnaresh/lifearchivist/branch/main/graph/badge.svg)](https://codecov.io/gh/parthivnaresh/lifearchivist)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=parthivnaresh_lifearchivist&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=parthivnaresh_lifearchivist)
+[![Unit Tests](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/test-unit.yml/badge.svg)](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/test-unit.yml)
+[![Code Linting](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/lint.yml/badge.svg)](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/lint.yml)
+[![Documentation](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/docs.yml/badge.svg)](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/docs.yml)
+[![SonarCloud Analysis](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/sonarqube.yml/badge.svg)](https://github.com/ParthivNaresh/lifearchivist/actions/workflows/sonarqube.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ParthivNaresh_lifearchivist&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ParthivNaresh_lifearchivist)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ParthivNaresh_lifearchivist&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ParthivNaresh_lifearchivist)
 
 ### Code Standards
 
@@ -21,7 +22,7 @@
 ### Project Info
 
 [![Python Version](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/parthivnaresh/lifearchivist/releases)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/ParthivNaresh/lifearchivist/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
@@ -31,8 +32,8 @@
 ## 🚀 Quick Links
 
 - **Documentation**: [docs.lifearchivist.dev](https://docs.lifearchivist.dev)
-- **Repository**: [github.com/parthivnaresh/lifearchivist](https://github.com/parthivnaresh/lifearchivist)
-- **Issues**: [Report a bug or request a feature](https://github.com/parthivnaresh/lifearchivist/issues)
+- **Repository**: [github.com/ParthivNaresh/lifearchivist](https://github.com/ParthivNaresh/lifearchivist)
+- **Issues**: [Report a bug or request a feature](https://github.com/ParthivNaresh/lifearchivist/issues)
 
 ---
 
@@ -52,7 +53,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/parthivnaresh/lifearchivist.git
+git clone https://github.com/ParthivNaresh/lifearchivist.git
 cd lifearchivist
 
 # Install dependencies with Poetry
@@ -79,7 +80,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👤 Author
 
 **Parthiv Naresh**
-- GitHub: [@parthivnaresh](https://github.com/parthivnaresh)
+- GitHub: [@ParthivNaresh](https://github.com/ParthivNaresh)
 - Email: parthivnaresh@gmail.com
 
 ---

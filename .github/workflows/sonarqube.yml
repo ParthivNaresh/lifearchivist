@@ -1,13 +1,15 @@
 name: SonarCloud Analysis
 
 on:
-  workflow_call:
-    inputs:
-      unit-coverage-artifact:
-        description: "Unit test coverage artifact name"
-        required: false
-        type: string
-        default: "unit-tests-coverage"
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   sonarcloud:
@@ -17,23 +19,60 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Shallow clones should be disabled for better analysis
+        fetch-depth: 0
 
-    - name: Download unit test coverage
-      uses: actions/download-artifact@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
       with:
-        name: ${{ inputs.unit-coverage-artifact }}
-        path: ./
-      continue-on-error: true
+        python-version: '3.11'
 
-    - name: List coverage files
+    - name: Install Just
+      uses: extractions/setup-just@v3
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-3.11-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      run: just install
+
+    - name: Run unit tests with coverage
+      run: just test-unit-coverage
+
+    - name: Verify coverage file
       run: |
-        echo "Available coverage files:"
-        find . -name "*.xml" -o -name "htmlcov*" | sort
-        echo "File sizes:"
-        du -h *.xml 2>/dev/null || echo "No XML files found"
+        if [ ! -f coverage.xml ]; then
+          echo "ERROR: coverage.xml not found"
+          ls -la
+          exit 1
+        fi
+        echo "✓ coverage.xml found ($(stat -f%z coverage.xml 2>/dev/null || stat -c%s coverage.xml) bytes)"
+        echo "First 5 lines:"
+        head -5 coverage.xml
 
-    - name: SonarCloud Scan
-      uses: SonarSource/sonarqube-scan-action@v5.3.1
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v6
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: https://sonarcloud.io
+      with:
+        args: >
+          -Dsonar.python.coverage.reportPaths=coverage.xml
+          -Dsonar.python.xunit.reportPath=
+          -Dsonar.coverage.jacoco.xmlReportPaths=
+
+    - name: SonarQube Quality Gate
+      uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
+      timeout-minutes: 5
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

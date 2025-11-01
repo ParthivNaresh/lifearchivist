@@ -1,8 +1,15 @@
 name: Code Linting
 
 on:
-  # Only trigger via workflow_call from ci.yml to avoid duplicate runs
-  workflow_call:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   linting:
