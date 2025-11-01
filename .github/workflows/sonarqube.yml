@@ -2,24 +2,10 @@ name: SonarCloud Analysis
 
 on:
   push:
-    paths:
-      - 'lifearchivist/**'
-      - 'tests/**'
-      - 'pyproject.toml'
-      - 'poetry.lock'
-      - 'pytest.ini'
-      - 'sonar-project.properties'
-      - '.github/workflows/sonarqube.yml'
+    branches:
+      - main
+      - develop
   pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'lifearchivist/**'
-      - 'tests/**'
-      - 'pyproject.toml'
-      - 'poetry.lock'
-      - 'pytest.ini'
-      - 'sonar-project.properties'
-      - '.github/workflows/sonarqube.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -65,13 +51,10 @@ jobs:
 
     - name: Verify coverage file exists
       run: |
-        echo "Checking for coverage.xml..."
         if [ -f coverage.xml ]; then
-          echo "✓ coverage.xml found"
-          echo "File size: $(du -h coverage.xml)"
+          echo "✓ coverage.xml found ($(du -h coverage.xml))"
         else
           echo "✗ coverage.xml not found"
-          ls -la
           exit 1
         fi
 

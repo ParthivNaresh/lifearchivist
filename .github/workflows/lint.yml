@@ -2,24 +2,10 @@ name: Code Linting
 
 on:
   push:
-    paths:
-      - 'lifearchivist/**'
-      - 'desktop/**'
-      - 'pyproject.toml'
-      - 'poetry.lock'
-      - 'desktop/package.json'
-      - 'desktop/package-lock.json'
-      - '.github/workflows/lint.yml'
+    branches:
+      - main
+      - develop
   pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'lifearchivist/**'
-      - 'desktop/**'
-      - 'pyproject.toml'
-      - 'poetry.lock'
-      - 'desktop/package.json'
-      - 'desktop/package-lock.json'
-      - '.github/workflows/lint.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

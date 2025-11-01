@@ -2,20 +2,10 @@ name: Documentation
 
 on:
   push:
-    paths:
-      - 'docs/**'
-      - 'lifearchivist/**'
-      - 'pyproject.toml'
-      - 'poetry.lock'
-      - '.github/workflows/docs.yml'
+    branches:
+      - main
+      - develop
   pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'docs/**'
-      - 'lifearchivist/**'
-      - 'pyproject.toml'
-      - 'poetry.lock'
-      - '.github/workflows/docs.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

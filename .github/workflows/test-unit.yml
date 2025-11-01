@@ -2,22 +2,10 @@ name: Unit Tests
 
 on:
   push:
-    paths:
-      - 'lifearchivist/**'
-      - 'tests/**'
-      - 'pyproject.toml'
-      - 'poetry.lock'
-      - 'pytest.ini'
-      - '.github/workflows/test-unit.yml'
+    branches:
+      - main
+      - develop
   pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'lifearchivist/**'
-      - 'tests/**'
-      - 'pyproject.toml'
-      - 'poetry.lock'
-      - 'pytest.ini'
-      - '.github/workflows/test-unit.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -63,14 +51,3 @@ jobs:
 
     - name: Run unit tests
       run: just test-unit
-
-    - name: Test Summary
-      if: always()
-      run: |
-        echo "### Test Results for Python ${{ matrix.python-version }} 🧪" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        if [ $? -eq 0 ]; then
-          echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
-        fi
