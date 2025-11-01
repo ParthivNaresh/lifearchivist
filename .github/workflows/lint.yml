@@ -21,7 +21,6 @@ on:
       - 'desktop/package.json'
       - 'desktop/package-lock.json'
       - '.github/workflows/lint.yml'
-  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

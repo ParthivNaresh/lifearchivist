@@ -19,11 +19,6 @@ on:
       - 'poetry.lock'
       - 'pytest.ini'
       - '.github/workflows/test-unit.yml'
-  workflow_call:
-    outputs:
-      coverage-artifact:
-        description: "Coverage report artifact name"
-        value: ${{ jobs.unit-tests.outputs.coverage-artifact }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
