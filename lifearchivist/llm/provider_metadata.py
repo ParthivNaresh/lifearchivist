@@ -115,7 +115,7 @@ class BaseProviderMetadata(ABC):
         """Register a supported capability."""
         self._capabilities.add(capability)
 
-    async def get_workspaces(self) -> List[Workspace]:
+    def get_workspaces(self) -> List[Workspace]:
         """Default: no workspace support."""
         if not self.supports_capability(MetadataCapability.WORKSPACES):
             raise NotImplementedError(
@@ -123,7 +123,7 @@ class BaseProviderMetadata(ABC):
             )
         return []
 
-    async def get_usage(
+    def get_usage(
         self,
         start_time: datetime,
         end_time: datetime,
@@ -142,7 +142,7 @@ class BaseProviderMetadata(ABC):
             output_tokens=0,
         )
 
-    async def get_costs(
+    def get_costs(
         self,
         start_time: datetime,
         end_time: datetime,

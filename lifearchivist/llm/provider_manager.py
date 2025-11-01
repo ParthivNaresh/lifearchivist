@@ -18,6 +18,7 @@ from .base_provider import (
     LLMStreamChunk,
     ModelInfo,
 )
+from .constants import ErrorMessages, TokenEstimation, UserDefaults
 from .cost_tracker import CostRecord, CostTracker
 from .provider_health_monitor import ProviderHealthMonitor
 from .provider_metadata import (
@@ -274,7 +275,7 @@ class LLMProviderManager:
         routing_strategy: RoutingStrategy = RoutingStrategy.DEFAULT,
         temperature: float = 0.7,
         max_tokens: int = 2000,
-        user_id: str = "default",
+        user_id: str = UserDefaults.DEFAULT_USER_ID,
         **kwargs,
     ) -> Result[LLMResponse, str]:
         """
@@ -320,7 +321,9 @@ class LLMProviderManager:
                 level=logging.WARNING,
             )
             return Failure(
-                error=f"Provider unhealthy: {provider.provider_id}",
+                error=ErrorMessages.PROVIDER_UNHEALTHY.format(
+                    provider_id=provider.provider_id
+                ),
                 error_type="ProviderUnhealthy",
                 status_code=503,
             )
@@ -328,7 +331,9 @@ class LLMProviderManager:
         # Estimate cost and check budget
         if self.cost_tracker:
             # Rough estimate: assume average tokens
-            estimated_tokens = len(str(messages)) // 4  # Rough token estimate
+            estimated_tokens = (
+                len(str(messages)) // TokenEstimation.CHARS_PER_TOKEN
+            )  # Rough token estimate
             estimated_cost = provider.estimate_cost(estimated_tokens, max_tokens, model)
 
             budget_check = await self.cost_tracker.check_budget(user_id, estimated_cost)
@@ -425,7 +430,7 @@ class LLMProviderManager:
         routing_strategy: RoutingStrategy = RoutingStrategy.DEFAULT,
         temperature: float = 0.7,
         max_tokens: int = 2000,
-        user_id: str = "default",
+        user_id: str = UserDefaults.DEFAULT_USER_ID,
         **kwargs,
     ) -> AsyncGenerator[LLMStreamChunk, None]:
         """
@@ -471,7 +476,7 @@ class LLMProviderManager:
 
         # Check budget (rough estimate)
         if self.cost_tracker:
-            estimated_tokens = len(str(messages)) // 4
+            estimated_tokens = len(str(messages)) // TokenEstimation.CHARS_PER_TOKEN
             estimated_cost = provider.estimate_cost(estimated_tokens, max_tokens, model)
 
             budget_check = await self.cost_tracker.check_budget(user_id, estimated_cost)
@@ -513,8 +518,9 @@ class LLMProviderManager:
             if self.cost_tracker and total_tokens > 0:
                 # Estimate cost based on total tokens
                 estimated_cost = provider.estimate_cost(
-                    total_tokens // 2,  # Rough split
-                    total_tokens // 2,
+                    total_tokens
+                    // TokenEstimation.PROMPT_COMPLETION_SPLIT_RATIO,  # Rough split
+                    total_tokens // TokenEstimation.PROMPT_COMPLETION_SPLIT_RATIO,
                     model,
                 )
 
@@ -522,8 +528,10 @@ class LLMProviderManager:
                     provider_id=provider.provider_id,
                     provider_type=provider.provider_type.value,
                     model=model,
-                    prompt_tokens=total_tokens // 2,
-                    completion_tokens=total_tokens // 2,
+                    prompt_tokens=total_tokens
+                    // TokenEstimation.PROMPT_COMPLETION_SPLIT_RATIO,
+                    completion_tokens=total_tokens
+                    // TokenEstimation.PROMPT_COMPLETION_SPLIT_RATIO,
                     cost_usd=estimated_cost,
                     timestamp=datetime.now(),
                     user_id=user_id,
@@ -570,7 +578,7 @@ class LLMProviderManager:
 
         if provider is None:
             return Failure(
-                error="No provider available",
+                error=ErrorMessages.NO_PROVIDER_AVAILABLE,
                 error_type="ProviderNotFound",
                 status_code=503,
             )
@@ -612,27 +620,31 @@ class LLMProviderManager:
 
         if provider is None:
             return Failure(
-                error="No provider available",
+                error=ErrorMessages.NO_PROVIDER_AVAILABLE,
                 error_type="ProviderNotFound",
                 status_code=404,
             )
 
         if provider.metadata is None:
             return Failure(
-                error=f"Provider {provider.provider_id} does not support metadata",
+                error=ErrorMessages.PROVIDER_NO_METADATA_SUPPORT.format(
+                    provider_id=provider.provider_id
+                ),
                 error_type="MetadataNotSupported",
                 status_code=501,
             )
 
         if not provider.metadata.supports_capability(MetadataCapability.WORKSPACES):
             return Failure(
-                error=f"Provider {provider.provider_id} does not support workspaces",
+                error=ErrorMessages.PROVIDER_NO_WORKSPACES_SUPPORT.format(
+                    provider_id=provider.provider_id
+                ),
                 error_type="WorkspacesNotSupported",
                 status_code=501,
             )
 
         try:
-            workspaces = await provider.metadata.get_workspaces()
+            workspaces = provider.metadata.get_workspaces()
             return Success(workspaces)
 
         except Exception as e:
@@ -674,21 +686,25 @@ class LLMProviderManager:
 
         if provider is None:
             return Failure(
-                error="No provider available",
+                error=ErrorMessages.NO_PROVIDER_AVAILABLE,
                 error_type="ProviderNotFound",
                 status_code=404,
             )
 
         if provider.metadata is None:
             return Failure(
-                error=f"Provider {provider.provider_id} does not support metadata",
+                error=ErrorMessages.PROVIDER_NO_METADATA_SUPPORT.format(
+                    provider_id=provider.provider_id
+                ),
                 error_type="MetadataNotSupported",
                 status_code=501,
             )
 
         if not provider.metadata.supports_capability(MetadataCapability.USAGE_TRACKING):
             return Failure(
-                error=f"Provider {provider.provider_id} does not support usage tracking",
+                error=ErrorMessages.PROVIDER_NO_USAGE_TRACKING.format(
+                    provider_id=provider.provider_id
+                ),
                 error_type="UsageTrackingNotSupported",
                 status_code=501,
             )
@@ -736,27 +752,31 @@ class LLMProviderManager:
 
         if provider is None:
             return Failure(
-                error="No provider available",
+                error=ErrorMessages.NO_PROVIDER_AVAILABLE,
                 error_type="ProviderNotFound",
                 status_code=404,
             )
 
         if provider.metadata is None:
             return Failure(
-                error=f"Provider {provider.provider_id} does not support metadata",
+                error=ErrorMessages.PROVIDER_NO_METADATA_SUPPORT.format(
+                    provider_id=provider.provider_id
+                ),
                 error_type="MetadataNotSupported",
                 status_code=501,
             )
 
         if not provider.metadata.supports_capability(MetadataCapability.COST_TRACKING):
             return Failure(
-                error=f"Provider {provider.provider_id} does not support cost tracking",
+                error=ErrorMessages.PROVIDER_NO_COST_TRACKING.format(
+                    provider_id=provider.provider_id
+                ),
                 error_type="CostTrackingNotSupported",
                 status_code=501,
             )
 
         try:
-            costs = await provider.metadata.get_costs(start_time, end_time, **filters)
+            costs = provider.metadata.get_costs(start_time, end_time, **filters)
             return Success(costs)
 
         except Exception as e:
@@ -792,7 +812,7 @@ class LLMProviderManager:
 
         if provider is None:
             return Failure(
-                error="No provider available",
+                error=ErrorMessages.NO_PROVIDER_AVAILABLE,
                 error_type="ProviderNotFound",
                 status_code=404,
             )

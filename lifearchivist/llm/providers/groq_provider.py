@@ -4,7 +4,6 @@ Groq provider implementation.
 Provides access to Groq's fast inference API using OpenAI-compatible endpoints.
 """
 
-import json
 import logging
 from typing import AsyncGenerator, Dict, List
 
@@ -61,14 +60,14 @@ class GroqProvider(BaseHTTPProvider, BaseLLMProvider):
             "Content-Type": "application/json",
         }
 
-        await self._initialize_session(
+        self._initialize_session(
             timeout_seconds=self.config.timeout_seconds,
             max_connections=100,
             max_connections_per_host=30,
             headers=headers,
         )
 
-        await BaseLLMProvider.initialize(self)
+        BaseLLMProvider.initialize(self)
 
         log_event(
             "groq_provider_initialized",
@@ -239,8 +238,6 @@ class GroqProvider(BaseHTTPProvider, BaseLLMProvider):
         Yields:
             LLMStreamChunk objects with incremental content
         """
-        session = self._ensure_session()
-
         payload = {
             "model": model,
             "messages": self._convert_messages(messages),
@@ -257,91 +254,14 @@ class GroqProvider(BaseHTTPProvider, BaseLLMProvider):
         if "seed" in kwargs:
             payload["seed"] = kwargs["seed"]
 
-        url = f"{self.config.base_url}/chat/completions"
-
-        try:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    log_event(
-                        "groq_stream_failed",
-                        {
-                            "status": response.status,
-                            "error": error_text[:500],
-                            "model": model,
-                        },
-                        level=logging.ERROR,
-                    )
-                    raise RuntimeError(
-                        f"Groq streaming failed (HTTP {response.status}): {error_text[:500]}"
-                    )
-
-                async for line in response.content:
-                    if not line:
-                        continue
-
-                    line_str = line.decode("utf-8").strip()
-                    if not line_str:
-                        continue
-
-                    if line_str.startswith("data: "):
-                        line_str = line_str[6:]
-
-                    if line_str == "[DONE]":
-                        break
-
-                    try:
-                        data = json.loads(line_str)
-
-                        if "choices" in data and data["choices"]:
-                            choice = data["choices"][0]
-                            delta = choice.get("delta", {})
-
-                            if "content" in delta:
-                                yield LLMStreamChunk(
-                                    content=delta["content"],
-                                    is_final=False,
-                                )
-
-                            if choice.get("finish_reason"):
-                                usage = data.get("usage", {})
-                                yield LLMStreamChunk(
-                                    content="",
-                                    is_final=True,
-                                    tokens_used=usage.get("total_tokens"),
-                                    finish_reason=choice["finish_reason"],
-                                    metadata={
-                                        "usage": usage,
-                                        "groq_id": data.get("id"),
-                                        "system_fingerprint": data.get(
-                                            "system_fingerprint"
-                                        ),
-                                    },
-                                )
-                        elif "usage" in data:
-                            # Final usage chunk
-                            yield LLMStreamChunk(
-                                content="",
-                                is_final=True,
-                                tokens_used=data["usage"].get("total_tokens"),
-                                metadata={"usage": data["usage"]},
-                            )
-
-                    except json.JSONDecodeError as e:
-                        log_event(
-                            "groq_stream_parse_error",
-                            {"error": str(e), "line": line_str[:100]},
-                            level=logging.WARNING,
-                        )
-                        continue
-
-        except aiohttp.ClientError as e:
-            log_event(
-                "groq_stream_connection_error",
-                {"error": str(e), "url": url},
-                level=logging.ERROR,
-            )
-            raise RuntimeError(f"Failed to stream from Groq: {e}") from e
+        async for chunk in self._stream_openai_format(
+            url=f"{self.config.base_url}/chat/completions",
+            payload=payload,
+            model=model,
+            provider_name="Groq",
+            error_log_event="groq_stream_failed",
+        ):
+            yield chunk
 
     @track(
         operation="groq_list_models",

@@ -4,7 +4,6 @@ Mistral AI provider implementation.
 Provides access to Mistral's models using OpenAI-compatible endpoints.
 """
 
-import json
 import logging
 from typing import AsyncGenerator, Dict, List
 
@@ -61,14 +60,14 @@ class MistralProvider(BaseHTTPProvider, BaseLLMProvider):
             "Content-Type": "application/json",
         }
 
-        await self._initialize_session(
+        self._initialize_session(
             timeout_seconds=self.config.timeout_seconds,
             max_connections=100,
             max_connections_per_host=30,
             headers=headers,
         )
 
-        await BaseLLMProvider.initialize(self)
+        BaseLLMProvider.initialize(self)
 
         log_event(
             "mistral_provider_initialized",
@@ -237,8 +236,6 @@ class MistralProvider(BaseHTTPProvider, BaseLLMProvider):
         Yields:
             LLMStreamChunk objects with incremental content
         """
-        session = self._ensure_session()
-
         payload = {
             "model": model,
             "messages": self._convert_messages(messages),
@@ -256,81 +253,14 @@ class MistralProvider(BaseHTTPProvider, BaseLLMProvider):
         if "safe_prompt" in kwargs:
             payload["safe_prompt"] = kwargs["safe_prompt"]
 
-        url = f"{self.config.base_url}/chat/completions"
-
-        try:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    log_event(
-                        "mistral_stream_failed",
-                        {
-                            "status": response.status,
-                            "error": error_text[:500],
-                            "model": model,
-                        },
-                        level=logging.ERROR,
-                    )
-                    raise RuntimeError(
-                        f"Mistral streaming failed (HTTP {response.status}): {error_text[:500]}"
-                    )
-
-                async for line in response.content:
-                    if not line:
-                        continue
-
-                    line_str = line.decode("utf-8").strip()
-                    if not line_str:
-                        continue
-
-                    if line_str.startswith("data: "):
-                        line_str = line_str[6:]
-
-                    if line_str == "[DONE]":
-                        break
-
-                    try:
-                        data = json.loads(line_str)
-
-                        if "choices" in data and data["choices"]:
-                            choice = data["choices"][0]
-                            delta = choice.get("delta", {})
-
-                            if "content" in delta:
-                                yield LLMStreamChunk(
-                                    content=delta["content"],
-                                    is_final=False,
-                                )
-
-                            if choice.get("finish_reason"):
-                                usage = data.get("usage", {})
-                                yield LLMStreamChunk(
-                                    content="",
-                                    is_final=True,
-                                    tokens_used=usage.get("total_tokens"),
-                                    finish_reason=choice["finish_reason"],
-                                    metadata={
-                                        "usage": usage,
-                                        "mistral_id": data.get("id"),
-                                        "created": data.get("created"),
-                                    },
-                                )
-
-                    except json.JSONDecodeError as e:
-                        log_event(
-                            "mistral_stream_parse_error",
-                            {"error": str(e), "line": line_str[:100]},
-                            level=logging.WARNING,
-                        )
-                        continue
-
-        except aiohttp.ClientError as e:
-            log_event(
-                "mistral_stream_connection_error",
-                {"error": str(e), "url": url},
-                level=logging.ERROR,
-            )
-            raise RuntimeError(f"Failed to stream from Mistral: {e}") from e
+        async for chunk in self._stream_openai_format(
+            url=f"{self.config.base_url}/chat/completions",
+            payload=payload,
+            model=model,
+            provider_name="Mistral",
+            error_log_event="mistral_stream_failed",
+        ):
+            yield chunk
 
     @track(
         operation="mistral_list_models",

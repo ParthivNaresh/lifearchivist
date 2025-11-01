@@ -290,7 +290,7 @@ class ProviderRegistry:
         cleanup_failures = 0
 
         # Clean up all providers
-        for provider_id, provider in list(self._providers.items()):
+        for provider_id, provider in self._providers.items():
             try:
                 await provider.cleanup()
             except Exception as e:
