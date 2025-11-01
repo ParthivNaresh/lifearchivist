@@ -49,20 +49,27 @@ jobs:
     - name: Run unit tests with coverage
       run: just test-unit-coverage
 
-    - name: Verify coverage file exists
+    - name: Verify coverage file
       run: |
-        if [ -f coverage.xml ]; then
-          echo "✓ coverage.xml found ($(du -h coverage.xml))"
-        else
-          echo "✗ coverage.xml not found"
+        if [ ! -f coverage.xml ]; then
+          echo "ERROR: coverage.xml not found"
+          ls -la
           exit 1
         fi
+        echo "✓ coverage.xml found ($(stat -f%z coverage.xml 2>/dev/null || stat -c%s coverage.xml) bytes)"
+        echo "First 5 lines:"
+        head -5 coverage.xml
 
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@v6
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: https://sonarcloud.io
+      with:
+        args: >
+          -Dsonar.python.coverage.reportPaths=coverage.xml
+          -Dsonar.python.xunit.reportPath=
+          -Dsonar.coverage.jacoco.xmlReportPaths=
 
     - name: SonarQube Quality Gate
       uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
