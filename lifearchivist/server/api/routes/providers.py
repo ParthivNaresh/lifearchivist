@@ -900,7 +900,7 @@ async def get_provider_metadata(
                     status_code=501,
                 )
 
-            workspaces_result = await server.llm_manager.get_workspaces(provider_id)
+            workspaces_result = server.llm_manager.get_workspaces(provider_id)
             if workspaces_result.is_success():
                 workspaces = workspaces_result.unwrap()
                 response["workspaces"] = [
@@ -963,7 +963,7 @@ async def get_provider_metadata(
                     response["usage_error"] = usage_result.error
 
             if "costs" in requested:
-                costs_result = await server.llm_manager.get_costs(
+                costs_result = server.llm_manager.get_costs(
                     provider_id, start_dt, end_dt
                 )
                 if costs_result.is_success():

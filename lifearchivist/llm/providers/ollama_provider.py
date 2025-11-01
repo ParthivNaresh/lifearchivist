@@ -62,13 +62,13 @@ class OllamaProvider(BaseHTTPProvider, BaseLLMProvider):
             return
 
         # Initialize HTTP session with Ollama-specific settings
-        await self._initialize_session(
+        self._initialize_session(
             timeout_seconds=self.config.timeout_seconds,
             max_connections=100,
             max_connections_per_host=30,
         )
 
-        await BaseLLMProvider.initialize(self)
+        BaseLLMProvider.initialize(self)
 
         log_event(
             "ollama_provider_initialized",

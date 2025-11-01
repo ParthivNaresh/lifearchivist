@@ -189,7 +189,7 @@ class AnthropicMetadata(BaseProviderMetadata):
     ) -> CostReport:
         """Fetch cost report from Anthropic Admin API."""
         if not self.supports_capability(MetadataCapability.COST_TRACKING):
-            return await super().get_costs(start_time, end_time, **filters)
+            return super().get_costs(start_time, end_time, **filters)
 
         try:
             params: Dict[str, Union[str, List[str]]] = {

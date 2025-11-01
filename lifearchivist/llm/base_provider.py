@@ -6,11 +6,12 @@ ensuring consistent behavior across Ollama, OpenAI, Anthropic, etc.
 """
 
 import asyncio
+import json
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, Dict, List, Optional
 
 import aiohttp
 
@@ -203,7 +204,7 @@ class BaseHTTPProvider:
             sock_read=sock_read,
         )
 
-    async def _initialize_session(
+    def _initialize_session(
         self,
         timeout_seconds: int,
         max_connections: int = 100,
@@ -259,6 +260,368 @@ class BaseHTTPProvider:
             raise RuntimeError("HTTP session not initialized. Call initialize() first.")
         return self._session
 
+    async def _stream_sse_response(
+        self,
+        url: str,
+        payload: Dict[str, Any],
+        model: str,
+        provider_name: str,
+        chunk_parser: Callable[[Dict[str, Any]], Optional[LLMStreamChunk]],
+        error_log_event: str,
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """
+        Generic SSE (Server-Sent Events) streaming handler for OpenAI-compatible APIs.
+
+        Handles HTTP request, error responses, SSE parsing, and JSON decoding.
+        Provider-specific chunk parsing is delegated to the chunk_parser callback.
+
+        Args:
+            url: API endpoint URL
+            payload: Request payload (already includes stream=True)
+            model: Model identifier for error logging
+            provider_name: Provider name for error messages
+            chunk_parser: Callback to parse provider-specific chunk format
+            error_log_event: Log event name for errors
+
+        Yields:
+            LLMStreamChunk objects parsed by chunk_parser
+
+        Raises:
+            RuntimeError: If HTTP request fails or streaming errors occur
+        """
+        session = self._ensure_session()
+
+        try:
+            async with session.post(url, json=payload) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    from ..utils.logging import log_event
+
+                    log_event(
+                        error_log_event,
+                        {
+                            "status": response.status,
+                            "error": error_text[:500],
+                            "model": model,
+                        },
+                        level=logging.ERROR,
+                    )
+                    raise RuntimeError(
+                        f"{provider_name} streaming failed (HTTP {response.status}): {error_text}"
+                    )
+
+                async for line in response.content:
+                    if not line:
+                        continue
+
+                    line_str = line.decode("utf-8").strip()
+
+                    if not line_str or line_str.startswith(":"):
+                        continue
+
+                    if line_str.startswith("data: "):
+                        data_str = line_str[6:]
+
+                        if data_str == "[DONE]":
+                            yield LLMStreamChunk(
+                                content="",
+                                is_final=True,
+                                finish_reason="stop",
+                            )
+                            break
+
+                        try:
+                            data = json.loads(data_str)
+                            chunk = chunk_parser(data)
+                            if chunk is not None:
+                                yield chunk
+
+                        except json.JSONDecodeError as e:
+                            from ..utils.logging import log_event
+
+                            log_event(
+                                f"{error_log_event}_parse_error",
+                                {"error": str(e), "data": data_str[:100]},
+                                level=logging.WARNING,
+                            )
+                            continue
+
+        except aiohttp.ClientError as e:
+            from ..utils.logging import log_event
+
+            log_event(
+                f"{error_log_event}_connection_error",
+                {"error": str(e), "url": url},
+                level=logging.ERROR,
+            )
+            raise RuntimeError(f"Failed to stream from {provider_name}: {e}") from e
+
+    async def _stream_openai_format(
+        self,
+        url: str,
+        payload: Dict[str, Any],
+        model: str,
+        provider_name: str,
+        error_log_event: str,
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """
+        Convenience method for OpenAI-format SSE streaming.
+
+        Used by OpenAI, Groq, and Mistral providers (identical format).
+
+        Args:
+            url: API endpoint URL
+            payload: Request payload (already includes stream=True)
+            model: Model identifier for error logging
+            provider_name: Provider name for error messages
+            error_log_event: Log event name for errors
+
+        Yields:
+            LLMStreamChunk objects with content and metadata
+
+        Raises:
+            RuntimeError: If HTTP request fails or streaming errors occur
+        """
+
+        def parse_openai_chunk(data: Dict[str, Any]) -> Optional[LLMStreamChunk]:
+            if "choices" in data and len(data["choices"]) > 0:
+                choice = data["choices"][0]
+                delta = choice.get("delta", {})
+                content = delta.get("content", "")
+                finish_reason = choice.get("finish_reason")
+
+                if content or finish_reason:
+                    return LLMStreamChunk(
+                        content=content,
+                        is_final=finish_reason is not None,
+                        finish_reason=finish_reason,
+                    )
+            return None
+
+        async for chunk in self._stream_sse_response(
+            url=url,
+            payload=payload,
+            model=model,
+            provider_name=provider_name,
+            chunk_parser=parse_openai_chunk,
+            error_log_event=error_log_event,
+        ):
+            yield chunk
+
+    async def _stream_anthropic_format(
+        self,
+        url: str,
+        payload: Dict[str, Any],
+        model: str,
+        error_log_event: str,
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """
+        Convenience method for Anthropic-format SSE streaming.
+
+        Anthropic uses event-based SSE with content_block_delta events.
+
+        Args:
+            url: API endpoint URL
+            payload: Request payload (already includes stream=True)
+            model: Model identifier for error logging
+            error_log_event: Log event name for errors
+
+        Yields:
+            LLMStreamChunk objects with content and metadata
+
+        Raises:
+            RuntimeError: If HTTP request fails or streaming errors occur
+        """
+
+        def parse_anthropic_chunk(data: Dict[str, Any]) -> Optional[LLMStreamChunk]:
+            event_type = data.get("type")
+
+            if event_type == "content_block_delta":
+                delta = data.get("delta", {})
+                if delta.get("type") == "text_delta":
+                    content = delta.get("text", "")
+                    if content:
+                        return LLMStreamChunk(content=content, is_final=False)
+
+            elif event_type == "message_delta":
+                delta = data.get("delta", {})
+                finish_reason = delta.get("stop_reason")
+                usage = data.get("usage", {})
+                tokens_used = usage.get("output_tokens")
+
+                return LLMStreamChunk(
+                    content="",
+                    is_final=True,
+                    finish_reason=finish_reason,
+                    tokens_used=tokens_used,
+                )
+
+            return None
+
+        async for chunk in self._stream_sse_response(
+            url=url,
+            payload=payload,
+            model=model,
+            provider_name="Anthropic",
+            chunk_parser=parse_anthropic_chunk,
+            error_log_event=error_log_event,
+        ):
+            yield chunk
+
+    async def _stream_json_objects(
+        self,
+        url: str,
+        payload: Dict[str, Any],
+        model: str,
+        provider_name: str,
+        chunk_parser: Callable[[Dict[str, Any]], Optional[LLMStreamChunk]],
+        error_log_event: str,
+        error_handler: Optional[Callable[[int, str, str], None]] = None,
+    ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """
+        Generic streaming handler for newline-delimited or buffered JSON objects.
+
+        Used by Google (buffered JSON) and potentially other providers.
+        Handles HTTP request, error responses, and JSON object extraction from stream.
+
+        Args:
+            url: API endpoint URL
+            payload: Request payload
+            model: Model identifier for error logging
+            provider_name: Provider name for error messages
+            chunk_parser: Callback to parse provider-specific chunk format
+            error_log_event: Log event name for errors
+            error_handler: Optional callback to handle errors (status, response, model)
+
+        Yields:
+            LLMStreamChunk objects parsed by chunk_parser
+
+        Raises:
+            RuntimeError: If HTTP request fails or streaming errors occur
+        """
+        session = self._ensure_session()
+
+        try:
+            async with session.post(url, json=payload) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    from ..utils.logging import log_event
+
+                    log_event(
+                        error_log_event,
+                        {
+                            "status": response.status,
+                            "error": error_text[:500],
+                            "model": model,
+                        },
+                        level=logging.ERROR,
+                    )
+
+                    if error_handler:
+                        error_handler(response.status, error_text, model)
+                    else:
+                        raise RuntimeError(
+                            f"{provider_name} streaming failed (HTTP {response.status}): {error_text}"
+                        )
+
+                buffer = ""
+                first_chunk = True
+
+                async for chunk in response.content:
+                    if not chunk:
+                        continue
+
+                    buffer += chunk.decode("utf-8")
+
+                    if first_chunk and buffer.startswith("["):
+                        if buffer.count("]") > 0:
+                            try:
+                                end_idx = buffer.index("]") + 1
+                                array_str = buffer[:end_idx]
+                                data_array = json.loads(array_str)
+                                if (
+                                    data_array
+                                    and isinstance(data_array, list)
+                                    and len(data_array) > 0
+                                ):
+                                    first_item = data_array[0]
+                                    if "error" in first_item:
+                                        error_text = json.dumps(first_item)
+                                        if error_handler:
+                                            status_code = first_item.get(
+                                                "error", {}
+                                            ).get("code", 500)
+                                            error_handler(
+                                                status_code, error_text, model
+                                            )
+                                        else:
+                                            raise RuntimeError(
+                                                f"{provider_name} error: {error_text}"
+                                            )
+                            except (json.JSONDecodeError, ValueError):
+                                pass
+
+                    first_chunk = False
+
+                    while True:
+                        start_idx = buffer.find("{")
+                        if start_idx == -1:
+                            break
+
+                        brace_count = 0
+                        end_idx = -1
+                        for i in range(start_idx, len(buffer)):
+                            if buffer[i] == "{":
+                                brace_count += 1
+                            elif buffer[i] == "}":
+                                brace_count -= 1
+                                if brace_count == 0:
+                                    end_idx = i + 1
+                                    break
+
+                        if end_idx == -1:
+                            break
+
+                        json_str = buffer[start_idx:end_idx]
+                        buffer = buffer[end_idx:].lstrip(",]\n\r\t ")
+
+                        try:
+                            data = json.loads(json_str)
+
+                            if "error" in data:
+                                error_text = json.dumps(data)
+                                if error_handler:
+                                    status_code = data.get("error", {}).get("code", 500)
+                                    error_handler(status_code, error_text, model)
+                                else:
+                                    raise RuntimeError(
+                                        f"{provider_name} error: {error_text}"
+                                    )
+
+                            chunk_obj = chunk_parser(data)
+                            if chunk_obj is not None:
+                                yield chunk_obj
+
+                        except json.JSONDecodeError as e:
+                            from ..utils.logging import log_event
+
+                            log_event(
+                                f"{error_log_event}_parse_error",
+                                {"error": str(e), "json": json_str[:100]},
+                                level=logging.WARNING,
+                            )
+                            continue
+
+        except aiohttp.ClientError as e:
+            from ..utils.logging import log_event
+
+            log_event(
+                f"{error_log_event}_connection_error",
+                {"error": str(e), "url": url},
+                level=logging.ERROR,
+            )
+            raise RuntimeError(f"Failed to stream from {provider_name}: {e}") from e
+
 
 class BaseLLMProvider(ABC):
     """
@@ -298,7 +661,7 @@ class BaseLLMProvider(ABC):
         """
         pass
 
-    async def initialize(self) -> None:
+    def initialize(self) -> None:
         """
         Initialize provider resources.
 
@@ -315,7 +678,7 @@ class BaseLLMProvider(ABC):
             return
         self._initialized = True
 
-    async def cleanup(self) -> None:
+    def cleanup(self) -> None:
         """
         Clean up provider resources.
 

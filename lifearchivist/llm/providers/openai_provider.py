@@ -4,7 +4,6 @@ OpenAI provider implementation.
 Provides access to GPT models via OpenAI API with cost tracking.
 """
 
-import json
 import logging
 from typing import AsyncGenerator, Dict, List
 
@@ -114,14 +113,14 @@ class OpenAIProvider(BaseHTTPProvider, BaseLLMProvider):
             return
 
         # Initialize HTTP session with OpenAI-specific settings
-        await self._initialize_session(
+        self._initialize_session(
             timeout_seconds=self.config.timeout_seconds,
             max_connections=100,
             max_connections_per_host=30,
             headers=self._build_headers(),
         )
 
-        await BaseLLMProvider.initialize(self)
+        BaseLLMProvider.initialize(self)
 
         log_event(
             "openai_provider_initialized",
@@ -317,95 +316,23 @@ class OpenAIProvider(BaseHTTPProvider, BaseLLMProvider):
         Raises:
             RuntimeError: If streaming fails or provider not initialized
         """
-        session = self._ensure_session()
-        base_url = self._get_base_url()
-        openai_messages = self._convert_messages(messages)
-
         payload = {
             "model": model,
-            "messages": openai_messages,
+            "messages": self._convert_messages(messages),
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": True,
             **kwargs,
         }
 
-        try:
-            async with session.post(
-                f"{base_url}/chat/completions",
-                json=payload,
-            ) as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    log_event(
-                        "openai_stream_failed",
-                        {
-                            "status": response.status,
-                            "error": error_text[:500],
-                            "model": model,
-                        },
-                        level=logging.ERROR,
-                    )
-                    raise RuntimeError(
-                        f"OpenAI streaming failed (HTTP {response.status}): {error_text}"
-                    )
-
-                # Process SSE stream
-                async for line in response.content:
-                    if not line:
-                        continue
-
-                    line_str = line.decode("utf-8").strip()
-
-                    # Skip empty lines and comments
-                    if not line_str or line_str.startswith(":"):
-                        continue
-
-                    # Parse SSE format: "data: {...}"
-                    if line_str.startswith("data: "):
-                        data_str = line_str[6:]
-
-                        # Check for stream end
-                        if data_str == "[DONE]":
-                            yield LLMStreamChunk(
-                                content="",
-                                is_final=True,
-                                finish_reason="stop",
-                            )
-                            break
-
-                        try:
-                            data = json.loads(data_str)
-
-                            # Extract delta content
-                            if "choices" in data and len(data["choices"]) > 0:
-                                choice = data["choices"][0]
-                                delta = choice.get("delta", {})
-                                content = delta.get("content", "")
-                                finish_reason = choice.get("finish_reason")
-
-                                if content or finish_reason:
-                                    yield LLMStreamChunk(
-                                        content=content,
-                                        is_final=finish_reason is not None,
-                                        finish_reason=finish_reason,
-                                    )
-
-                        except json.JSONDecodeError as e:
-                            log_event(
-                                "openai_stream_parse_error",
-                                {"error": str(e), "data": data_str[:100]},
-                                level=logging.WARNING,
-                            )
-                            continue
-
-        except aiohttp.ClientError as e:
-            log_event(
-                "openai_stream_connection_error",
-                {"error": str(e), "base_url": base_url},
-                level=logging.ERROR,
-            )
-            raise RuntimeError(f"Failed to stream from OpenAI: {e}") from e
+        async for chunk in self._stream_openai_format(
+            url=f"{self._get_base_url()}/chat/completions",
+            payload=payload,
+            model=model,
+            provider_name="OpenAI",
+            error_log_event="openai_stream_failed",
+        ):
+            yield chunk
 
     @track(
         operation="openai_list_models",

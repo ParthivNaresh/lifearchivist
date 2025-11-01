@@ -4,7 +4,6 @@ Anthropic provider implementation.
 Provides access to Claude models via Anthropic API with cost tracking.
 """
 
-import json
 import logging
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
@@ -82,14 +81,14 @@ class AnthropicProvider(BaseHTTPProvider, BaseLLMProvider):
             return
 
         # Initialize HTTP session with Anthropic-specific settings
-        await self._initialize_session(
+        self._initialize_session(
             timeout_seconds=self.config.timeout_seconds,
             max_connections=100,
             max_connections_per_host=30,
             headers=self._build_headers(),
         )
 
-        await BaseLLMProvider.initialize(self)
+        BaseLLMProvider.initialize(self)
 
         log_event(
             "anthropic_provider_initialized",
@@ -301,8 +300,6 @@ class AnthropicProvider(BaseHTTPProvider, BaseLLMProvider):
         Raises:
             RuntimeError: If streaming fails or provider not initialized
         """
-        session = self._ensure_session()
-        base_url = self._get_base_url()
         system_prompt, anthropic_messages = self._convert_messages(messages)
 
         payload = {
@@ -317,94 +314,13 @@ class AnthropicProvider(BaseHTTPProvider, BaseLLMProvider):
         if system_prompt:
             payload["system"] = system_prompt
 
-        try:
-            async with session.post(
-                f"{base_url}/messages",
-                json=payload,
-            ) as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    log_event(
-                        "anthropic_stream_failed",
-                        {
-                            "status": response.status,
-                            "error": error_text[:500],
-                            "model": model,
-                        },
-                        level=logging.ERROR,
-                    )
-                    raise RuntimeError(
-                        f"Anthropic streaming failed (HTTP {response.status}): {error_text}"
-                    )
-
-                # Process SSE stream
-                async for line in response.content:
-                    if not line:
-                        continue
-
-                    line_str = line.decode("utf-8").strip()
-
-                    # Skip empty lines and comments
-                    if not line_str or line_str.startswith(":"):
-                        continue
-
-                    # Parse SSE format: "event: <type>" and "data: {...}"
-                    if line_str.startswith("data: "):
-                        data_str = line_str[6:]
-
-                        try:
-                            data = json.loads(data_str)
-                            event_type = data.get("type")
-
-                            # Handle content block delta
-                            if event_type == "content_block_delta":
-                                delta = data.get("delta", {})
-                                if delta.get("type") == "text_delta":
-                                    text = delta.get("text", "")
-                                    if text:
-                                        yield LLMStreamChunk(
-                                            content=text,
-                                            is_final=False,
-                                        )
-
-                            # Handle message completion
-                            elif event_type == "message_delta":
-                                delta = data.get("delta", {})
-                                stop_reason = delta.get("stop_reason")
-                                usage = data.get("usage", {})
-
-                                if stop_reason:
-                                    yield LLMStreamChunk(
-                                        content="",
-                                        is_final=True,
-                                        finish_reason=stop_reason,
-                                        tokens_used=usage.get("output_tokens", 0),
-                                    )
-
-                            # Handle stream end
-                            elif event_type == "message_stop":
-                                yield LLMStreamChunk(
-                                    content="",
-                                    is_final=True,
-                                    finish_reason="end_turn",
-                                )
-                                break
-
-                        except json.JSONDecodeError as e:
-                            log_event(
-                                "anthropic_stream_parse_error",
-                                {"error": str(e), "data": data_str[:100]},
-                                level=logging.WARNING,
-                            )
-                            continue
-
-        except aiohttp.ClientError as e:
-            log_event(
-                "anthropic_stream_connection_error",
-                {"error": str(e), "base_url": base_url},
-                level=logging.ERROR,
-            )
-            raise RuntimeError(f"Failed to stream from Anthropic: {e}") from e
+        async for chunk in self._stream_anthropic_format(
+            url=f"{self._get_base_url()}/messages",
+            payload=payload,
+            model=model,
+            error_log_event="anthropic_stream_failed",
+        ):
+            yield chunk
 
     @track(
         operation="anthropic_list_models",

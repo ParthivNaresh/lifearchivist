@@ -78,13 +78,13 @@ class GoogleProvider(BaseHTTPProvider, BaseLLMProvider):
         if self._initialized:
             return
 
-        await self._initialize_session(
+        self._initialize_session(
             timeout_seconds=self.config.timeout_seconds,
             max_connections=100,
             max_connections_per_host=30,
         )
 
-        await BaseLLMProvider.initialize(self)
+        BaseLLMProvider.initialize(self)
 
         log_event(
             "google_provider_initialized",
@@ -291,11 +291,32 @@ class GoogleProvider(BaseHTTPProvider, BaseLLMProvider):
         Yields:
             LLMStreamChunk objects with incremental content
         """
-        session = self._ensure_session()
-        contents = self._convert_messages(messages)
+
+        def parse_google_chunk(data: Dict[str, Any]) -> Optional[LLMStreamChunk]:
+            candidates = data.get("candidates", [])
+            if candidates:
+                candidate = candidates[0]
+                content_parts = candidate.get("content", {}).get("parts", [])
+                content = "".join(part.get("text", "") for part in content_parts)
+                finish_reason = candidate.get("finishReason")
+
+                if content or finish_reason:
+                    chunk_obj = LLMStreamChunk(
+                        content=content,
+                        is_final=finish_reason is not None,
+                        finish_reason=finish_reason,
+                    )
+
+                    if finish_reason:
+                        usage_metadata = data.get("usageMetadata", {})
+                        chunk_obj.tokens_used = usage_metadata.get("totalTokenCount", 0)
+                        chunk_obj.metadata = {"usage_metadata": usage_metadata}
+
+                    return chunk_obj
+            return None
 
         payload = {
-            "contents": contents,
+            "contents": self._convert_messages(messages),
             "generationConfig": {
                 "temperature": temperature,
                 "maxOutputTokens": max_tokens,
@@ -304,144 +325,20 @@ class GoogleProvider(BaseHTTPProvider, BaseLLMProvider):
             },
         }
 
-        url = self._build_url(model, "streamGenerateContent")
-
         try:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    log_event(
-                        "google_stream_failed",
-                        {
-                            "status": response.status,
-                            "error": error_text[:500],
-                            "model": model,
-                        },
-                        level=logging.ERROR,
-                    )
-                    self._raise_api_error(response.status, error_text, model)
-
-                # Process streaming response
-                buffer = ""
-                first_chunk = True
-                async for chunk in response.content:
-                    if not chunk:
-                        continue
-
-                    buffer += chunk.decode("utf-8")
-
-                    # Check for error array at the beginning
-                    if first_chunk and buffer.startswith("["):
-                        # Try to parse complete array if we have enough data
-                        if buffer.count("]") > 0:
-                            try:
-                                end_idx = buffer.index("]") + 1
-                                array_str = buffer[:end_idx]
-                                data_array = json.loads(array_str)
-                                if (
-                                    data_array
-                                    and isinstance(data_array, list)
-                                    and len(data_array) > 0
-                                ):
-                                    first_item = data_array[0]
-                                    if "error" in first_item:
-                                        error_obj = first_item["error"]
-                                        status_code = error_obj.get("code", 500)
-                                        self._raise_api_error(
-                                            status_code, json.dumps(first_item), model
-                                        )
-                            except (json.JSONDecodeError, ValueError):
-                                pass
-
-                    first_chunk = False
-
-                    # Process complete JSON objects from buffer
-                    while True:
-                        # Try to find a complete JSON object
-                        start_idx = buffer.find("{")
-                        if start_idx == -1:
-                            break
-
-                        # Count braces to find complete object
-                        brace_count = 0
-                        end_idx = -1
-                        for i in range(start_idx, len(buffer)):
-                            if buffer[i] == "{":
-                                brace_count += 1
-                            elif buffer[i] == "}":
-                                brace_count -= 1
-                                if brace_count == 0:
-                                    end_idx = i + 1
-                                    break
-
-                        if end_idx == -1:
-                            # No complete object yet
-                            break
-
-                        # Extract and parse the complete object
-                        json_str = buffer[start_idx:end_idx]
-                        buffer = buffer[end_idx:]
-
-                        # Skip commas and brackets
-                        buffer = buffer.lstrip(",]\n\r\t ")
-
-                        try:
-                            data = json.loads(json_str)
-
-                            # Check for error in response
-                            if "error" in data:
-                                error_obj = data["error"]
-                                status_code = error_obj.get("code", 500)
-                                self._raise_api_error(
-                                    status_code, json.dumps(data), model
-                                )
-
-                            candidates = data.get("candidates", [])
-                            if candidates:
-                                candidate = candidates[0]
-                                content_parts = candidate.get("content", {}).get(
-                                    "parts", []
-                                )
-                                content = "".join(
-                                    part.get("text", "") for part in content_parts
-                                )
-
-                                finish_reason = candidate.get("finishReason")
-
-                                if content or finish_reason:
-                                    chunk_obj = LLMStreamChunk(
-                                        content=content,
-                                        is_final=finish_reason is not None,
-                                        finish_reason=finish_reason,
-                                    )
-
-                                    if finish_reason:
-                                        usage_metadata = data.get("usageMetadata", {})
-                                        chunk_obj.tokens_used = usage_metadata.get(
-                                            "totalTokenCount", 0
-                                        )
-                                        chunk_obj.metadata = {
-                                            "usage_metadata": usage_metadata
-                                        }
-
-                                    yield chunk_obj
-
-                        except json.JSONDecodeError as e:
-                            log_event(
-                                "google_stream_parse_error",
-                                {"error": str(e), "json": json_str[:100]},
-                                level=logging.WARNING,
-                            )
-                            continue
-
-        except aiohttp.ClientError as e:
-            log_event(
-                "google_stream_connection_error",
-                {"error": str(e), "url": url},
-                level=logging.ERROR,
-            )
+            async for chunk in self._stream_json_objects(
+                url=self._build_url(model, "streamGenerateContent"),
+                payload=payload,
+                model=model,
+                provider_name="Google AI",
+                chunk_parser=parse_google_chunk,
+                error_log_event="google_stream_failed",
+                error_handler=self._raise_api_error,
+            ):
+                yield chunk
+        except RuntimeError as e:
             raise StreamingError(
-                message=f"Failed to stream from Google AI: {str(e)}",
+                message=str(e),
                 provider_id=self.provider_id,
                 model=model,
                 original_error=e,
