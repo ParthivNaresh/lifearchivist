@@ -17,12 +17,14 @@ Supported event types:
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Awaitable, Dict, List, Optional, cast
 
 import redis.asyncio as redis
 
 from lifearchivist.utils.logging import log_event, track
+
+from .constants import ErrorMessages
 
 
 class ActivityManager:
@@ -123,7 +125,7 @@ class ActivityManager:
     def _client(self) -> "redis.Redis":
         """Return a non-optional Redis client or raise if not initialized."""
         if self.redis_client is None:
-            raise RuntimeError("ActivityManager not initialized")
+            raise RuntimeError(ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED)
         return self.redis_client
 
     async def close(self) -> None:
@@ -158,10 +160,10 @@ class ActivityManager:
             RuntimeError: If manager not initialized
         """
         if not self._initialized:
-            raise RuntimeError("ActivityManager not initialized")
+            raise RuntimeError(ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED)
 
         # Create event with unique ID and timestamp
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(timezone.utc)
         event = {
             "id": f"{timestamp.timestamp()}_{event_type}",
             "type": event_type,
@@ -227,7 +229,7 @@ class ActivityManager:
             RuntimeError: If manager not initialized
         """
         if not self._initialized:
-            raise RuntimeError("ActivityManager not initialized")
+            raise RuntimeError(ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED)
 
         try:
             # Get events from Redis (0 to limit-1, newest first)
@@ -286,7 +288,7 @@ class ActivityManager:
             RuntimeError: If manager not initialized
         """
         if not self._initialized:
-            raise RuntimeError("ActivityManager not initialized")
+            raise RuntimeError(ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED)
 
         try:
             # Get count before clearing
@@ -322,7 +324,7 @@ class ActivityManager:
             RuntimeError: If manager not initialized
         """
         if not self._initialized:
-            raise RuntimeError("ActivityManager not initialized")
+            raise RuntimeError(ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED)
 
         try:
             client = self._client()

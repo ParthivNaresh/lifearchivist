@@ -3,7 +3,7 @@ Timeline API routes for temporal document visualization.
 """
 
 import logging
-from datetime import date, datetime
+from datetime import date
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -11,6 +11,11 @@ from fastapi import APIRouter, HTTPException
 from lifearchivist.utils.logging import log_event, track
 
 from ..dependencies import get_server
+from .utils import (
+    parse_date_filter,
+    process_summary_document,
+    process_timeline_document,
+)
 
 router = APIRouter(prefix="/api", tags=["timeline"])
 
@@ -70,30 +75,13 @@ async def get_timeline_data(
 
         documents: List[Dict[str, Any]] = documents_result.unwrap()
 
-        # Parse date filters if provided
-        filter_start = None
-        filter_end = None
-        if start_date:
-            try:
-                filter_start = datetime.fromisoformat(start_date).date()
-            except ValueError as err:
-                raise HTTPException(
-                    status_code=400, detail="Invalid start_date format"
-                ) from err
-        if end_date:
-            try:
-                filter_end = datetime.fromisoformat(end_date).date()
-            except ValueError as err:
-                raise HTTPException(
-                    status_code=400, detail="Invalid end_date format"
-                ) from err
+        filter_start = parse_date_filter(start_date, "start_date")
+        filter_end = parse_date_filter(end_date, "end_date")
 
-        # Process documents and extract temporal data
-        by_year: Dict[str, Dict[str, Any]] = {}
         timeline_data: Dict[str, Any] = {
             "total_documents": 0,
             "date_range": {"earliest": None, "latest": None},
-            "by_year": by_year,
+            "by_year": {},
             "documents_without_dates": 0,
         }
 
@@ -101,78 +89,9 @@ async def get_timeline_data(
         latest_date: Optional[date] = None
 
         for doc in documents:
-            metadata: Dict[str, Any] = doc.get("metadata", {})
-
-            # Get the best available date (priority order)
-            doc_date_str = (
-                metadata.get("document_created_at")
-                or metadata.get("file_modified_at_disk")
-                or metadata.get("uploaded_at")
+            earliest_date, latest_date, _ = process_timeline_document(
+                doc, timeline_data, filter_start, filter_end, earliest_date, latest_date
             )
-
-            if not doc_date_str:
-                timeline_data["documents_without_dates"] += 1
-                continue
-
-            try:
-                # Parse ISO date string
-                doc_date = datetime.fromisoformat(doc_date_str.replace("Z", "+00:00"))
-                doc_date_only = doc_date.date()
-
-                # Apply date filters
-                if filter_start and doc_date_only < filter_start:
-                    continue
-                if filter_end and doc_date_only > filter_end:
-                    continue
-
-                # Track earliest/latest
-                if earliest_date is None or doc_date_only < earliest_date:
-                    earliest_date = doc_date_only
-                if latest_date is None or doc_date_only > latest_date:
-                    latest_date = doc_date_only
-
-                # Extract year and month
-                year = str(doc_date.year)
-                month = f"{doc_date.month:02d}"
-
-                # Initialize year if needed
-                if year not in timeline_data["by_year"]:
-                    timeline_data["by_year"][year] = {"count": 0, "months": {}}
-
-                # Initialize month if needed
-                if month not in timeline_data["by_year"][year]["months"]:
-                    timeline_data["by_year"][year]["months"][month] = {
-                        "count": 0,
-                        "documents": [],
-                    }
-
-                # Add document summary
-                doc_summary = {
-                    "id": doc.get("document_id"),
-                    "title": metadata.get("title", "Untitled"),
-                    "date": doc_date_str,
-                    "mime_type": metadata.get("mime_type"),
-                    "theme": metadata.get("classifications", {}).get("theme"),
-                }
-
-                timeline_data["by_year"][year]["months"][month]["documents"].append(
-                    doc_summary
-                )
-                timeline_data["by_year"][year]["months"][month]["count"] += 1
-                timeline_data["by_year"][year]["count"] += 1
-                timeline_data["total_documents"] += 1
-
-            except (ValueError, AttributeError) as e:
-                log_event(
-                    "timeline_date_parse_error",
-                    {
-                        "document_id": doc.get("document_id"),
-                        "date_string": doc_date_str,
-                        "error": str(e),
-                    },
-                    level=logging.WARNING,
-                )
-                continue
 
         # Set date range
         if earliest_date is not None:
@@ -247,62 +166,25 @@ async def get_timeline_summary() -> Dict[str, Any]:
 
         documents: List[Dict[str, Any]] = documents_result.unwrap()
 
-        by_year: Dict[str, int] = {}
-        data_quality: Dict[str, int] = {
-            "with_document_created_at": 0,
-            "with_platform_dates": 0,
-            "fallback_to_disk": 0,
-            "no_dates": 0,
-        }
         summary: Dict[str, Any] = {
             "total_documents": len(documents),
             "date_range": {"earliest": None, "latest": None},
-            "by_year": by_year,
-            "data_quality": data_quality,
+            "by_year": {},
+            "data_quality": {
+                "with_document_created_at": 0,
+                "with_platform_dates": 0,
+                "fallback_to_disk": 0,
+                "no_dates": 0,
+            },
         }
 
         earliest_date: Optional[date] = None
         latest_date: Optional[date] = None
 
         for doc in documents:
-            metadata: Dict[str, Any] = doc.get("metadata", {})
-
-            # Track data quality and get best date
-            doc_date_str = metadata.get("document_created_at")
-            if doc_date_str:
-                summary["data_quality"]["with_document_created_at"] += 1
-            else:
-                doc_date_str = metadata.get("file_modified_at_disk")
-                if doc_date_str:
-                    summary["data_quality"]["fallback_to_disk"] += 1
-                else:
-                    summary["data_quality"]["no_dates"] += 1
-                    continue
-
-            try:
-                # Type guard: doc_date_str is guaranteed to be str here due to continue above
-                if not isinstance(doc_date_str, str):
-                    continue
-                doc_date = datetime.fromisoformat(doc_date_str.replace("Z", "+00:00"))
-                doc_date_only = doc_date.date()
-
-                # Track earliest/latest
-                if earliest_date is None:
-                    earliest_date = doc_date_only
-                elif doc_date_only < earliest_date:
-                    earliest_date = doc_date_only
-
-                if latest_date is None:
-                    latest_date = doc_date_only
-                elif doc_date_only > latest_date:
-                    latest_date = doc_date_only
-
-                # Count by year
-                year = str(doc_date.year)
-                by_year[year] = by_year.get(year, 0) + 1
-
-            except (ValueError, AttributeError):
-                continue
+            earliest_date, latest_date = process_summary_document(
+                doc, summary, earliest_date, latest_date
+            )
 
         # Set date range
         if earliest_date is not None:

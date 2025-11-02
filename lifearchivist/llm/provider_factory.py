@@ -231,7 +231,7 @@ class ProviderManagerFactory:
 
         init_result = await manager.initialize()
         if init_result.is_failure():
-            error_msg = init_result.error_or("Unknown error")
+            error_msg = init_result.error_or(ErrorMessages.UNKNOWN_ERROR)
             raise RuntimeError(
                 ErrorMessages.MANAGER_INIT_FAILED.format(error=error_msg)
             )
@@ -240,7 +240,7 @@ class ProviderManagerFactory:
         load_result = await loader.load_all_providers(user_id)
 
         if load_result.is_failure():
-            error_msg = load_result.error_or("Unknown error")
+            error_msg = load_result.error_or(ErrorMessages.UNKNOWN_ERROR)
             log_event(
                 "provider_factory_load_failed",
                 {
@@ -256,7 +256,7 @@ class ProviderManagerFactory:
         for provider in providers:
             add_result = await manager.add_provider(provider)
             if add_result.is_failure():
-                error_msg = add_result.error_or("Unknown error")
+                error_msg = add_result.error_or(ErrorMessages.UNKNOWN_ERROR)
                 log_event(
                     "provider_factory_add_failed",
                     {
@@ -332,14 +332,14 @@ class ProviderManagerFactory:
                         },
                     )
                 else:
-                    error_msg = store_result.error_or("Unknown error")
+                    error_msg = store_result.error_or(ErrorMessages.UNKNOWN_ERROR)
                     log_event(
                         "default_ollama_provider_store_failed",
                         {"error": error_msg},
                         level=logging.WARNING,
                     )
             else:
-                error_msg = add_result.error_or("Unknown error")
+                error_msg = add_result.error_or(ErrorMessages.UNKNOWN_ERROR)
                 log_event(
                     "default_ollama_provider_add_failed",
                     {"error": error_msg},

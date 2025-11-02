@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
+from .constants import FieldDescriptions
+
 if TYPE_CHECKING:
     from watchdog.observers.api import BaseObserver
 
@@ -230,7 +232,7 @@ class UpdateFolderRequest(BaseModel):
 class FolderResponse(BaseModel):
     """Response containing folder information."""
 
-    id: str = Field(description="Folder UUID")
+    id: str = Field(description=FieldDescriptions.FOLDER_UUID)
     path: str = Field(description="Absolute folder path")
     enabled: bool = Field(description="Whether watching is enabled")
     created_at: str = Field(description="ISO timestamp when folder was added")
@@ -271,7 +273,7 @@ class FolderScanResponse(BaseModel):
     """Response from manual folder scan."""
 
     success: bool = Field(description="Whether scan succeeded")
-    folder_id: str = Field(description="Folder UUID")
+    folder_id: str = Field(description=FieldDescriptions.FOLDER_UUID)
     folder_path: str = Field(description="Folder path")
     files_found: int = Field(description="Number of files found")
     files_queued: int = Field(description="Number of files queued for ingestion")
@@ -283,7 +285,7 @@ class FolderHealthCheckResponse(BaseModel):
     """Response from folder health check."""
 
     success: bool = Field(description="Whether check succeeded")
-    folder_id: str = Field(description="Folder UUID")
+    folder_id: str = Field(description=FieldDescriptions.FOLDER_UUID)
     folder_path: str = Field(description="Folder path")
     accessible: bool = Field(description="Whether folder is accessible")
     exists: bool = Field(description="Whether folder exists")

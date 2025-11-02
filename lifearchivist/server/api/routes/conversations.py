@@ -27,6 +27,8 @@ from lifearchivist.llm import LLMMessage
 from ..dependencies import get_server
 from ..error_formatting import create_error_metadata, format_llm_error
 from ..prompt_utils import PromptFormatter
+from .constants import ErrorMessages
+from .utils import handle_service_result, validate_conversation_service
 
 router = APIRouter(prefix="/api", tags=["conversations"])
 
@@ -113,41 +115,26 @@ async def create_conversation(request: CreateConversationRequest):
     Returns the created conversation with ID.
     """
     server = get_server()
+    service = validate_conversation_service(server)
 
-    if (
-        not server.service_container
-        or not server.service_container.conversation_service
-    ):
-        raise HTTPException(
-            status_code=503, detail="Conversation service not available"
-        )
-
-    service = server.service_container.conversation_service
-
-    # Create conversation (pass None for temperature/max_tokens to use user preferences)
     result = await service.create_conversation(
-        user_id="default",  # Single-user mode for now
+        user_id="default",
         title=request.title,
         model=request.model,
         provider_id=request.provider_id,
         context_documents=request.context_documents,
         system_prompt=request.system_prompt,
-        temperature=request.temperature,  # Will be None if not provided
-        max_tokens=request.max_tokens,  # Will be None if not provided
+        temperature=request.temperature,
+        max_tokens=request.max_tokens,
     )
 
-    # Handle result
-    if result.is_failure():
-        return JSONResponse(
-            content=result.to_dict(),
-            status_code=result.status_code,
-        )
-
-    conversation = result.unwrap()
+    error_response = handle_service_result(result)
+    if error_response:
+        return error_response
 
     return {
         "success": True,
-        "conversation": conversation,
+        "conversation": result.unwrap(),
     }
 
 
@@ -169,7 +156,7 @@ async def list_conversations(
         or not server.service_container.conversation_service
     ):
         raise HTTPException(
-            status_code=503, detail="Conversation service not available"
+            status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
         )
 
     service = server.service_container.conversation_service
@@ -211,14 +198,16 @@ async def get_conversation(
     server = get_server()
 
     if not server.service_container:
-        raise HTTPException(status_code=503, detail="Services not available")
+        raise HTTPException(
+            status_code=503, detail=ErrorMessages.SERVICES_NOT_AVAILABLE
+        )
 
     conv_service = server.service_container.conversation_service
     msg_service = server.service_container.message_service
 
     if not conv_service:
         raise HTTPException(
-            status_code=503, detail="Conversation service not available"
+            status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
         )
 
     # Get conversation
@@ -273,7 +262,7 @@ async def update_conversation(
         or not server.service_container.conversation_service
     ):
         raise HTTPException(
-            status_code=503, detail="Conversation service not available"
+            status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
         )
 
     service = server.service_container.conversation_service
@@ -319,7 +308,7 @@ async def archive_conversation(conversation_id: str):
         or not server.service_container.conversation_service
     ):
         raise HTTPException(
-            status_code=503, detail="Conversation service not available"
+            status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
         )
 
     service = server.service_container.conversation_service
@@ -360,7 +349,9 @@ async def send_message(
     server = get_server()
 
     if not server.service_container:
-        raise HTTPException(status_code=503, detail="Services not available")
+        raise HTTPException(
+            status_code=503, detail=ErrorMessages.SERVICES_NOT_AVAILABLE
+        )
 
     conv_service = server.service_container.conversation_service
     msg_service = server.service_container.message_service
@@ -376,7 +367,7 @@ async def send_message(
         # Verify conversation exists
         if not conv_service:
             raise HTTPException(
-                status_code=503, detail="Conversation service not available"
+                status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
             )
 
         conv_result = await conv_service.get_conversation(conversation_id)
@@ -619,7 +610,9 @@ async def send_message_streaming(
     server = get_server()
 
     if not server.service_container:
-        raise HTTPException(status_code=503, detail="Services not available")
+        raise HTTPException(
+            status_code=503, detail=ErrorMessages.SERVICES_NOT_AVAILABLE
+        )
 
     rag_service = server.service_container.rag_service
 
@@ -707,7 +700,7 @@ async def send_message_streaming(
         try:
             # Verify conversation exists
             if not conv_service:
-                yield f"event: error\ndata: {json.dumps({'error': 'Conversation service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
+                yield f"event: error\ndata: {json.dumps({'error': ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE, 'error_type': 'ServiceUnavailable'})}\n\n"
                 return
 
             conv_result = await conv_service.get_conversation(conversation_id)

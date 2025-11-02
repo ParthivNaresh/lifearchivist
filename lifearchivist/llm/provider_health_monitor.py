@@ -137,21 +137,24 @@ class ProviderHealthMonitor:
 
         Runs periodic health checks on all providers.
         """
-        while self._running:
-            try:
-                await self._check_all_providers()
-                await asyncio.sleep(self.check_interval)
-
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                log_event(
-                    "health_monitor_error",
-                    {"error": str(e), "error_type": type(e).__name__},
-                    level=logging.ERROR,
-                )
-                with contextlib.suppress(asyncio.CancelledError):
+        try:
+            while self._running:
+                try:
+                    await self._check_all_providers()
                     await asyncio.sleep(self.check_interval)
+
+                except Exception as e:
+                    log_event(
+                        "health_monitor_error",
+                        {"error": str(e), "error_type": type(e).__name__},
+                        level=logging.ERROR,
+                    )
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await asyncio.sleep(self.check_interval)
+
+        except asyncio.CancelledError:
+            log_event("health_monitor_cancelled")
+            raise
 
     @track(
         operation="health_check_all_providers",

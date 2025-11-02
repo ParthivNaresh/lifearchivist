@@ -10,7 +10,7 @@ Note: Tag extraction is currently a placeholder.
 Full implementation will extract tags from document metadata and content.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -149,7 +149,7 @@ async def get_topic_landscape(
             "topics": [],
             "total_topics": 0,
             "total_documents": 0,
-            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "min_documents": min_documents,
             "max_topics": max_topics,
             "note": "Topic extraction not yet implemented. This is a placeholder.",

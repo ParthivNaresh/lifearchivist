@@ -8,6 +8,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from ...constants import ErrorMessages
 from ..dependencies import get_server
 
 router = APIRouter(prefix="/api/activity", tags=["activity"])
@@ -43,7 +44,7 @@ async def get_activity_events(limit: int = 200):
         return JSONResponse(
             content={
                 "success": False,
-                "error": "Activity manager not initialized",
+                "error": ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED,
                 "error_type": "ServiceUnavailable",
             },
             status_code=503,
@@ -86,7 +87,7 @@ async def get_activity_count():
         return JSONResponse(
             content={
                 "success": False,
-                "error": "Activity manager not initialized",
+                "error": ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED,
                 "error_type": "ServiceUnavailable",
             },
             status_code=503,
@@ -131,7 +132,7 @@ async def clear_activity_events():
         return JSONResponse(
             content={
                 "success": False,
-                "error": "Activity manager not initialized",
+                "error": ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED,
                 "error_type": "ServiceUnavailable",
             },
             status_code=503,

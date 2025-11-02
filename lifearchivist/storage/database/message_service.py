@@ -8,7 +8,6 @@ Provides operations for:
 - Message metadata
 """
 
-import json
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -23,10 +22,16 @@ from ...utils.result import (
     validation_error,
 )
 from .utils import (
+    build_citation_data,
     build_insert_query,
+    build_message_data,
     parse_uuid,
     record_to_dict,
     records_to_list,
+    validate_confidence,
+    validate_message_content,
+    validate_message_role,
+    validate_single_citation,
 )
 
 
@@ -91,34 +96,28 @@ class MessageService:
             Success with message dict, or Failure with error
         """
         try:
-            # Validate inputs
-            if role not in ("user", "assistant", "system"):
+            error_msg = validate_message_role(role)
+            if error_msg:
+                return validation_error(error_msg, context={"role": role})
+
+            error_msg = validate_message_content(content)
+            if error_msg:
                 return validation_error(
-                    f"Invalid role: {role}. Must be 'user', 'assistant', or 'system'",
-                    context={"role": role},
+                    error_msg, context={"conversation_id": conversation_id}
                 )
 
-            if not content or not content.strip():
-                return validation_error(
-                    "Message content cannot be empty",
-                    context={"conversation_id": conversation_id},
-                )
+            if confidence is not None:
+                error_msg = validate_confidence(confidence)
+                if error_msg:
+                    return validation_error(
+                        error_msg, context={"confidence": confidence}
+                    )
 
-            if confidence is not None and (confidence < 0 or confidence > 1):
-                return validation_error(
-                    "Confidence must be between 0 and 1",
-                    context={"confidence": confidence},
-                )
-
-            # Parse UUIDs
             conv_uuid = parse_uuid(conversation_id)
             parent_uuid = parse_uuid(parent_message_id) if parent_message_id else None
 
-            # Get next sequence number
             async with self.db_pool.acquire() as conn:
-                # Start transaction
                 async with conn.transaction():
-                    # Get next sequence number
                     sequence_number = await conn.fetchval(
                         """
                         SELECT COALESCE(MAX(sequence_number), -1) + 1
@@ -128,34 +127,20 @@ class MessageService:
                         conv_uuid,
                     )
 
-                    # Prepare message data
-                    data = {
-                        "conversation_id": conv_uuid,
-                        "role": role,
-                        "content": content.strip(),
-                        "sequence_number": sequence_number,
-                    }
+                    data = build_message_data(
+                        conv_uuid,
+                        role,
+                        content,
+                        sequence_number,
+                        model,
+                        confidence,
+                        method,
+                        tokens_used,
+                        latency_ms,
+                        parent_uuid,
+                        metadata,
+                    )
 
-                    if model:
-                        data["model"] = model
-                    if confidence is not None:
-                        data["confidence"] = confidence
-                    if method:
-                        data["method"] = method
-                    if tokens_used is not None:
-                        data["tokens_used"] = tokens_used
-                    if latency_ms is not None:
-                        data["latency_ms"] = latency_ms
-                    if parent_uuid:
-                        data["parent_message_id"] = parent_uuid
-                    if metadata:
-                        data["metadata"] = (
-                            json.dumps(metadata)
-                            if isinstance(metadata, dict)
-                            else metadata
-                        )
-
-                    # Insert message
                     query, values = build_insert_query("messages", data)
                     record = await conn.fetchrow(query, *values)
 
@@ -338,43 +323,20 @@ class MessageService:
                     context={"message_id": message_id},
                 )
 
-            # Parse UUID
             msg_uuid = parse_uuid(message_id)
 
-            # Validate citations
             for i, citation in enumerate(citations):
-                if "document_id" not in citation:
+                error_msg = validate_single_citation(citation, i)
+                if error_msg:
                     return validation_error(
-                        f"Citation {i} missing document_id",
-                        context={"message_id": message_id},
+                        error_msg, context={"message_id": message_id}
                     )
 
-                score = citation.get("score")
-                if score is not None and (score < 0 or score > 1):
-                    return validation_error(
-                        f"Citation {i} score must be between 0 and 1",
-                        context={"score": score},
-                    )
-
-            # Insert citations
             created_citations = []
             async with self.db_pool.acquire() as conn:
                 async with conn.transaction():
                     for citation in citations:
-                        data = {
-                            "message_id": msg_uuid,
-                            "document_id": citation["document_id"],
-                        }
-
-                        if "chunk_id" in citation:
-                            data["chunk_id"] = citation["chunk_id"]
-                        if "score" in citation:
-                            data["score"] = citation["score"]
-                        if "snippet" in citation:
-                            data["snippet"] = citation["snippet"]
-                        if "position" in citation:
-                            data["position"] = citation["position"]
-
+                        data = build_citation_data(msg_uuid, citation)
                         query, values = build_insert_query("message_citations", data)
                         record = await conn.fetchrow(query, *values)
                         created_citations.append(record_to_dict(record))

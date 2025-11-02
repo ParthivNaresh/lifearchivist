@@ -9,7 +9,7 @@ Provides configuration management for:
 - System information
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -17,6 +17,12 @@ from pydantic import BaseModel, Field
 from lifearchivist.config import get_settings as get_app_settings
 
 from ..dependencies import get_server
+from .utils import (
+    has_conversation_defaults_update,
+    track_non_persisted_fields,
+    update_conversation_defaults_in_db,
+    update_settings_in_memory,
+)
 
 router = APIRouter(prefix="/api", tags=["settings"])
 
@@ -223,124 +229,20 @@ async def update_settings(request: SettingsUpdateRequest):
     """
     try:
         settings = get_app_settings()
-        updated_fields = []
 
-        # Update settings in memory
-        if request.max_file_size_mb is not None:
-            settings.max_file_size_mb = request.max_file_size_mb
-            updated_fields.append("max_file_size_mb")
+        memory_fields = update_settings_in_memory(settings, request)
+        tracked_fields = track_non_persisted_fields(request)
+        updated_fields = memory_fields + tracked_fields
 
-        if request.llm_model is not None:
-            settings.llm_model = request.llm_model
-            updated_fields.append("llm_model")
-
-        if request.embedding_model is not None:
-            settings.embedding_model = request.embedding_model
-            updated_fields.append("embedding_model")
-
-        if request.theme is not None:
-            settings.theme = request.theme
-            updated_fields.append("theme")
-
-        # Track other fields (not yet persisted to settings object)
-        if request.auto_extract_dates is not None:
-            updated_fields.append("auto_extract_dates")
-        if request.generate_text_previews is not None:
-            updated_fields.append("generate_text_previews")
-        if request.search_results_limit is not None:
-            updated_fields.append("search_results_limit")
-        if request.auto_organize_by_date is not None:
-            updated_fields.append("auto_organize_by_date")
-        if request.duplicate_detection is not None:
-            updated_fields.append("duplicate_detection")
-        if request.default_import_location is not None:
-            updated_fields.append("default_import_location")
-        if request.interface_density is not None:
-            updated_fields.append("interface_density")
-
-        # Update conversation defaults in database
-        if any(
-            [
-                request.temperature is not None,
-                request.max_output_tokens is not None,
-                request.response_format is not None,
-                request.context_window_size is not None,
-                request.response_timeout is not None,
-            ]
-        ):
+        if has_conversation_defaults_update(request):
             server = get_server()
             if (
                 server.service_container
                 and server.service_container.conversation_service
             ):
                 db_pool = server.service_container.conversation_service.db_pool
-
-                async with db_pool.acquire() as conn:
-                    # Build update query dynamically
-                    updates = []
-                    values: List[Union[float, int, str]] = []
-                    param_count = 1
-
-                    if request.temperature is not None:
-                        updates.append(f"temperature = ${param_count}")
-                        values.append(request.temperature)
-                        param_count += 1
-                        updated_fields.append("temperature")
-
-                    if request.max_output_tokens is not None:
-                        updates.append(f"max_output_tokens = ${param_count}")
-                        values.append(request.max_output_tokens)
-                        param_count += 1
-                        updated_fields.append("max_output_tokens")
-
-                    if request.response_format is not None:
-                        updates.append(f"response_format = ${param_count}")
-                        values.append(request.response_format)
-                        param_count += 1
-                        updated_fields.append("response_format")
-
-                    if request.context_window_size is not None:
-                        updates.append(f"context_window_size = ${param_count}")
-                        values.append(request.context_window_size)
-                        param_count += 1
-                        updated_fields.append("context_window_size")
-
-                    if request.response_timeout is not None:
-                        updates.append(f"response_timeout = ${param_count}")
-                        values.append(request.response_timeout)
-                        param_count += 1
-                        updated_fields.append("response_timeout")
-
-                    if updates:
-                        updates.append("updated_at = NOW()")
-                        # Use UPDATE directly since we know the record exists (created by schema.sql)
-                        query = f"""
-                            UPDATE user_preferences 
-                            SET {', '.join(updates)}
-                            WHERE user_id = 'default'
-                        """
-                        await conn.execute(query, *values)
-
-                        # Optionally update existing conversations that are using defaults
-                        if request.temperature is not None:
-                            await conn.execute(
-                                """
-                                UPDATE conversations 
-                                SET temperature = $1, updated_at = NOW()
-                                WHERE temperature = 0.7 AND archived_at IS NULL
-                                """,
-                                request.temperature,
-                            )
-
-                        if request.max_output_tokens is not None:
-                            await conn.execute(
-                                """
-                                UPDATE conversations 
-                                SET max_tokens = $1, updated_at = NOW()
-                                WHERE max_tokens = 2000 AND archived_at IS NULL
-                                """,
-                                request.max_output_tokens,
-                            )
+                db_fields = await update_conversation_defaults_in_db(db_pool, request)
+                updated_fields.extend(db_fields)
 
         if not updated_fields:
             raise HTTPException(

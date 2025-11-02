@@ -63,6 +63,7 @@ class ValidationMessages:
 
 
 class ErrorMessages:
+    UNKNOWN_ERROR: Final[str] = "Unknown error"
     REDIS_REQUIRED_FOR_COST_TRACKING: Final[str] = (
         "Redis client required for cost tracking. "
         "Either provide redis_client or set enable_cost_tracking=False"

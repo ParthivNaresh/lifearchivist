@@ -19,7 +19,6 @@ Security Note:
     For multi-tenant deployments, add authentication middleware and user isolation.
 """
 
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -32,6 +31,16 @@ from lifearchivist.llm import (
 )
 
 from ..dependencies import get_server
+from .constants import ErrorMessages
+from .utils import (
+    determine_fallback_provider,
+    fetch_provider_capabilities,
+    fetch_provider_workspaces,
+    fetch_time_based_metadata,
+    reload_provider_with_new_config,
+    update_conversations_provider,
+    update_provider_default_status,
+)
 
 router = APIRouter(prefix="/api/providers", tags=["providers"])
 
@@ -301,7 +310,7 @@ async def check_provider_usage(provider_id: str):
         or not server.service_container.conversation_service
     ):
         raise HTTPException(
-            status_code=503, detail="Conversation service not available"
+            status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
         )
 
     try:
@@ -370,88 +379,25 @@ async def delete_provider(
     try:
         affected_conversations = 0
 
-        if (
+        should_update = (
             update_conversations
             and server.service_container
             and server.service_container.conversation_service
-        ):
-            current_default = server.llm_manager.get_provider(None)
-            is_deleting_default = (
-                current_default and current_default.provider_id == provider_id
+        )
+
+        if should_update:
+            fallback_provider_id, fallback_model = await determine_fallback_provider(
+                server.llm_manager, provider_id
             )
 
-            if is_deleting_default:
-                fallback_provider_id = "ollama-default"
-                fallback_model = "llama3.2:1b"
+            db_pool = server.service_container.conversation_service.db_pool  # type: ignore[union-attr]
+            affected_conversations = await update_conversations_provider(
+                db_pool,
+                provider_id,
+                fallback_provider_id,
+                fallback_model,
+            )
 
-                ollama_provider = server.llm_manager.get_provider("ollama-default")
-                if ollama_provider:
-                    try:
-                        models_result = await server.llm_manager.list_models(
-                            provider_id="ollama-default"
-                        )
-                        if models_result.is_success():
-                            models = models_result.unwrap()
-                            if models:
-                                fallback_model = models[0].id
-                    except Exception as e:
-                        import logging
-
-                        logging.warning(
-                            f"Failed to fetch Ollama models for fallback: {e}"
-                        )
-            else:
-                if current_default:
-                    fallback_provider_id = current_default.provider_id
-                    fallback_model = None
-
-                    try:
-                        models_result = await server.llm_manager.list_models(
-                            provider_id=current_default.provider_id
-                        )
-                        if models_result.is_success():
-                            models = models_result.unwrap()
-                            if models:
-                                fallback_model = models[0].id
-                    except Exception as e:
-                        import logging
-
-                        logging.warning(
-                            f"Failed to fetch models for fallback provider {current_default.provider_id}: {e}"
-                        )
-
-                    if not fallback_model:
-                        import logging
-
-                        logging.warning(
-                            f"No models available for provider {current_default.provider_id}, falling back to ollama-default"
-                        )
-                        fallback_provider_id = "ollama-default"
-                        fallback_model = "llama3.2:1b"
-                else:
-                    fallback_provider_id = "ollama-default"
-                    fallback_model = "llama3.2:1b"
-
-            async with (
-                server.service_container.conversation_service.db_pool.acquire() as conn
-            ):
-                result = await conn.execute(
-                    """
-                    UPDATE conversations 
-                    SET provider_id = $1, model = $2, updated_at = NOW()
-                    WHERE provider_id = $3 AND archived_at IS NULL
-                    """,
-                    (
-                        fallback_provider_id
-                        if fallback_provider_id != "ollama-default"
-                        else None
-                    ),
-                    fallback_model,
-                    provider_id,
-                )
-                affected_conversations = int(result.split()[-1]) if result else 0
-
-        # Remove from manager (cleans up resources)
         remove_result = await server.llm_manager.remove_provider(provider_id)
 
         if remove_result.is_failure():
@@ -460,7 +406,6 @@ async def delete_provider(
                 status_code=remove_result.status_code,
             )
 
-        # Delete from storage
         delete_result = await server.credential_service.delete_provider(provider_id)
 
         if delete_result.is_failure():
@@ -499,7 +444,6 @@ async def update_provider(provider_id: str, request: UpdateProviderRequest):
     if not server.credential_service:
         raise HTTPException(status_code=503, detail="Credential service not available")
 
-    # Validate at least one field provided
     if request.config is None and request.set_as_default is None:
         raise HTTPException(
             status_code=400,
@@ -507,7 +451,6 @@ async def update_provider(provider_id: str, request: UpdateProviderRequest):
         )
 
     try:
-        # Get current provider metadata
         metadata_result = await server.credential_service.get_provider_metadata(
             provider_id
         )
@@ -521,74 +464,31 @@ async def update_provider(provider_id: str, request: UpdateProviderRequest):
         metadata = metadata_result.unwrap()
         provider_type = _parse_provider_type(metadata["provider_type"])
 
-        # Create new config if provided
         new_config = None
         if request.config is not None:
             new_config = _create_provider_config(provider_type, request.config)
 
-        # If config changed, load new provider BEFORE removing old one
         if new_config is not None and server.provider_loader:
-            # Update in storage first
-            update_result = await server.credential_service.update_provider(
-                provider_id=provider_id,
-                config=new_config,
-                is_default=request.set_as_default,
+            error_response = await reload_provider_with_new_config(
+                server.credential_service,
+                server.provider_loader,
+                server.llm_manager,
+                provider_id,
+                new_config,
+                request.set_as_default,
             )
-
-            if update_result.is_failure():
-                return JSONResponse(
-                    content=update_result.to_dict(),
-                    status_code=update_result.status_code,
-                )
-
-            # Load new provider
-            load_result = await server.provider_loader.load_provider(provider_id)
-
-            if load_result.is_failure():
-                return JSONResponse(
-                    content=load_result.to_dict(),
-                    status_code=load_result.status_code,
-                )
-
-            new_provider = load_result.unwrap()
-
-            # Now remove old provider
-            await server.llm_manager.remove_provider(provider_id)
-
-            # Add new provider
-            add_result = await server.llm_manager.add_provider(
-                new_provider, set_as_default=request.set_as_default or False
-            )
-
-            if add_result.is_failure():
-                return JSONResponse(
-                    content=add_result.to_dict(),
-                    status_code=add_result.status_code,
-                )
+            if error_response:
+                return error_response
         else:
-            # Only updating default status, no reload needed
             if request.set_as_default is not None:
-                update_result = await server.credential_service.update_provider(
-                    provider_id=provider_id,
-                    config=None,
-                    is_default=request.set_as_default,
+                error_response = await update_provider_default_status(
+                    server.credential_service,
+                    server.llm_manager,
+                    provider_id,
+                    request.set_as_default,
                 )
-
-                if update_result.is_failure():
-                    return JSONResponse(
-                        content=update_result.to_dict(),
-                        status_code=update_result.status_code,
-                    )
-
-                if request.set_as_default is True:
-                    default_result = server.llm_manager.set_default_provider(
-                        provider_id
-                    )
-                    if default_result.is_failure():
-                        return JSONResponse(
-                            content=default_result.to_dict(),
-                            status_code=default_result.status_code,
-                        )
+                if error_response:
+                    return error_response
 
         return {
             "success": True,
@@ -874,7 +774,7 @@ async def get_provider_metadata(
                 detail=f"Provider '{provider_id}' not found",
             )
 
-        response = {
+        response: Dict[str, Any] = {
             "success": True,
             "provider_id": provider_id,
         }
@@ -883,107 +783,20 @@ async def get_provider_metadata(
         requested = set(include) & valid_includes
 
         if "capabilities" in requested:
-            caps_result = server.llm_manager.get_metadata_capabilities(provider_id)
-            if caps_result.is_success():
-                response["capabilities"] = caps_result.unwrap()
-            else:
-                response["capabilities"] = []
+            await fetch_provider_capabilities(server.llm_manager, provider_id, response)
 
         if "workspaces" in requested:
-            if provider.metadata is None:
-                return JSONResponse(
-                    content={
-                        "success": False,
-                        "error": f"Provider {provider_id} does not support metadata",
-                        "error_type": "MetadataNotSupported",
-                    },
-                    status_code=501,
-                )
+            error_response = await fetch_provider_workspaces(
+                server.llm_manager, provider, provider_id, response
+            )
+            if error_response:
+                return error_response
 
-            workspaces_result = await server.llm_manager.get_workspaces(provider_id)
-            if workspaces_result.is_success():
-                workspaces = workspaces_result.unwrap()
-                response["workspaces"] = [
-                    {
-                        "id": ws.id,
-                        "name": ws.name,
-                        "is_default": ws.is_default,
-                        "metadata": ws.metadata,
-                    }
-                    for ws in workspaces
-                ]
-            elif workspaces_result.status_code == 501:
-                return JSONResponse(
-                    content=workspaces_result.to_dict(),
-                    status_code=501,
-                )
-            else:
-                response["workspaces"] = []
-                response["workspaces_error"] = workspaces_result.error
-
-        if "usage" in requested or "costs" in requested:
-            if not start_time or not end_time:
-                raise HTTPException(
-                    status_code=400,
-                    detail="start_time and end_time required for usage/cost reports",
-                )
-
-            try:
-                start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-                end_dt = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
-            except ValueError as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid datetime format: {e}",
-                ) from e
-
-            if "usage" in requested:
-                usage_result = await server.llm_manager.get_usage(
-                    provider_id, start_dt, end_dt
-                )
-                if usage_result.is_success():
-                    usage = usage_result.unwrap()
-                    response["usage"] = {
-                        "start_time": usage.start_time.isoformat(),
-                        "end_time": usage.end_time.isoformat(),
-                        "total_tokens": usage.total_tokens,
-                        "input_tokens": usage.input_tokens,
-                        "output_tokens": usage.output_tokens,
-                        "cached_tokens": usage.cached_tokens,
-                        "requests_count": usage.requests_count,
-                        "metadata": usage.metadata,
-                    }
-                elif usage_result.status_code == 501:
-                    return JSONResponse(
-                        content=usage_result.to_dict(),
-                        status_code=501,
-                    )
-                else:
-                    response["usage"] = None
-                    response["usage_error"] = usage_result.error
-
-            if "costs" in requested:
-                costs_result = await server.llm_manager.get_costs(
-                    provider_id, start_dt, end_dt
-                )
-                if costs_result.is_success():
-                    costs = costs_result.unwrap()
-                    response["costs"] = {
-                        "start_time": costs.start_time.isoformat(),
-                        "end_time": costs.end_time.isoformat(),
-                        "total_cost_usd": costs.total_cost_usd,
-                        "currency": costs.currency,
-                        "breakdown": costs.breakdown,
-                        "metadata": costs.metadata,
-                    }
-                elif costs_result.status_code == 501:
-                    return JSONResponse(
-                        content=costs_result.to_dict(),
-                        status_code=501,
-                    )
-                else:
-                    response["costs"] = None
-                    response["costs_error"] = costs_result.error
+        error_response = await fetch_time_based_metadata(
+            server.llm_manager, provider_id, requested, start_time, end_time, response
+        )
+        if error_response:
+            return error_response
 
         return response
 
