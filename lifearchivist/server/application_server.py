@@ -177,69 +177,68 @@ class ApplicationServer:
             await self.cleanup()
             raise
 
+    async def _cleanup_service(
+        self,
+        service: Any,
+        cleanup_method: str,
+        service_name: str,
+    ) -> None:
+        """
+        Safely cleanup a service with error handling and logging.
+
+        Args:
+            service: Service instance to cleanup
+            cleanup_method: Name of the cleanup method to call
+            service_name: Human-readable service name for logging
+        """
+        if service is None:
+            return
+
+        try:
+            cleanup_fn = getattr(service, cleanup_method)
+            await cleanup_fn()
+            log_event(f"{service_name}_cleaned_up")
+        except Exception as e:
+            log_event(
+                f"{service_name}_cleanup_error",
+                {"error": str(e)},
+                level=logging.WARNING,
+            )
+
     async def cleanup(self):
         """Cleanup all services in reverse initialization order."""
         log_event("application_server_cleanup_start")
 
-        # Stop background tasks first
-        if self.background_tasks:
-            try:
-                await self.background_tasks.stop()
-                log_event("background_tasks_stopped")
-            except Exception as e:
-                log_event(
-                    "background_tasks_stop_error",
-                    {"error": str(e)},
-                    level=logging.WARNING,
-                )
+        await self._cleanup_service(
+            self.background_tasks,
+            "stop",
+            "background_tasks",
+        )
 
-        # Cleanup enrichment queue
-        if self.enrichment_queue:
-            try:
-                await self.enrichment_queue.cleanup()
-                log_event("enrichment_queue_cleaned_up")
-            except Exception as e:
-                log_event(
-                    "enrichment_queue_cleanup_error",
-                    {"error": str(e)},
-                    level=logging.WARNING,
-                )
+        await self._cleanup_service(
+            self.enrichment_queue,
+            "cleanup",
+            "enrichment_queue",
+        )
 
-        # Cleanup activity manager
-        if self.activity_manager:
-            try:
-                await self.activity_manager.close()
-                log_event("activity_manager_cleaned_up")
-            except Exception as e:
-                log_event(
-                    "activity_manager_cleanup_error",
-                    {"error": str(e)},
-                    level=logging.WARNING,
-                )
+        await self._cleanup_service(
+            self.activity_manager,
+            "close",
+            "activity_manager",
+        )
 
-        # Cleanup LLM provider manager (before service container)
-        if self.service_container and self.service_container.llm_provider_manager:
-            try:
-                await self.service_container.llm_provider_manager.shutdown()
-                log_event("llm_provider_manager_cleaned_up")
-            except Exception as e:
-                log_event(
-                    "llm_provider_manager_cleanup_error",
-                    {"error": str(e)},
-                    level=logging.WARNING,
-                )
-
-        # Cleanup core infrastructure
         if self.service_container:
-            try:
-                await self.service_container.cleanup()
-                log_event("service_container_cleaned_up")
-            except Exception as e:
-                log_event(
-                    "service_container_cleanup_error",
-                    {"error": str(e)},
-                    level=logging.WARNING,
-                )
+            await self._cleanup_service(
+                self.service_container.llm_provider_manager,
+                "shutdown",
+                "llm_provider_manager",
+            )
+
+        await self._cleanup_service(
+            self.service_container,
+            "cleanup",
+            "service_container",
+        )
 
         self._initialized = False
         log_event("application_server_cleanup_complete")

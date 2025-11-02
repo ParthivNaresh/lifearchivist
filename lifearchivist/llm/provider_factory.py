@@ -12,6 +12,12 @@ from redis.asyncio import Redis
 
 from ..storage.credential_service import CredentialService
 from ..utils.logging import log_event
+from .constants import (
+    ErrorMessages,
+    HealthMonitorDefaults,
+    ProviderDefaults,
+    UserDefaults,
+)
 from .cost_tracker import CostTracker
 from .provider_health_monitor import ProviderHealthMonitor
 from .provider_loader import ProviderLoader
@@ -34,9 +40,9 @@ class ProviderManagerFactory:
         redis_client: Optional[Redis] = None,
         enable_cost_tracking: bool = True,
         enable_health_monitoring: bool = True,
-        health_check_interval: int = 60,
-        health_failure_threshold: int = 3,
-        auto_disable_unhealthy: bool = True,
+        health_check_interval: int = HealthMonitorDefaults.CHECK_INTERVAL_SECONDS,
+        health_failure_threshold: int = HealthMonitorDefaults.FAILURE_THRESHOLD,
+        auto_disable_unhealthy: bool = HealthMonitorDefaults.AUTO_DISABLE_UNHEALTHY,
     ) -> LLMProviderManager:
         """
         Create a fully-configured provider manager.
@@ -64,18 +70,13 @@ class ProviderManagerFactory:
             ...     enable_health_monitoring=True,
             ... )
         """
-        # Create core services
         registry = ProviderRegistry()
         router = ProviderRouter(registry)
 
-        # Create optional services
         cost_tracker = None
         if enable_cost_tracking:
             if redis_client is None:
-                raise ValueError(
-                    "Redis client required for cost tracking. "
-                    "Either provide redis_client or set enable_cost_tracking=False"
-                )
+                raise ValueError(ErrorMessages.REDIS_REQUIRED_FOR_COST_TRACKING)
             cost_tracker = CostTracker(redis_client)
 
         health_monitor = None
@@ -87,7 +88,6 @@ class ProviderManagerFactory:
                 auto_disable=auto_disable_unhealthy,
             )
 
-        # Create manager
         manager = LLMProviderManager(
             registry=registry,
             router=router,
@@ -159,8 +159,8 @@ class ProviderManagerFactory:
 
     @staticmethod
     def create_with_health_monitoring(
-        health_check_interval: int = 60,
-        failure_threshold: int = 3,
+        health_check_interval: int = HealthMonitorDefaults.CHECK_INTERVAL_SECONDS,
+        failure_threshold: int = HealthMonitorDefaults.FAILURE_THRESHOLD,
     ) -> LLMProviderManager:
         """
         Create provider manager with health monitoring only.
@@ -192,7 +192,7 @@ class ProviderManagerFactory:
         redis_client: Optional[Redis] = None,
         enable_cost_tracking: bool = True,
         enable_health_monitoring: bool = True,
-        user_id: str = "default",
+        user_id: str = UserDefaults.DEFAULT_USER_ID,
     ) -> LLMProviderManager:
         """
         Create provider manager and load all stored providers.
@@ -223,20 +223,19 @@ class ProviderManagerFactory:
             ... )
             >>> # Manager is ready with all stored providers loaded
         """
-        # Create manager
         manager = ProviderManagerFactory.create(
             redis_client=redis_client,
             enable_cost_tracking=enable_cost_tracking,
             enable_health_monitoring=enable_health_monitoring,
         )
 
-        # Initialize manager
         init_result = await manager.initialize()
         if init_result.is_failure():
             error_msg = init_result.error_or("Unknown error")
-            raise RuntimeError(f"Failed to initialize manager: {error_msg}")
+            raise RuntimeError(
+                ErrorMessages.MANAGER_INIT_FAILED.format(error=error_msg)
+            )
 
-        # Load all stored providers
         loader = ProviderLoader(credential_service)
         load_result = await loader.load_all_providers(user_id)
 
@@ -250,12 +249,10 @@ class ProviderManagerFactory:
                 },
                 level=logging.ERROR,
             )
-            # Don't fail - manager is still usable, just no providers loaded
             providers = []
         else:
             providers = load_result.unwrap()
 
-        # Add each provider to manager
         for provider in providers:
             add_result = await manager.add_provider(provider)
             if add_result.is_failure():
@@ -268,85 +265,11 @@ class ProviderManagerFactory:
                     },
                     level=logging.WARNING,
                 )
-                # Continue with other providers
 
-        # If no providers loaded, create default Ollama provider
         if len(providers) == 0:
-            try:
-                from ..config import get_settings
-                from .base_provider import ProviderType
-                from .provider_config import OllamaConfig
-                from .providers.ollama_provider import OllamaProvider
-
-                settings = get_settings()
-
-                # Create typed config
-                ollama_config = OllamaConfig(
-                    base_url=settings.ollama_url,
-                )
-
-                # Create provider instance
-                ollama_provider = OllamaProvider(
-                    provider_id="ollama-default",
-                    config=ollama_config,
-                )
-
-                # Initialize provider
-                await ollama_provider.initialize()
-
-                # Add to manager
-                add_result = await manager.add_provider(
-                    ollama_provider, set_as_default=True
-                )
-                if add_result.is_success():
-                    # Store in credential service for persistence
-                    store_result = await credential_service.add_provider(
-                        provider_id="ollama-default",
-                        provider_type=ProviderType.OLLAMA,
-                        config=ollama_config,
-                        is_default=True,
-                        user_id=user_id,
-                    )
-                    if store_result.is_success():
-                        log_event(
-                            "default_ollama_provider_created",
-                            {
-                                "provider_id": "ollama-default",
-                                "base_url": settings.ollama_url,
-                            },
-                        )
-                    else:
-                        error_msg = store_result.error_or("Unknown error")
-                        log_event(
-                            "default_ollama_provider_store_failed",
-                            {"error": error_msg},
-                            level=logging.WARNING,
-                        )
-                else:
-                    error_msg = add_result.error_or("Unknown error")
-                    log_event(
-                        "default_ollama_provider_add_failed",
-                        {"error": error_msg},
-                        level=logging.WARNING,
-                    )
-            except Exception as e:
-                import traceback
-
-                tb = traceback.format_exc()
-                # Print to stderr so it shows in logs
-                print(
-                    f"ERROR: Failed to create default Ollama provider: {e}", flush=True
-                )
-                print(f"Traceback:\n{tb}", flush=True)
-                log_event(
-                    "default_ollama_provider_creation_failed",
-                    {
-                        "error": str(e),
-                        "error_type": type(e).__name__,
-                        "traceback": tb,
-                    },
-                    level=logging.ERROR,
-                )
+            await ProviderManagerFactory._create_default_ollama_provider(
+                manager, credential_service, user_id
+            )
 
         log_event(
             "provider_factory_created_with_providers",
@@ -357,3 +280,83 @@ class ProviderManagerFactory:
         )
 
         return manager
+
+    @staticmethod
+    async def _create_default_ollama_provider(
+        manager: LLMProviderManager,
+        credential_service: CredentialService,
+        user_id: str,
+    ) -> None:
+        """
+        Create and register default Ollama provider.
+
+        Args:
+            manager: Provider manager to add provider to
+            credential_service: Service for storing credentials
+            user_id: User ID for provider ownership
+        """
+        try:
+            from ..config import get_settings
+            from .base_provider import ProviderType
+            from .provider_config import OllamaConfig
+            from .providers.ollama_provider import OllamaProvider
+
+            settings = get_settings()
+
+            ollama_config = OllamaConfig(base_url=settings.ollama_url)
+
+            ollama_provider = OllamaProvider(
+                provider_id=ProviderDefaults.OLLAMA_DEFAULT_ID,
+                config=ollama_config,
+            )
+
+            await ollama_provider.initialize()
+
+            add_result = await manager.add_provider(
+                ollama_provider, set_as_default=True
+            )
+            if add_result.is_success():
+                store_result = await credential_service.add_provider(
+                    provider_id=ProviderDefaults.OLLAMA_DEFAULT_ID,
+                    provider_type=ProviderType.OLLAMA,
+                    config=ollama_config,
+                    is_default=True,
+                    user_id=user_id,
+                )
+                if store_result.is_success():
+                    log_event(
+                        "default_ollama_provider_created",
+                        {
+                            "provider_id": ProviderDefaults.OLLAMA_DEFAULT_ID,
+                            "base_url": settings.ollama_url,
+                        },
+                    )
+                else:
+                    error_msg = store_result.error_or("Unknown error")
+                    log_event(
+                        "default_ollama_provider_store_failed",
+                        {"error": error_msg},
+                        level=logging.WARNING,
+                    )
+            else:
+                error_msg = add_result.error_or("Unknown error")
+                log_event(
+                    "default_ollama_provider_add_failed",
+                    {"error": error_msg},
+                    level=logging.WARNING,
+                )
+        except Exception as e:
+            import traceback
+
+            tb = traceback.format_exc()
+            print(f"ERROR: Failed to create default Ollama provider: {e}", flush=True)
+            print(f"Traceback:\n{tb}", flush=True)
+            log_event(
+                "default_ollama_provider_creation_failed",
+                {
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "traceback": tb,
+                },
+                level=logging.ERROR,
+            )

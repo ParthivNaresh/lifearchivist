@@ -9,14 +9,95 @@ Provides bidirectional communication for:
 """
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from ..dependencies import get_server
+from .websocket_handlers import process_websocket_message, send_error
 
 router = APIRouter(tags=["websocket"])
 
 logger = logging.getLogger(__name__)
+
+
+def validate_session_id(session_id: str) -> bool:
+    """
+    Validate session ID format.
+
+    Args:
+        session_id: Session identifier to validate
+
+    Returns:
+        True if valid, False otherwise
+    """
+    return bool(session_id and len(session_id) >= 3)
+
+
+async def handle_connection_setup(
+    websocket: WebSocket,
+    session_id: str,
+    server: Any,
+) -> bool:
+    """
+    Handle WebSocket connection setup and validation.
+
+    Args:
+        websocket: WebSocket connection
+        session_id: Session identifier
+        server: Server instance
+
+    Returns:
+        True if setup successful, False if connection should be rejected
+    """
+    if not validate_session_id(session_id):
+        await websocket.close(code=1008, reason="Invalid session_id")
+        return False
+
+    if server.session_manager is None:
+        await websocket.close(code=1011, reason="Session manager not available")
+        logger.error("WebSocket connection rejected: session manager not initialized")
+        return False
+
+    await server.session_manager.connect(session_id, websocket)
+    logger.info(f"WebSocket connected: session_id={session_id}")
+    return True
+
+
+async def handle_message_loop(
+    websocket: WebSocket,
+    server: Any,
+) -> None:
+    """
+    Process incoming WebSocket messages in a loop.
+
+    Args:
+        websocket: WebSocket connection
+        server: Server instance
+    """
+    while True:
+        try:
+            data = await websocket.receive_json()
+            await process_websocket_message(websocket, data, server)
+        except ValueError as e:
+            logger.warning(f"Invalid JSON received: {e}")
+            await send_error(
+                websocket,
+                f"Invalid JSON: {str(e)}",
+                "JSONDecodeError",
+            )
+
+
+def cleanup_connection(session_id: str, server: Any) -> None:
+    """
+    Clean up WebSocket connection resources.
+
+    Args:
+        session_id: Session identifier
+        server: Server instance
+    """
+    if server.session_manager is not None:
+        server.session_manager.disconnect(session_id)
 
 
 @router.websocket("/ws/{session_id}")
@@ -46,149 +127,21 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """
     server = get_server()
 
-    # Validate session_id
-    if not session_id or len(session_id) < 3:
-        await websocket.close(code=1008, reason="Invalid session_id")
-        return
-
-    # Validate session manager is available
-    if server.session_manager is None:
-        await websocket.close(code=1011, reason="Session manager not available")
-        logger.error("WebSocket connection rejected: session manager not initialized")
+    if not await handle_connection_setup(websocket, session_id, server):
         return
 
     try:
-        # Accept connection and register with session manager
-        await server.session_manager.connect(session_id, websocket)
-        logger.info(f"WebSocket connected: session_id={session_id}")
-
-        # Message processing loop
-        while True:
-            try:
-                # Receive and parse message
-                data = await websocket.receive_json()
-
-                # Validate message structure
-                if not isinstance(data, dict):
-                    await websocket.send_json(
-                        {
-                            "type": "error",
-                            "error": "Invalid message format. Expected JSON object.",
-                            "error_type": "ValidationError",
-                        }
-                    )
-                    continue
-
-                message_type = data.get("type")
-                message_id = data.get("id")
-
-                # Handle tool execution
-                if message_type == "tool_execute":
-                    tool_name = data.get("tool")
-                    params = data.get("params", {})
-
-                    if not tool_name:
-                        await websocket.send_json(
-                            {
-                                "type": "error",
-                                "id": message_id,
-                                "error": "Missing 'tool' field",
-                                "error_type": "ValidationError",
-                            }
-                        )
-                        continue
-
-                    try:
-                        result = await server.execute_tool(tool_name, params)
-                        await websocket.send_json(
-                            {
-                                "type": "tool_result",
-                                "id": message_id,
-                                "result": result,
-                            }
-                        )
-                    except Exception as e:
-                        logger.error(f"Tool execution error: {e}", exc_info=True)
-                        await websocket.send_json(
-                            {
-                                "type": "error",
-                                "id": message_id,
-                                "error": f"Tool execution failed: {str(e)}",
-                                "error_type": type(e).__name__,
-                            }
-                        )
-
-                # Handle agent query
-                elif message_type == "agent_query":
-                    agent_name = data.get("agent")
-                    query = data.get("query")
-
-                    if not agent_name or not query:
-                        await websocket.send_json(
-                            {
-                                "type": "error",
-                                "id": message_id,
-                                "error": "Missing 'agent' or 'query' field",
-                                "error_type": "ValidationError",
-                            }
-                        )
-                        continue
-
-                    try:
-                        result = await server.query_agent_async(agent_name, query)
-                        await websocket.send_json(
-                            {
-                                "type": "agent_result",
-                                "id": message_id,
-                                "result": result,
-                            }
-                        )
-                    except Exception as e:
-                        logger.error(f"Agent query error: {e}", exc_info=True)
-                        await websocket.send_json(
-                            {
-                                "type": "error",
-                                "id": message_id,
-                                "error": f"Agent query failed: {str(e)}",
-                                "error_type": type(e).__name__,
-                            }
-                        )
-
-                # Handle unknown message types
-                else:
-                    await websocket.send_json(
-                        {
-                            "type": "error",
-                            "id": message_id,
-                            "error": f"Unknown message type: {message_type}",
-                            "error_type": "ValidationError",
-                        }
-                    )
-
-            except ValueError as e:
-                # JSON parsing error
-                logger.warning(f"Invalid JSON received: {e}")
-                await websocket.send_json(
-                    {
-                        "type": "error",
-                        "error": f"Invalid JSON: {str(e)}",
-                        "error_type": "JSONDecodeError",
-                    }
-                )
+        await handle_message_loop(websocket, server)
 
     except WebSocketDisconnect:
-        # Normal disconnection
         logger.info(f"WebSocket disconnected: session_id={session_id}")
-        if server.session_manager is not None:
-            server.session_manager.disconnect(session_id)
+        cleanup_connection(session_id, server)
 
     except Exception as e:
-        # Unexpected error - close connection
         logger.error(f"WebSocket error for session {session_id}: {e}", exc_info=True)
         try:
             await websocket.close(code=1011, reason="Internal server error")
         except Exception:
-            pass  # Connection may already be closed
+            pass
         finally:
-            if server.session_manager is not None:
-                server.session_manager.disconnect(session_id)
+            cleanup_connection(session_id, server)

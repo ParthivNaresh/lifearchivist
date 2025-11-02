@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional
 
 
 class MetadataCapability(Enum):
@@ -60,40 +60,6 @@ class CostReport:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-class ProviderMetadataProtocol(Protocol):
-    """Protocol defining provider metadata capabilities."""
-
-    def supports_capability(self, capability: MetadataCapability) -> bool:
-        """Check if provider supports a specific capability."""
-        ...
-
-    async def get_workspaces(self) -> List[Workspace]:
-        """Get list of workspaces/organizations."""
-        ...
-
-    async def get_usage(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        **filters,
-    ) -> UsageReport:
-        """Get usage report for time period."""
-        ...
-
-    async def get_costs(
-        self,
-        start_time: datetime,
-        end_time: datetime,
-        **filters,
-    ) -> CostReport:
-        """Get cost report for time period."""
-        ...
-
-    def get_rate_limits(self) -> Optional[RateLimitInfo]:
-        """Get current rate limit status."""
-        ...
-
-
 class BaseProviderMetadata(ABC):
     """
     Base implementation for provider metadata.
@@ -116,11 +82,17 @@ class BaseProviderMetadata(ABC):
         self._capabilities.add(capability)
 
     async def get_workspaces(self) -> List[Workspace]:
-        """Default: no workspace support."""
+        """
+        Get workspaces for this provider.
+
+        Subclasses should override if they support workspaces.
+        Base implementation returns empty list to satisfy async requirement.
+        """
         if not self.supports_capability(MetadataCapability.WORKSPACES):
             raise NotImplementedError(
                 f"{self.__class__.__name__} does not support workspaces"
             )
+        await self._async_noop()
         return []
 
     async def get_usage(
@@ -129,11 +101,17 @@ class BaseProviderMetadata(ABC):
         end_time: datetime,
         **filters,
     ) -> UsageReport:
-        """Default: no usage tracking."""
+        """
+        Get usage report for this provider.
+
+        Subclasses should override if they support usage tracking.
+        Base implementation returns empty report to satisfy async requirement.
+        """
         if not self.supports_capability(MetadataCapability.USAGE_TRACKING):
             raise NotImplementedError(
                 f"{self.__class__.__name__} does not support usage tracking"
             )
+        await self._async_noop()
         return UsageReport(
             start_time=start_time,
             end_time=end_time,
@@ -148,17 +126,29 @@ class BaseProviderMetadata(ABC):
         end_time: datetime,
         **filters,
     ) -> CostReport:
-        """Default: no cost tracking."""
+        """
+        Get cost report for this provider.
+
+        Subclasses should override if they support cost tracking.
+        Base implementation returns empty report to satisfy async requirement.
+        """
         if not self.supports_capability(MetadataCapability.COST_TRACKING):
             raise NotImplementedError(
                 f"{self.__class__.__name__} does not support cost tracking"
             )
+        await self._async_noop()
         return CostReport(
             start_time=start_time,
             end_time=end_time,
             total_cost_usd=0.0,
             breakdown={},
         )
+
+    async def _async_noop(self) -> None:
+        """No-op coroutine to satisfy async requirements in base implementations."""
+        import asyncio
+
+        await asyncio.sleep(0)
 
     def get_rate_limits(self) -> Optional[RateLimitInfo]:
         """Get cached rate limit info."""

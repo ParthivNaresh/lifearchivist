@@ -275,6 +275,7 @@ class FolderScanResponse(BaseModel):
     folder_path: str = Field(description="Folder path")
     files_found: int = Field(description="Number of files found")
     files_queued: int = Field(description="Number of files queued for ingestion")
+    files_failed: int = Field(description="Number of files failed")
     message: str = Field(description="Status message")
 
 

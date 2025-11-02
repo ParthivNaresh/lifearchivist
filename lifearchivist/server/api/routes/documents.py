@@ -9,12 +9,26 @@ Provides CRUD operations for documents including:
 - Finding similar documents
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from ..dependencies import get_server
+from .constants import (
+    DocumentConstants,
+    ErrorMessages,
+    HTTPStatus,
+    PaginationDefaults,
+    ServiceNames,
+    ValidationMessages,
+)
+from .utils import (
+    delete_vault_file_safe,
+    extract_document_metadata,
+    extract_result_value,
+    unwrap_result_to_json_response,
+)
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
@@ -46,22 +60,18 @@ def _format_document_for_ui(doc: Dict) -> Dict:
         "has_content": metadata.get("has_content", False),
         "tags": metadata.get("tags", []),
         "tag_count": len(metadata.get("tags", [])),
-        # Theme data
         "theme": theme_metadata.get("theme"),
         "theme_confidence": theme_metadata.get("confidence"),
         "confidence_level": theme_metadata.get("confidence_level"),
         "classification": theme_metadata.get("match_tier"),
         "pattern_or_phrase": theme_metadata.get("match_pattern"),
-        # Subtheme level
         "subthemes": theme_metadata.get("subthemes", []),
         "primary_subtheme": theme_metadata.get("primary_subtheme"),
-        # Subclassification level
         "subclassifications": theme_metadata.get("subclassifications", []),
         "primary_subclassification": theme_metadata.get("primary_subclassification"),
         "subclassification_confidence": theme_metadata.get(
             "subclassification_confidence"
         ),
-        # Category mapping
         "category_mapping": theme_metadata.get("category_mapping", {}),
     }
 
@@ -72,15 +82,13 @@ def _validate_pagination(limit: int, offset: int) -> tuple[int, int]:
 
     Returns normalized (limit, offset) tuple.
     """
-    # Clamp limit to reasonable bounds
-    if limit > 500:
-        limit = 500
-    elif limit < 1:
-        limit = 50
+    if limit > PaginationDefaults.MAX_LIMIT:
+        limit = PaginationDefaults.MAX_LIMIT
+    elif limit < PaginationDefaults.MIN_LIMIT:
+        limit = PaginationDefaults.DEFAULT_LIMIT
 
-    # Ensure offset is non-negative
-    if offset < 0:
-        offset = 0
+    if offset < PaginationDefaults.DEFAULT_OFFSET:
+        offset = PaginationDefaults.DEFAULT_OFFSET
 
     return limit, offset
 
@@ -88,8 +96,8 @@ def _validate_pagination(limit: int, offset: int) -> tuple[int, int]:
 @router.get("/documents")
 async def list_documents(
     status: Optional[str] = None,
-    limit: int = 50,
-    offset: int = 0,
+    limit: int = PaginationDefaults.DEFAULT_LIMIT,
+    offset: int = PaginationDefaults.DEFAULT_OFFSET,
     count_only: bool = False,
 ):
     """
@@ -100,59 +108,46 @@ async def list_documents(
     server = get_server()
 
     if not server.llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
+                service=ServiceNames.LLAMAINDEX
+            ),
+        )
 
     try:
-        # Validate and normalize pagination
         limit, offset = _validate_pagination(limit, offset)
 
-        # Build filters
         filters = {}
         if status:
             filters["status"] = status
 
-        # Handle count-only request
         if count_only:
-            # TODO: Implement proper count method in metadata service
             all_docs_result = (
                 await server.llamaindex_service.query_documents_by_metadata(
-                    filters=filters, limit=10000, offset=0
+                    filters=filters,
+                    limit=DocumentConstants.COUNT_QUERY_LIMIT,
+                    offset=PaginationDefaults.DEFAULT_OFFSET,
                 )
             )
-            if all_docs_result.is_failure():
-                return JSONResponse(
-                    content=all_docs_result.to_dict(),
-                    status_code=all_docs_result.status_code,
-                )
-            # Type-safe extraction of value
-            all_docs: List[Any] = []
-            if hasattr(all_docs_result, "value") and isinstance(
-                all_docs_result.value, list
-            ):
-                all_docs = all_docs_result.value
+            error_response = unwrap_result_to_json_response(all_docs_result)
+            if error_response:
+                return error_response
+
+            all_docs = extract_result_value(all_docs_result, list, [])
             return {"total": len(all_docs), "filters": filters}
 
-        # Query documents
         raw_documents_result = (
             await server.llamaindex_service.query_documents_by_metadata(
                 filters=filters, limit=limit, offset=offset
             )
         )
 
-        if raw_documents_result.is_failure():
-            return JSONResponse(
-                content=raw_documents_result.to_dict(),
-                status_code=raw_documents_result.status_code,
-            )
+        error_response = unwrap_result_to_json_response(raw_documents_result)
+        if error_response:
+            return error_response
 
-        # Type-safe extraction of value
-        raw_documents: List[Any] = []
-        if hasattr(raw_documents_result, "value") and isinstance(
-            raw_documents_result.value, list
-        ):
-            raw_documents = raw_documents_result.value
-
-        # Format documents for UI using helper
+        raw_documents = extract_result_value(raw_documents_result, list, [])
         formatted_documents = [_format_document_for_ui(doc) for doc in raw_documents]
 
         return {
@@ -166,7 +161,9 @@ async def list_documents(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from None
 
 
 @router.delete("/documents/{document_id}")
@@ -179,84 +176,40 @@ async def delete_document(document_id: str):
     server = get_server()
 
     if not server.llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
-
-    try:
-        # Step 1: Get document metadata to find file hash
-        documents_result = await server.llamaindex_service.query_documents_by_metadata(
-            filters={"document_id": document_id}, limit=1
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
+                service=ServiceNames.LLAMAINDEX
+            ),
         )
 
-        if documents_result.is_failure():
-            return JSONResponse(
-                content=documents_result.to_dict(),
-                status_code=documents_result.status_code,
-            )
+    try:
+        documents_result = await server.llamaindex_service.query_documents_by_metadata(
+            filters={"document_id": document_id},
+            limit=DocumentConstants.SINGLE_DOCUMENT_LIMIT,
+        )
 
-        # Type-safe extraction of value
-        documents: List[Any] = []
-        if hasattr(documents_result, "value") and isinstance(
-            documents_result.value, list
-        ):
-            documents = documents_result.value
+        error_response = unwrap_result_to_json_response(documents_result)
+        if error_response:
+            return error_response
 
-        if not documents:
-            raise HTTPException(
-                status_code=404, detail=f"Document {document_id} not found"
-            )
-
-        document_metadata = documents[0].get("metadata", {})
+        documents = extract_result_value(documents_result, list, [])
+        document_metadata = extract_document_metadata(documents, document_id)
         file_hash = document_metadata.get("file_hash")
 
-        # Step 2: Delete from LlamaIndex
         delete_result = await server.llamaindex_service.delete_document(document_id)
 
-        if delete_result.is_failure():
-            return JSONResponse(
-                content=delete_result.to_dict(),
-                status_code=delete_result.status_code,
-            )
+        error_response = unwrap_result_to_json_response(delete_result)
+        if error_response:
+            return error_response
 
-        # Type-safe extraction of value
-        delete_info: Dict[str, Any] = {}
-        if hasattr(delete_result, "value") and isinstance(delete_result.value, dict):
-            delete_info = delete_result.value
+        delete_info = extract_result_value(delete_result, dict, {})
 
-        # Step 3: Delete from vault if we have the file hash
-        vault_deleted = False
-        if file_hash and server.vault:
-            try:
-                # Check if any other documents use this file (deduplication check)
-                other_docs_result = (
-                    await server.llamaindex_service.query_documents_by_metadata(
-                        filters={"file_hash": file_hash}, limit=2
-                    )
-                )
-                # Explicitly type the result to help mypy
-                other_docs: List[Any] = []
-                if other_docs_result.is_success() and hasattr(
-                    other_docs_result, "value"
-                ):
-                    value = other_docs_result.value
-                    if isinstance(value, list):
-                        other_docs = value
-
-                # Only delete from vault if this is the only document using this file
-                # 1 or 0 because we might have already deleted from index
-                if len(other_docs) <= 1:
-                    metrics: Dict[str, Any] = {
-                        "files_deleted": 0,
-                        "bytes_reclaimed": 0,
-                        "errors": [],
-                    }
-                    await server.vault.delete_file_by_hash(file_hash, metrics)
-                    files_deleted_count = metrics.get("files_deleted", 0)
-                    vault_deleted = (
-                        isinstance(files_deleted_count, int) and files_deleted_count > 0
-                    )
-            except Exception as e:
-                # Log but don't fail if vault deletion fails
-                print(f"Warning: Failed to delete file from vault: {e}")
+        vault_deleted = await delete_vault_file_safe(
+            vault=server.vault,
+            file_hash=file_hash,
+            llamaindex_service=server.llamaindex_service,
+        )
 
         return {
             "success": True,
@@ -269,7 +222,9 @@ async def delete_document(document_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from None
 
 
 @router.patch("/documents/{document_id}/subtheme")
@@ -282,24 +237,23 @@ async def update_document_subtheme(document_id: str, subtheme_data: dict):
     server = get_server()
 
     if not server.llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
+                service=ServiceNames.LLAMAINDEX
+            ),
+        )
 
     try:
-        # Update document metadata with subtheme information (returns Result)
         result = await server.llamaindex_service.update_document_metadata(
             document_id=document_id, metadata_updates=subtheme_data, merge_mode="update"
         )
 
-        if result.is_failure():
-            return JSONResponse(
-                content=result.to_dict(),
-                status_code=result.status_code,
-            )
+        error_response = unwrap_result_to_json_response(result)
+        if error_response:
+            return error_response
 
-        # Type-safe extraction of value
-        update_info: Dict[str, Any] = {}
-        if hasattr(result, "value") and isinstance(result.value, dict):
-            update_info = result.value
+        update_info = extract_result_value(result, dict, {})
 
         return {
             "success": True,
@@ -311,7 +265,9 @@ async def update_document_subtheme(document_id: str, subtheme_data: dict):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from None
 
 
 @router.delete("/documents")
@@ -327,29 +283,24 @@ async def clear_all_documents():
     server = get_server()
 
     try:
-        # Step 1: Clear LlamaIndex data
         if server.llamaindex_service:
             clear_result = await server.llamaindex_service.clear_all_data()
 
-            if clear_result.is_failure():
-                return JSONResponse(
-                    content=clear_result.to_dict(),
-                    status_code=clear_result.status_code,
-                )
+            error_response = unwrap_result_to_json_response(clear_result)
+            if error_response:
+                return error_response
 
-            # Type-safe extraction of value
-            llamaindex_metrics: Dict[str, Any] = {}
-            if hasattr(clear_result, "value") and isinstance(clear_result.value, dict):
-                llamaindex_metrics = clear_result.value
+            llamaindex_metrics = extract_result_value(clear_result, dict, {})
         else:
             llamaindex_metrics = {"skipped": True}
 
-        # Step 2: Clear vault files
         if not server.vault:
-            raise HTTPException(status_code=500, detail="Vault not initialized")
+            raise HTTPException(
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=ErrorMessages.VAULT_NOT_INITIALIZED,
+            )
         vault_metrics = await server.vault.clear_all_files([])
 
-        # Step 3: Clear progress tracking data
         if server.progress_manager:
             try:
                 progress_metrics = await server.progress_manager.clear_all_progress()
@@ -358,7 +309,6 @@ async def clear_all_documents():
         else:
             progress_metrics = {"skipped": True}
 
-        # Compile comprehensive metrics
         vault_files_deleted = vault_metrics["files_deleted"] + vault_metrics.get(
             "orphaned_files_deleted", 0
         )
@@ -393,7 +343,9 @@ async def clear_all_documents():
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from None
 
 
 @router.get("/documents/{document_id}/llamaindex-analysis")
@@ -406,28 +358,35 @@ async def get_llamaindex_document_analysis(document_id: str):
     server = get_server()
 
     if not server.llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
+                service=ServiceNames.LLAMAINDEX
+            ),
+        )
 
     try:
         result = await server.llamaindex_service.get_document_analysis(document_id)
 
-        if result.is_failure():
-            return JSONResponse(
-                content=result.to_dict(),
-                status_code=result.status_code,
-            )
+        error_response = unwrap_result_to_json_response(result)
+        if error_response:
+            return error_response
 
         return result.value
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from None
 
 
 @router.get("/documents/{document_id}/llamaindex-chunks")
 async def get_llamaindex_document_chunks(
-    document_id: str, limit: int = 100, offset: int = 0
+    document_id: str,
+    limit: int = DocumentConstants.CHUNKS_DEFAULT_LIMIT,
+    offset: int = PaginationDefaults.DEFAULT_OFFSET,
 ):
     """
     Get paginated chunks for a document from LlamaIndex.
@@ -437,35 +396,53 @@ async def get_llamaindex_document_chunks(
     server = get_server()
 
     if not server.llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
+                service=ServiceNames.LLAMAINDEX
+            ),
+        )
 
-    # Validate pagination
-    if limit < 1 or limit > 1000:
-        raise HTTPException(status_code=400, detail="Limit must be between 1 and 1000")
-    if offset < 0:
-        raise HTTPException(status_code=400, detail="Offset must be non-negative")
+    if (
+        limit < DocumentConstants.CHUNKS_MIN_LIMIT
+        or limit > DocumentConstants.CHUNKS_MAX_LIMIT
+    ):
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=ValidationMessages.LIMIT_RANGE.format(
+                min=DocumentConstants.CHUNKS_MIN_LIMIT,
+                max=DocumentConstants.CHUNKS_MAX_LIMIT,
+            ),
+        )
+    if offset < PaginationDefaults.DEFAULT_OFFSET:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=ValidationMessages.OFFSET_NON_NEGATIVE,
+        )
 
     try:
         result = await server.llamaindex_service.get_document_chunks(
             document_id=document_id, limit=limit, offset=offset
         )
 
-        if result.is_failure():
-            return JSONResponse(
-                content=result.to_dict(),
-                status_code=result.status_code,
-            )
+        error_response = unwrap_result_to_json_response(result)
+        if error_response:
+            return error_response
 
         return result.value
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from None
 
 
 @router.get("/documents/{document_id}/llamaindex-neighbors")
-async def get_llamaindex_document_neighbors(document_id: str, top_k: int = 10):
+async def get_llamaindex_document_neighbors(
+    document_id: str, top_k: int = DocumentConstants.NEIGHBORS_DEFAULT_TOP_K
+):
     """
     Get semantically similar documents for a given document.
 
@@ -474,19 +451,30 @@ async def get_llamaindex_document_neighbors(document_id: str, top_k: int = 10):
     server = get_server()
 
     if not server.llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        raise HTTPException(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
+                service=ServiceNames.LLAMAINDEX
+            ),
+        )
 
-    # Validate parameters
-    if top_k < 1 or top_k > 100:
-        raise HTTPException(status_code=400, detail="top_k must be between 1 and 100")
+    if (
+        top_k < DocumentConstants.NEIGHBORS_MIN_TOP_K
+        or top_k > DocumentConstants.NEIGHBORS_MAX_TOP_K
+    ):
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=ValidationMessages.TOP_K_RANGE.format(
+                min=DocumentConstants.NEIGHBORS_MIN_TOP_K,
+                max=DocumentConstants.NEIGHBORS_MAX_TOP_K,
+            ),
+        )
 
     try:
-        # Note: get_document_neighbors returns Result
         result = await server.llamaindex_service.get_document_neighbors(
             document_id=document_id, top_k=top_k
         )
 
-        # Handle Result type if it returns one, otherwise handle dict
         if hasattr(result, "is_failure"):
             if result.is_failure():
                 return JSONResponse(
@@ -495,16 +483,21 @@ async def get_llamaindex_document_neighbors(document_id: str, top_k: int = 10):
                 )
             return result.value
 
-        # Legacy dict-based error handling (if service doesn't return Result yet)
         if isinstance(result, dict) and "error" in result:
             if "not found" in result["error"].lower():
-                raise HTTPException(status_code=404, detail=result["error"])
+                raise HTTPException(
+                    status_code=HTTPStatus.NOT_FOUND, detail=result["error"]
+                )
             else:
-                raise HTTPException(status_code=500, detail=result["error"])
+                raise HTTPException(
+                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=result["error"]
+                )
 
         return result
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from None
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from None

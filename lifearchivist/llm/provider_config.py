@@ -8,6 +8,12 @@ from dataclasses import asdict, dataclass
 from typing import Any, Dict, Optional, Type
 
 from .base_provider import ProviderType
+from .constants import (
+    APIKeyPrefix,
+    ProtocolScheme,
+    ProviderDefaults,
+    ValidationMessages,
+)
 
 
 @dataclass(frozen=True)
@@ -47,6 +53,38 @@ class BaseProviderConfig:
         """
         return cls(**data)
 
+    def _validate_timeout(self, timeout: int) -> None:
+        if timeout <= 0:
+            raise ValueError(ValidationMessages.TIMEOUT_POSITIVE)
+
+    def _validate_base_url(self, base_url: str) -> None:
+        if not base_url:
+            raise ValueError(ValidationMessages.BASE_URL_EMPTY)
+
+        if not base_url.startswith(
+            (ProtocolScheme.HTTP.value, ProtocolScheme.HTTPS.value)
+        ):
+            raise ValueError(ValidationMessages.BASE_URL_PROTOCOL)
+
+    def _validate_max_retries(self, max_retries: int) -> None:
+        if max_retries < 0:
+            raise ValueError(ValidationMessages.MAX_RETRIES_NEGATIVE)
+
+    def _validate_api_key(
+        self, api_key: str, provider: str, prefix: Optional[str] = None
+    ) -> None:
+        if not api_key:
+            raise ValueError(
+                ValidationMessages.API_KEY_REQUIRED.format(provider=provider)
+            )
+
+        if prefix and not api_key.startswith(prefix):
+            raise ValueError(
+                ValidationMessages.INVALID_KEY_PREFIX.format(
+                    provider=provider, prefix=prefix
+                )
+            )
+
 
 @dataclass(frozen=True)
 class OllamaConfig(BaseProviderConfig):
@@ -59,20 +97,14 @@ class OllamaConfig(BaseProviderConfig):
         keep_alive: Keep model loaded in memory (Ollama-specific)
     """
 
-    base_url: str = "http://localhost:11434"
-    timeout_seconds: int = 300  # Ollama can be slow for large models
-    keep_alive: Optional[str] = None  # e.g., "5m" to keep model loaded
+    base_url: str = ProviderDefaults.OLLAMA_BASE_URL
+    timeout_seconds: int = ProviderDefaults.OLLAMA_TIMEOUT
+    keep_alive: Optional[str] = None
 
     def __post_init__(self):
         """Validate Ollama-specific configuration."""
-        if self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-
-        if not self.base_url:
-            raise ValueError("base_url cannot be empty")
-
-        if not self.base_url.startswith(("http://", "https://")):
-            raise ValueError("base_url must start with http:// or https://")
+        self._validate_timeout(self.timeout_seconds)
+        self._validate_base_url(self.base_url)
 
 
 @dataclass(frozen=True)
@@ -89,31 +121,17 @@ class OpenAIConfig(BaseProviderConfig):
     """
 
     api_key: str
-    base_url: str = "https://api.openai.com/v1"
+    base_url: str = ProviderDefaults.OPENAI_BASE_URL
     organization: Optional[str] = None
-    max_retries: int = 3
-    timeout_seconds: int = 120  # Override parent default
+    max_retries: int = ProviderDefaults.OPENAI_MAX_RETRIES
+    timeout_seconds: int = ProviderDefaults.OPENAI_TIMEOUT
 
     def __post_init__(self):
         """Validate OpenAI-specific configuration."""
-        if self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-
-        if not self.api_key:
-            raise ValueError("api_key is required for OpenAI provider")
-
-        # Validate key format (supports standard, project, and service account keys)
-        if not self.api_key.startswith("sk-"):
-            raise ValueError("OpenAI API key must start with 'sk-'")
-
-        if not self.base_url:
-            raise ValueError("base_url cannot be empty")
-
-        if not self.base_url.startswith(("http://", "https://")):
-            raise ValueError("base_url must start with http:// or https://")
-
-        if self.max_retries < 0:
-            raise ValueError("max_retries cannot be negative")
+        self._validate_timeout(self.timeout_seconds)
+        self._validate_api_key(self.api_key, "OpenAI", APIKeyPrefix.OPENAI.value)
+        self._validate_base_url(self.base_url)
+        self._validate_max_retries(self.max_retries)
 
 
 @dataclass(frozen=True)
@@ -129,27 +147,16 @@ class AnthropicConfig(BaseProviderConfig):
     """
 
     api_key: str
-    base_url: str = "https://api.anthropic.com/v1"
-    max_retries: int = 3
-    timeout_seconds: int = 120  # Override parent default
+    base_url: str = ProviderDefaults.ANTHROPIC_BASE_URL
+    max_retries: int = ProviderDefaults.ANTHROPIC_MAX_RETRIES
+    timeout_seconds: int = ProviderDefaults.ANTHROPIC_TIMEOUT
 
     def __post_init__(self):
         """Validate Anthropic-specific configuration."""
-        if self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-
-        if not self.api_key:
-            raise ValueError("api_key is required for Anthropic provider")
-
-        # Anthropic keys can be sk-ant-api03-... or sk-ant-...
-        if not self.api_key.startswith("sk-ant-"):
-            raise ValueError("Anthropic API key must start with 'sk-ant-'")
-
-        if not self.base_url:
-            raise ValueError("base_url cannot be empty")
-
-        if self.max_retries < 0:
-            raise ValueError("max_retries cannot be negative")
+        self._validate_timeout(self.timeout_seconds)
+        self._validate_api_key(self.api_key, "Anthropic", APIKeyPrefix.ANTHROPIC.value)
+        self._validate_base_url(self.base_url)
+        self._validate_max_retries(self.max_retries)
 
 
 @dataclass(frozen=True)
@@ -165,23 +172,16 @@ class GoogleConfig(BaseProviderConfig):
     """
 
     api_key: str
-    base_url: str = "https://generativelanguage.googleapis.com/v1"
-    max_retries: int = 3
-    timeout_seconds: int = 120  # Override parent default
+    base_url: str = ProviderDefaults.GOOGLE_BASE_URL
+    max_retries: int = ProviderDefaults.GOOGLE_MAX_RETRIES
+    timeout_seconds: int = ProviderDefaults.GOOGLE_TIMEOUT
 
     def __post_init__(self):
         """Validate Google-specific configuration."""
-        if self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-
-        if not self.api_key:
-            raise ValueError("api_key is required for Google provider")
-
-        if not self.base_url:
-            raise ValueError("base_url cannot be empty")
-
-        if self.max_retries < 0:
-            raise ValueError("max_retries cannot be negative")
+        self._validate_timeout(self.timeout_seconds)
+        self._validate_api_key(self.api_key, "Google")
+        self._validate_base_url(self.base_url)
+        self._validate_max_retries(self.max_retries)
 
 
 @dataclass(frozen=True)
@@ -197,23 +197,16 @@ class GroqConfig(BaseProviderConfig):
     """
 
     api_key: str
-    base_url: str = "https://api.groq.com/openai/v1"
-    max_retries: int = 3
-    timeout_seconds: int = 30  # Groq is fast, lower timeout
+    base_url: str = ProviderDefaults.GROQ_BASE_URL
+    max_retries: int = ProviderDefaults.GROQ_MAX_RETRIES
+    timeout_seconds: int = ProviderDefaults.GROQ_TIMEOUT
 
     def __post_init__(self):
         """Validate Groq-specific configuration."""
-        if self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-
-        if not self.api_key:
-            raise ValueError("api_key is required for Groq provider")
-
-        if not self.base_url:
-            raise ValueError("base_url cannot be empty")
-
-        if self.max_retries < 0:
-            raise ValueError("max_retries cannot be negative")
+        self._validate_timeout(self.timeout_seconds)
+        self._validate_api_key(self.api_key, "Groq")
+        self._validate_base_url(self.base_url)
+        self._validate_max_retries(self.max_retries)
 
 
 @dataclass(frozen=True)
@@ -229,26 +222,18 @@ class MistralConfig(BaseProviderConfig):
     """
 
     api_key: str
-    base_url: str = "https://api.mistral.ai/v1"
-    max_retries: int = 3
-    timeout_seconds: int = 60  # Standard timeout
+    base_url: str = ProviderDefaults.MISTRAL_BASE_URL
+    max_retries: int = ProviderDefaults.MISTRAL_MAX_RETRIES
+    timeout_seconds: int = ProviderDefaults.MISTRAL_TIMEOUT
 
     def __post_init__(self):
         """Validate Mistral-specific configuration."""
-        if self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-
-        if not self.api_key:
-            raise ValueError("api_key is required for Mistral provider")
-
-        if not self.base_url:
-            raise ValueError("base_url cannot be empty")
-
-        if self.max_retries < 0:
-            raise ValueError("max_retries cannot be negative")
+        self._validate_timeout(self.timeout_seconds)
+        self._validate_api_key(self.api_key, "Mistral")
+        self._validate_base_url(self.base_url)
+        self._validate_max_retries(self.max_retries)
 
 
-# Type mapping for provider configs
 PROVIDER_CONFIG_TYPES: Dict[ProviderType, Type[BaseProviderConfig]] = {
     ProviderType.OLLAMA: OllamaConfig,
     ProviderType.OPENAI: OpenAIConfig,

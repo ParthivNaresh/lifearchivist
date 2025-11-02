@@ -292,7 +292,7 @@ class ProviderRouter:
         """
         log_event(
             "fastest_routing_not_implemented",
-            {"fallback": "default"},
+            {"fallback": "default", "provider_type": provider_type},
             level=logging.WARNING,
         )
 

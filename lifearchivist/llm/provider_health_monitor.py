@@ -9,6 +9,7 @@ Responsible for:
 """
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -101,6 +102,7 @@ class ProviderHealthMonitor:
 
         self._running = True
         self._monitoring_task = asyncio.create_task(self._monitoring_loop())
+        await asyncio.sleep(0)
 
         log_event(
             "health_monitor_started",
@@ -122,12 +124,10 @@ class ProviderHealthMonitor:
 
         self._running = False
 
-        if self._monitoring_task:
+        if self._monitoring_task and not self._monitoring_task.done():
             self._monitoring_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitoring_task
-            except asyncio.CancelledError:
-                pass
 
         log_event("health_monitor_stopped")
 
@@ -150,8 +150,8 @@ class ProviderHealthMonitor:
                     {"error": str(e), "error_type": type(e).__name__},
                     level=logging.ERROR,
                 )
-                # Continue monitoring despite errors
-                await asyncio.sleep(self.check_interval)
+                with contextlib.suppress(asyncio.CancelledError):
+                    await asyncio.sleep(self.check_interval)
 
     @track(
         operation="health_check_all_providers",
@@ -240,7 +240,7 @@ class ProviderHealthMonitor:
 
             # Handle unhealthy provider
             if status == HealthStatus.UNHEALTHY:
-                await self._handle_unhealthy_provider(provider, health_check)
+                self._handle_unhealthy_provider(provider, health_check)
 
             log_event(
                 "provider_health_checked",
@@ -267,7 +267,7 @@ class ProviderHealthMonitor:
 
             self._health_status[provider_id] = health_check
 
-            await self._handle_unhealthy_provider(provider, health_check)
+            self._handle_unhealthy_provider(provider, health_check)
 
             log_event(
                 "provider_health_timeout",
@@ -293,7 +293,7 @@ class ProviderHealthMonitor:
 
             self._health_status[provider_id] = health_check
 
-            await self._handle_unhealthy_provider(provider, health_check)
+            self._handle_unhealthy_provider(provider, health_check)
 
             log_event(
                 "provider_health_check_failed",
@@ -308,7 +308,7 @@ class ProviderHealthMonitor:
 
             return health_check
 
-    async def _handle_unhealthy_provider(
+    def _handle_unhealthy_provider(
         self,
         provider: BaseLLMProvider,
         health_check: HealthCheck,
@@ -320,7 +320,6 @@ class ProviderHealthMonitor:
             provider: Unhealthy provider
             health_check: Health check result
         """
-        # Check if threshold exceeded
         if health_check.consecutive_failures >= self.failure_threshold:
             log_event(
                 "provider_failure_threshold_exceeded",
@@ -333,10 +332,7 @@ class ProviderHealthMonitor:
                 level=logging.ERROR,
             )
 
-            # Auto-disable if configured
             if self.auto_disable:
-                # Note: We don't actually unregister, just mark as unhealthy
-                # The router should check health status before routing
                 log_event(
                     "provider_auto_disabled",
                     {"provider_id": provider.provider_id},
