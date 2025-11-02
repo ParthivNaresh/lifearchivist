@@ -350,71 +350,70 @@
             <span class="k">raise</span></div>
 
 
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup_service</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">service</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">cleanup_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">service_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Safely cleanup a service with error handling and logging.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            service: Service instance to cleanup</span>
+<span class="sd">            cleanup_method: Name of the cleanup method to call</span>
+<span class="sd">            service_name: Human-readable service name for logging</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">service</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cleanup_fn</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="n">cleanup_method</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">cleanup_fn</span><span class="p">()</span>
+            <span class="n">log_event</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">service_name</span><span class="si">}</span><span class="s2">_cleaned_up&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">service_name</span><span class="si">}</span><span class="s2">_cleanup_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
 <div class="viewcode-block" id="ApplicationServer.cleanup">
 <a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.cleanup">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Cleanup all services in reverse initialization order.&quot;&quot;&quot;</span>
         <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;application_server_cleanup_start&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Stop background tasks first</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
-                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;background_tasks_stopped&quot;</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">log_event</span><span class="p">(</span>
-                    <span class="s2">&quot;background_tasks_stop_error&quot;</span><span class="p">,</span>
-                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-                <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_service</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span><span class="p">,</span>
+            <span class="s2">&quot;stop&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;background_tasks&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="c1"># Cleanup enrichment queue</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
-                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;enrichment_queue_cleaned_up&quot;</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">log_event</span><span class="p">(</span>
-                    <span class="s2">&quot;enrichment_queue_cleanup_error&quot;</span><span class="p">,</span>
-                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-                <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_service</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="p">,</span>
+            <span class="s2">&quot;cleanup&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;enrichment_queue&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="c1"># Cleanup activity manager</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;activity_manager_cleaned_up&quot;</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">log_event</span><span class="p">(</span>
-                    <span class="s2">&quot;activity_manager_cleanup_error&quot;</span><span class="p">,</span>
-                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-                <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_service</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span><span class="p">,</span>
+            <span class="s2">&quot;close&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;activity_manager&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="c1"># Cleanup LLM provider manager (before service container)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
-                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;llm_provider_manager_cleaned_up&quot;</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">log_event</span><span class="p">(</span>
-                    <span class="s2">&quot;llm_provider_manager_cleanup_error&quot;</span><span class="p">,</span>
-                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-                <span class="p">)</span>
-
-        <span class="c1"># Cleanup core infrastructure</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
-                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;service_container_cleaned_up&quot;</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">log_event</span><span class="p">(</span>
-                    <span class="s2">&quot;service_container_cleanup_error&quot;</span><span class="p">,</span>
-                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-                <span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_service</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="p">,</span>
+                <span class="s2">&quot;shutdown&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;llm_provider_manager&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_service</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="p">,</span>
+            <span class="s2">&quot;cleanup&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;service_container&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;application_server_cleanup_complete&quot;</span><span class="p">)</span></div>

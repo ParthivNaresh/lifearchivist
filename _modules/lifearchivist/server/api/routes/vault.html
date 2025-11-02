@@ -167,8 +167,6 @@
 <span class="sd">Vault management endpoints.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">HTTPException</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileResponse</span><span class="p">,</span> <span class="n">JSONResponse</span>
 
@@ -513,136 +511,36 @@
 <span class="sd">    Vault structure: content/XX/YY/ZZZZ...{ext}</span>
 <span class="sd">    where XXYYZZZZ... is the SHA256 hash split for directory sharding.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">get_mime_type_and_disposition</span><span class="p">,</span>
+        <span class="n">get_original_filename</span><span class="p">,</span>
+        <span class="n">resolve_vault_file_path</span><span class="p">,</span>
+        <span class="n">validate_file_hash</span><span class="p">,</span>
+    <span class="p">)</span>
+
     <span class="n">server</span> <span class="o">=</span> <span class="n">get_server</span><span class="p">()</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Vault not initialized&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Validate hash format</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_hash</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
-                <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
-                <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid file hash format. Expected SHA256 hash (64 characters).&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">validate_file_hash</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">64</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
-                <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
-                <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Invalid hash length: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span><span class="si">}</span><span class="s2">. Expected 64 characters.&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">resolve_vault_file_path</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">content_dir</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
 
-        <span class="n">content_dir</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">content_dir</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_original_filename</span><span class="p">(</span>
+            <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">,</span>
+            <span class="n">file_hash</span><span class="p">,</span>
+            <span class="n">file_path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="c1"># Parse hash into directory structure</span>
-        <span class="c1"># First 2 chars for first directory level</span>
-        <span class="n">dir1</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
-        <span class="c1"># Next 2 chars for second directory level</span>
-        <span class="n">dir2</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
-        <span class="c1"># Rest of the hash for filename (without extension)</span>
-        <span class="n">file_stem</span> <span class="o">=</span> <span class="n">file_hash</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span>
+        <span class="n">mime_type</span><span class="p">,</span> <span class="n">disposition</span> <span class="o">=</span> <span class="n">get_mime_type_and_disposition</span><span class="p">(</span><span class="n">file_path</span><span class="o">.</span><span class="n">suffix</span><span class="p">)</span>
 
-        <span class="c1"># Look for any file with this hash pattern</span>
-        <span class="n">file_dir</span> <span class="o">=</span> <span class="n">content_dir</span> <span class="o">/</span> <span class="n">dir1</span> <span class="o">/</span> <span class="n">dir2</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
-                <span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;File not found for hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Find the file (we don&#39;t know the extension)</span>
-        <span class="n">matching_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">file_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_stem</span><span class="si">}</span><span class="s2">.*&quot;</span><span class="p">))</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">matching_files</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
-                <span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;File not found for hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Use the first matching file</span>
-        <span class="n">file_path</span> <span class="o">=</span> <span class="n">matching_files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
-                <span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;File not found for hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Get the original filename from metadata if available</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">name</span>
-        <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="c1"># Try to get original filename from metadata</span>
-                <span class="n">matching_docs_result</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_documents_by_metadata</span><span class="p">(</span>
-                        <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;file_hash&quot;</span><span class="p">:</span> <span class="n">file_hash</span><span class="p">},</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
-                <span class="n">matching_docs</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">matching_docs_result</span><span class="o">.</span><span class="n">value</span>
-                    <span class="k">if</span> <span class="n">matching_docs_result</span><span class="o">.</span><span class="n">is_success</span><span class="p">()</span>
-                    <span class="k">else</span> <span class="p">[]</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">matching_docs</span><span class="p">:</span>
-                    <span class="n">metadata</span> <span class="o">=</span> <span class="n">matching_docs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
-                    <span class="n">original_path</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;original_path&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">original_path</span><span class="p">:</span>
-                        <span class="n">filename</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">original_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
-            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                <span class="c1"># If lookup fails, use the hash-based filename</span>
-                <span class="k">pass</span>
-
-        <span class="c1"># Determine the correct media type based on file extension</span>
-        <span class="n">extension</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-        <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/octet-stream&quot;</span>  <span class="c1"># default</span>
-
-        <span class="c1"># Set appropriate media types for common formats</span>
-        <span class="k">if</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.pdf&quot;</span><span class="p">:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/pdf&quot;</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpeg&quot;</span><span class="p">]:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;image/jpeg&quot;</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.png&quot;</span><span class="p">:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;image/png&quot;</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.gif&quot;</span><span class="p">:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;image/gif&quot;</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.webp&quot;</span><span class="p">:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;image/webp&quot;</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;.text&quot;</span><span class="p">]:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;text/plain&quot;</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="o">==</span> <span class="s2">&quot;.rtf&quot;</span><span class="p">:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/rtf&quot;</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.doc&quot;</span><span class="p">,</span> <span class="s2">&quot;.docx&quot;</span><span class="p">]:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/msword&quot;</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.xls&quot;</span><span class="p">,</span> <span class="s2">&quot;.xlsx&quot;</span><span class="p">]:</span>
-            <span class="n">media_type</span> <span class="o">=</span> <span class="s2">&quot;application/vnd.ms-excel&quot;</span>
-
-        <span class="c1"># For PDFs, images, and text files, display inline in browser</span>
-        <span class="k">if</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span>
-            <span class="s2">&quot;.pdf&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;.jpg&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;.jpeg&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;.png&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;.gif&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;.webp&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;.txt&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;.text&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;.rtf&quot;</span><span class="p">,</span>
-        <span class="p">]:</span>
-            <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span>
-                <span class="n">path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
-                <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span>
-                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;inline; filename=&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">},</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.doc&quot;</span><span class="p">,</span> <span class="s2">&quot;.docx&quot;</span><span class="p">,</span> <span class="s2">&quot;.xls&quot;</span><span class="p">,</span> <span class="s2">&quot;.xlsx&quot;</span><span class="p">]:</span>
-            <span class="c1"># For Office files, force download</span>
-            <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span>
-                <span class="n">path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
-                <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span>
-                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;attachment; filename=&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">},</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># For other file types, allow download</span>
-            <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span>
-                <span class="n">path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span>
-            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">FileResponse</span><span class="p">(</span>
+            <span class="n">path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="n">mime_type</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">disposition</span><span class="si">}</span><span class="s1">; filename=&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">},</span>
+        <span class="p">)</span>
 
     <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
         <span class="k">raise</span>
