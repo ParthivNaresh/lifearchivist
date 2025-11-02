@@ -68,7 +68,7 @@ class OllamaProvider(BaseHTTPProvider, BaseLLMProvider):
             max_connections_per_host=30,
         )
 
-        BaseLLMProvider.initialize(self)
+        await BaseLLMProvider.initialize(self)
 
         log_event(
             "ollama_provider_initialized",

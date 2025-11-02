@@ -644,7 +644,7 @@ class LLMProviderManager:
             )
 
         try:
-            workspaces = provider.metadata.get_workspaces()
+            workspaces = await provider.metadata.get_workspaces()
             return Success(workspaces)
 
         except Exception as e:
@@ -776,7 +776,7 @@ class LLMProviderManager:
             )
 
         try:
-            costs = provider.metadata.get_costs(start_time, end_time, **filters)
+            costs = await provider.metadata.get_costs(start_time, end_time, **filters)
             return Success(costs)
 
         except Exception as e:

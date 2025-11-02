@@ -67,7 +67,7 @@ class GroqProvider(BaseHTTPProvider, BaseLLMProvider):
             headers=headers,
         )
 
-        BaseLLMProvider.initialize(self)
+        await BaseLLMProvider.initialize(self)
 
         log_event(
             "groq_provider_initialized",

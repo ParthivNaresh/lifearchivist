@@ -22,14 +22,18 @@ from lifearchivist.models.folder_watch import (
 )
 
 from ..dependencies import get_server
+from .constants import (
+    ErrorMessages,
+    FolderWatchConstants,
+    HTTPStatus,
+    PathParamDescriptions,
+    ResourceNames,
+    ServiceNames,
+    SuccessMessages,
+)
 
 router = APIRouter(prefix="/api/folder-watch", tags=["folder-watch"])
 logger = logging.getLogger(__name__)
-
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
 
 
 def _folder_to_response(folder: WatchedFolder) -> FolderResponse:
@@ -57,12 +61,7 @@ def _folder_to_response(folder: WatchedFolder) -> FolderResponse:
     )
 
 
-# ============================================================================
-# Folder Management Endpoints
-# ============================================================================
-
-
-@router.post("/folders", response_model=FolderResponse, status_code=201)
+@router.post("/folders", response_model=FolderResponse, status_code=HTTPStatus.CREATED)
 async def add_folder(request: AddFolderRequest):
     """
     Add a new folder to watch.
@@ -82,48 +81,52 @@ async def add_folder(request: AddFolderRequest):
 
     if not server.folder_watcher:
         raise HTTPException(
-            status_code=503,
-            detail="Folder watcher service not initialized",
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
+                service=ServiceNames.FOLDER_WATCHER
+            ),
         )
 
-    # Validate and normalize path
     try:
         folder_path = Path(request.folder_path).expanduser().resolve()
     except Exception as e:
         raise HTTPException(
-            status_code=400,
-            detail=f"Invalid folder path: {str(e)}",
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=ErrorMessages.INVALID_PATH.format(path_type="folder", error=str(e)),
         ) from e
 
     try:
-        # Add folder to watcher
         folder_id = await server.folder_watcher.add_folder(
             path=folder_path,
             enabled=request.enabled,
         )
 
-        # Get folder details
         folder = await server.folder_watcher.get_folder(folder_id)
         if not folder:
             raise HTTPException(
-                status_code=500,
-                detail="Folder was added but could not be retrieved",
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                detail=ErrorMessages.RESOURCE_ADDED_NOT_RETRIEVED.format(
+                    resource=ResourceNames.FOLDER
+                ),
             )
 
         return _folder_to_response(folder)
 
     except ValueError as e:
-        # Validation errors (duplicate, limit reached, etc.)
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to add folder: {str(e)}",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=ErrorMessages.OPERATION_FAILED.format(
+                operation="add folder", error=str(e)
+            ),
         ) from e
 
 
 @router.get("/folders", response_model=FolderListResponse)
-async def list_folders(enabled_only: bool = False):
+async def list_folders(
+    enabled_only: bool = FolderWatchConstants.DEFAULT_ENABLED_ONLY_FILTER,
+):
     """
     List all watched folders.
 
@@ -141,8 +144,10 @@ async def list_folders(enabled_only: bool = False):
 
     if not server.folder_watcher:
         raise HTTPException(
-            status_code=503,
-            detail="Folder watcher service not initialized",
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
+                service=ServiceNames.FOLDER_WATCHER
+            ),
         )
 
     try:
@@ -157,13 +162,17 @@ async def list_folders(enabled_only: bool = False):
 
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to list folders: {str(e)}",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=ErrorMessages.OPERATION_FAILED.format(
+                operation="list folders", error=str(e)
+            ),
         ) from e
 
 
 @router.get("/folders/{folder_id}", response_model=FolderResponse)
-async def get_folder(folder_id: str = PathParam(..., description="Folder UUID")):
+async def get_folder(
+    folder_id: str = PathParam(..., description=PathParamDescriptions.FOLDER_UUID),
+):
     """
     Get details for a specific watched folder.
 
@@ -182,8 +191,10 @@ async def get_folder(folder_id: str = PathParam(..., description="Folder UUID"))
 
     if not server.folder_watcher:
         raise HTTPException(
-            status_code=503,
-            detail="Folder watcher service not initialized",
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
+                service=ServiceNames.FOLDER_WATCHER
+            ),
         )
 
     try:
@@ -191,8 +202,10 @@ async def get_folder(folder_id: str = PathParam(..., description="Folder UUID"))
 
         if not folder:
             raise HTTPException(
-                status_code=404,
-                detail=f"Folder not found: {folder_id}",
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=ErrorMessages.RESOURCE_NOT_FOUND.format(
+                    resource=ResourceNames.FOLDER, identifier=folder_id
+                ),
             )
 
         return _folder_to_response(folder)
@@ -201,13 +214,17 @@ async def get_folder(folder_id: str = PathParam(..., description="Folder UUID"))
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get folder: {str(e)}",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=ErrorMessages.OPERATION_FAILED.format(
+                operation="get folder", error=str(e)
+            ),
         ) from e
 
 
 @router.delete("/folders/{folder_id}")
-async def remove_folder(folder_id: str = PathParam(..., description="Folder UUID")):
+async def remove_folder(
+    folder_id: str = PathParam(..., description=PathParamDescriptions.FOLDER_UUID),
+):
     """
     Remove a watched folder.
 
@@ -231,8 +248,10 @@ async def remove_folder(folder_id: str = PathParam(..., description="Folder UUID
 
     if not server.folder_watcher:
         raise HTTPException(
-            status_code=503,
-            detail="Folder watcher service not initialized",
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
+                service=ServiceNames.FOLDER_WATCHER
+            ),
         )
 
     try:
@@ -240,13 +259,17 @@ async def remove_folder(folder_id: str = PathParam(..., description="Folder UUID
 
         if not removed:
             raise HTTPException(
-                status_code=404,
-                detail=f"Folder not found: {folder_id}",
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=ErrorMessages.RESOURCE_NOT_FOUND.format(
+                    resource=ResourceNames.FOLDER, identifier=folder_id
+                ),
             )
 
         return {
             "success": True,
-            "message": "Folder removed successfully",
+            "message": SuccessMessages.RESOURCE_REMOVED.format(
+                resource=ResourceNames.FOLDER
+            ),
             "folder_id": folder_id,
         }
 
@@ -254,15 +277,17 @@ async def remove_folder(folder_id: str = PathParam(..., description="Folder UUID
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to remove folder: {str(e)}",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=ErrorMessages.OPERATION_FAILED.format(
+                operation="remove folder", error=str(e)
+            ),
         ) from e
 
 
 @router.patch("/folders/{folder_id}", response_model=FolderResponse)
 async def update_folder(
     request: UpdateFolderRequest,
-    folder_id: str = PathParam(..., description="Folder UUID"),
+    folder_id: str = PathParam(..., description=PathParamDescriptions.FOLDER_UUID),
 ):
     """
     Update folder configuration.
@@ -288,45 +313,45 @@ async def update_folder(
 
     if not server.folder_watcher:
         raise HTTPException(
-            status_code=503,
-            detail="Folder watcher service not initialized",
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
+                service=ServiceNames.FOLDER_WATCHER
+            ),
         )
 
     try:
-        # Check if folder exists
         folder = await server.folder_watcher.get_folder(folder_id)
         if not folder:
             raise HTTPException(
-                status_code=404,
-                detail=f"Folder not found: {folder_id}",
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=ErrorMessages.RESOURCE_NOT_FOUND.format(
+                    resource=ResourceNames.FOLDER, identifier=folder_id
+                ),
             )
 
-        # Update enabled status if provided
         if request.enabled is not None:
             if request.enabled:
                 await server.folder_watcher.enable_folder(folder_id)
             else:
                 await server.folder_watcher.disable_folder(folder_id)
 
-        # Return updated folder details (in-memory state is already updated)
         return _folder_to_response(folder)
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to update folder: {str(e)}",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=ErrorMessages.OPERATION_FAILED.format(
+                operation="update folder", error=str(e)
+            ),
         ) from e
 
 
-# ============================================================================
-# Folder Operations
-# ============================================================================
-
-
 @router.post("/folders/{folder_id}/scan", response_model=FolderScanResponse)
-async def scan_folder(folder_id: str = PathParam(..., description="Folder UUID")):
+async def scan_folder(
+    folder_id: str = PathParam(..., description=PathParamDescriptions.FOLDER_UUID),
+):
     """
     Manually trigger a scan of a specific folder.
 
@@ -352,58 +377,62 @@ async def scan_folder(folder_id: str = PathParam(..., description="Folder UUID")
 
     if not server.folder_watcher:
         raise HTTPException(
-            status_code=503,
-            detail="Folder watcher service not initialized",
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
+                service=ServiceNames.FOLDER_WATCHER
+            ),
         )
 
     try:
-        # Get folder
         folder = await server.folder_watcher.get_folder(folder_id)
         if not folder:
             raise HTTPException(
-                status_code=404,
-                detail=f"Folder not found: {folder_id}",
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=ErrorMessages.RESOURCE_NOT_FOUND.format(
+                    resource=ResourceNames.FOLDER, identifier=folder_id
+                ),
             )
 
-        # Check if folder is enabled
         if not folder.enabled:
             raise HTTPException(
-                status_code=400,
-                detail="Folder must be enabled to scan",
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail=ErrorMessages.RESOURCE_MUST_BE_ENABLED.format(
+                    resource=ResourceNames.FOLDER, action="scan"
+                ),
             )
 
-        # Check if folder path still exists
         if not folder.path.exists() or not folder.path.is_dir():
             raise HTTPException(
-                status_code=400,
-                detail=f"Folder path no longer accessible: {folder.path}",
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail=ErrorMessages.PATH_NOT_ACCESSIBLE.format(
+                    path_type=ResourceNames.FOLDER, path=folder.path
+                ),
             )
 
-        # Scan folder for supported files
         files_found = []
         for ext in server.folder_watcher.SUPPORTED_EXTENSIONS:
             files_found.extend(folder.path.rglob(f"*{ext}"))
 
-        # Filter out hidden/temp files
         files_found = [
             f
             for f in files_found
-            if not f.name.startswith(".") and not f.name.startswith("~")
+            if not any(
+                f.name.startswith(prefix)
+                for prefix in FolderWatchConstants.HIDDEN_FILE_PREFIXES
+            )
         ]
 
-        # Schedule each file for ingestion
         files_queued = 0
-        failed_files = 0
+        files_failed = 0
         for file_path in files_found:
             try:
                 await server.folder_watcher.schedule_ingestion(folder_id, file_path)
                 files_queued += 1
             except Exception as e:
-                # Log error but continue with other files
                 logger.warning(
                     f"Failed to queue file {file_path.name} for ingestion: {e}"
                 )
-                failed_files += 1
+                files_failed += 1
 
         return FolderScanResponse(
             success=True,
@@ -411,21 +440,21 @@ async def scan_folder(folder_id: str = PathParam(..., description="Folder UUID")
             folder_path=str(folder.path),
             files_found=len(files_found),
             files_queued=files_queued,
-            message=f"Scanned folder and queued {files_queued} files for ingestion",
+            files_failed=files_failed,
+            message=SuccessMessages.SCAN_COMPLETED.format(
+                resource="folder", count=files_queued
+            ),
         )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to scan folder: {str(e)}",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=ErrorMessages.OPERATION_FAILED.format(
+                operation="scan folder", error=str(e)
+            ),
         ) from e
-
-
-# ============================================================================
-# Status Endpoints
-# ============================================================================
 
 
 @router.get("/status", response_model=AggregateStatusResponse)
@@ -450,15 +479,14 @@ async def get_aggregate_status():
 
     if not server.folder_watcher:
         raise HTTPException(
-            status_code=503,
-            detail="Folder watcher service not initialized",
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
+                service=ServiceNames.FOLDER_WATCHER
+            ),
         )
 
     try:
-        # Get aggregate stats
         aggregate = await server.folder_watcher.get_aggregate_status()
-
-        # Get individual folder details
         folders = await server.folder_watcher.list_folders()
         folder_responses = [_folder_to_response(folder) for folder in folders]
 
@@ -478,13 +506,17 @@ async def get_aggregate_status():
 
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get status: {str(e)}",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=ErrorMessages.OPERATION_FAILED.format(
+                operation="get status", error=str(e)
+            ),
         ) from e
 
 
 @router.get("/folders/{folder_id}/status", response_model=FolderResponse)
-async def get_folder_status(folder_id: str = PathParam(..., description="Folder UUID")):
+async def get_folder_status(
+    folder_id: str = PathParam(..., description=PathParamDescriptions.FOLDER_UUID),
+):
     """
     Get detailed status for a specific folder.
 

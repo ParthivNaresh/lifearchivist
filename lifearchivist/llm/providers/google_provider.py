@@ -84,7 +84,7 @@ class GoogleProvider(BaseHTTPProvider, BaseLLMProvider):
             max_connections_per_host=30,
         )
 
-        BaseLLMProvider.initialize(self)
+        await BaseLLMProvider.initialize(self)
 
         log_event(
             "google_provider_initialized",

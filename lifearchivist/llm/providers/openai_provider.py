@@ -120,7 +120,7 @@ class OpenAIProvider(BaseHTTPProvider, BaseLLMProvider):
             headers=self._build_headers(),
         )
 
-        BaseLLMProvider.initialize(self)
+        await BaseLLMProvider.initialize(self)
 
         log_event(
             "openai_provider_initialized",

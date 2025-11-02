@@ -88,7 +88,7 @@ class AnthropicProvider(BaseHTTPProvider, BaseLLMProvider):
             headers=self._build_headers(),
         )
 
-        BaseLLMProvider.initialize(self)
+        await BaseLLMProvider.initialize(self)
 
         log_event(
             "anthropic_provider_initialized",

@@ -67,7 +67,7 @@ class MistralProvider(BaseHTTPProvider, BaseLLMProvider):
             headers=headers,
         )
 
-        BaseLLMProvider.initialize(self)
+        await BaseLLMProvider.initialize(self)
 
         log_event(
             "mistral_provider_initialized",

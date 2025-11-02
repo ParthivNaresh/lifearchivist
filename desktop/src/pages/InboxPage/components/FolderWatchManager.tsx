@@ -88,6 +88,7 @@ interface ErrorResponse {
 interface ScanResponse {
   files_found: number;
   files_queued: number;
+  files_failed: number;
 }
 
 export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({

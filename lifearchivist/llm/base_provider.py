@@ -661,7 +661,7 @@ class BaseLLMProvider(ABC):
         """
         pass
 
-    def initialize(self) -> None:
+    async def initialize(self) -> None:
         """
         Initialize provider resources.
 
@@ -677,8 +677,11 @@ class BaseLLMProvider(ABC):
         if self._initialized:
             return
         self._initialized = True
+        import asyncio
 
-    def cleanup(self) -> None:
+        await asyncio.sleep(0)
+
+    async def cleanup(self) -> None:
         """
         Clean up provider resources.
 
@@ -689,6 +692,9 @@ class BaseLLMProvider(ABC):
         Must be idempotent (safe to call multiple times).
         """
         self._initialized = False
+        import asyncio
+
+        await asyncio.sleep(0)
 
     @property
     def is_initialized(self) -> bool:
