@@ -859,173 +859,69 @@ class LlamaIndexQdrantService:
 
         Delegates to the search service for neighbor finding.
         """
+        from lifearchivist.storage.llamaindex_service.utils import DocumentNeighborUtils
+
         try:
             if not self.search_service:
-                return {"error": "Search service not initialized", "neighbors": []}
+                return DocumentNeighborUtils.create_error_response(
+                    document_id, "Search service not initialized"
+                )
 
-            # Check if document exists using document service
-            if self.document_service:
-                if not await self.document_service.document_exists(document_id):
-                    return {
-                        "error": f"Document {document_id} not found",
-                        "neighbors": [],
-                    }
-
-                node_ids = await self.document_service.get_node_ids(document_id)
-                if not node_ids:
-                    return {"error": "No nodes found for document", "neighbors": []}
-            else:
-                # Fallback to direct access if document service not available
-                if not self.doc_tracker or not await self.doc_tracker.document_exists(
-                    document_id
-                ):
-                    return {
-                        "error": f"Document {document_id} not found",
-                        "neighbors": [],
-                    }
-
-                node_ids = await self.doc_tracker.get_node_ids(document_id)
-                if not node_ids:
-                    return {"error": "No nodes found for document", "neighbors": []}
-
-            # Get the first node's text from Qdrant directly
             if not self.qdrant_client:
-                return {"error": "Qdrant client not available", "neighbors": []}
-
-            first_node_id = node_ids[0]
-
-            # Query Qdrant for the node payload
-            try:
-                from lifearchivist.storage.utils import QdrantNodeUtils
-
-                points = self.qdrant_client.retrieve(
-                    collection_name="lifearchivist",
-                    ids=[first_node_id],
-                    with_payload=True,
-                    with_vectors=False,
+                return DocumentNeighborUtils.create_error_response(
+                    document_id, "Qdrant client not available"
                 )
 
-                if not points or len(points) == 0:
-                    log_event(
-                        "qdrant_node_not_found",
-                        {
-                            "document_id": document_id,
-                            "node_id": first_node_id,
-                            "total_nodes_in_redis": len(node_ids),
-                        },
-                        level=logging.WARNING,
-                    )
-                    return {
-                        "document_id": document_id,
-                        "neighbors": [],
-                        "total": 0,
-                        "warning": "Document node not found in Qdrant",
-                    }
-
-                # Extract text from Qdrant payload
-                node_payload = points[0].payload
-                if node_payload is None:
-                    log_event(
-                        "node_payload_missing",
-                        {"document_id": document_id, "node_id": first_node_id},
-                        level=logging.WARNING,
-                    )
-                    return {
-                        "document_id": document_id,
-                        "neighbors": [],
-                        "total": 0,
-                        "warning": "Node payload is missing",
-                    }
-                document_text = QdrantNodeUtils.extract_text_from_node(node_payload)
-
-                if not document_text:
-                    log_event(
-                        "node_text_extraction_failed",
-                        {"document_id": document_id, "node_id": first_node_id},
-                        level=logging.WARNING,
-                    )
-                    return {
-                        "document_id": document_id,
-                        "neighbors": [],
-                        "total": 0,
-                        "warning": "Could not extract text from node",
-                    }
-
-            except Exception as e:
-                log_event(
-                    "qdrant_retrieval_error",
-                    {
-                        "document_id": document_id,
-                        "node_id": first_node_id,
-                        "error": str(e),
-                    },
-                    level=logging.ERROR,
+            error_msg = await DocumentNeighborUtils.validate_document_exists(
+                document_id, self.document_service, self.doc_tracker
+            )
+            if error_msg:
+                return DocumentNeighborUtils.create_error_response(
+                    document_id, error_msg
                 )
-                return {
-                    "document_id": document_id,
-                    "neighbors": [],
-                    "total": 0,
-                    "error": f"Failed to retrieve node from Qdrant: {str(e)}",
-                }
 
-            # Delegate to search service with the extracted text (returns Result)
+            node_ids, error_msg = await DocumentNeighborUtils.get_document_node_ids(
+                document_id, self.document_service, self.doc_tracker
+            )
+            if error_msg or not node_ids:
+                return DocumentNeighborUtils.create_error_response(
+                    document_id, error_msg or "No node IDs found"
+                )
+
+            document_text, error_msg = (
+                DocumentNeighborUtils.extract_node_text_from_qdrant(
+                    self.qdrant_client, node_ids[0], document_id
+                )
+            )
+            if error_msg or not document_text:
+                return DocumentNeighborUtils.create_error_response(
+                    document_id, error_msg or "No document text found", warning=True
+                )
+
             neighbors_result = await self.search_service.get_document_neighbors(
                 document_text=document_text,
                 document_id=document_id,
                 top_k=top_k,
             )
 
-            # Handle Result type - check failure before accessing attributes
-            if neighbors_result.is_failure():
-                error_msg: str = (
-                    str(neighbors_result.error)
-                    if hasattr(neighbors_result, "error")
-                    else "Unknown error"
+            neighbors_list, error_response = (
+                DocumentNeighborUtils.handle_neighbors_result(
+                    neighbors_result, document_id
                 )
-                return {
-                    "document_id": document_id,
-                    "neighbors": [],
-                    "total": 0,
-                    "error": error_msg,
-                }
-
-            neighbors_list: List[Dict[str, Any]] = (
-                list(neighbors_result.value)
-                if hasattr(neighbors_result, "value")
-                else []
             )
+            if error_response or not neighbors_list:
+                return error_response or DocumentNeighborUtils.create_error_response(
+                    document_id, "No neighbors found"
+                )
 
-            # Enrich neighbors with full metadata from Redis
             enriched_neighbors = []
             for neighbor in neighbors_list:
-                neighbor_doc_id = neighbor.get("document_id")
-                if neighbor_doc_id and self.metadata_service:
-                    # Get full metadata from Redis
-                    full_metadata_result = (
-                        await self.metadata_service.get_full_document_metadata(
-                            neighbor_doc_id
-                        )
+                enriched_neighbor = (
+                    await DocumentNeighborUtils.enrich_neighbor_metadata(
+                        neighbor, self.metadata_service
                     )
-                    if full_metadata_result.is_success():
-                        full_metadata = full_metadata_result.unwrap()
-                        # Enrich the metadata object with key fields from full metadata
-                        # UI expects these fields under neighbor.metadata.*
-                        if "metadata" not in neighbor:
-                            neighbor["metadata"] = {}
-                        neighbor["metadata"]["size_bytes"] = full_metadata.get(
-                            "size_bytes", 0
-                        )
-                        neighbor["metadata"]["document_created_at"] = full_metadata.get(
-                            "document_created_at"
-                        )
-                        neighbor["metadata"]["theme"] = full_metadata.get(
-                            "classifications", {}
-                        ).get("theme")
-                        neighbor["metadata"]["primary_subtheme"] = full_metadata.get(
-                            "classifications", {}
-                        ).get("primary_subtheme")
-
-                enriched_neighbors.append(neighbor)
+                )
+                enriched_neighbors.append(enriched_neighbor)
 
             return {
                 "document_id": document_id,
@@ -1036,16 +932,10 @@ class LlamaIndexQdrantService:
         except Exception as e:
             log_event(
                 "document_neighbors_error",
-                {
-                    "document_id": document_id,
-                    "error": str(e),
-                },
+                {"document_id": document_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return {
-                "error": str(e),
-                "neighbors": [],
-            }
+            return DocumentNeighborUtils.create_error_response(document_id, str(e))
 
     async def retrieve_similar(
         self, query: str, top_k: int = 10, similarity_threshold: float = 0.7
