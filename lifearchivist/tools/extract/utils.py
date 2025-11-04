@@ -349,7 +349,7 @@ class OCRProcessor:
             image.seek(page_num)
             logging.info(f"Processing page {page_num + 1} of {num_pages}")
 
-        processed_image = await preprocess_func(image.copy())
+        processed_image = preprocess_func(image.copy())
 
         try:
             text = await asyncio.to_thread(

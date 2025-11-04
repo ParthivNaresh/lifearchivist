@@ -674,7 +674,7 @@ class ContextBuilder:
         filters: Optional[Dict[str, Any]],
     ) -> Tuple[
         Optional[List[Dict[str, Any]]],
-        Optional[Failure[Tuple[str, List[Dict[str, Any]]], str]],
+        Optional[Failure[str]],
     ]:
         """
         Retrieve chunks using search service.

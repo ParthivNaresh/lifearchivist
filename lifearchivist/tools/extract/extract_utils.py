@@ -140,7 +140,7 @@ async def _extract_docx_text(file_path: Path) -> str:
         ) from None
 
 
-async def _pdf_needs_ocr(
+def _pdf_needs_ocr(
     pdf_reader: PdfReader, min_chars_per_page: int = 200, min_unique_words: int = 20
 ) -> bool:
     """
@@ -250,7 +250,7 @@ async def _extract_pdf_with_ocr(file_path: Path) -> str:
                 logging.info(f"Processing page {page_num}/{len(images)} with OCR")
 
                 # Preprocess image for better OCR
-                processed_image = await _preprocess_image_for_ocr(image)
+                processed_image = _preprocess_image_for_ocr(image)
 
                 # Run OCR
                 try:
@@ -306,35 +306,40 @@ async def _extract_pdf_text(file_path: Path) -> str:
     Returns:
         Extracted text content
     """
-    try:
-        # First attempt: Standard text extraction
+
+    def _read_and_extract_pdf(path: Path) -> tuple[str, bool]:
+        """Synchronous PDF reading and extraction to run in thread pool."""
         text_content = []
         needs_ocr = False
 
-        with open(file_path, "rb") as file:
+        with open(path, "rb") as file:
             pdf_reader = PdfReader(file)
 
-            # Check if OCR is needed
-            needs_ocr = await _pdf_needs_ocr(pdf_reader)
+            needs_ocr = _pdf_needs_ocr(pdf_reader)
 
             if not needs_ocr:
-                # Standard extraction is sufficient
-                logging.info(
-                    f"Using standard text extraction for PDF: {file_path.name}"
-                )
+                logging.info(f"Using standard text extraction for PDF: {path.name}")
                 for page in pdf_reader.pages:
                     text_content.append(page.extract_text())
 
                 extracted_text = "\n".join(text_content)
 
-                # Final sanity check - if we got very little text from a multi-page PDF
                 if len(pdf_reader.pages) > 5 and len(extracted_text.strip()) < 500:
                     logging.warning(
                         f"Suspiciously little text ({len(extracted_text)} chars) from {len(pdf_reader.pages)} pages, trying OCR"
                     )
                     needs_ocr = True
+                    return "", needs_ocr
 
-        # If standard extraction failed or was insufficient, use OCR
+                return extracted_text, needs_ocr
+
+        return "", needs_ocr
+
+    try:
+        extracted_text, needs_ocr = await asyncio.to_thread(
+            _read_and_extract_pdf, file_path
+        )
+
         if needs_ocr:
             logging.info(f"PDF requires OCR extraction: {file_path.name}")
             extracted_text = await _extract_pdf_with_ocr(file_path)
@@ -343,7 +348,6 @@ async def _extract_pdf_text(file_path: Path) -> str:
 
     except Exception as e:
         logging.error(f"Error extracting PDF text from {file_path}: {e}")
-        # Try OCR as last resort
         try:
             logging.info(
                 f"Standard extraction failed, attempting OCR fallback for: {file_path.name}"
@@ -491,24 +495,20 @@ async def _detect_csv_encoding(file_path: Path, sample_size: int = 10000) -> str
         Detected encoding string
     """
     try:
-        with open(file_path, "rb") as f:
-            raw_data = f.read(sample_size)
+        async with aiofiles.open(file_path, "rb") as f:
+            raw_data = await f.read(sample_size)
 
-        # Try to detect encoding
         result = chardet.detect(raw_data)
         encoding = result.get("encoding", "utf-8")
         confidence = result.get("confidence", 0)
 
-        # Fallback for low confidence or None result
         if not encoding or confidence < 0.7:
-            # Try common encodings
             for enc in ["utf-8", "latin-1", "cp1252", "iso-8859-1"]:
                 try:
                     raw_data.decode(enc)
                     return enc
                 except UnicodeDecodeError:
                     continue
-            # Default to utf-8 with error handling
             return "utf-8"
 
         return encoding
@@ -545,10 +545,11 @@ def _detect_csv_delimiter(content: str, sample_lines: int = 10) -> str:
     # Return delimiter with highest count
     if delimiter_counts:
         return max(delimiter_counts, key=lambda d: delimiter_counts.get(d, 0))
+
     return ","  # Default to comma
 
 
-async def _preprocess_image_for_ocr(image: Image.Image) -> Image.Image:
+def _preprocess_image_for_ocr(image: Image.Image) -> Image.Image:
     """
     Preprocess image to improve OCR accuracy.
 
