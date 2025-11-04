@@ -2,12 +2,13 @@
 Update conversation endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
 
-from ..constants import ErrorMessages
 from ..shared.dependencies import get_server
+from ..shared.responses import success_response
+from ..shared.utils import handle_service_result
 from .models import UpdateConversationRequest
+from .utils import validate_conversation_service
 
 router = APIRouter()
 
@@ -23,16 +24,11 @@ async def update_conversation(
     Only provided fields will be updated.
     """
     server = get_server()
+    service, error_response = validate_conversation_service(server)
+    if error_response:
+        return error_response
 
-    if (
-        not server.service_container
-        or not server.service_container.conversation_service
-    ):
-        raise HTTPException(
-            status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
-        )
-
-    service = server.service_container.conversation_service
+    assert service is not None
 
     result = await service.update_conversation(
         conversation_id=conversation_id,
@@ -45,15 +41,14 @@ async def update_conversation(
         max_tokens=request.max_tokens,
     )
 
-    if result.is_failure():
-        return JSONResponse(
-            content=result.to_dict(),
-            status_code=result.status_code,
-        )
+    error_response = handle_service_result(result)
+    if error_response:
+        return error_response
 
     conversation = result.unwrap()
 
-    return {
-        "success": True,
-        "conversation": conversation,
-    }
+    return success_response(
+        {
+            "conversation": conversation,
+        }
+    )

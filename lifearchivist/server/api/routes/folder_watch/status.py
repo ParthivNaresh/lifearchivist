@@ -2,17 +2,13 @@
 Get aggregate status endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from lifearchivist.models.folder_watch import AggregateStatusResponse
 
-from ..constants import (
-    ErrorMessages,
-    HTTPStatus,
-    ServiceNames,
-)
 from ..shared.dependencies import get_server
-from .utils import folder_to_response
+from ..shared.responses import internal_error_response
+from .utils import folder_to_response, validate_folder_watcher
 
 router = APIRouter()
 
@@ -36,18 +32,15 @@ async def get_aggregate_status():
         - Displays concurrency settings
     """
     server = get_server()
+    service, error_response = validate_folder_watcher(server)
+    if error_response:
+        return error_response
 
-    if not server.folder_watcher:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
-                service=ServiceNames.FOLDER_WATCHER
-            ),
-        )
+    assert service is not None
 
     try:
-        aggregate = await server.folder_watcher.get_aggregate_status()
-        folders = await server.folder_watcher.list_folders()
+        aggregate = await service.get_aggregate_status()
+        folders = await service.list_folders()
         folder_responses = [folder_to_response(folder) for folder in folders]
 
         return AggregateStatusResponse(
@@ -65,9 +58,4 @@ async def get_aggregate_status():
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=ErrorMessages.OPERATION_FAILED.format(
-                operation="get status", error=str(e)
-            ),
-        ) from e
+        return internal_error_response("Get status", e)

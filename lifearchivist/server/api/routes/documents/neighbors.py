@@ -2,17 +2,17 @@
 Get document neighbors endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
 
-from ..constants import (
-    DocumentConstants,
-    ErrorMessages,
-    HTTPStatus,
-    ServiceNames,
-    ValidationMessages,
-)
+from ..constants import DocumentConstants, ValidationMessages
 from ..shared.dependencies import get_server
+from ..shared.responses import (
+    internal_error_response,
+    not_found_response,
+    validation_error_response,
+)
+from ..shared.utils import handle_service_result
+from .utils import validate_llamaindex_service
 
 router = APIRouter()
 
@@ -27,55 +27,43 @@ async def get_llamaindex_document_neighbors(
     Uses vector similarity to find related documents.
     """
     server = get_server()
+    service, error_response = validate_llamaindex_service(server)
+    if error_response:
+        return error_response
 
-    if not server.llamaindex_service:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
-                service=ServiceNames.LLAMAINDEX
-            ),
-        )
+    assert service is not None
 
     if (
         top_k < DocumentConstants.NEIGHBORS_MIN_TOP_K
         or top_k > DocumentConstants.NEIGHBORS_MAX_TOP_K
     ):
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=ValidationMessages.TOP_K_RANGE.format(
+        return validation_error_response(
+            ValidationMessages.TOP_K_RANGE.format(
                 min=DocumentConstants.NEIGHBORS_MIN_TOP_K,
                 max=DocumentConstants.NEIGHBORS_MAX_TOP_K,
-            ),
+            )
         )
 
     try:
-        result = await server.llamaindex_service.get_document_neighbors(
+        result = await service.get_document_neighbors(
             document_id=document_id, top_k=top_k
         )
 
         if hasattr(result, "is_failure"):
-            if result.is_failure():
-                return JSONResponse(
-                    content=result.to_dict(),
-                    status_code=result.status_code,
-                )
+            error_response = handle_service_result(result)
+            if error_response:
+                return error_response
             return result.value
 
         if isinstance(result, dict) and "error" in result:
             if "not found" in result["error"].lower():
-                raise HTTPException(
-                    status_code=HTTPStatus.NOT_FOUND, detail=result["error"]
-                )
+                return not_found_response("Document", document_id)
             else:
-                raise HTTPException(
-                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=result["error"]
+                return internal_error_response(
+                    "Get document neighbors", RuntimeError(result["error"])
                 )
 
         return result
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from None
+        return internal_error_response("Get document neighbors", e)

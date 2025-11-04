@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query
 
 from ..shared.dependencies import get_server
-from ..utils import (
+from .utils import (
     fetch_provider_capabilities,
     fetch_provider_workspaces,
     fetch_time_based_metadata,

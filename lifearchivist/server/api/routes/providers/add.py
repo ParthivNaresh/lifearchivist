@@ -2,12 +2,14 @@
 Add provider endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
+from ..shared.responses import internal_error_response, success_response
 from .provider_utils import create_provider_config, parse_provider_type
 from .request_models import AddProviderRequest
+from .utils import validate_credential_service, validate_llm_manager
 
 router = APIRouter()
 
@@ -33,19 +35,31 @@ async def add_provider(request: AddProviderRequest):
         ```
     """
     server = get_server()
+    llm_manager, error_response = validate_llm_manager(server)
+    if error_response:
+        return error_response
 
-    if not server.llm_manager:
-        raise HTTPException(status_code=503, detail="LLM manager not available")
+    credential_service, error_response = validate_credential_service(server)
+    if error_response:
+        return error_response
 
-    if not server.credential_service:
-        raise HTTPException(status_code=503, detail="Credential service not available")
+    assert llm_manager is not None
+    assert credential_service is not None
 
     try:
-        provider_type = parse_provider_type(request.provider_type)
+        try:
+            provider_type = parse_provider_type(request.provider_type)
+            config = create_provider_config(provider_type, request.config)
+        except Exception as e:
+            from fastapi import HTTPException as FastAPIHTTPException
 
-        config = create_provider_config(provider_type, request.config)
+            if isinstance(e, FastAPIHTTPException) and e.status_code == 400:
+                from ..shared.responses import validation_error_response
 
-        store_result = await server.credential_service.add_provider(
+                return validation_error_response(e.detail)
+            raise
+
+        store_result = await credential_service.add_provider(
             provider_id=request.provider_id,
             provider_type=provider_type,
             config=config,
@@ -64,7 +78,7 @@ async def add_provider(request: AddProviderRequest):
             )
 
             if load_result.is_failure():
-                await server.credential_service.delete_provider(request.provider_id)
+                await credential_service.delete_provider(request.provider_id)
                 return JSONResponse(
                     content=load_result.to_dict(),
                     status_code=load_result.status_code,
@@ -72,26 +86,25 @@ async def add_provider(request: AddProviderRequest):
 
             provider = load_result.unwrap()
 
-            add_result = await server.llm_manager.add_provider(
+            add_result = await llm_manager.add_provider(
                 provider, set_as_default=request.set_as_default
             )
 
             if add_result.is_failure():
-                await server.credential_service.delete_provider(request.provider_id)
+                await credential_service.delete_provider(request.provider_id)
                 return JSONResponse(
                     content=add_result.to_dict(),
                     status_code=add_result.status_code,
                 )
 
-        return {
-            "success": True,
-            "provider_id": request.provider_id,
-            "provider_type": provider_type.value,
-            "is_default": request.set_as_default,
-            "message": "Provider added successfully",
-        }
+        return success_response(
+            {
+                "provider_id": request.provider_id,
+                "provider_type": provider_type.value,
+                "is_default": request.set_as_default,
+                "message": "Provider added successfully",
+            }
+        )
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        return internal_error_response("Add provider", e)

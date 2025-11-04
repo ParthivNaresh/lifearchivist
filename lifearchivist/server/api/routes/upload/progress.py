@@ -3,9 +3,15 @@ Get upload progress endpoint.
 """
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
+from ..shared.responses import (
+    internal_error_response,
+    not_found_response,
+    service_unavailable_response,
+    success_response,
+    validation_error_response,
+)
 
 router = APIRouter()
 
@@ -32,55 +38,22 @@ async def get_upload_progress(file_id: str):
     server = get_server()
 
     if not file_id or len(file_id) < 3:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Invalid file_id format",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
-        )
+        return validation_error_response("Invalid file_id format")
 
     if not server.progress_manager:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Progress tracking not available",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+        return service_unavailable_response("Progress tracking")
 
     try:
         progress = await server.progress_manager.get_progress(file_id)
 
         if not progress:
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "error": f"Progress not found for file_id: {file_id}",
-                    "error_type": "NotFoundError",
-                },
-                status_code=404,
-            )
+            return not_found_response("Progress", file_id)
 
-        return {"success": True, **progress.to_dict()}
+        return success_response(progress.to_dict())
 
     except AttributeError as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Progress data format error: {str(e)}",
-                "error_type": "DataError",
-            },
-            status_code=500,
+        return internal_error_response(
+            "Get progress", RuntimeError(f"Progress data format error: {str(e)}")
         )
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to retrieve progress: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        return internal_error_response("Get progress", e)

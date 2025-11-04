@@ -5,7 +5,7 @@ Clear activity events endpoint.
 from fastapi import APIRouter
 
 from ..shared.dependencies import get_server
-from ..shared.responses import create_error_response
+from ..shared.responses import internal_error_response, success_response
 from .utils import validate_activity_manager
 
 router = APIRouter()
@@ -30,18 +30,20 @@ async def clear_activity_events():
     if error_response:
         return error_response
 
+    assert server.activity_manager is not None
+
     try:
         cleared_count = await server.activity_manager.clear_all()
 
-        return {
-            "success": True,
-            "message": "Activity events cleared",
-            "events_cleared": cleared_count,
-        }
+        return success_response(
+            {
+                "message": "Activity events cleared",
+                "events_cleared": cleared_count,
+            }
+        )
 
     except Exception as e:
-        return create_error_response(
-            error_message=f"Failed to clear activity events: {str(e)}",
-            error_type=type(e).__name__,
-            status_code=500,
+        return internal_error_response(
+            operation="Clear activity events",
+            error=e,
         )

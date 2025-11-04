@@ -2,7 +2,31 @@
 Utility functions for document endpoints.
 """
 
-from typing import Dict
+from typing import Any, Dict, List, Optional, Tuple
+
+from fastapi.responses import JSONResponse
+
+from ..constants import DocumentConstants
+from ..shared.responses import not_found_response, service_unavailable_response
+from ..shared.utils import extract_result_value
+
+
+def validate_llamaindex_service(
+    server: Any,
+) -> Tuple[Optional[Any], Optional[JSONResponse]]:
+    """
+    Validate LlamaIndex service availability.
+
+    Args:
+        server: Server instance
+
+    Returns:
+        Tuple of (service, error_response) where one is None
+    """
+    if not server.llamaindex_service:
+        return None, service_unavailable_response("LlamaIndex service")
+
+    return server.llamaindex_service, None
 
 
 def format_document_for_ui(doc: Dict) -> Dict:
@@ -70,3 +94,91 @@ def validate_pagination(
         offset = default_offset
 
     return limit, offset
+
+
+async def check_document_deduplication(
+    llamaindex_service: Any,
+    file_hash: str,
+) -> bool:
+    """
+    Check if a file hash is used by multiple documents (deduplication check).
+
+    Args:
+        llamaindex_service: LlamaIndex service instance
+        file_hash: File hash to check
+
+    Returns:
+        True if file can be safely deleted (used by 0-1 documents), False otherwise
+    """
+    other_docs_result = await llamaindex_service.query_documents_by_metadata(
+        filters={"file_hash": file_hash},
+        limit=DocumentConstants.DEDUPLICATION_CHECK_LIMIT,
+    )
+
+    other_docs = extract_result_value(other_docs_result, list, [])
+    return len(other_docs) <= 1
+
+
+async def delete_vault_file_safe(
+    vault: Any,
+    file_hash: Optional[str],
+    llamaindex_service: Any,
+) -> bool:
+    """
+    Safely delete a file from vault with deduplication check.
+
+    Only deletes if no other documents reference the same file hash.
+
+    Args:
+        vault: Vault service instance
+        file_hash: File hash to delete (None if not available)
+        llamaindex_service: LlamaIndex service for deduplication check
+
+    Returns:
+        True if file was deleted, False otherwise
+    """
+    if not file_hash or not vault:
+        return False
+
+    try:
+        can_delete = await check_document_deduplication(llamaindex_service, file_hash)
+
+        if not can_delete:
+            return False
+
+        metrics: Dict[str, Any] = {
+            "files_deleted": 0,
+            "bytes_reclaimed": 0,
+            "errors": [],
+        }
+        await vault.delete_file_by_hash(file_hash, metrics)
+
+        files_deleted_count = metrics.get("files_deleted", 0)
+        return isinstance(files_deleted_count, int) and files_deleted_count > 0
+
+    except Exception as e:
+        print(f"Warning: Failed to delete file from vault: {e}")
+        return False
+
+
+def extract_document_metadata(
+    documents: List[Dict[str, Any]],
+    document_id: str,
+) -> Tuple[Optional[Dict[str, Any]], Optional[JSONResponse]]:
+    """
+    Extract metadata from document list.
+
+    Args:
+        documents: List of document dictionaries
+        document_id: Document ID to find
+
+    Returns:
+        Tuple of (metadata, error_response) where one is None
+    """
+    if not documents:
+        return None, not_found_response("Document", document_id)
+
+    metadata = documents[0].get("metadata", {})
+    if not isinstance(metadata, dict):
+        return {}, None
+    return metadata, None

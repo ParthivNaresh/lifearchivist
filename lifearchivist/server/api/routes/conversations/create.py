@@ -5,9 +5,10 @@ Create conversation endpoint.
 from fastapi import APIRouter
 
 from ..shared.dependencies import get_server
-from ..utils import handle_service_result, validate_conversation_service
+from ..shared.responses import success_response
+from ..shared.utils import handle_service_result
 from .models import CreateConversationRequest
-from .utils import serialize_for_json
+from .utils import serialize_for_json, validate_conversation_service
 
 router = APIRouter()
 
@@ -20,7 +21,11 @@ async def create_conversation(request: CreateConversationRequest):
     Returns the created conversation with ID.
     """
     server = get_server()
-    service = validate_conversation_service(server)
+    service, error_response = validate_conversation_service(server)
+    if error_response:
+        return error_response
+
+    assert service is not None
 
     result = await service.create_conversation(
         user_id="default",
@@ -37,7 +42,8 @@ async def create_conversation(request: CreateConversationRequest):
     if error_response:
         return error_response
 
-    return {
-        "success": True,
-        "conversation": serialize_for_json(result.unwrap()),
-    }
+    return success_response(
+        {
+            "conversation": serialize_for_json(result.unwrap()),
+        }
+    )

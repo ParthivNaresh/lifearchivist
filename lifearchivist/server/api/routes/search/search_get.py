@@ -8,7 +8,14 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
-from .utils import build_search_filters, execute_search, validate_search_params
+from ..shared.responses import internal_error_response, success_response
+from .utils import (
+    build_search_filters,
+    execute_search,
+    validate_llamaindex_service,
+    validate_search_params,
+    validate_search_service,
+)
 
 router = APIRouter()
 
@@ -35,26 +42,13 @@ async def search_documents_get(
     if validation_error:
         return validation_error
 
-    if not server.llamaindex_service:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Search service not available",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+    llamaindex_service, error_response = validate_llamaindex_service(server)
+    if error_response:
+        return error_response
 
-    search_service = server.llamaindex_service.search_service
-    if not search_service:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Search service not initialized",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+    search_service, error_response = validate_search_service(llamaindex_service)
+    if error_response:
+        return error_response
 
     try:
         filters = build_search_filters(mime_type, status, tags)
@@ -71,20 +65,14 @@ async def search_documents_get(
         if offset > 0:
             search_results = search_results[offset:]
 
-        return {
-            "success": True,
-            "results": search_results,
-            "count": len(search_results),
-            "mode": mode,
-            "query": q,
-        }
+        return success_response(
+            {
+                "results": search_results,
+                "count": len(search_results),
+                "mode": mode,
+                "query": q,
+            }
+        )
 
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Search failed: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        return internal_error_response("Search documents", e)

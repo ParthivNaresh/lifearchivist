@@ -4,10 +4,15 @@ Get all tags endpoint.
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
 
 from ..shared.dependencies import get_server
+from ..shared.responses import (
+    internal_error_response,
+    service_unavailable_response,
+    success_response,
+    validation_error_response,
+)
 
 router = APIRouter()
 
@@ -35,39 +40,24 @@ async def get_all_tags(
     server = get_server()
 
     if not server.llamaindex_service:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Tag service not available",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+        return service_unavailable_response("Tag service")
 
     if min_count is not None and min_count < 0:
-        raise HTTPException(status_code=400, detail="min_count must be non-negative")
+        return validation_error_response("min_count must be non-negative")
 
     if limit is not None and (limit < 1 or limit > 1000):
-        raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
+        return validation_error_response("limit must be between 1 and 1000")
 
     try:
-        return {
-            "success": True,
-            "tags": [],
-            "total": 0,
-            "min_count": min_count,
-            "limit": limit,
-            "note": "Tag extraction not yet implemented. This is a placeholder.",
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to retrieve tags: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
+        return success_response(
+            {
+                "tags": [],
+                "total": 0,
+                "min_count": min_count,
+                "limit": limit,
+                "note": "Tag extraction not yet implemented. This is a placeholder.",
+            }
         )
+
+    except Exception as e:
+        return internal_error_response("Retrieve tags", e)

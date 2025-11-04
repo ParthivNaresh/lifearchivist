@@ -2,11 +2,12 @@
 Get conversation endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
 
-from ..constants import ErrorMessages
 from ..shared.dependencies import get_server
+from ..shared.responses import success_response
+from ..shared.utils import handle_service_result
+from .utils import validate_conversation_service
 
 router = APIRouter()
 
@@ -23,47 +24,40 @@ async def get_conversation(
     Optionally includes message history.
     """
     server = get_server()
+    conv_service, error_response = validate_conversation_service(server)
+    if error_response:
+        return error_response
 
-    if not server.service_container:
-        raise HTTPException(
-            status_code=503, detail=ErrorMessages.SERVICES_NOT_AVAILABLE
-        )
-
-    conv_service = server.service_container.conversation_service
-    msg_service = server.service_container.message_service
-
-    if not conv_service:
-        raise HTTPException(
-            status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
-        )
+    assert conv_service is not None
 
     conv_result = await conv_service.get_conversation(conversation_id)
 
-    if conv_result.is_failure():
-        return JSONResponse(
-            content=conv_result.to_dict(),
-            status_code=conv_result.status_code,
-        )
+    error_response = handle_service_result(conv_result)
+    if error_response:
+        return error_response
 
     conversation = conv_result.unwrap()
 
-    if include_messages and msg_service:
-        msg_result = await msg_service.get_messages(
-            conversation_id=conversation_id,
-            limit=message_limit,
-            offset=0,
-            include_citations=True,
-        )
+    if include_messages and server.service_container:
+        msg_service = server.service_container.message_service
+        if msg_service:
+            msg_result = await msg_service.get_messages(
+                conversation_id=conversation_id,
+                limit=message_limit,
+                offset=0,
+                include_citations=True,
+            )
 
-        if msg_result.is_success():
-            messages_data = msg_result.unwrap()
-            conversation["messages"] = messages_data["messages"]
-            conversation["message_count"] = messages_data["total"]
-        else:
-            conversation["messages"] = []
-            conversation["message_count"] = 0
+            if msg_result.is_success():
+                messages_data = msg_result.unwrap()
+                conversation["messages"] = messages_data["messages"]
+                conversation["message_count"] = messages_data["total"]
+            else:
+                conversation["messages"] = []
+                conversation["message_count"] = 0
 
-    return {
-        "success": True,
-        "conversation": conversation,
-    }
+    return success_response(
+        {
+            "conversation": conversation,
+        }
+    )

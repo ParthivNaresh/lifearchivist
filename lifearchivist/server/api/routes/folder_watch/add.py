@@ -4,18 +4,14 @@ Add folder endpoint.
 
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from lifearchivist.models.folder_watch import AddFolderRequest, FolderResponse
 
-from ..constants import (
-    ErrorMessages,
-    HTTPStatus,
-    ResourceNames,
-    ServiceNames,
-)
+from ..constants import ErrorMessages, HTTPStatus, ResourceNames
 from ..shared.dependencies import get_server
-from .utils import folder_to_response
+from ..shared.responses import internal_error_response, validation_error_response
+from .utils import folder_to_response, validate_folder_watcher
 
 router = APIRouter()
 
@@ -37,46 +33,39 @@ async def add_folder(request: AddFolderRequest):
         500: Internal server error
     """
     server = get_server()
+    service, error_response = validate_folder_watcher(server)
+    if error_response:
+        return error_response
 
-    if not server.folder_watcher:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
-                service=ServiceNames.FOLDER_WATCHER
-            ),
-        )
+    assert service is not None
 
     try:
         folder_path = Path(request.folder_path).expanduser().resolve()
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=ErrorMessages.INVALID_PATH.format(path_type="folder", error=str(e)),
-        ) from e
+        return validation_error_response(
+            ErrorMessages.INVALID_PATH.format(path_type="folder", error=str(e))
+        )
 
     try:
-        folder_id = await server.folder_watcher.add_folder(
+        folder_id = await service.add_folder(
             path=folder_path,
             enabled=request.enabled,
         )
 
-        folder = await server.folder_watcher.get_folder(folder_id)
+        folder = await service.get_folder(folder_id)
         if not folder:
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=ErrorMessages.RESOURCE_ADDED_NOT_RETRIEVED.format(
-                    resource=ResourceNames.FOLDER
+            return internal_error_response(
+                "Add folder",
+                RuntimeError(
+                    ErrorMessages.RESOURCE_ADDED_NOT_RETRIEVED.format(
+                        resource=ResourceNames.FOLDER
+                    )
                 ),
             )
 
         return folder_to_response(folder)
 
     except ValueError as e:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail=str(e)) from e
+        return validation_error_response(str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=ErrorMessages.OPERATION_FAILED.format(
-                operation="add folder", error=str(e)
-            ),
-        ) from e
+        return internal_error_response("Add folder", e)

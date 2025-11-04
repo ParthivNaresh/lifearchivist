@@ -2,18 +2,18 @@
 Utility functions for activity endpoints.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from fastapi.responses import JSONResponse
 
 from ....constants import ErrorMessages
-from ..shared.responses import create_error_response
+from ..shared.responses import service_unavailable_response
 
 if TYPE_CHECKING:
     from ....application_server import ApplicationServer
 
 
-def validate_activity_manager(server: "ApplicationServer") -> JSONResponse | None:
+def validate_activity_manager(server: "ApplicationServer") -> Optional[JSONResponse]:
     """
     Validate that activity manager is initialized.
 
@@ -24,10 +24,9 @@ def validate_activity_manager(server: "ApplicationServer") -> JSONResponse | Non
         Error response if validation fails, None if valid
     """
     if not server.activity_manager:
-        return create_error_response(
-            error_message=ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED,
-            error_type="ServiceUnavailable",
-            status_code=503,
+        return service_unavailable_response(
+            service_name="ActivityManager",
+            message=ErrorMessages.ACTIVITY_MANAGER_NOT_INITIALIZED,
         )
     return None
 

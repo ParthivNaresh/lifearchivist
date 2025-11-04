@@ -2,9 +2,10 @@
 Get settings endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from ..shared.dependencies import get_server
+from ..shared.responses import internal_error_response
 from .models import SettingsResponse
 
 router = APIRouter()
@@ -77,10 +78,8 @@ async def get_settings():
         )
 
     except AttributeError as e:
-        raise HTTPException(
-            status_code=500, detail=f"Settings configuration error: {str(e)}"
-        ) from None
+        return internal_error_response(
+            "Get settings", RuntimeError(f"Settings configuration error: {str(e)}")
+        )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve settings: {str(e)}"
-        ) from None
+        return internal_error_response("Get settings", e)

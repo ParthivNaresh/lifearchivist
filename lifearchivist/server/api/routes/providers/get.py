@@ -2,10 +2,16 @@
 Get provider endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
+from ..shared.responses import (
+    internal_error_response,
+    not_found_response,
+    success_response,
+)
+from .utils import validate_credential_service, validate_llm_manager
 
 router = APIRouter()
 
@@ -18,25 +24,24 @@ async def get_provider(provider_id: str):
     Returns provider metadata without exposing credentials.
     """
     server = get_server()
+    llm_manager, error_response = validate_llm_manager(server)
+    if error_response:
+        return error_response
 
-    if not server.llm_manager:
-        raise HTTPException(status_code=503, detail="LLM manager not available")
+    credential_service, error_response = validate_credential_service(server)
+    if error_response:
+        return error_response
 
-    if not server.credential_service:
-        raise HTTPException(status_code=503, detail="Credential service not available")
+    assert llm_manager is not None
+    assert credential_service is not None
 
     try:
-        provider = server.llm_manager.get_provider(provider_id)
+        provider = llm_manager.get_provider(provider_id)
 
         if provider is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Provider '{provider_id}' not found",
-            )
+            return not_found_response("Provider", provider_id)
 
-        metadata_result = await server.credential_service.get_provider_metadata(
-            provider_id
-        )
+        metadata_result = await credential_service.get_provider_metadata(provider_id)
 
         if metadata_result.is_failure():
             return JSONResponse(
@@ -47,20 +52,19 @@ async def get_provider(provider_id: str):
         metadata = metadata_result.unwrap()
 
         is_healthy = True
-        if server.llm_manager.health_monitor:
-            is_healthy = server.llm_manager.health_monitor.is_healthy(provider_id)
+        if llm_manager.health_monitor:
+            is_healthy = llm_manager.health_monitor.is_healthy(provider_id)
 
-        return {
-            "success": True,
-            "provider_id": provider_id,
-            "provider_type": provider.provider_type.value,
-            "is_default": metadata.get("is_default", False),
-            "is_initialized": provider.is_initialized,
-            "is_healthy": is_healthy,
-            "user_id": metadata.get("user_id", "default"),
-        }
+        return success_response(
+            {
+                "provider_id": provider_id,
+                "provider_type": provider.provider_type.value,
+                "is_default": metadata.get("is_default", False),
+                "is_initialized": provider.is_initialized,
+                "is_healthy": is_healthy,
+                "user_id": metadata.get("user_id", "default"),
+            }
+        )
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        return internal_error_response("Get provider", e)

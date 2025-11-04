@@ -2,20 +2,15 @@
 Get folder endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi import Path as PathParam
 
 from lifearchivist.models.folder_watch import FolderResponse
 
-from ..constants import (
-    ErrorMessages,
-    HTTPStatus,
-    PathParamDescriptions,
-    ResourceNames,
-    ServiceNames,
-)
+from ..constants import PathParamDescriptions, ResourceNames
 from ..shared.dependencies import get_server
-from .utils import folder_to_response
+from ..shared.responses import internal_error_response, not_found_response
+from .utils import folder_to_response, validate_folder_watcher
 
 router = APIRouter()
 
@@ -39,34 +34,19 @@ async def get_folder(
         500: Internal server error
     """
     server = get_server()
+    service, error_response = validate_folder_watcher(server)
+    if error_response:
+        return error_response
 
-    if not server.folder_watcher:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
-                service=ServiceNames.FOLDER_WATCHER
-            ),
-        )
+    assert service is not None
 
     try:
-        folder = await server.folder_watcher.get_folder(folder_id)
+        folder = await service.get_folder(folder_id)
 
         if not folder:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=ErrorMessages.RESOURCE_NOT_FOUND.format(
-                    resource=ResourceNames.FOLDER, identifier=folder_id
-                ),
-            )
+            return not_found_response(ResourceNames.FOLDER, folder_id)
 
         return folder_to_response(folder)
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=ErrorMessages.OPERATION_FAILED.format(
-                operation="get folder", error=str(e)
-            ),
-        ) from e
+        return internal_error_response("Get folder", e)

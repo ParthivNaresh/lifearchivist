@@ -6,9 +6,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
-from ..utils import reload_provider_with_new_config, update_provider_default_status
 from .provider_utils import create_provider_config, parse_provider_type
 from .request_models import UpdateProviderRequest
+from .utils import reload_provider_with_new_config, update_provider_default_status
 
 router = APIRouter()
 

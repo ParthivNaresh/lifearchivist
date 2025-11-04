@@ -8,6 +8,12 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
+from ..shared.responses import (
+    internal_error_response,
+    success_response,
+    validation_error_response,
+)
+from .utils import validate_llamaindex_service, validate_query_service
 
 router = APIRouter()
 
@@ -26,68 +32,30 @@ async def ask_question(request: Dict[str, Any]):
     filters = request.get("filters")
 
     if not question:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Question is required",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
-        )
+        return validation_error_response("Question is required")
 
     if len(question) < 3:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Question must be at least 3 characters long",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
-        )
+        return validation_error_response("Question must be at least 3 characters long")
 
     if isinstance(context_limit, str):
         try:
             context_limit = int(context_limit)
         except ValueError:
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "error": "context_limit must be a number",
-                    "error_type": "ValidationError",
-                },
-                status_code=400,
-            )
+            return validation_error_response("context_limit must be a number")
 
     if context_limit < 1 or context_limit > 20:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "context_limit must be between 1 and 20",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
-        )
+        return validation_error_response("context_limit must be between 1 and 20")
 
-    if not server.llamaindex_service:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Q&A service not available",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+    llamaindex_service, error_response = validate_llamaindex_service(server)
+    if error_response:
+        return error_response
 
-    query_service = server.llamaindex_service.query_service
-    if not query_service:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Query service not initialized",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+    query_service, error_response = validate_query_service(llamaindex_service)
+    if error_response:
+        return error_response
+
+    assert llamaindex_service is not None
+    assert query_service is not None
 
     try:
         result = await query_service.query(
@@ -122,22 +90,16 @@ async def ask_question(request: Dict[str, Any]):
                 }
             )
 
-        return {
-            "success": True,
-            "answer": answer,
-            "confidence": confidence,
-            "citations": citations,
-            "method": query_response.get("method", "llamaindex_rag"),
-            "context_length": len(citations),
-            "statistics": query_response.get("statistics", {}),
-        }
+        return success_response(
+            {
+                "answer": answer,
+                "confidence": confidence,
+                "citations": citations,
+                "method": query_response.get("method", "llamaindex_rag"),
+                "context_length": len(citations),
+                "statistics": query_response.get("statistics", {}),
+            }
+        )
 
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Q&A failed: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        return internal_error_response("Q&A", e)

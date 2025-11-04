@@ -2,18 +2,14 @@
 List folders endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from lifearchivist.models.folder_watch import FolderListResponse
 
-from ..constants import (
-    ErrorMessages,
-    FolderWatchConstants,
-    HTTPStatus,
-    ServiceNames,
-)
+from ..constants import FolderWatchConstants
 from ..shared.dependencies import get_server
-from .utils import folder_to_response
+from ..shared.responses import internal_error_response
+from .utils import folder_to_response, validate_folder_watcher
 
 router = APIRouter()
 
@@ -36,17 +32,14 @@ async def list_folders(
         500: Internal server error
     """
     server = get_server()
+    service, error_response = validate_folder_watcher(server)
+    if error_response:
+        return error_response
 
-    if not server.folder_watcher:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
-                service=ServiceNames.FOLDER_WATCHER
-            ),
-        )
+    assert service is not None
 
     try:
-        folders = await server.folder_watcher.list_folders(enabled_only=enabled_only)
+        folders = await service.list_folders(enabled_only=enabled_only)
         folder_responses = [folder_to_response(folder) for folder in folders]
 
         return FolderListResponse(
@@ -56,9 +49,4 @@ async def list_folders(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=ErrorMessages.OPERATION_FAILED.format(
-                operation="list folders", error=str(e)
-            ),
-        ) from e
+        return internal_error_response("List folders", e)

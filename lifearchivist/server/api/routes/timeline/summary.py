@@ -4,14 +4,16 @@ Get timeline summary endpoint.
 
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from lifearchivist.utils.logging import log_event, track
 
 from ..shared.dependencies import get_server
-from ..utils import process_summary_document
+from ..shared.responses import internal_error_response, service_unavailable_response
+from .utils import process_summary_document
 
 router = APIRouter()
 
@@ -22,7 +24,7 @@ router = APIRouter()
     track_performance=True,
     frequency="low_frequency",
 )
-async def get_timeline_summary() -> Dict[str, Any]:
+async def get_timeline_summary() -> Union[Dict[str, Any], JSONResponse]:
     """
     Get high-level timeline summary statistics.
 
@@ -43,7 +45,7 @@ async def get_timeline_summary() -> Dict[str, Any]:
     server = get_server()
 
     if not server.llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        return service_unavailable_response("LlamaIndex service")
 
     try:
         documents_result = await server.llamaindex_service.query_documents_by_metadata(
@@ -51,9 +53,9 @@ async def get_timeline_summary() -> Dict[str, Any]:
         )
 
         if documents_result.is_failure():
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to query documents: {documents_result.error}",
+            return internal_error_response(
+                "Query documents",
+                RuntimeError(f"Failed to query documents: {documents_result.error}"),
             )
 
         documents: List[Dict[str, Any]] = documents_result.unwrap()
@@ -85,10 +87,6 @@ async def get_timeline_summary() -> Dict[str, Any]:
 
         return summary
 
-    except HTTPException:
-        raise
     except Exception as e:
         log_event("timeline_summary_error", {"error": str(e)}, level=logging.ERROR)
-        raise HTTPException(
-            status_code=500, detail=f"Internal server error: {str(e)}"
-        ) from e
+        return internal_error_response("Get timeline summary", e)

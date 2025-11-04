@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
-from ..utils import determine_fallback_provider, update_conversations_provider
+from .utils import determine_fallback_provider, update_conversations_provider
 
 router = APIRouter()
 

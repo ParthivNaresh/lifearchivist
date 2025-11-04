@@ -3,9 +3,13 @@ Get vault info endpoint.
 """
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
+from ..shared.responses import (
+    internal_error_response,
+    service_unavailable_response,
+    success_response,
+)
 
 router = APIRouter()
 
@@ -29,33 +33,15 @@ async def get_vault_info():
     server = get_server()
 
     if not server.vault:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Vault not initialized",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+        return service_unavailable_response("Vault")
 
     try:
         stats = await server.vault.get_vault_statistics()
-        return {"success": True, **stats}
+        return success_response(stats)
     except AttributeError as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Vault statistics unavailable: {str(e)}",
-                "error_type": "ServiceError",
-            },
-            status_code=500,
+        return internal_error_response(
+            "Get vault statistics",
+            RuntimeError(f"Vault statistics unavailable: {str(e)}"),
         )
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to retrieve vault info: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        return internal_error_response("Get vault info", e)

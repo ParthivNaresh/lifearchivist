@@ -8,9 +8,10 @@ following DRY principles and ensuring consistency.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.result import Failure
 
 
 class MetadataFilterUtils:
@@ -671,7 +672,10 @@ class ContextBuilder:
         question: str,
         top_k: int,
         filters: Optional[Dict[str, Any]],
-    ) -> tuple[Optional[List[Dict[str, Any]]], Optional[Any]]:
+    ) -> Tuple[
+        Optional[List[Dict[str, Any]]],
+        Optional[Failure[Tuple[str, List[Dict[str, Any]]], str]],
+    ]:
         """
         Retrieve chunks using search service.
 
@@ -682,7 +686,7 @@ class ContextBuilder:
             filters: Optional metadata filters
 
         Returns:
-            Tuple of (source_chunks, error_result)
+            Tuple of (source_chunks, error_result) where error_result is a Failure if retrieval failed
         """
         from lifearchivist.utils.logging import log_event
 

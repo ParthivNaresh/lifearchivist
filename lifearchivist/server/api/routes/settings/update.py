@@ -2,18 +2,23 @@
 Update settings endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from lifearchivist.config import get_settings as get_app_settings
 
 from ..shared.dependencies import get_server
-from ..utils import (
+from ..shared.responses import (
+    internal_error_response,
+    success_response,
+    validation_error_response,
+)
+from .models import SettingsUpdateRequest
+from .utils import (
     has_conversation_defaults_update,
     track_non_persisted_fields,
     update_conversation_defaults_in_db,
     update_settings_in_memory,
 )
-from .models import SettingsUpdateRequest
 
 router = APIRouter()
 
@@ -56,21 +61,16 @@ async def update_settings(request: SettingsUpdateRequest):
                 updated_fields.extend(db_fields)
 
         if not updated_fields:
-            raise HTTPException(
-                status_code=400, detail="No settings provided to update"
-            )
+            return validation_error_response("No settings provided to update")
 
-        return {
-            "success": True,
-            "message": "Settings updated successfully",
-            "updated_fields": updated_fields,
-            "current_llm_model": settings.llm_model,
-            "note": "Settings are stored in memory and persist until server restart. For permanent changes, update environment variables.",
-        }
+        return success_response(
+            {
+                "message": "Settings updated successfully",
+                "updated_fields": updated_fields,
+                "current_llm_model": settings.llm_model,
+                "note": "Settings are stored in memory and persist until server restart. For permanent changes, update environment variables.",
+            }
+        )
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to update settings: {str(e)}"
-        ) from None
+        return internal_error_response("Update settings", e)

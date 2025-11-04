@@ -5,7 +5,7 @@ Activity events endpoint.
 from fastapi import APIRouter
 
 from ..shared.dependencies import get_server
-from ..shared.responses import create_error_response
+from ..shared.responses import internal_error_response, success_response
 from .models import ActivityEventsResponse
 from .utils import enforce_limit, validate_activity_manager
 
@@ -34,20 +34,22 @@ async def get_activity_events(limit: int = 200):
     if error_response:
         return error_response
 
+    assert server.activity_manager is not None
+
     limit = enforce_limit(limit, max_limit=100)
 
     try:
         events = await server.activity_manager.get_recent_events(limit)
 
-        return {
-            "success": True,
-            "events": events,
-            "count": len(events),
-        }
+        return success_response(
+            {
+                "events": events,
+                "count": len(events),
+            }
+        )
 
     except Exception as e:
-        return create_error_response(
-            error_message=f"Failed to retrieve activity events: {str(e)}",
-            error_type=type(e).__name__,
-            status_code=500,
+        return internal_error_response(
+            operation="Retrieve activity events",
+            error=e,
         )

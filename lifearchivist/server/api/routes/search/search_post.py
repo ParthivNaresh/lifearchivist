@@ -8,6 +8,12 @@ from fastapi.responses import JSONResponse
 from lifearchivist.models import SearchRequest
 
 from ..shared.dependencies import get_server
+from ..shared.responses import (
+    internal_error_response,
+    success_response,
+    validation_error_response,
+)
+from .utils import validate_llamaindex_service, validate_search_service
 
 router = APIRouter()
 
@@ -20,27 +26,16 @@ async def search_documents_post(request: SearchRequest):
     Supports semantic, keyword, and hybrid search modes with metadata filtering.
     """
     server = get_server()
+    llamaindex_service, error_response = validate_llamaindex_service(server)
+    if error_response:
+        return error_response
 
-    if not server.llamaindex_service:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Search service not available",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+    search_service, error_response = validate_search_service(llamaindex_service)
+    if error_response:
+        return error_response
 
-    search_service = server.llamaindex_service.search_service
-    if not search_service:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Search service not initialized",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+    assert llamaindex_service is not None
+    assert search_service is not None
 
     try:
         query = request.query or ""
@@ -69,14 +64,7 @@ async def search_documents_post(request: SearchRequest):
                 filters=filters,
             )
         else:
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "error": f"Invalid search mode: {mode}",
-                    "error_type": "ValidationError",
-                },
-                status_code=400,
-            )
+            return validation_error_response(f"Invalid search mode: {mode}")
 
         if result.is_failure():
             return JSONResponse(
@@ -84,19 +72,13 @@ async def search_documents_post(request: SearchRequest):
                 status_code=result.status_code,
             )
 
-        return {
-            "success": True,
-            "results": result.value,
-            "count": len(result.value),
-            "mode": mode,
-        }
+        return success_response(
+            {
+                "results": result.value,
+                "count": len(result.value),
+                "mode": mode,
+            }
+        )
 
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Search failed: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        return internal_error_response("Search documents", e)

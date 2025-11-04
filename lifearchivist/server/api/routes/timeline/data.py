@@ -4,14 +4,16 @@ Get timeline data endpoint.
 
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from lifearchivist.utils.logging import log_event, track
 
 from ..shared.dependencies import get_server
-from ..utils import parse_date_filter, process_timeline_document
+from ..shared.responses import internal_error_response, service_unavailable_response
+from .utils import parse_date_filter, process_timeline_document
 
 router = APIRouter()
 
@@ -25,7 +27,7 @@ router = APIRouter()
 async def get_timeline_data(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Union[Dict[str, Any], JSONResponse]:
     """
     Get timeline data for document visualization.
 
@@ -55,23 +57,28 @@ async def get_timeline_data(
     server = get_server()
 
     if not server.llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        return service_unavailable_response("LlamaIndex service")
 
     try:
+        filter_start, error_response = parse_date_filter(start_date, "start_date")
+        if error_response:
+            return error_response
+
+        filter_end, error_response = parse_date_filter(end_date, "end_date")
+        if error_response:
+            return error_response
+
         documents_result = await server.llamaindex_service.query_documents_by_metadata(
             filters={}, limit=10000
         )
 
         if documents_result.is_failure():
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to query documents: {documents_result.error}",
+            return internal_error_response(
+                "Query documents",
+                RuntimeError(f"Failed to query documents: {documents_result.error}"),
             )
 
         documents: List[Dict[str, Any]] = documents_result.unwrap()
-
-        filter_start = parse_date_filter(start_date, "start_date")
-        filter_end = parse_date_filter(end_date, "end_date")
 
         timeline_data: Dict[str, Any] = {
             "total_documents": 0,
@@ -104,14 +111,10 @@ async def get_timeline_data(
 
         return timeline_data
 
-    except HTTPException:
-        raise
     except Exception as e:
         log_event(
             "timeline_endpoint_error",
             {"error": str(e), "error_type": type(e).__name__},
             level=logging.ERROR,
         )
-        raise HTTPException(
-            status_code=500, detail=f"Internal server error: {str(e)}"
-        ) from e
+        return internal_error_response("Get timeline data", e)

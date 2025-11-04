@@ -3,9 +3,10 @@ Get queue statistics endpoint.
 """
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
+from ..shared.responses import internal_error_response, success_response
+from .utils import validate_enrichment_queue
 
 router = APIRouter()
 
@@ -22,30 +23,14 @@ async def get_queue_stats():
     - Average processing times
     """
     server = get_server()
+    service, error_response = validate_enrichment_queue(server)
+    if error_response:
+        return error_response
 
-    if not server.enrichment_queue:
-        return JSONResponse(
-            content={
-                "success": False,
-                "status": "not_available",
-                "error": "Enrichment queue not initialized",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+    assert service is not None
 
     try:
-        stats = await server.enrichment_queue.get_stats()
-        return {
-            "success": True,
-            **stats,
-        }
+        stats = await service.get_stats()
+        return success_response(stats)
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to get queue stats: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        return internal_error_response("Get queue stats", e)

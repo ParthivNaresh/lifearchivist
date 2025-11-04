@@ -2,11 +2,12 @@
 List conversations endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
 
-from ..constants import ErrorMessages
 from ..shared.dependencies import get_server
+from ..shared.responses import success_response
+from ..shared.utils import handle_service_result
+from .utils import validate_conversation_service
 
 router = APIRouter()
 
@@ -23,16 +24,11 @@ async def list_conversations(
     Supports pagination and filtering.
     """
     server = get_server()
+    service, error_response = validate_conversation_service(server)
+    if error_response:
+        return error_response
 
-    if (
-        not server.service_container
-        or not server.service_container.conversation_service
-    ):
-        raise HTTPException(
-            status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
-        )
-
-    service = server.service_container.conversation_service
+    assert service is not None
 
     result = await service.list_conversations(
         user_id="default",
@@ -41,15 +37,10 @@ async def list_conversations(
         include_archived=include_archived,
     )
 
-    if result.is_failure():
-        return JSONResponse(
-            content=result.to_dict(),
-            status_code=result.status_code,
-        )
+    error_response = handle_service_result(result)
+    if error_response:
+        return error_response
 
     data = result.unwrap()
 
-    return {
-        "success": True,
-        **data,
-    }
+    return success_response(data)

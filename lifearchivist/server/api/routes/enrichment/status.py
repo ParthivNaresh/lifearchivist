@@ -3,9 +3,10 @@ Get enrichment status endpoint.
 """
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
+from ..shared.responses import internal_error_response, success_response
+from .utils import validate_background_tasks
 
 router = APIRouter()
 
@@ -21,30 +22,14 @@ async def get_enrichment_status():
     - Current processing state
     """
     server = get_server()
+    service, error_response = validate_background_tasks(server)
+    if error_response:
+        return error_response
 
-    if not server.background_tasks:
-        return JSONResponse(
-            content={
-                "success": False,
-                "enabled": False,
-                "error": "Background enrichment not available",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+    assert service is not None
 
     try:
-        status = await server.background_tasks.get_status()
-        return {
-            "success": True,
-            **status,
-        }
+        status = await service.get_status()
+        return success_response(status)
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to get enrichment status: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        return internal_error_response("Get enrichment status", e)

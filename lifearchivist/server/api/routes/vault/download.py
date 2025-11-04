@@ -2,11 +2,16 @@
 Download file from vault endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import FileResponse
 
 from ..shared.dependencies import get_server
-from ..utils import (
+from ..shared.responses import (
+    error_response,
+    internal_error_response,
+    service_unavailable_response,
+)
+from .utils import (
     get_mime_type_and_disposition,
     get_original_filename,
     resolve_vault_file_path,
@@ -43,11 +48,19 @@ async def download_file_from_vault(file_hash: str):
 
     try:
         if not server.vault:
-            raise HTTPException(status_code=503, detail="Vault not initialized")
+            return service_unavailable_response("Vault")
 
-        validate_file_hash(file_hash)
+        error_response_obj = validate_file_hash(file_hash)
+        if error_response_obj:
+            return error_response_obj
 
-        file_path = resolve_vault_file_path(server.vault.content_dir, file_hash)
+        file_path, error_response_obj = resolve_vault_file_path(
+            server.vault.content_dir, file_hash
+        )
+        if error_response_obj:
+            return error_response_obj
+
+        assert file_path is not None
 
         filename = await get_original_filename(
             server.llamaindex_service,
@@ -63,13 +76,11 @@ async def download_file_from_vault(file_hash: str):
             headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
         )
 
-    except HTTPException:
-        raise
     except PermissionError as e:
-        raise HTTPException(
-            status_code=403, detail=f"Permission denied accessing file: {str(e)}"
-        ) from None
+        return error_response(
+            error=f"Permission denied accessing file: {str(e)}",
+            error_type="PermissionError",
+            status_code=403,
+        )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve file: {str(e)}"
-        ) from None
+        return internal_error_response("Download file", e)

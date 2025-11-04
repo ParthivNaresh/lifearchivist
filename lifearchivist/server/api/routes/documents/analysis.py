@@ -2,15 +2,12 @@
 Get document analysis endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from ..constants import (
-    ErrorMessages,
-    HTTPStatus,
-    ServiceNames,
-)
 from ..shared.dependencies import get_server
-from ..utils import unwrap_result_to_json_response
+from ..shared.responses import internal_error_response
+from ..shared.utils import unwrap_result_to_json_response
+from .utils import validate_llamaindex_service
 
 router = APIRouter()
 
@@ -23,17 +20,14 @@ async def get_llamaindex_document_analysis(document_id: str):
     Returns chunk statistics, processing info, and storage details.
     """
     server = get_server()
+    service, error_response = validate_llamaindex_service(server)
+    if error_response:
+        return error_response
 
-    if not server.llamaindex_service:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
-                service=ServiceNames.LLAMAINDEX
-            ),
-        )
+    assert service is not None
 
     try:
-        result = await server.llamaindex_service.get_document_analysis(document_id)
+        result = await service.get_document_analysis(document_id)
 
         error_response = unwrap_result_to_json_response(result)
         if error_response:
@@ -41,9 +35,5 @@ async def get_llamaindex_document_analysis(document_id: str):
 
         return result.value
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from None
+        return internal_error_response("Get document analysis", e)

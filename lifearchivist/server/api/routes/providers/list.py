@@ -2,9 +2,11 @@
 List providers endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from ..shared.dependencies import get_server
+from ..shared.responses import internal_error_response, success_response
+from .utils import validate_llm_manager
 
 router = APIRouter()
 
@@ -17,18 +19,21 @@ async def list_providers():
     Returns provider metadata including type, default status, and health.
     """
     server = get_server()
+    llm_manager, error_response = validate_llm_manager(server)
+    if error_response:
+        return error_response
 
-    if not server.llm_manager:
-        raise HTTPException(status_code=503, detail="LLM manager not available")
+    assert llm_manager is not None
 
     try:
-        providers = server.llm_manager.list_providers()
+        providers = llm_manager.list_providers()
 
-        return {
-            "success": True,
-            "providers": providers,
-            "total": len(providers),
-        }
+        return success_response(
+            {
+                "providers": providers,
+                "total": len(providers),
+            }
+        )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        return internal_error_response("List providers", e)

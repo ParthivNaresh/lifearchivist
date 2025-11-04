@@ -4,18 +4,17 @@ List documents endpoint.
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from ..constants import (
-    DocumentConstants,
-    ErrorMessages,
-    HTTPStatus,
-    PaginationDefaults,
-    ServiceNames,
-)
+from ..constants import DocumentConstants, PaginationDefaults
 from ..shared.dependencies import get_server
-from ..utils import extract_result_value, unwrap_result_to_json_response
-from .utils import format_document_for_ui, validate_pagination
+from ..shared.responses import internal_error_response, success_response
+from ..shared.utils import extract_result_value, unwrap_result_to_json_response
+from .utils import (
+    format_document_for_ui,
+    validate_llamaindex_service,
+    validate_pagination,
+)
 
 router = APIRouter()
 
@@ -33,14 +32,11 @@ async def list_documents(
     Supports filtering by status and pagination.
     """
     server = get_server()
+    service, error_response = validate_llamaindex_service(server)
+    if error_response:
+        return error_response
 
-    if not server.llamaindex_service:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
-                service=ServiceNames.LLAMAINDEX
-            ),
-        )
+    assert service is not None
 
     try:
         limit, offset = validate_pagination(
@@ -57,12 +53,10 @@ async def list_documents(
             filters["status"] = status
 
         if count_only:
-            all_docs_result = (
-                await server.llamaindex_service.query_documents_by_metadata(
-                    filters=filters,
-                    limit=DocumentConstants.COUNT_QUERY_LIMIT,
-                    offset=PaginationDefaults.DEFAULT_OFFSET,
-                )
+            all_docs_result = await service.query_documents_by_metadata(
+                filters=filters,
+                limit=DocumentConstants.COUNT_QUERY_LIMIT,
+                offset=PaginationDefaults.DEFAULT_OFFSET,
             )
             error_response = unwrap_result_to_json_response(all_docs_result)
             if error_response:
@@ -71,10 +65,8 @@ async def list_documents(
             all_docs = extract_result_value(all_docs_result, list, [])
             return {"total": len(all_docs), "filters": filters}
 
-        raw_documents_result = (
-            await server.llamaindex_service.query_documents_by_metadata(
-                filters=filters, limit=limit, offset=offset
-            )
+        raw_documents_result = await service.query_documents_by_metadata(
+            filters=filters, limit=limit, offset=offset
         )
 
         error_response = unwrap_result_to_json_response(raw_documents_result)
@@ -84,17 +76,14 @@ async def list_documents(
         raw_documents = extract_result_value(raw_documents_result, list, [])
         formatted_documents = [format_document_for_ui(doc) for doc in raw_documents]
 
-        return {
-            "success": True,
-            "documents": formatted_documents,
-            "total": len(formatted_documents),
-            "limit": limit,
-            "offset": offset,
-        }
+        return success_response(
+            {
+                "documents": formatted_documents,
+                "total": len(formatted_documents),
+                "limit": limit,
+                "offset": offset,
+            }
+        )
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from None
+        return internal_error_response("List documents", e)

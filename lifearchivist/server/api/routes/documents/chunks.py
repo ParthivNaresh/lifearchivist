@@ -2,18 +2,13 @@
 Get document chunks endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from ..constants import (
-    DocumentConstants,
-    ErrorMessages,
-    HTTPStatus,
-    PaginationDefaults,
-    ServiceNames,
-    ValidationMessages,
-)
+from ..constants import DocumentConstants, PaginationDefaults, ValidationMessages
 from ..shared.dependencies import get_server
-from ..utils import unwrap_result_to_json_response
+from ..shared.responses import internal_error_response, validation_error_response
+from ..shared.utils import unwrap_result_to_json_response
+from .utils import validate_llamaindex_service
 
 router = APIRouter()
 
@@ -30,34 +25,28 @@ async def get_llamaindex_document_chunks(
     Returns the text chunks with their metadata and embeddings info.
     """
     server = get_server()
+    service, error_response = validate_llamaindex_service(server)
+    if error_response:
+        return error_response
 
-    if not server.llamaindex_service:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_AVAILABLE.format(
-                service=ServiceNames.LLAMAINDEX
-            ),
-        )
+    assert service is not None
 
     if (
         limit < DocumentConstants.CHUNKS_MIN_LIMIT
         or limit > DocumentConstants.CHUNKS_MAX_LIMIT
     ):
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=ValidationMessages.LIMIT_RANGE.format(
+        return validation_error_response(
+            ValidationMessages.LIMIT_RANGE.format(
                 min=DocumentConstants.CHUNKS_MIN_LIMIT,
                 max=DocumentConstants.CHUNKS_MAX_LIMIT,
-            ),
-        )
-    if offset < PaginationDefaults.DEFAULT_OFFSET:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=ValidationMessages.OFFSET_NON_NEGATIVE,
+            )
         )
 
+    if offset < PaginationDefaults.DEFAULT_OFFSET:
+        return validation_error_response(ValidationMessages.OFFSET_NON_NEGATIVE)
+
     try:
-        result = await server.llamaindex_service.get_document_chunks(
+        result = await service.get_document_chunks(
             document_id=document_id, limit=limit, offset=offset
         )
 
@@ -67,9 +56,5 @@ async def get_llamaindex_document_chunks(
 
         return result.value
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from None
+        return internal_error_response("Get document chunks", e)

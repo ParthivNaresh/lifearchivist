@@ -2,10 +2,12 @@
 Get messages endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
 
 from ..shared.dependencies import get_server
+from ..shared.responses import success_response
+from ..shared.utils import handle_service_result
+from .utils import validate_message_service
 
 router = APIRouter()
 
@@ -23,11 +25,11 @@ async def get_messages(
     Returns paginated messages with optional citations.
     """
     server = get_server()
+    service, error_response = validate_message_service(server)
+    if error_response:
+        return error_response
 
-    if not server.service_container or not server.service_container.message_service:
-        raise HTTPException(status_code=503, detail="Message service not available")
-
-    service = server.service_container.message_service
+    assert service is not None
 
     result = await service.get_messages(
         conversation_id=conversation_id,
@@ -36,15 +38,10 @@ async def get_messages(
         include_citations=include_citations,
     )
 
-    if result.is_failure():
-        return JSONResponse(
-            content=result.to_dict(),
-            status_code=result.status_code,
-        )
+    error_response = handle_service_result(result)
+    if error_response:
+        return error_response
 
     data = result.unwrap()
 
-    return {
-        "success": True,
-        **data,
-    }
+    return success_response(data)

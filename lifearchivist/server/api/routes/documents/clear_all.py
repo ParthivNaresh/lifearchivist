@@ -2,14 +2,15 @@
 Clear all documents endpoint.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from ..constants import (
-    ErrorMessages,
-    HTTPStatus,
-)
 from ..shared.dependencies import get_server
-from ..utils import extract_result_value, unwrap_result_to_json_response
+from ..shared.responses import (
+    internal_error_response,
+    service_unavailable_response,
+    success_response,
+)
+from ..shared.utils import extract_result_value, unwrap_result_to_json_response
 
 router = APIRouter()
 
@@ -39,10 +40,8 @@ async def clear_all_documents():
             llamaindex_metrics = {"skipped": True}
 
         if not server.vault:
-            raise HTTPException(
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                detail=ErrorMessages.VAULT_NOT_INITIALIZED,
-            )
+            return service_unavailable_response("Vault")
+
         vault_metrics = await server.vault.clear_all_files([])
 
         if server.progress_manager:
@@ -66,27 +65,26 @@ async def clear_all_documents():
             "storage_bytes_reclaimed", 0
         )
 
-        return {
-            "success": True,
-            "operation": "comprehensive_clear_all",
-            "summary": {
-                "total_files_deleted": total_files_deleted,
-                "total_bytes_reclaimed": total_bytes_reclaimed,
-                "total_mb_reclaimed": round(total_bytes_reclaimed / (1024 * 1024), 2),
-            },
-            "vault_metrics": vault_metrics,
-            "llamaindex_metrics": llamaindex_metrics,
-            "progress_metrics": progress_metrics,
-            "errors": (
-                vault_metrics.get("errors", [])
-                + llamaindex_metrics.get("errors", [])
-                + progress_metrics.get("errors", [])
-            ),
-        }
+        return success_response(
+            {
+                "operation": "comprehensive_clear_all",
+                "summary": {
+                    "total_files_deleted": total_files_deleted,
+                    "total_bytes_reclaimed": total_bytes_reclaimed,
+                    "total_mb_reclaimed": round(
+                        total_bytes_reclaimed / (1024 * 1024), 2
+                    ),
+                },
+                "vault_metrics": vault_metrics,
+                "llamaindex_metrics": llamaindex_metrics,
+                "progress_metrics": progress_metrics,
+                "errors": (
+                    vault_metrics.get("errors", [])
+                    + llamaindex_metrics.get("errors", [])
+                    + progress_metrics.get("errors", [])
+                ),
+            }
+        )
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from None
+        return internal_error_response("Clear all documents", e)

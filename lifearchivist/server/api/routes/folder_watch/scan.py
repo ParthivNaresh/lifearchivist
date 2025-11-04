@@ -4,7 +4,7 @@ Scan folder endpoint.
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi import Path as PathParam
 
 from lifearchivist.models.folder_watch import FolderScanResponse
@@ -12,13 +12,17 @@ from lifearchivist.models.folder_watch import FolderScanResponse
 from ..constants import (
     ErrorMessages,
     FolderWatchConstants,
-    HTTPStatus,
     PathParamDescriptions,
     ResourceNames,
-    ServiceNames,
     SuccessMessages,
 )
 from ..shared.dependencies import get_server
+from ..shared.responses import (
+    internal_error_response,
+    not_found_response,
+    validation_error_response,
+)
+from .utils import validate_folder_watcher
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -50,43 +54,33 @@ async def scan_folder(
         - Folder must be enabled to scan
     """
     server = get_server()
+    service, error_response = validate_folder_watcher(server)
+    if error_response:
+        return error_response
 
-    if not server.folder_watcher:
-        raise HTTPException(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail=ErrorMessages.SERVICE_NOT_INITIALIZED.format(
-                service=ServiceNames.FOLDER_WATCHER
-            ),
-        )
+    assert service is not None
 
     try:
-        folder = await server.folder_watcher.get_folder(folder_id)
+        folder = await service.get_folder(folder_id)
         if not folder:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=ErrorMessages.RESOURCE_NOT_FOUND.format(
-                    resource=ResourceNames.FOLDER, identifier=folder_id
-                ),
-            )
+            return not_found_response(ResourceNames.FOLDER, folder_id)
 
         if not folder.enabled:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail=ErrorMessages.RESOURCE_MUST_BE_ENABLED.format(
+            return validation_error_response(
+                ErrorMessages.RESOURCE_MUST_BE_ENABLED.format(
                     resource=ResourceNames.FOLDER, action="scan"
-                ),
+                )
             )
 
         if not folder.path.exists() or not folder.path.is_dir():
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail=ErrorMessages.PATH_NOT_ACCESSIBLE.format(
+            return validation_error_response(
+                ErrorMessages.PATH_NOT_ACCESSIBLE.format(
                     path_type=ResourceNames.FOLDER, path=folder.path
-                ),
+                )
             )
 
         files_found = []
-        for ext in server.folder_watcher.SUPPORTED_EXTENSIONS:
+        for ext in service.SUPPORTED_EXTENSIONS:
             files_found.extend(folder.path.rglob(f"*{ext}"))
 
         files_found = [
@@ -102,7 +96,7 @@ async def scan_folder(
         files_failed = 0
         for file_path in files_found:
             try:
-                await server.folder_watcher.schedule_ingestion(folder_id, file_path)
+                await service.schedule_ingestion(folder_id, file_path)
                 files_queued += 1
             except Exception as e:
                 logger.warning(
@@ -122,12 +116,5 @@ async def scan_folder(
             ),
         )
 
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail=ErrorMessages.OPERATION_FAILED.format(
-                operation="scan folder", error=str(e)
-            ),
-        ) from e
+        return internal_error_response("Scan folder", e)
