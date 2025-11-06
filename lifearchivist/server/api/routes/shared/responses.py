@@ -7,6 +7,19 @@ from typing import Any, Dict, Optional
 from fastapi.responses import JSONResponse
 
 
+def success_response(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Create a standardized success response.
+
+    Args:
+        data: Response data
+
+    Returns:
+        Dictionary with success flag and data
+    """
+    return {"success": True, **data}
+
+
 def error_response(
     error: str,
     error_type: str = "InternalServerError",
@@ -33,19 +46,6 @@ def error_response(
         **extra_fields,
     }
     return JSONResponse(content=content, status_code=status_code)
-
-
-def success_response(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Create a standardized success response.
-
-    Args:
-        data: Response data
-
-    Returns:
-        Dictionary with success flag and data
-    """
-    return {"success": True, **data}
 
 
 def service_unavailable_response(

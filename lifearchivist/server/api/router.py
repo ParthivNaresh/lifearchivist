@@ -26,8 +26,6 @@ from .routes.vault import router as vault_router
 
 def get_api_router() -> APIRouter:
     """Get the API router with conditional route inclusion based on settings."""
-    settings = get_settings()
-
     # Create the main API router
     api_router = APIRouter(prefix="/api")
 
@@ -49,10 +47,18 @@ def get_api_router() -> APIRouter:
     api_router.include_router(timeline_router)
     api_router.include_router(providers_router)
 
-    # Conditionally include WebSocket routes
+    return api_router
+
+
+def get_websocket_router() -> APIRouter:
+    """Get the WebSocket router (separate from API routes)."""
+    settings = get_settings()
+
+    ws_router = APIRouter()
+
     if settings.enable_websockets:
         from .routes import websocket
 
-        api_router.include_router(websocket.router)
+        ws_router.include_router(websocket.router)
 
-    return api_router
+    return ws_router

@@ -18,7 +18,7 @@ from .utils import parse_date_filter, process_timeline_document
 router = APIRouter()
 
 
-@router.get("/data")
+@router.get("/data", response_model=None)
 @track(
     operation="get_timeline_data",
     track_performance=True,

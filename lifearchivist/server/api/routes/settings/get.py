@@ -2,38 +2,165 @@
 Get settings endpoint.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
-from ..shared.responses import internal_error_response
+from ..shared.exceptions import InternalServerError
 from .models import SettingsResponse
 
 router = APIRouter()
 
+DEFAULT_TEMPERATURE = 0.7
+DEFAULT_MAX_OUTPUT_TOKENS = 2000
+DEFAULT_RESPONSE_FORMAT = "concise"
+DEFAULT_CONTEXT_WINDOW_SIZE = 10
+DEFAULT_RESPONSE_TIMEOUT = 30
 
-@router.get("/", response_model=SettingsResponse)
-async def get_settings():
+
+@router.get(
+    "/",
+    response_model=SettingsResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Get settings failed: <error message>"}
+                }
+            },
+        },
+    },
+)
+async def get_settings() -> SettingsResponse:
     """
-    Get current application settings.
+    Get current application settings and user preferences.
 
-    Returns all configuration including:
-    - Document processing preferences
-    - AI model selections
-    - Conversation defaults
-    - File management settings
-    - UI appearance
-    - System paths (read-only)
+    Returns all configuration including document processing, AI model settings,
+    conversation defaults, and system paths.
+
+    ## Response Fields
+
+    - **auto_extract_dates**: Auto-extract dates from documents
+    - **generate_text_previews**: Generate text previews
+    - **max_file_size_mb**: Maximum file size in MB
+    - **llm_model**: LLM model name
+    - **embedding_model**: Embedding model name
+    - **search_results_limit**: Default search result limit
+    - **temperature**: LLM temperature (0.0-2.0)
+    - **max_output_tokens**: Maximum output tokens
+    - **response_format**: Response format preference
+    - **context_window_size**: Conversation context window
+    - **response_timeout**: Response timeout in seconds
+    - **auto_organize_by_date**: Auto-organize by date
+    - **duplicate_detection**: Enable duplicate detection
+    - **default_import_location**: Default import path
+    - **theme**: UI theme
+    - **interface_density**: UI density
+    - **vault_path**: Vault storage path (read-only)
+    - **lifearch_home**: Application home path (read-only)
+
+    ## Example Response
+
+    ```json
+    {
+        "auto_extract_dates": true,
+        "generate_text_previews": true,
+        "max_file_size_mb": 100,
+        "llm_model": "gpt-4",
+        "embedding_model": "text-embedding-3-small",
+        "search_results_limit": 25,
+        "temperature": 0.7,
+        "max_output_tokens": 2000,
+        "response_format": "concise",
+        "context_window_size": 10,
+        "response_timeout": 30,
+        "auto_organize_by_date": false,
+        "duplicate_detection": true,
+        "default_import_location": "~/Documents",
+        "theme": "dark",
+        "interface_density": "comfortable",
+        "vault_path": "/Users/username/.lifearchivist/vault",
+        "lifearch_home": "/Users/username/.lifearchivist"
+    }
+    ```
+
+    ## Settings Categories
+
+    ### Document Processing
+    - auto_extract_dates
+    - generate_text_previews
+    - max_file_size_mb
+    - duplicate_detection
+
+    ### AI Configuration
+    - llm_model
+    - embedding_model
+    - temperature
+    - max_output_tokens
+    - response_format
+
+    ### Conversation
+    - context_window_size
+    - response_timeout
+
+    ### Search
+    - search_results_limit
+
+    ### File Management
+    - auto_organize_by_date
+    - default_import_location
+
+    ### UI Preferences
+    - theme
+    - interface_density
+
+    ### System Paths (Read-Only)
+    - vault_path
+    - lifearch_home
+
+    ## User Preferences
+
+    Settings are user-specific and stored in database:
+    - temperature
+    - max_output_tokens
+    - response_format
+    - context_window_size
+    - response_timeout
+
+    ## Use Cases
+
+    - Load settings in UI
+    - Display current configuration
+    - Verify settings
+    - Export configuration
+    - Settings management
+
+    ## Performance Notes
+
+    - Fast database query
+    - Cached where possible
+    - Minimal overhead
+    - Safe to call frequently
+
+    ## Notes
+
+    - Returns current snapshot
+    - User preferences from database
+    - System settings from config
+    - Paths are absolute
+    - Some fields read-only
     """
     server = get_server()
 
     try:
         settings = server.settings
 
-        temperature = 0.7
-        max_output_tokens = 2000
-        response_format = "concise"
-        context_window_size = 10
-        response_timeout = 30
+        temperature = DEFAULT_TEMPERATURE
+        max_output_tokens = DEFAULT_MAX_OUTPUT_TOKENS
+        response_format = DEFAULT_RESPONSE_FORMAT
+        context_window_size = DEFAULT_CONTEXT_WINDOW_SIZE
+        response_timeout = DEFAULT_RESPONSE_TIMEOUT
 
         if server.service_container and server.service_container.conversation_service:
             db_pool = server.service_container.conversation_service.db_pool
@@ -78,8 +205,8 @@ async def get_settings():
         )
 
     except AttributeError as e:
-        return internal_error_response(
+        raise InternalServerError(
             "Get settings", RuntimeError(f"Settings configuration error: {str(e)}")
-        )
+        ) from e
     except Exception as e:
-        return internal_error_response("Get settings", e)
+        raise InternalServerError("Get settings", e) from e

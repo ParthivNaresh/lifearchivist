@@ -2,88 +2,229 @@
 List documents endpoint.
 """
 
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query, status
+from pydantic import BaseModel, Field
 
-from ..constants import DocumentConstants, PaginationDefaults
 from ..shared.dependencies import get_server
-from ..shared.responses import internal_error_response, success_response
-from ..shared.utils import extract_result_value, unwrap_result_to_json_response
-from .utils import (
-    format_document_for_ui,
-    validate_llamaindex_service,
-    validate_pagination,
-)
+from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .utils import format_document_for_ui
 
 router = APIRouter()
 
+MIN_LIMIT = 1
+MAX_LIMIT = 10000
+DEFAULT_LIMIT = 20
+DEFAULT_OFFSET = 0
+COUNT_QUERY_LIMIT = 10000
 
-@router.get("/")
+
+class DocumentListResponse(BaseModel):
+    """Response containing list of documents."""
+
+    documents: List[Dict[str, Any]] = Field(..., description="List of documents")
+    total: int = Field(..., description="Number of documents returned")
+    limit: int = Field(..., description="Applied limit")
+    offset: int = Field(..., description="Applied offset")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "documents": [
+                    {
+                        "document_id": "doc_123",
+                        "title": "Example Document",
+                        "status": "completed",
+                    }
+                ],
+                "total": 1,
+                "limit": 20,
+                "offset": 0,
+            }
+        }
+
+
+class DocumentCountResponse(BaseModel):
+    """Response containing document count."""
+
+    total: int = Field(..., description="Total number of documents")
+    filters: Dict[str, Any] = Field(..., description="Applied filters")
+
+    class Config:
+        json_schema_extra = {
+            "example": {"total": 150, "filters": {"status": "completed"}}
+        }
+
+
+@router.get(
+    "/",
+    response_model=None,
+    status_code=status.HTTP_200_OK,
+    responses={
+        503: {
+            "description": "LlamaIndex service unavailable",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "LlamaIndex service not available"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "List documents failed: <error message>"}
+                }
+            },
+        },
+    },
+)
 async def list_documents(
-    status: Optional[str] = None,
-    limit: int = PaginationDefaults.DEFAULT_LIMIT,
-    offset: int = PaginationDefaults.DEFAULT_OFFSET,
-    count_only: bool = False,
+    status_filter: Optional[str] = Query(
+        None, alias="status", description="Filter by document status"
+    ),
+    limit: int = Query(
+        default=DEFAULT_LIMIT,
+        ge=MIN_LIMIT,
+        le=MAX_LIMIT,
+        description="Maximum documents to return",
+    ),
+    offset: int = Query(
+        default=DEFAULT_OFFSET, ge=0, description="Number of documents to skip"
+    ),
+    count_only: bool = Query(
+        default=False, description="Return only count, not documents"
+    ),
 ):
     """
-    List documents from LlamaIndex service with UI-compatible formatting.
+    List documents with filtering and pagination.
 
-    Supports filtering by status and pagination.
+    Returns documents from the vector index with UI-compatible formatting.
+    Supports filtering by status and optional count-only mode.
+
+    ## Query Parameters
+
+    - **status**: Filter by document status (e.g., "completed", "processing")
+    - **limit**: Maximum documents to return (1-100, default: 20)
+    - **offset**: Number of documents to skip (default: 0)
+    - **count_only**: Return only count without documents (default: false)
+
+    ## Response (Normal Mode)
+
+    ```json
+    {
+        "documents": [
+            {
+                "document_id": "doc_123",
+                "title": "Example Document.pdf",
+                "status": "completed",
+                "file_hash": "abc123",
+                "created_at": "2025-01-08T14:30:00Z"
+            }
+        ],
+        "total": 1,
+        "limit": 20,
+        "offset": 0
+    }
+    ```
+
+    ## Response (Count Only Mode)
+
+    ```json
+    {
+        "total": 150,
+        "filters": {"status": "completed"}
+    }
+    ```
+
+    ## Use Cases
+
+    - Browse all documents
+    - Filter by processing status
+    - Paginate through large collections
+    - Get quick document counts
+    - Dashboard document lists
+
+    ## Filtering
+
+    - **status**: Filter by processing status
+      - "completed": Fully processed documents
+      - "processing": Currently being processed
+      - "failed": Processing failed
+      - No filter: All documents
+
+    ## Pagination
+
+    - Use limit and offset for pagination
+    - First page: `?limit=20&offset=0`
+    - Second page: `?limit=20&offset=20`
+    - Third page: `?limit=20&offset=40`
+
+    ## Count Only Mode
+
+    - Set `count_only=true` to get just the count
+    - Faster than fetching all documents
+    - Useful for pagination UI
+    - Returns total matching filter
+
+    ## Notes
+
+    - Documents formatted for UI display
+    - Limit enforced: 1-100 per request
+    - Offset must be non-negative
+    - Count mode queries up to 10,000 docs
+    - Empty array if no documents found
     """
     server = get_server()
-    service, error_response = validate_llamaindex_service(server)
-    if error_response:
-        return error_response
 
-    assert service is not None
+    if not server.llamaindex_service:
+        raise ServiceUnavailableError("LlamaIndex service")
 
     try:
-        limit, offset = validate_pagination(
-            limit,
-            offset,
-            PaginationDefaults.MAX_LIMIT,
-            PaginationDefaults.MIN_LIMIT,
-            PaginationDefaults.DEFAULT_LIMIT,
-            PaginationDefaults.DEFAULT_OFFSET,
-        )
-
         filters = {}
-        if status:
-            filters["status"] = status
+        if status_filter:
+            filters["status"] = status_filter
 
         if count_only:
-            all_docs_result = await service.query_documents_by_metadata(
-                filters=filters,
-                limit=DocumentConstants.COUNT_QUERY_LIMIT,
-                offset=PaginationDefaults.DEFAULT_OFFSET,
+            all_docs_result = (
+                await server.llamaindex_service.query_documents_by_metadata(
+                    filters=filters,
+                    limit=COUNT_QUERY_LIMIT,
+                    offset=DEFAULT_OFFSET,
+                )
             )
-            error_response = unwrap_result_to_json_response(all_docs_result)
-            if error_response:
-                return error_response
 
-            all_docs = extract_result_value(all_docs_result, list, [])
-            return {"total": len(all_docs), "filters": filters}
+            if all_docs_result.is_failure():
+                raise InternalServerError(
+                    "Query documents", Exception(all_docs_result.error)
+                )
 
-        raw_documents_result = await service.query_documents_by_metadata(
-            filters=filters, limit=limit, offset=offset
+            all_docs = all_docs_result.value or []
+            return DocumentCountResponse(total=len(all_docs), filters=filters)
+
+        raw_documents_result = (
+            await server.llamaindex_service.query_documents_by_metadata(
+                filters=filters, limit=limit, offset=offset
+            )
         )
 
-        error_response = unwrap_result_to_json_response(raw_documents_result)
-        if error_response:
-            return error_response
+        if raw_documents_result.is_failure():
+            raise InternalServerError(
+                "Query documents", Exception(raw_documents_result.error)
+            )
 
-        raw_documents = extract_result_value(raw_documents_result, list, [])
+        raw_documents = raw_documents_result.value or []
         formatted_documents = [format_document_for_ui(doc) for doc in raw_documents]
 
-        return success_response(
-            {
-                "documents": formatted_documents,
-                "total": len(formatted_documents),
-                "limit": limit,
-                "offset": offset,
-            }
+        return DocumentListResponse(
+            documents=formatted_documents,
+            total=len(formatted_documents),
+            limit=limit,
+            offset=offset,
         )
 
+    except ServiceUnavailableError:
+        raise
     except Exception as e:
-        return internal_error_response("List documents", e)
+        raise InternalServerError("List documents", e) from e

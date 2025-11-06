@@ -4,9 +4,12 @@ Send message streaming endpoint.
 
 import asyncio
 import json
+import logging
 import time
+from typing import AsyncGenerator, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from fastapi import Path as PathParam
 from fastapi.responses import StreamingResponse
 
 from lifearchivist.config import get_settings
@@ -14,63 +17,150 @@ from lifearchivist.llm import LLMMessage
 
 from ...error_formatting import create_error_metadata, format_llm_error
 from ...prompt_utils import PromptFormatter
-from ..constants import ErrorMessages
 from ..shared.dependencies import get_server
+from ..shared.exceptions import ServiceUnavailableError
 from .models import SendMessageRequest
 from .utils import serialize_for_json
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
-@router.post("/{conversation_id}/messages/stream")
+@router.post(
+    "/{conversation_id}/messages/stream",
+    responses={
+        200: {
+            "description": "Server-Sent Events stream",
+            "content": {"text/event-stream": {"schema": {"type": "string"}}},
+        },
+        503: {
+            "description": "Required service unavailable",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Service container not available"}
+                }
+            },
+        },
+    },
+)
 async def send_message_streaming(
-    conversation_id: str,
     request: SendMessageRequest,
-):
+    conversation_id: str = PathParam(..., description="Unique conversation identifier"),
+) -> StreamingResponse:
     """
     Send a message and stream AI response using Server-Sent Events (SSE).
 
-    This endpoint:
-    1. Saves user message
-    2. Uses RAG service for context-aware streaming
-    3. Streams AI response token-by-token
-    4. Saves complete assistant message with citations
-    5. Returns SSE stream with events:
-       - user_message: User message saved
-       - intent: Query classification
-       - context: Retrieved document context
-       - sources: Retrieved document chunks
-       - token: Individual tokens
-       - metadata: Final statistics
-       - done: Processing complete
-       - error: Any errors
+    Processes user message through RAG pipeline and streams response token-by-token.
+    Returns SSE stream with multiple event types for real-time updates.
 
-    Returns:
-        StreamingResponse with text/event-stream content type
+    ## Path Parameters
+
+    - **conversation_id**: Unique identifier of the conversation
+
+    ## Request Body
+
+    - **content**: User message content
+    - **context_limit**: Max context documents to retrieve (optional)
+
+    ## SSE Event Types
+
+    - **user_message**: User message saved
+    - **intent**: Query classification (RAG service only)
+    - **context**: Retrieved document context (RAG service only)
+    - **sources**: Retrieved document chunks
+    - **chunk**: Individual response tokens
+    - **metadata**: Final statistics
+    - **complete**: Processing complete with full messages
+    - **error**: Any errors encountered
+
+    ## Example SSE Stream
+
+    ```
+    event: user_message
+    data: {"id": "msg_1", "content": "Hello", ...}
+
+    event: sources
+    data: [{"document_id": "doc_123", "score": 0.85, ...}]
+
+    event: chunk
+    data: {"text": "Based"}
+
+    event: chunk
+    data: {"text": " on"}
+
+    event: metadata
+    data: {"confidence_score": 0.8, "tokens_used": 150, ...}
+
+    event: complete
+    data: {"user_message": {...}, "assistant_message": {...}, "latency_ms": 1500}
+    ```
+
+    ## Processing Pipeline
+
+    1. **Save User Message**: Store in database
+    2. **Semantic Search**: Retrieve relevant context
+    3. **Stream Sources**: Send retrieved documents
+    4. **Generate Stream**: Stream AI response tokens
+    5. **Save Assistant Message**: Store complete response
+    6. **Add Citations**: Link to source documents
+    7. **Send Complete**: Final message data
+
+    ## RAG Service Integration
+
+    If RAG service available, uses enhanced pipeline with:
+    - Intent classification
+    - Context retrieval
+    - Conversation history
+    - Advanced streaming
+
+    ## Fallback Mode
+
+    Without RAG service, uses direct LlamaIndex:
+    - Semantic search for context
+    - Direct LLM streaming
+    - Citation tracking
+
+    ## Error Handling
+
+    - Errors sent as SSE error events
+    - Error messages saved to database
+    - User-friendly error formatting
+    - Timeout handling (default 30s)
+
+    ## Performance Notes
+
+    - Streams tokens as generated
+    - Low latency for first token
+    - Efficient memory usage
+    - Timeout configurable per user
+
+    ## Notes
+
+    - Returns StreamingResponse with text/event-stream
+    - Connection kept alive during streaming
+    - No caching headers set
+    - Buffering disabled for real-time delivery
     """
     server = get_server()
 
     if not server.service_container:
-        raise HTTPException(
-            status_code=503, detail=ErrorMessages.SERVICES_NOT_AVAILABLE
-        )
+        raise ServiceUnavailableError("Service Container")
+
+    if not server.service_container.conversation_service:
+        raise ServiceUnavailableError("Conversation Service")
+
+    if not server.service_container.message_service:
+        raise ServiceUnavailableError("Message Service")
+
+    if not server.service_container.llamaindex_service:
+        raise ServiceUnavailableError("LlamaIndex Service")
+
+    if not server.service_container.rag_service:
+        raise ServiceUnavailableError("Conversation RAG Service")
 
     rag_service = server.service_container.rag_service
 
-    if not rag_service:
-        conv_service = server.service_container.conversation_service
-        msg_service = server.service_container.message_service
-        llamaindex_service = server.service_container.llamaindex_service
-
-        if not conv_service or not msg_service:
-            raise HTTPException(status_code=503, detail="Message service not available")
-
-        if not llamaindex_service:
-            raise HTTPException(
-                status_code=503, detail="LlamaIndex service not available"
-            )
-
-    async def event_generator():
+    async def event_generator() -> AsyncGenerator[str, None]:
         """Generate SSE events for streaming response."""
         if rag_service:
             from lifearchivist.rag import ContextConfig, StreamEventType
@@ -126,16 +216,26 @@ async def send_message_streaming(
 
             return
 
+        assert server.service_container
+
+        conv_service = server.service_container.conversation_service
+        msg_service = server.service_container.message_service
+        llamaindex_service = server.service_container.llamaindex_service
+
+        if not conv_service or not msg_service:
+            yield f"event: error\ndata: {json.dumps({'error': 'Message service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
+            return
+
+        if not llamaindex_service:
+            yield f"event: error\ndata: {json.dumps({'error': 'LlamaIndex service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
+            return
+
         start_time = time.time()
         conversation = None
         provider_id = None
         model = None
 
         try:
-            if not conv_service:
-                yield f"event: error\ndata: {json.dumps({'error': ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE, 'error_type': 'ServiceUnavailable'})}\n\n"
-                return
-
             conv_result = await conv_service.get_conversation(conversation_id)
             if conv_result.is_failure():
                 yield f"event: error\ndata: {json.dumps({'error': 'Conversation not found', 'error_type': 'NotFound'})}\n\n"
@@ -144,10 +244,6 @@ async def send_message_streaming(
             conversation = conv_result.unwrap()
             provider_id = conversation.get("provider_id")
             model = conversation.get("model") or get_settings().llm_model
-
-            if not msg_service:
-                yield f"event: error\ndata: {json.dumps({'error': 'Message service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
-                return
 
             user_msg_result = await msg_service.add_message(
                 conversation_id=conversation_id,
@@ -166,10 +262,6 @@ async def send_message_streaming(
             filters = None
             if conversation.get("context_documents"):
                 filters = {"document_id": {"$in": conversation["context_documents"]}}
-
-            if not llamaindex_service:
-                yield f"event: error\ndata: {json.dumps({'error': 'LlamaIndex service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
-                return
 
             search_results = await llamaindex_service.semantic_search(
                 query=request.content,
@@ -191,7 +283,7 @@ async def send_message_streaming(
 
             yield f"event: sources\ndata: {json.dumps(sources_data)}\n\n"
 
-            messages = []
+            messages: List[LLMMessage] = []
 
             response_format = None
             if (
@@ -237,12 +329,6 @@ async def send_message_streaming(
                 return
 
             provider_manager = server.service_container.llm_provider_manager
-            if not provider_manager:
-                yield f"event: error\ndata: {json.dumps({'error': 'LLM provider manager not available', 'error_type': 'ServiceUnavailable'})}\n\n"
-                return
-
-            provider_id = conversation.get("provider_id")
-            model = conversation.get("model") or get_settings().llm_model
 
             temperature = conversation.get("temperature", 0.7)
             max_tokens = conversation.get("max_tokens", 2000)
@@ -304,17 +390,16 @@ async def send_message_streaming(
                     e, provider_id or "default", model
                 )
 
-                if msg_service:
-                    await msg_service.add_message(
-                        conversation_id=conversation_id,
-                        role="assistant",
-                        content=user_friendly_message,
-                        model=model,
-                        confidence=0.0,
-                        method="error",
-                        latency_ms=latency_ms,
-                        metadata=error_metadata,
-                    )
+                await msg_service.add_message(
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=user_friendly_message,
+                    model=model,
+                    confidence=0.0,
+                    method="error",
+                    latency_ms=latency_ms,
+                    metadata=error_metadata,
+                )
 
                 yield f"event: error\ndata: {json.dumps({'error': user_friendly_message, 'error_type': 'TimeoutError'})}\n\n"
                 return
@@ -325,17 +410,16 @@ async def send_message_streaming(
                     e, provider_id or "default", model
                 )
 
-                if msg_service:
-                    await msg_service.add_message(
-                        conversation_id=conversation_id,
-                        role="assistant",
-                        content=user_friendly_message,
-                        model=model,
-                        confidence=0.0,
-                        method="error",
-                        latency_ms=latency_ms,
-                        metadata=error_metadata,
-                    )
+                await msg_service.add_message(
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content=user_friendly_message,
+                    model=model,
+                    confidence=0.0,
+                    method="error",
+                    latency_ms=latency_ms,
+                    metadata=error_metadata,
+                )
 
                 yield f"event: error\ndata: {json.dumps({'error': user_friendly_message, 'error_type': type(e).__name__})}\n\n"
                 return
@@ -354,10 +438,6 @@ async def send_message_streaming(
 
             confidence = metadata_info["confidence_score"]
             method = metadata_info["method"]
-
-            if not msg_service:
-                yield f"event: error\ndata: {json.dumps({'error': 'Message service not available', 'error_type': 'ServiceUnavailable'})}\n\n"
-                return
 
             assistant_msg_result = await msg_service.add_message(
                 conversation_id=conversation_id,
@@ -388,14 +468,13 @@ async def send_message_streaming(
                         }
                     )
 
-                if msg_service:
-                    citation_result = await msg_service.add_citations(
-                        message_id=str(assistant_message["id"]),
-                        citations=citations,
-                    )
+                citation_result = await msg_service.add_citations(
+                    message_id=str(assistant_message["id"]),
+                    citations=citations,
+                )
 
-                    if citation_result.is_success():
-                        assistant_message["citations"] = citation_result.unwrap()
+                if citation_result.is_success():
+                    assistant_message["citations"] = citation_result.unwrap()
 
             completion_data = serialize_for_json(
                 {
@@ -407,9 +486,7 @@ async def send_message_streaming(
             yield f"event: complete\ndata: {json.dumps(completion_data)}\n\n"
 
         except Exception as e:
-            import logging
-
-            logging.error(f"Streaming error: {e}", exc_info=True)
+            logger.error(f"Streaming error: {e}", exc_info=True)
 
             try:
                 latency_ms = int((time.time() - start_time) * 1000)
@@ -432,7 +509,7 @@ async def send_message_streaming(
                         metadata=error_metadata,
                     )
             except Exception as save_error:
-                logging.error(
+                logger.error(
                     f"Failed to save error message: {save_error}", exc_info=True
                 )
 

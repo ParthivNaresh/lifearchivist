@@ -2,54 +2,200 @@
 Activity events endpoint.
 """
 
-from fastapi import APIRouter
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, Query, status
+from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
-from ..shared.responses import internal_error_response, success_response
-from .models import ActivityEventsResponse
-from .utils import enforce_limit, validate_activity_manager
+from ..shared.exceptions import InternalServerError, ServiceUnavailableError
 
 router = APIRouter()
 
+MIN_LIMIT = 1
+MAX_LIMIT = 1000
+DEFAULT_LIMIT = 200
 
-@router.get("/events", response_model=ActivityEventsResponse)
-async def get_activity_events(limit: int = 200):
+
+class ActivityEventsResponse(BaseModel):
+    """Response containing activity events."""
+
+    events: List[Dict[str, Any]] = Field(..., description="List of activity events")
+    count: int = Field(..., description="Number of events returned")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "events": [
+                    {
+                        "type": "document_uploaded",
+                        "timestamp": "2025-01-08T14:30:00Z",
+                        "details": {"document_id": "doc_123"},
+                    }
+                ],
+                "count": 1,
+            }
+        }
+
+
+@router.get(
+    "/events",
+    response_model=ActivityEventsResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        503: {
+            "description": "Activity manager unavailable",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Activity manager not available"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Retrieve activity events failed: <error message>"
+                    }
+                }
+            },
+        },
+    },
+)
+async def get_activity_events(
+    limit: int = Query(
+        default=DEFAULT_LIMIT,
+        ge=MIN_LIMIT,
+        le=MAX_LIMIT,
+        description="Maximum number of events to return",
+    ),
+) -> ActivityEventsResponse:
     """
-    Get recent activity events.
+    Get recent activity events ordered by newest first.
 
-    Args:
-        limit: Maximum number of events to return (default: 200, max: 100)
+    Returns activity events from Redis including folder watch operations, uploads,
+    deletions, Q&A queries, and other system activities.
 
-    Returns:
-        List of recent activity events, newest first
+    ## Query Parameters
 
-    Notes:
-        - Events are stored in Redis with a maximum of 50 events
-        - Events include folder watch, uploads, deletions, Q&A queries, etc.
-        - Real-time updates available via WebSocket (type: "activity_event")
+    - **limit**: Maximum events to return (1-1000, default: 200)
+
+    ## Response Fields
+
+    - **events**: Array of activity event objects
+    - **count**: Number of events returned
+
+    ## Example Response
+
+    ```json
+    {
+        "events": [
+            {
+                "type": "document_uploaded",
+                "timestamp": "2025-01-08T14:30:00Z",
+                "details": {
+                    "document_id": "doc_123",
+                    "filename": "report.pdf",
+                    "size_bytes": 1024000
+                }
+            },
+            {
+                "type": "folder_scan_completed",
+                "timestamp": "2025-01-08T14:25:00Z",
+                "details": {
+                    "folder_id": "folder_456",
+                    "files_found": 10
+                }
+            },
+            {
+                "type": "qa_query",
+                "timestamp": "2025-01-08T14:20:00Z",
+                "details": {
+                    "query": "What is AI?",
+                    "response_time_ms": 1500
+                }
+            }
+        ],
+        "count": 3
+    }
+    ```
+
+    ## Event Types
+
+    Activity events include:
+    - **document_uploaded**: Document added to system
+    - **document_deleted**: Document removed
+    - **folder_scan_completed**: Folder scan finished
+    - **folder_added**: New folder added to watch
+    - **folder_removed**: Folder removed from watch
+    - **qa_query**: Q&A query processed
+    - **enrichment_completed**: Document enrichment finished
+    - **error_occurred**: System error logged
+
+    ## Event Structure
+
+    Each event contains:
+    - **type**: Event type identifier
+    - **timestamp**: ISO 8601 timestamp
+    - **details**: Event-specific data (varies by type)
+
+    ## Use Cases
+
+    - Display activity feed in UI
+    - Monitor system operations
+    - Track user actions
+    - Debug system behavior
+    - Audit trail
+
+    ## Ordering
+
+    - Events ordered by timestamp (newest first)
+    - Most recent activity at top
+    - Chronological reverse order
+
+    ## Storage
+
+    - Events stored in Redis
+    - Rolling window (oldest removed when full)
+    - Maximum capacity enforced
+    - Real-time updates via WebSocket
+
+    ## Real-time Updates
+
+    - WebSocket available for live updates
+    - Event type: "activity_event"
+    - Push notifications for new events
+    - No polling needed
+
+    ## Performance Notes
+
+    - Fast Redis retrieval
+    - Limit enforced for performance
+    - Efficient pagination
+    - Safe to poll frequently
+
+    ## Notes
+
+    - Returns 503 if activity manager unavailable
+    - Empty array if no events
+    - Limit enforced: 1-1000 per request
+    - Events may be pruned based on capacity
     """
     server = get_server()
 
-    error_response = validate_activity_manager(server)
-    if error_response:
-        return error_response
-
-    assert server.activity_manager is not None
-
-    limit = enforce_limit(limit, max_limit=100)
+    if not server.activity_manager:
+        raise ServiceUnavailableError("Activity manager")
 
     try:
         events = await server.activity_manager.get_recent_events(limit)
 
-        return success_response(
-            {
-                "events": events,
-                "count": len(events),
-            }
+        return ActivityEventsResponse(
+            events=events,
+            count=len(events),
         )
 
+    except ServiceUnavailableError:
+        raise
     except Exception as e:
-        return internal_error_response(
-            operation="Retrieve activity events",
-            error=e,
-        )
+        raise InternalServerError("Retrieve activity events", e) from e

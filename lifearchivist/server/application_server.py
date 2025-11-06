@@ -30,7 +30,6 @@ class SessionManager:
 
     async def connect(self, session_id: str, websocket: WebSocket):
         """Register a new WebSocket session."""
-        await websocket.accept()
         self.sessions[session_id] = websocket
         log_event("websocket_session_connected", {"session_id": session_id})
 

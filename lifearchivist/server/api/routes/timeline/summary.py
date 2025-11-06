@@ -18,7 +18,7 @@ from .utils import process_summary_document
 router = APIRouter()
 
 
-@router.get("/summary")
+@router.get("/summary", response_model=None)
 @track(
     operation="get_timeline_summary",
     track_performance=True,

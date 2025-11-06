@@ -3,70 +3,244 @@ Send message endpoint.
 """
 
 import time
+from typing import Any, Dict, List
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
+from fastapi import Path as PathParam
+from fastapi import status
+from pydantic import BaseModel, Field
 
 from lifearchivist.config import get_settings
 from lifearchivist.llm import LLMMessage
 
 from ...error_formatting import create_error_metadata, format_llm_error
 from ...prompt_utils import PromptFormatter
-from ..constants import ErrorMessages
 from ..shared.dependencies import get_server
+from ..shared.exceptions import (
+    InternalServerError,
+    ResourceNotFoundError,
+    ServiceUnavailableError,
+)
 from .models import SendMessageRequest
 
 router = APIRouter()
 
 
-@router.post("/{conversation_id}/messages")
-async def send_message(
-    conversation_id: str,
-    request: SendMessageRequest,
-):
-    """
-    Send a message (question) and get AI response.
+class SendMessageResponse(BaseModel):
+    """Response from sending a message."""
 
-    This endpoint:
-    1. Adds user question to conversation
-    2. Queries LlamaIndex for answer using RAG
-    3. Adds AI response with citations
-    4. Returns both messages
+    success: bool = Field(
+        default=True, description="Whether message was sent successfully"
+    )
+    user_message: Dict[str, Any] = Field(..., description="User message data")
+    assistant_message: Dict[str, Any] = Field(
+        ..., description="Assistant response data"
+    )
+    latency_ms: int = Field(..., description="Response latency in milliseconds")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "user_message": {
+                    "id": "msg_1",
+                    "role": "user",
+                    "content": "What is this about?",
+                },
+                "assistant_message": {
+                    "id": "msg_2",
+                    "role": "assistant",
+                    "content": "Based on the documents...",
+                    "citations": [],
+                },
+                "latency_ms": 1500,
+            }
+        }
+
+
+@router.post(
+    "/{conversation_id}/messages",
+    response_model=SendMessageResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        404: {
+            "description": "Conversation not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Conversation not found: invalid-id"}
+                }
+            },
+        },
+        503: {
+            "description": "Required service unavailable",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Message service not available"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Send message failed: <error message>"}
+                }
+            },
+        },
+    },
+)
+async def send_message(
+    request: SendMessageRequest,
+    conversation_id: str = PathParam(..., description="Unique conversation identifier"),
+) -> SendMessageResponse:
+    """
+    Send a message and get AI response with RAG.
+
+    Processes user message through RAG pipeline: adds message to conversation,
+    retrieves relevant context, generates AI response, and returns both messages.
+
+    ## Path Parameters
+
+    - **conversation_id**: Unique identifier of the conversation
+
+    ## Request Body
+
+    - **content**: User message content
+    - **context_limit**: Max context documents to retrieve (optional)
+
+    ## Response Fields
+
+    - **success**: Whether operation succeeded
+    - **user_message**: User message object
+    - **assistant_message**: AI response object with citations
+    - **latency_ms**: Response generation time
+
+    ## Example Request
+
+    ```json
+    {
+        "content": "What does the document say about AI?",
+        "context_limit": 5
+    }
+    ```
+
+    ## Example Response
+
+    ```json
+    {
+        "success": true,
+        "user_message": {
+            "id": "msg_1",
+            "conversation_id": "conv_123",
+            "role": "user",
+            "content": "What does the document say about AI?",
+            "created_at": "2025-01-08T14:30:00Z"
+        },
+        "assistant_message": {
+            "id": "msg_2",
+            "conversation_id": "conv_123",
+            "role": "assistant",
+            "content": "According to the documents, AI...",
+            "model": "gpt-4",
+            "confidence": 0.8,
+            "method": "rag_with_provider",
+            "latency_ms": 1500,
+            "created_at": "2025-01-08T14:30:02Z",
+            "citations": [
+                {
+                    "document_id": "doc_123",
+                    "chunk_id": "chunk_1",
+                    "score": 0.85,
+                    "snippet": "AI is...",
+                    "position": 0
+                }
+            ]
+        },
+        "latency_ms": 1500
+    }
+    ```
+
+    ## Processing Pipeline
+
+    1. **Add User Message**: Store user message in database
+    2. **Semantic Search**: Retrieve relevant document chunks
+    3. **Build Context**: Format context from search results
+    4. **Generate Response**: Call LLM with context
+    5. **Add Assistant Message**: Store AI response
+    6. **Add Citations**: Link response to source documents
+    7. **Return Both Messages**: User message + AI response
+
+    ## RAG Features
+
+    - **Context Documents**: Uses conversation's context_documents if set
+    - **Semantic Search**: Vector similarity search for relevant chunks
+    - **Citation Tracking**: Links responses to source documents
+    - **Confidence Scoring**: 0.8 with sources, 0.5 without
+    - **Method Tracking**: "rag_with_provider" or "direct_provider"
+
+    ## Configuration
+
+    Uses conversation settings:
+    - **model**: LLM model to use
+    - **provider_id**: LLM provider
+    - **temperature**: Response randomness
+    - **max_tokens**: Response length limit
+    - **system_prompt**: Custom system instructions
+    - **context_documents**: Document filter for RAG
+
+    ## User Preferences
+
+    Falls back to user preferences for:
+    - **temperature**: Default 0.7
+    - **max_tokens**: Default 2000
+    - **response_format**: Output formatting
+
+    ## Error Handling
+
+    - LLM errors stored as assistant messages
+    - User-friendly error messages
+    - Error metadata tracked
+    - Latency recorded even on errors
+
+    ## Performance Notes
+
+    - Latency includes full pipeline
+    - Semantic search cached
+    - Concurrent operations where possible
+    - Typical latency: 1-3 seconds
+
+    ## Notes
+
+    - Returns 404 if conversation doesn't exist
+    - Both messages stored before returning
+    - Citations added asynchronously
+    - Confidence based on context availability
+    - Method indicates RAG vs direct
     """
     server = get_server()
 
     if not server.service_container:
-        raise HTTPException(
-            status_code=503, detail=ErrorMessages.SERVICES_NOT_AVAILABLE
-        )
+        raise ServiceUnavailableError("Service container")
 
     conv_service = server.service_container.conversation_service
     msg_service = server.service_container.message_service
     llamaindex_service = server.service_container.llamaindex_service
 
     if not conv_service or not msg_service:
-        raise HTTPException(status_code=503, detail="Message service not available")
+        raise ServiceUnavailableError("Message service")
 
     if not llamaindex_service:
-        raise HTTPException(status_code=503, detail="LlamaIndex service not available")
+        raise ServiceUnavailableError("LlamaIndex service")
 
     try:
-        if not conv_service:
-            raise HTTPException(
-                status_code=503, detail=ErrorMessages.CONVERSATION_SERVICE_NOT_AVAILABLE
-            )
-
         conv_result = await conv_service.get_conversation(conversation_id)
         if conv_result.is_failure():
-            return JSONResponse(
-                content=conv_result.to_dict(),
-                status_code=conv_result.status_code,
-            )
+            error_msg = conv_result.error
+            if "not found" in error_msg.lower():
+                raise ResourceNotFoundError("Conversation", conversation_id)
+            raise InternalServerError("Get conversation", Exception(error_msg))
 
         conversation = conv_result.unwrap()
-
-        if not msg_service:
-            raise HTTPException(status_code=503, detail="Message service not available")
 
         user_msg_result = await msg_service.add_message(
             conversation_id=conversation_id,
@@ -75,9 +249,8 @@ async def send_message(
         )
 
         if user_msg_result.is_failure():
-            return JSONResponse(
-                content=user_msg_result.to_dict(),
-                status_code=user_msg_result.status_code,
+            raise InternalServerError(
+                "Add user message", Exception(user_msg_result.error)
             )
 
         user_message = user_msg_result.unwrap()
@@ -106,7 +279,7 @@ async def send_message(
                 }
             )
 
-        messages = []
+        messages: List[LLMMessage] = []
 
         response_format = None
         if server.service_container and server.service_container.conversation_service:
@@ -143,9 +316,7 @@ async def send_message(
 
         provider_manager = server.service_container.llm_provider_manager
         if not provider_manager:
-            raise HTTPException(
-                status_code=503, detail="LLM provider manager not available"
-            )
+            raise ServiceUnavailableError("LLM provider manager")
 
         provider_id = conversation.get("provider_id")
         model = conversation.get("model") or get_settings().llm_model
@@ -197,7 +368,7 @@ async def send_message(
                 metadata=error_metadata,
             )
 
-            raise HTTPException(status_code=500, detail=gen_result.error)
+            raise InternalServerError("Generate response", Exception(gen_result.error))
 
         response = gen_result.unwrap()
         answer = response.content
@@ -215,9 +386,8 @@ async def send_message(
         )
 
         if assistant_msg_result.is_failure():
-            return JSONResponse(
-                content=assistant_msg_result.to_dict(),
-                status_code=assistant_msg_result.status_code,
+            raise InternalServerError(
+                "Add assistant message", Exception(assistant_msg_result.error)
             )
 
         assistant_message = assistant_msg_result.unwrap()
@@ -243,14 +413,14 @@ async def send_message(
             if citation_result.is_success():
                 assistant_message["citations"] = citation_result.unwrap()
 
-        return {
-            "success": True,
-            "user_message": user_message,
-            "assistant_message": assistant_message,
-            "latency_ms": latency_ms,
-        }
+        return SendMessageResponse(
+            success=True,
+            user_message=user_message,
+            assistant_message=assistant_message,
+            latency_ms=latency_ms,
+        )
 
-    except HTTPException:
+    except (ServiceUnavailableError, ResourceNotFoundError):
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise InternalServerError("Send message", e) from e

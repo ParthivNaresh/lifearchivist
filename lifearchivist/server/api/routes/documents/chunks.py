@@ -2,59 +2,214 @@
 Get document chunks endpoint.
 """
 
-from fastapi import APIRouter
+from typing import Any, Dict, List
 
-from ..constants import DocumentConstants, PaginationDefaults, ValidationMessages
+from fastapi import APIRouter
+from fastapi import Path as PathParam
+from fastapi import Query, status
+from pydantic import BaseModel, Field
+
 from ..shared.dependencies import get_server
-from ..shared.responses import internal_error_response, validation_error_response
-from ..shared.utils import unwrap_result_to_json_response
-from .utils import validate_llamaindex_service
+from ..shared.exceptions import (
+    InternalServerError,
+    ResourceNotFoundError,
+    ServiceUnavailableError,
+    ValidationError,
+)
 
 router = APIRouter()
 
+CHUNKS_MIN_LIMIT = 1
+CHUNKS_MAX_LIMIT = 100
+CHUNKS_DEFAULT_LIMIT = 20
 
-@router.get("/{document_id}/llamaindex-chunks")
+
+class ChunkInfo(BaseModel):
+    """Information about a single document chunk."""
+
+    class Config:
+        extra = "allow"
+
+
+class DocumentChunksResponse(BaseModel):
+    """Response containing paginated document chunks."""
+
+    document_id: str = Field(..., description="Document identifier")
+    chunks: List[Dict[str, Any]] = Field(..., description="List of chunk objects")
+    total: int = Field(..., description="Total number of chunks")
+    limit: int = Field(..., description="Requested limit")
+    offset: int = Field(..., description="Requested offset")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "document_id": "doc_123",
+                "chunks": [
+                    {
+                        "chunk_id": "chunk_1",
+                        "text": "This is the first chunk...",
+                        "metadata": {"page": 1},
+                    }
+                ],
+                "total": 15,
+                "limit": 20,
+                "offset": 0,
+            }
+        }
+
+
+@router.get(
+    "/{document_id}/llamaindex-chunks",
+    response_model=DocumentChunksResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {
+            "description": "Invalid pagination parameters",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Limit must be between 1 and 100"}
+                }
+            },
+        },
+        404: {
+            "description": "Document not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Document not found: invalid-id"}
+                }
+            },
+        },
+        503: {
+            "description": "LlamaIndex service unavailable",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "LlamaIndex service not available"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Get document chunks failed: <error message>"}
+                }
+            },
+        },
+    },
+)
 async def get_llamaindex_document_chunks(
-    document_id: str,
-    limit: int = DocumentConstants.CHUNKS_DEFAULT_LIMIT,
-    offset: int = PaginationDefaults.DEFAULT_OFFSET,
-):
+    document_id: str = PathParam(..., description="Unique document identifier"),
+    limit: int = Query(
+        default=CHUNKS_DEFAULT_LIMIT,
+        ge=CHUNKS_MIN_LIMIT,
+        le=CHUNKS_MAX_LIMIT,
+        description="Maximum number of chunks to return",
+    ),
+    offset: int = Query(
+        default=0, ge=0, description="Number of chunks to skip for pagination"
+    ),
+) -> DocumentChunksResponse:
     """
-    Get paginated chunks for a document from LlamaIndex.
+    Get paginated text chunks for a document from LlamaIndex.
 
-    Returns the text chunks with their metadata and embeddings info.
+    Returns the text chunks created during document processing, including their
+    content, metadata, and embedding information.
+
+    ## Path Parameters
+
+    - **document_id**: Unique identifier of the document
+
+    ## Query Parameters
+
+    - **limit**: Maximum chunks to return (1-100, default: 20)
+    - **offset**: Number of chunks to skip (default: 0)
+
+    ## Response Fields
+
+    - **document_id**: Document identifier
+    - **chunks**: Array of chunk objects, each containing:
+      - chunk_id: Unique chunk identifier
+      - text: Chunk text content
+      - metadata: Chunk metadata (page numbers, positions, etc.)
+      - embedding_info: Embedding details (optional)
+    - **total**: Total number of chunks for this document
+    - **limit**: Applied limit
+    - **offset**: Applied offset
+
+    ## Example Response
+
+    ```json
+    {
+        "document_id": "doc_123",
+        "chunks": [
+            {
+                "chunk_id": "chunk_1",
+                "text": "This is the first chunk of text...",
+                "metadata": {
+                    "page": 1,
+                    "position": 0
+                },
+                "token_count": 150
+            },
+            {
+                "chunk_id": "chunk_2",
+                "text": "This is the second chunk...",
+                "metadata": {
+                    "page": 1,
+                    "position": 1
+                },
+                "token_count": 145
+            }
+        ],
+        "total": 15,
+        "limit": 20,
+        "offset": 0
+    }
+    ```
+
+    ## Use Cases
+
+    - View document chunking results
+    - Debug chunking strategy
+    - Verify chunk quality
+    - Analyze chunk boundaries
+    - Review metadata extraction
+    - Inspect embedding coverage
+
+    ## Pagination
+
+    Use limit and offset for pagination:
+    - First page: `?limit=20&offset=0`
+    - Second page: `?limit=20&offset=20`
+    - Third page: `?limit=20&offset=40`
+
+    ## Notes
+
+    - Returns 404 if document doesn't exist
+    - Chunks ordered by creation/position
+    - Limit enforced: 1-100 chunks per request
+    - Offset must be non-negative
+    - Total indicates full chunk count
     """
     server = get_server()
-    service, error_response = validate_llamaindex_service(server)
-    if error_response:
-        return error_response
 
-    assert service is not None
-
-    if (
-        limit < DocumentConstants.CHUNKS_MIN_LIMIT
-        or limit > DocumentConstants.CHUNKS_MAX_LIMIT
-    ):
-        return validation_error_response(
-            ValidationMessages.LIMIT_RANGE.format(
-                min=DocumentConstants.CHUNKS_MIN_LIMIT,
-                max=DocumentConstants.CHUNKS_MAX_LIMIT,
-            )
-        )
-
-    if offset < PaginationDefaults.DEFAULT_OFFSET:
-        return validation_error_response(ValidationMessages.OFFSET_NON_NEGATIVE)
+    if not server.llamaindex_service:
+        raise ServiceUnavailableError("LlamaIndex service")
 
     try:
-        result = await service.get_document_chunks(
+        result = await server.llamaindex_service.get_document_chunks(
             document_id=document_id, limit=limit, offset=offset
         )
 
-        error_response = unwrap_result_to_json_response(result)
-        if error_response:
-            return error_response
+        if result.is_failure():
+            error_msg = result.error
+            if "not found" in error_msg.lower():
+                raise ResourceNotFoundError("Document", document_id)
+            raise InternalServerError("Get document chunks", Exception(error_msg))
 
-        return result.value
+        return DocumentChunksResponse(**result.value)
 
+    except (ServiceUnavailableError, ResourceNotFoundError, ValidationError):
+        raise
     except Exception as e:
-        return internal_error_response("Get document chunks", e)
+        raise InternalServerError("Get document chunks", e) from e
