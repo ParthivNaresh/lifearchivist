@@ -2,10 +2,7 @@
 Ask question endpoint.
 """
 
-from typing import Any, Dict, List, Optional
-
 from fastapi import APIRouter, status
-from pydantic import BaseModel, Field, field_validator
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -13,76 +10,11 @@ from ..shared.exceptions import (
     ServiceUnavailableError,
     ValidationError,
 )
+from .misc_models import Citation
+from .request_models import AskQuestionRequest
+from .response_models import AskQuestionResponse
 
 router = APIRouter()
-
-MIN_CONTEXT_LIMIT = 1
-MAX_CONTEXT_LIMIT = 20
-DEFAULT_CONTEXT_LIMIT = 5
-MIN_QUESTION_LENGTH = 3
-
-
-class AskQuestionRequest(BaseModel):
-    """Request to ask a question."""
-
-    question: str = Field(
-        ..., description="Question to ask", min_length=MIN_QUESTION_LENGTH
-    )
-    context_limit: int = Field(
-        default=DEFAULT_CONTEXT_LIMIT,
-        ge=MIN_CONTEXT_LIMIT,
-        le=MAX_CONTEXT_LIMIT,
-        description="Maximum context documents to retrieve",
-    )
-    filters: Optional[Dict[str, Any]] = Field(
-        None, description="Optional filters for document search"
-    )
-
-    @field_validator("question")
-    @classmethod
-    def validate_question(cls, v: str) -> str:
-        return v.strip()
-
-
-class Citation(BaseModel):
-    """Citation information."""
-
-    doc_id: str = Field(..., description="Document ID")
-    title: str = Field(..., description="Document title")
-    snippet: str = Field(..., description="Text snippet")
-    score: float = Field(..., description="Relevance score")
-
-
-class AskQuestionResponse(BaseModel):
-    """Response from asking a question."""
-
-    answer: str = Field(..., description="Generated answer")
-    confidence: float = Field(..., description="Confidence score")
-    citations: List[Citation] = Field(..., description="Source citations")
-    method: str = Field(..., description="Method used for generation")
-    context_length: int = Field(..., description="Number of context documents used")
-    statistics: Dict[str, Any] = Field(
-        default_factory=dict, description="Query statistics"
-    )
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "answer": "Based on the documents, AI is...",
-                "confidence": 0.85,
-                "citations": [
-                    {
-                        "doc_id": "doc_123",
-                        "title": "AI Overview",
-                        "snippet": "AI is artificial intelligence...",
-                        "score": 0.92,
-                    }
-                ],
-                "method": "llamaindex_rag",
-                "context_length": 3,
-                "statistics": {"tokens_used": 150},
-            }
-        }
 
 
 @router.post(

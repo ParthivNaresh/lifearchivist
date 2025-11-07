@@ -2,12 +2,11 @@
 Update document subtheme endpoint.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -15,32 +14,9 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .response_models import SubthemeUpdateResponse
 
 router = APIRouter()
-
-
-class SubthemeUpdateRequest(BaseModel):
-    """Request to update document subtheme metadata."""
-
-    class Config:
-        extra = "allow"
-
-
-class SubthemeUpdateResponse(BaseModel):
-    """Response from updating document subtheme."""
-
-    document_id: str = Field(..., description="Updated document ID")
-    updated_fields: List[str] = Field(..., description="List of updated field names")
-    success: bool = Field(default=True, description="Whether update succeeded")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "document_id": "doc_123",
-                "updated_fields": ["classification", "theme", "subtheme"],
-                "success": True,
-            }
-        }
 
 
 @router.patch(

@@ -2,40 +2,15 @@
 Activity events endpoint.
 """
 
-from typing import Any, Dict, List
-
 from fastapi import APIRouter, Query, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .constants import DEFAULT_LIMIT, MAX_LIMIT, MIN_LIMIT
+from .misc_models import ActivityEvent
+from .response_models import ActivityEventsResponse
 
 router = APIRouter()
-
-MIN_LIMIT = 1
-MAX_LIMIT = 1000
-DEFAULT_LIMIT = 200
-
-
-class ActivityEventsResponse(BaseModel):
-    """Response containing activity events."""
-
-    events: List[Dict[str, Any]] = Field(..., description="List of activity events")
-    count: int = Field(..., description="Number of events returned")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "events": [
-                    {
-                        "type": "document_uploaded",
-                        "timestamp": "2025-01-08T14:30:00Z",
-                        "details": {"document_id": "doc_123"},
-                    }
-                ],
-                "count": 1,
-            }
-        }
 
 
 @router.get(
@@ -188,7 +163,9 @@ async def get_activity_events(
         raise ServiceUnavailableError("Activity manager")
 
     try:
-        events = await server.activity_manager.get_recent_events(limit)
+        events_data = await server.activity_manager.get_recent_events(limit)
+
+        events = [ActivityEvent(**event) for event in events_data]
 
         return ActivityEventsResponse(
             events=events,

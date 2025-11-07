@@ -8,8 +8,6 @@ from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
 
-from lifearchivist.models.folder_watch import FolderScanResponse
-
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
     InternalServerError,
@@ -17,6 +15,7 @@ from ..shared.exceptions import (
     ServiceUnavailableError,
     ValidationError,
 )
+from .response_models import FolderScanResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

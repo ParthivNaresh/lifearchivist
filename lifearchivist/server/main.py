@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from ..config.settings import configure_logging
+from ..config.settings import configure_logging, get_settings
 from .api.dependencies import set_server_instance
 from .api.router import get_api_router, get_websocket_router
 from .application_server import ApplicationServer

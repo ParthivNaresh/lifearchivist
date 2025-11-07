@@ -6,9 +6,9 @@ from typing import Any, Optional, Tuple
 
 from fastapi.responses import JSONResponse
 
-from lifearchivist.models.folder_watch import FolderResponse, WatchedFolder
-
 from ..shared.responses import service_unavailable_response
+from .misc_models import WatchedFolder
+from .response_models import FolderResponse
 
 
 def validate_folder_watcher(

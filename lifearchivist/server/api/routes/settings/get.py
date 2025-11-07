@@ -6,7 +6,7 @@ from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError
-from .models import SettingsResponse
+from .response_models import SettingsResponse
 
 router = APIRouter()
 

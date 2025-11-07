@@ -2,38 +2,13 @@
 Get queue statistics endpoint.
 """
 
-from typing import Optional
-
 from fastapi import APIRouter, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import QueueStatsResponse
 
 router = APIRouter()
-
-
-class QueueStatsResponse(BaseModel):
-    """Response containing enrichment queue statistics."""
-
-    status: str = Field(..., description="Queue operational status")
-    queue_length: int = Field(..., description="Number of tasks waiting in queue")
-    processing: int = Field(..., description="Number of tasks currently processing")
-    completed: int = Field(..., description="Number of recently completed tasks")
-    failed: int = Field(..., description="Number of recently failed tasks")
-    error: Optional[str] = Field(None, description="Error message if status is 'error'")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "status": "operational",
-                "queue_length": 5,
-                "processing": 2,
-                "completed": 150,
-                "failed": 3,
-                "error": None,
-            }
-        }
 
 
 @router.get(

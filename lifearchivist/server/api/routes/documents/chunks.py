@@ -2,12 +2,9 @@
 Get document chunks endpoint.
 """
 
-from typing import Any, Dict, List
-
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import Query, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -16,46 +13,13 @@ from ..shared.exceptions import (
     ServiceUnavailableError,
     ValidationError,
 )
+from .response_models import DocumentChunksResponse
 
 router = APIRouter()
 
 CHUNKS_MIN_LIMIT = 1
 CHUNKS_MAX_LIMIT = 100
 CHUNKS_DEFAULT_LIMIT = 20
-
-
-class ChunkInfo(BaseModel):
-    """Information about a single document chunk."""
-
-    class Config:
-        extra = "allow"
-
-
-class DocumentChunksResponse(BaseModel):
-    """Response containing paginated document chunks."""
-
-    document_id: str = Field(..., description="Document identifier")
-    chunks: List[Dict[str, Any]] = Field(..., description="List of chunk objects")
-    total: int = Field(..., description="Total number of chunks")
-    limit: int = Field(..., description="Requested limit")
-    offset: int = Field(..., description="Requested offset")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "document_id": "doc_123",
-                "chunks": [
-                    {
-                        "chunk_id": "chunk_1",
-                        "text": "This is the first chunk...",
-                        "metadata": {"page": 1},
-                    }
-                ],
-                "total": 15,
-                "limit": 20,
-                "offset": 0,
-            }
-        }
 
 
 @router.get(

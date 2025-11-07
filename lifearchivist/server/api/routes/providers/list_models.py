@@ -10,7 +10,8 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
-from .response_models import ListModelsResponse, ModelInfo
+from .misc_models import ModelInfo
+from .response_models import ListModelsResponse
 
 router = APIRouter()
 

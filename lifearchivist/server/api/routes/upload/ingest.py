@@ -5,9 +5,8 @@ Ingest document endpoint.
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from lifearchivist.models import IngestRequest
-
 from ..shared.dependencies import get_server
+from .request_models import IngestRequest
 
 router = APIRouter()
 

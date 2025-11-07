@@ -1,31 +1,11 @@
-"""
-Data models for folder watching system.
-
-These models define the structure for multi-folder watching configurations,
-statistics, and runtime state management.
-"""
-
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
-
-from pydantic import BaseModel, Field
-
-from .constants import FieldDescriptions
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 if TYPE_CHECKING:
     from watchdog.observers.api import BaseObserver
-
-
-class FolderWatchStatus(str, Enum):
-    """Status of a watched folder."""
-
-    ACTIVE = "active"  # Watching and processing files
-    PAUSED = "paused"  # Temporarily disabled
-    ERROR = "error"  # Experiencing errors
-    STOPPED = "stopped"  # Not watching
 
 
 class FolderHealthStatus(str, Enum):
@@ -142,6 +122,15 @@ class FolderStats:
         return self.files_ingested / total
 
 
+class FolderWatchStatus(str, Enum):
+    """Status of a watched folder."""
+
+    ACTIVE = "active"  # Watching and processing files
+    PAUSED = "paused"  # Temporarily disabled
+    ERROR = "error"  # Experiencing errors
+    STOPPED = "stopped"  # Not watching
+
+
 @dataclass
 class WatchedFolder:
     """
@@ -164,7 +153,7 @@ class WatchedFolder:
     stats: FolderStats = field(default_factory=FolderStats)
 
     # Runtime state (not persisted)
-    observer: Optional["BaseObserver"] = None  # Watchdog observer instance
+    observer: Optional["BaseObserver"] = None
     handler: Optional[Any] = None  # Event handler instance (DocumentEventHandler)
     status: FolderWatchStatus = FolderWatchStatus.STOPPED
 
@@ -204,91 +193,3 @@ class WatchedFolder:
             "is_active": self.is_active(),
             "success_rate": self.stats.get_success_rate(),
         }
-
-
-# Pydantic models for API requests/responses
-
-
-class AddFolderRequest(BaseModel):
-    """Request to add a watched folder."""
-
-    folder_path: str = Field(
-        description="Absolute path to folder to watch",
-        examples=["/Users/username/Documents"],
-    )
-    enabled: bool = Field(
-        default=True, description="Whether to start watching immediately"
-    )
-
-
-class UpdateFolderRequest(BaseModel):
-    """Request to update a watched folder."""
-
-    enabled: Optional[bool] = Field(
-        default=None, description="Enable or disable watching"
-    )
-
-
-class FolderResponse(BaseModel):
-    """Response containing folder information."""
-
-    id: str = Field(description=FieldDescriptions.FOLDER_UUID)
-    path: str = Field(description="Absolute folder path")
-    enabled: bool = Field(description="Whether watching is enabled")
-    created_at: str = Field(description="ISO timestamp when folder was added")
-    status: str = Field(description="Current status (active/paused/error/stopped)")
-    health: str = Field(description="Health status (healthy/degraded/unhealthy)")
-    is_active: bool = Field(description="Whether actively watching")
-    success_rate: float = Field(description="Success rate 0.0-1.0")
-    stats: Dict[str, Any] = Field(description="Detailed statistics")
-
-
-class FolderListResponse(BaseModel):
-    """Response containing list of folders."""
-
-    success: bool = Field(description="Whether request succeeded")
-    folders: List[FolderResponse] = Field(description="List of watched folders")
-    total: int = Field(description="Total number of folders")
-
-
-class AggregateStatusResponse(BaseModel):
-    """Aggregate status across all watched folders."""
-
-    success: bool = Field(description="Whether request succeeded")
-    total_folders: int = Field(description="Total watched folders")
-    active_folders: int = Field(description="Currently active folders")
-    total_pending: int = Field(description="Total pending files across all folders")
-    total_detected: int = Field(description="Total files detected (all time)")
-    total_ingested: int = Field(description="Total files ingested (all time)")
-    total_failed: int = Field(description="Total files failed (all time)")
-    total_bytes_processed: int = Field(description="Total bytes processed (all time)")
-    folders: List[FolderResponse] = Field(description="Individual folder details")
-    supported_extensions: List[str] = Field(description="Supported file extensions")
-    ingestion_concurrency: int = Field(
-        description="Max concurrent ingestions across all folders"
-    )
-
-
-class FolderScanResponse(BaseModel):
-    """Response from manual folder scan."""
-
-    success: bool = Field(description="Whether scan succeeded")
-    folder_id: str = Field(description=FieldDescriptions.FOLDER_UUID)
-    folder_path: str = Field(description="Folder path")
-    files_found: int = Field(description="Number of files found")
-    files_queued: int = Field(description="Number of files queued for ingestion")
-    files_failed: int = Field(description="Number of files failed")
-    message: str = Field(description="Status message")
-
-
-class FolderHealthCheckResponse(BaseModel):
-    """Response from folder health check."""
-
-    success: bool = Field(description="Whether check succeeded")
-    folder_id: str = Field(description=FieldDescriptions.FOLDER_UUID)
-    folder_path: str = Field(description="Folder path")
-    accessible: bool = Field(description="Whether folder is accessible")
-    exists: bool = Field(description="Whether folder exists")
-    readable: bool = Field(description="Whether folder is readable")
-    health: str = Field(description="Health status")
-    error: Optional[str] = Field(default=None, description="Error message if any")

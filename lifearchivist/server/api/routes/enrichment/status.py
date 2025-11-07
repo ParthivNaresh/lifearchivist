@@ -2,36 +2,13 @@
 Get enrichment status endpoint.
 """
 
-from typing import Any, Dict, Optional
-
 from fastapi import APIRouter, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import EnrichmentStatusResponse
 
 router = APIRouter()
-
-
-class EnrichmentStatusResponse(BaseModel):
-    """Response containing enrichment service status."""
-
-    enabled: bool = Field(..., description="Whether enrichment is enabled")
-    enrichment_worker: Optional[Dict[str, Any]] = Field(
-        None, description="Worker status details (if enabled)"
-    )
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "enabled": True,
-                "enrichment_worker": {
-                    "status": "running",
-                    "tasks_processed": 150,
-                    "uptime_seconds": 3600,
-                },
-            }
-        }
 
 
 @router.get(

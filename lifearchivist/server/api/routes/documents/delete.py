@@ -2,12 +2,9 @@
 Delete document endpoint.
 """
 
-from typing import Optional
-
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -15,32 +12,12 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .response_models import DeleteDocumentResponse
 from .utils import delete_vault_file_safe
 
 router = APIRouter()
 
 SINGLE_DOCUMENT_LIMIT = 1
-
-
-class DeleteDocumentResponse(BaseModel):
-    """Response from deleting a document."""
-
-    document_id: str = Field(..., description="Deleted document ID")
-    index_deleted: bool = Field(..., description="Whether index entry was deleted")
-    vault_deleted: bool = Field(..., description="Whether vault file was deleted")
-    file_hash: Optional[str] = Field(None, description="File hash of deleted document")
-    chunks_deleted: Optional[int] = Field(None, description="Number of chunks deleted")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "document_id": "doc_123",
-                "index_deleted": True,
-                "vault_deleted": True,
-                "file_hash": "abc123def456",
-                "chunks_deleted": 15,
-            }
-        }
 
 
 @router.delete(

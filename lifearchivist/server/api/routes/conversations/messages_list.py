@@ -2,12 +2,9 @@
 Get messages endpoint.
 """
 
-from typing import Any, Dict, List
-
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import Query, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -15,6 +12,7 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .response_models import MessagesListResponse
 
 router = APIRouter()
 
@@ -22,32 +20,6 @@ MIN_LIMIT = 1
 MAX_LIMIT = 500
 DEFAULT_LIMIT = 50
 DEFAULT_OFFSET = 0
-
-
-class MessagesListResponse(BaseModel):
-    """Response from getting messages."""
-
-    messages: List[Dict[str, Any]] = Field(..., description="List of messages")
-    total: int = Field(..., description="Total number of messages")
-    limit: int = Field(..., description="Applied limit")
-    offset: int = Field(..., description="Applied offset")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "messages": [
-                    {
-                        "id": "msg_1",
-                        "role": "user",
-                        "content": "Hello",
-                        "created_at": "2025-01-08T14:30:00Z",
-                    }
-                ],
-                "total": 1,
-                "limit": 50,
-                "offset": 0,
-            }
-        }
 
 
 @router.get(

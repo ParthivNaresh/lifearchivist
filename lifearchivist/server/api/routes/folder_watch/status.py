@@ -4,10 +4,9 @@ Get aggregate status endpoint.
 
 from fastapi import APIRouter, status
 
-from lifearchivist.models.folder_watch import AggregateStatusResponse
-
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import AggregateStatusResponse
 from .utils import folder_to_response
 
 router = APIRouter()

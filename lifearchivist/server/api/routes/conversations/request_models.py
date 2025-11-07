@@ -1,7 +1,3 @@
-"""
-Pydantic models for conversation endpoints.
-"""
-
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -32,6 +28,15 @@ class CreateConversationRequest(BaseModel):
     )
 
 
+class SendMessageRequest(BaseModel):
+    """Request model for sending a message."""
+
+    content: str = Field(..., description="Message content (user question)")
+    context_limit: int = Field(
+        default=5, ge=1, le=20, description="Number of context documents to use"
+    )
+
+
 class UpdateConversationRequest(BaseModel):
     """Request model for updating a conversation."""
 
@@ -47,13 +52,4 @@ class UpdateConversationRequest(BaseModel):
     )
     max_tokens: Optional[int] = Field(
         None, ge=1, le=100000, description="New max tokens"
-    )
-
-
-class SendMessageRequest(BaseModel):
-    """Request model for sending a message."""
-
-    content: str = Field(..., description="Message content (user question)")
-    context_limit: int = Field(
-        default=5, ge=1, le=20, description="Number of context documents to use"
     )

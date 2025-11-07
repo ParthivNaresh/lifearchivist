@@ -2,12 +2,9 @@
 Get document analysis endpoint.
 """
 
-from typing import Any, Dict
-
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
-from pydantic import BaseModel
 
 from ..shared import unwrap_result_or_error
 from ..shared.dependencies import get_server
@@ -16,17 +13,9 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .response_models import DocumentAnalysisResponse
 
 router = APIRouter()
-
-
-class DocumentAnalysisResponse(BaseModel):
-    """Response containing comprehensive document analysis."""
-
-    analysis: Dict[str, Any]
-
-    class Config:
-        extra = "allow"
 
 
 @router.get(

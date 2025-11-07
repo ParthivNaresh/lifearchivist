@@ -3,12 +3,11 @@ Send message endpoint.
 """
 
 import time
-from typing import Any, Dict, List
+from typing import List
 
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
-from pydantic import BaseModel, Field
 
 from lifearchivist.config import get_settings
 from lifearchivist.llm import LLMMessage
@@ -21,41 +20,10 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
-from .models import SendMessageRequest
+from .request_models import SendMessageRequest
+from .response_models import SendMessageResponse
 
 router = APIRouter()
-
-
-class SendMessageResponse(BaseModel):
-    """Response from sending a message."""
-
-    success: bool = Field(
-        default=True, description="Whether message was sent successfully"
-    )
-    user_message: Dict[str, Any] = Field(..., description="User message data")
-    assistant_message: Dict[str, Any] = Field(
-        ..., description="Assistant response data"
-    )
-    latency_ms: int = Field(..., description="Response latency in milliseconds")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "success": True,
-                "user_message": {
-                    "id": "msg_1",
-                    "role": "user",
-                    "content": "What is this about?",
-                },
-                "assistant_message": {
-                    "id": "msg_2",
-                    "role": "assistant",
-                    "content": "Based on the documents...",
-                    "citations": [],
-                },
-                "latency_ms": 1500,
-            }
-        }
 
 
 @router.post(

@@ -6,7 +6,8 @@ from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
-from .response_models import ConversationSample, UsageCheckResponse
+from .misc_models import ConversationSample
+from .response_models import UsageCheckResponse
 
 router = APIRouter()
 

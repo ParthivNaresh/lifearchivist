@@ -2,13 +2,11 @@
 List conversations endpoint.
 """
 
-from typing import Any, Dict, List
-
 from fastapi import APIRouter, Query, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import ListConversationsResponse
 
 router = APIRouter()
 
@@ -16,34 +14,6 @@ MIN_LIMIT = 1
 MAX_LIMIT = 100
 DEFAULT_LIMIT = 50
 DEFAULT_OFFSET = 0
-
-
-class ListConversationsResponse(BaseModel):
-    """Response from listing conversations."""
-
-    conversations: List[Dict[str, Any]] = Field(
-        ..., description="List of conversations"
-    )
-    total: int = Field(..., description="Total number of conversations")
-    limit: int = Field(..., description="Applied limit")
-    offset: int = Field(..., description="Applied offset")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "conversations": [
-                    {
-                        "id": "conv_123",
-                        "title": "My Conversation",
-                        "model": "gpt-4",
-                        "created_at": "2025-01-08T14:30:00Z",
-                    }
-                ],
-                "total": 1,
-                "limit": 50,
-                "offset": 0,
-            }
-        }
 
 
 @router.get(

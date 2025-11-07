@@ -3,27 +3,12 @@ Activity count endpoint.
 """
 
 from fastapi import APIRouter, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import ActivityCountResponse
 
 router = APIRouter()
-
-
-class ActivityCountResponse(BaseModel):
-    """Response containing activity event count."""
-
-    count: int = Field(..., description="Number of events currently stored")
-    max_events: int = Field(..., description="Maximum events that can be stored")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "count": 150,
-                "max_events": 1000,
-            }
-        }
 
 
 @router.get(

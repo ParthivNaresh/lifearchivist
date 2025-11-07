@@ -2,36 +2,15 @@
 Create conversation endpoint.
 """
 
-from typing import Any, Dict
-
 from fastapi import APIRouter, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
-from .models import CreateConversationRequest
+from .request_models import CreateConversationRequest
+from .response_models import CreateConversationResponse
 from .utils import serialize_for_json
 
 router = APIRouter()
-
-
-class CreateConversationResponse(BaseModel):
-    """Response from creating a conversation."""
-
-    conversation: Dict[str, Any] = Field(..., description="Created conversation data")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "conversation": {
-                    "id": "conv_123",
-                    "title": "New Conversation",
-                    "model": "gpt-4",
-                    "provider_id": "openai-main",
-                    "created_at": "2025-01-08T14:30:00Z",
-                }
-            }
-        }
 
 
 @router.post(

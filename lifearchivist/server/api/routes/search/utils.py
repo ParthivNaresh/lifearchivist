@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Tuple
 from fastapi.responses import JSONResponse
 
 from ..shared.responses import service_unavailable_response, validation_error_response
+from .constants import DEFAULT_SEMANTIC_WEIGHT, DEFAULT_SIMILARITY_THRESHOLD
 
 
 def validate_llamaindex_service(
@@ -126,7 +127,7 @@ async def execute_search(
         return await search_service.semantic_search(
             query=query,
             top_k=limit,
-            similarity_threshold=0.3,
+            similarity_threshold=DEFAULT_SIMILARITY_THRESHOLD,
             filters=filters,
         )
     elif mode == "keyword":
@@ -135,10 +136,10 @@ async def execute_search(
             top_k=limit,
             filters=filters,
         )
-    else:  # hybrid
+    else:
         return await search_service.hybrid_search(
             query=query,
             top_k=limit,
-            semantic_weight=0.6,
+            semantic_weight=DEFAULT_SEMANTIC_WEIGHT,
             filters=filters,
         )

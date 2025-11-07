@@ -2,12 +2,9 @@
 Archive conversation endpoint.
 """
 
-from typing import Any, Dict
-
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -15,27 +12,9 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .response_models import ArchiveConversationResponse
 
 router = APIRouter()
-
-
-class ArchiveConversationResponse(BaseModel):
-    """Response from archiving a conversation."""
-
-    conversation: Dict[str, Any] = Field(..., description="Archived conversation data")
-    message: str = Field(..., description="Success message")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "conversation": {
-                    "id": "conv_123",
-                    "title": "Archived Conversation",
-                    "archived_at": "2025-01-08T14:30:00Z",
-                },
-                "message": "Conversation archived successfully",
-            }
-        }
 
 
 @router.delete(

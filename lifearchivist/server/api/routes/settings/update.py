@@ -11,7 +11,7 @@ from lifearchivist.config import get_settings as get_app_settings
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ValidationError
-from .models import SettingsUpdateRequest
+from .request_models import SettingsUpdateRequest
 from .utils import (
     has_conversation_defaults_update,
     track_non_persisted_fields,

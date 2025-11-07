@@ -3,27 +3,12 @@ Clear activity events endpoint.
 """
 
 from fastapi import APIRouter, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import ClearActivityResponse
 
 router = APIRouter()
-
-
-class ClearActivityResponse(BaseModel):
-    """Response from clearing activity events."""
-
-    message: str = Field(..., description="Success message")
-    events_cleared: int = Field(..., description="Number of events cleared")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "message": "Activity events cleared",
-                "events_cleared": 150,
-            }
-        }
 
 
 @router.delete(

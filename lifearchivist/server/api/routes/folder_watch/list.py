@@ -4,10 +4,9 @@ List folders endpoint.
 
 from fastapi import APIRouter, Query, status
 
-from lifearchivist.models.folder_watch import FolderListResponse
-
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import FolderListResponse
 from .utils import folder_to_response
 
 router = APIRouter()

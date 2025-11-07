@@ -6,14 +6,13 @@ from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
 
-from lifearchivist.models.folder_watch import FolderResponse
-
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
     InternalServerError,
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .response_models import FolderResponse
 from .utils import folder_to_response
 
 router = APIRouter()

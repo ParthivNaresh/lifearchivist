@@ -8,7 +8,7 @@ from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
-from .models import AvailableModelsResponse
+from .response_models import AvailableModelsResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

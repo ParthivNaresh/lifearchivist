@@ -19,7 +19,7 @@ from ...error_formatting import create_error_metadata, format_llm_error
 from ...prompt_utils import PromptFormatter
 from ..shared.dependencies import get_server
 from ..shared.exceptions import ServiceUnavailableError
-from .models import SendMessageRequest
+from .request_models import SendMessageRequest
 from .utils import serialize_for_json
 
 router = APIRouter()

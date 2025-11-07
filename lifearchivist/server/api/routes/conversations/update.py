@@ -2,12 +2,9 @@
 Update conversation endpoint.
 """
 
-from typing import Any, Dict
-
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -15,27 +12,10 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
-from .models import UpdateConversationRequest
+from .request_models import UpdateConversationRequest
+from .response_models import UpdateConversationResponse
 
 router = APIRouter()
-
-
-class UpdateConversationResponse(BaseModel):
-    """Response from updating a conversation."""
-
-    conversation: Dict[str, Any] = Field(..., description="Updated conversation data")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "conversation": {
-                    "id": "conv_123",
-                    "title": "Updated Title",
-                    "model": "gpt-4",
-                    "updated_at": "2025-01-08T14:30:00Z",
-                }
-            }
-        }
 
 
 @router.patch(

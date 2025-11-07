@@ -2,12 +2,9 @@
 Get document neighbors endpoint.
 """
 
-from typing import Any, Dict, List
-
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import Query, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -15,44 +12,13 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .response_models import DocumentNeighborsResponse
 
 router = APIRouter()
 
 MIN_TOP_K = 1
 MAX_TOP_K = 50
 DEFAULT_TOP_K = 10
-
-
-class NeighborDocument(BaseModel):
-    """Information about a neighboring document."""
-
-    class Config:
-        extra = "allow"
-
-
-class DocumentNeighborsResponse(BaseModel):
-    """Response containing similar documents."""
-
-    document_id: str = Field(..., description="Source document ID")
-    neighbors: List[Dict[str, Any]] = Field(
-        ..., description="List of similar documents"
-    )
-    top_k: int = Field(..., description="Number of neighbors requested")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "document_id": "doc_123",
-                "neighbors": [
-                    {
-                        "document_id": "doc_456",
-                        "title": "Similar Document",
-                        "similarity_score": 0.85,
-                    }
-                ],
-                "top_k": 10,
-            }
-        }
 
 
 @router.get(

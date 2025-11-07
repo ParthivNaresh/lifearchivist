@@ -18,13 +18,6 @@ class AddProviderRequest(BaseModel):
     set_as_default: bool = Field(default=False, description="Set as default provider")
 
 
-class UpdateProviderRequest(BaseModel):
-    """Request to update provider configuration."""
-
-    config: Optional[Dict[str, Any]] = Field(None, description="New configuration")
-    set_as_default: Optional[bool] = Field(None, description="Set as default provider")
-
-
 class GenerateRequest(BaseModel):
     """Request to generate text."""
 
@@ -52,3 +45,10 @@ class SetDefaultRequest(BaseModel):
     default_model: Optional[str] = Field(
         None, description="Default model to use with this provider"
     )
+
+
+class UpdateProviderRequest(BaseModel):
+    """Request to update provider configuration."""
+
+    config: Optional[Dict[str, Any]] = Field(None, description="New configuration")
+    set_as_default: Optional[bool] = Field(None, description="Set as default provider")

@@ -2,59 +2,14 @@
 Clear all documents endpoint.
 """
 
-from typing import Any, Dict, List
-
 from fastapi import APIRouter, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .misc_models import ClearAllSummary
+from .response_models import ClearAllResponse
 
 router = APIRouter()
-
-
-class ClearAllSummary(BaseModel):
-    """Summary of clear all operation."""
-
-    total_files_deleted: int = Field(..., description="Total files deleted")
-    total_bytes_reclaimed: int = Field(..., description="Total bytes reclaimed")
-    total_mb_reclaimed: float = Field(..., description="Total MB reclaimed")
-
-
-class ClearAllResponse(BaseModel):
-    """Response from clearing all documents."""
-
-    operation: str = Field(..., description="Operation name")
-    summary: ClearAllSummary = Field(..., description="Operation summary")
-    vault_metrics: Dict[str, Any] = Field(..., description="Vault clearing metrics")
-    llamaindex_metrics: Dict[str, Any] = Field(
-        ..., description="LlamaIndex clearing metrics"
-    )
-    progress_metrics: Dict[str, Any] = Field(
-        ..., description="Progress tracking metrics"
-    )
-    errors: List[str] = Field(
-        default_factory=list, description="Any errors encountered"
-    )
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "operation": "comprehensive_clear_all",
-                "summary": {
-                    "total_files_deleted": 150,
-                    "total_bytes_reclaimed": 52428800,
-                    "total_mb_reclaimed": 50.0,
-                },
-                "vault_metrics": {"files_deleted": 150, "bytes_reclaimed": 52428800},
-                "llamaindex_metrics": {
-                    "vectors_deleted": 150,
-                    "metadata_cleared": True,
-                },
-                "progress_metrics": {"progress_cleared": True},
-                "errors": [],
-            }
-        }
 
 
 @router.delete(

@@ -2,13 +2,13 @@
 List documents endpoint.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Query, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import DocumentCountResponse, DocumentListResponse
 from .utils import format_document_for_ui
 
 router = APIRouter()
@@ -18,43 +18,6 @@ MAX_LIMIT = 10000
 DEFAULT_LIMIT = 20
 DEFAULT_OFFSET = 0
 COUNT_QUERY_LIMIT = 10000
-
-
-class DocumentListResponse(BaseModel):
-    """Response containing list of documents."""
-
-    documents: List[Dict[str, Any]] = Field(..., description="List of documents")
-    total: int = Field(..., description="Number of documents returned")
-    limit: int = Field(..., description="Applied limit")
-    offset: int = Field(..., description="Applied offset")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "documents": [
-                    {
-                        "document_id": "doc_123",
-                        "title": "Example Document",
-                        "status": "completed",
-                    }
-                ],
-                "total": 1,
-                "limit": 20,
-                "offset": 0,
-            }
-        }
-
-
-class DocumentCountResponse(BaseModel):
-    """Response containing document count."""
-
-    total: int = Field(..., description="Total number of documents")
-    filters: Dict[str, Any] = Field(..., description="Applied filters")
-
-    class Config:
-        json_schema_extra = {
-            "example": {"total": 150, "filters": {"status": "completed"}}
-        }
 
 
 @router.get(

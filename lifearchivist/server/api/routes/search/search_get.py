@@ -2,10 +2,9 @@
 Search documents GET endpoint.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Query, status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -13,40 +12,17 @@ from ..shared.exceptions import (
     ServiceUnavailableError,
     ValidationError,
 )
+from .constants import (
+    DEFAULT_LIMIT,
+    DEFAULT_OFFSET,
+    MAX_LIMIT,
+    MIN_LIMIT,
+    VALID_MODES,
+)
+from .response_models import SearchDocumentsResponse
 from .utils import build_search_filters, execute_search
 
 router = APIRouter()
-
-MIN_LIMIT = 1
-MAX_LIMIT = 100
-DEFAULT_LIMIT = 20
-DEFAULT_OFFSET = 0
-VALID_MODES = {"semantic", "keyword", "hybrid"}
-
-
-class SearchDocumentsResponse(BaseModel):
-    """Response from searching documents."""
-
-    results: List[Dict[str, Any]] = Field(..., description="Search results")
-    count: int = Field(..., description="Number of results returned")
-    mode: str = Field(..., description="Search mode used")
-    query: str = Field(..., description="Search query")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "results": [
-                    {
-                        "document_id": "doc_123",
-                        "title": "Example Document",
-                        "score": 0.85,
-                    }
-                ],
-                "count": 1,
-                "mode": "semantic",
-                "query": "artificial intelligence",
-            }
-        }
 
 
 @router.get(

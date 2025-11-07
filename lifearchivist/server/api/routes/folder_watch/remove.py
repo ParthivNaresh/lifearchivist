@@ -5,7 +5,6 @@ Remove folder endpoint.
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import status
-from pydantic import BaseModel, Field
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -13,23 +12,9 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .response_models import RemoveFolderResponse
 
 router = APIRouter()
-
-
-class RemoveFolderResponse(BaseModel):
-    """Response from removing a watched folder."""
-
-    message: str = Field(..., description="Success message")
-    folder_id: str = Field(..., description="UUID of the removed folder")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "message": "Folder removed successfully",
-                "folder_id": "123e4567-e89b-12d3-a456-426614174000",
-            }
-        }
 
 
 @router.delete(

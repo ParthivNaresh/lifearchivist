@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from ..shared.dependencies import get_server
-from .models import BulkIngestRequest
+from .request_models import BulkIngestRequest
 
 router = APIRouter()
 
