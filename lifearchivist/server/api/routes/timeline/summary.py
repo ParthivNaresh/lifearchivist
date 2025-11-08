@@ -4,27 +4,53 @@ Get timeline summary endpoint.
 
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, status
 
 from lifearchivist.utils.logging import log_event, track
 
 from ..shared.dependencies import get_server
-from ..shared.responses import internal_error_response, service_unavailable_response
+from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .constants import MAX_DOCUMENTS_QUERY
+from .misc_models import DataQuality, DateRange
+from .response_models import TimelineSummaryResponse
 from .utils import process_summary_document
 
 router = APIRouter()
 
 
-@router.get("/summary", response_model=None)
+@router.get(
+    "/summary",
+    response_model=TimelineSummaryResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        503: {
+            "description": "Service unavailable",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "LlamaIndex service not available"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Get timeline summary failed: <error message>"
+                    }
+                }
+            },
+        },
+    },
+)
 @track(
     operation="get_timeline_summary",
     track_performance=True,
     frequency="low_frequency",
 )
-async def get_timeline_summary() -> Union[Dict[str, Any], JSONResponse]:
+async def get_timeline_summary() -> TimelineSummaryResponse:
     """
     Get high-level timeline summary statistics.
 
@@ -45,15 +71,15 @@ async def get_timeline_summary() -> Union[Dict[str, Any], JSONResponse]:
     server = get_server()
 
     if not server.llamaindex_service:
-        return service_unavailable_response("LlamaIndex service")
+        raise ServiceUnavailableError("LlamaIndex service")
 
     try:
         documents_result = await server.llamaindex_service.query_documents_by_metadata(
-            filters={}, limit=10000
+            filters={}, limit=MAX_DOCUMENTS_QUERY
         )
 
         if documents_result.is_failure():
-            return internal_error_response(
+            raise InternalServerError(
                 "Query documents",
                 RuntimeError(f"Failed to query documents: {documents_result.error}"),
             )
@@ -85,8 +111,18 @@ async def get_timeline_summary() -> Union[Dict[str, Any], JSONResponse]:
         if latest_date is not None:
             summary["date_range"]["latest"] = latest_date.isoformat()
 
-        return summary
+        return TimelineSummaryResponse(
+            total_documents=summary["total_documents"],
+            date_range=DateRange(
+                earliest=summary["date_range"]["earliest"],
+                latest=summary["date_range"]["latest"],
+            ),
+            by_year=summary["by_year"],
+            data_quality=DataQuality(**summary["data_quality"]),
+        )
 
+    except ServiceUnavailableError:
+        raise
     except Exception as e:
         log_event("timeline_summary_error", {"error": str(e)}, level=logging.ERROR)
-        return internal_error_response("Get timeline summary", e)
+        raise InternalServerError("Get timeline summary", e) from e

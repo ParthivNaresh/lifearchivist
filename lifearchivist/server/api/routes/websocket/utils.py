@@ -8,6 +8,11 @@ from typing import Any
 from fastapi import WebSocket
 
 from ..websocket_handlers import process_websocket_message, send_error
+from .constants import (
+    CLOSE_CODE_INVALID_SESSION,
+    CLOSE_CODE_SERVICE_UNAVAILABLE,
+    MIN_SESSION_ID_LENGTH,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +27,7 @@ def validate_session_id(session_id: str) -> bool:
     Returns:
         True if valid, False otherwise
     """
-    return bool(session_id and len(session_id) >= 3)
+    return bool(session_id and len(session_id) >= MIN_SESSION_ID_LENGTH)
 
 
 async def handle_connection_setup(
@@ -42,11 +47,16 @@ async def handle_connection_setup(
         True if setup successful, False if connection should be rejected
     """
     if not validate_session_id(session_id):
-        await websocket.close(code=1008, reason="Invalid session_id")
+        await websocket.close(
+            code=CLOSE_CODE_INVALID_SESSION, reason="Invalid session_id"
+        )
         return False
 
     if server.session_manager is None:
-        await websocket.close(code=1011, reason="Session manager not available")
+        await websocket.close(
+            code=CLOSE_CODE_SERVICE_UNAVAILABLE,
+            reason="Session manager not available",
+        )
         logger.error("WebSocket connection rejected: session manager not initialized")
         return False
 

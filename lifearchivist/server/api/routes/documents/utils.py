@@ -2,31 +2,10 @@
 Utility functions for document endpoints.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
-
-from fastapi.responses import JSONResponse
+from typing import Any, Dict, Optional
 
 from ..constants import DocumentConstants
-from ..shared.responses import not_found_response, service_unavailable_response
 from ..shared.utils import extract_result_value
-
-
-def validate_llamaindex_service(
-    server: Any,
-) -> Tuple[Optional[Any], Optional[JSONResponse]]:
-    """
-    Validate LlamaIndex service availability.
-
-    Args:
-        server: Server instance
-
-    Returns:
-        Tuple of (service, error_response) where one is None
-    """
-    if not server.llamaindex_service:
-        return None, service_unavailable_response("LlamaIndex service")
-
-    return server.llamaindex_service, None
 
 
 def format_document_for_ui(doc: Dict) -> Dict:
@@ -159,26 +138,3 @@ async def delete_vault_file_safe(
     except Exception as e:
         print(f"Warning: Failed to delete file from vault: {e}")
         return False
-
-
-def extract_document_metadata(
-    documents: List[Dict[str, Any]],
-    document_id: str,
-) -> Tuple[Optional[Dict[str, Any]], Optional[JSONResponse]]:
-    """
-    Extract metadata from document list.
-
-    Args:
-        documents: List of document dictionaries
-        document_id: Document ID to find
-
-    Returns:
-        Tuple of (metadata, error_response) where one is None
-    """
-    if not documents:
-        return None, not_found_response("Document", document_id)
-
-    metadata = documents[0].get("metadata", {})
-    if not isinstance(metadata, dict):
-        return {}, None
-    return metadata, None

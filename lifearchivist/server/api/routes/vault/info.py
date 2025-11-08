@@ -2,20 +2,37 @@
 Get vault info endpoint.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
-from ..shared.responses import (
-    internal_error_response,
-    service_unavailable_response,
-    success_response,
-)
+from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .response_models import VaultInfoResponse
 
 router = APIRouter()
 
 
-@router.get("/info")
-async def get_vault_info():
+@router.get(
+    "/info",
+    response_model=VaultInfoResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        503: {
+            "description": "Service unavailable",
+            "content": {
+                "application/json": {"example": {"detail": "Vault not available"}}
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Get vault info failed: <error>"}
+                }
+            },
+        },
+    },
+)
+async def get_vault_info() -> VaultInfoResponse:
     """
     Get vault information and statistics.
 
@@ -33,15 +50,15 @@ async def get_vault_info():
     server = get_server()
 
     if not server.vault:
-        return service_unavailable_response("Vault")
+        raise ServiceUnavailableError("Vault")
 
     try:
         stats = await server.vault.get_vault_statistics()
-        return success_response(stats)
+        return VaultInfoResponse(**stats)
     except AttributeError as e:
-        return internal_error_response(
+        raise InternalServerError(
             "Get vault statistics",
             RuntimeError(f"Vault statistics unavailable: {str(e)}"),
-        )
+        ) from e
     except Exception as e:
-        return internal_error_response("Get vault info", e)
+        raise InternalServerError("Get vault info", e) from e

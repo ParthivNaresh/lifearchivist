@@ -7,6 +7,7 @@ import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from ..shared.dependencies import get_server
+from .constants import CLOSE_CODE_INTERNAL_ERROR
 from .utils import cleanup_connection, handle_connection_setup, handle_message_loop
 
 router = APIRouter()
@@ -53,7 +54,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     except Exception as e:
         logger.error(f"WebSocket error for session {session_id}: {e}", exc_info=True)
         try:
-            await websocket.close(code=1011, reason="Internal server error")
+            await websocket.close(
+                code=CLOSE_CODE_INTERNAL_ERROR, reason="Internal server error"
+            )
         except Exception:
             pass
         finally:

@@ -2,93 +2,9 @@
 Utility functions for search endpoints.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
-from fastapi.responses import JSONResponse
-
-from ..shared.responses import service_unavailable_response, validation_error_response
 from .constants import DEFAULT_SEMANTIC_WEIGHT, DEFAULT_SIMILARITY_THRESHOLD
-
-
-def validate_llamaindex_service(
-    server: Any,
-) -> Tuple[Optional[Any], Optional[JSONResponse]]:
-    """
-    Validate LlamaIndex service availability.
-
-    Args:
-        server: Server instance
-
-    Returns:
-        Tuple of (service, error_response) where one is None
-    """
-    if not server.llamaindex_service:
-        return None, service_unavailable_response("Search service")
-
-    return server.llamaindex_service, None
-
-
-def validate_search_service(
-    llamaindex_service: Any,
-) -> Tuple[Optional[Any], Optional[JSONResponse]]:
-    """
-    Validate search service availability.
-
-    Args:
-        llamaindex_service: LlamaIndex service instance
-
-    Returns:
-        Tuple of (service, error_response) where one is None
-    """
-    if not llamaindex_service.search_service:
-        return None, service_unavailable_response(
-            "Search service", message="Search service not initialized"
-        )
-
-    return llamaindex_service.search_service, None
-
-
-def validate_query_service(
-    llamaindex_service: Any,
-) -> Tuple[Optional[Any], Optional[JSONResponse]]:
-    """
-    Validate query service availability.
-
-    Args:
-        llamaindex_service: LlamaIndex service instance
-
-    Returns:
-        Tuple of (service, error_response) where one is None
-    """
-    if not llamaindex_service.query_service:
-        return None, service_unavailable_response(
-            "Query service", message="Query service not initialized"
-        )
-
-    return llamaindex_service.query_service, None
-
-
-def validate_search_params(
-    mode: str, limit: int, offset: int
-) -> Optional[JSONResponse]:
-    """
-    Validate search parameters.
-
-    Returns JSONResponse with error if validation fails, None if valid.
-    """
-    valid_modes = ["keyword", "semantic", "hybrid"]
-    if mode not in valid_modes:
-        return validation_error_response(
-            f"Invalid mode '{mode}'. Must be one of: {', '.join(valid_modes)}"
-        )
-
-    if limit < 1 or limit > 100:
-        return validation_error_response("Limit must be between 1 and 100")
-
-    if offset < 0:
-        return validation_error_response("Offset must be non-negative")
-
-    return None
 
 
 def build_search_filters(

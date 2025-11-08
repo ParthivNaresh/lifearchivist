@@ -12,11 +12,10 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .constants import DEFAULT_MESSAGE_LIMIT, MAX_MESSAGE_LIMIT, MIN_MESSAGE_LIMIT
 from .response_models import GetConversationResponse
 
 router = APIRouter()
-
-DEFAULT_MESSAGE_LIMIT = 50
 
 
 @router.get(
@@ -57,8 +56,8 @@ async def get_conversation(
     ),
     message_limit: int = Query(
         default=DEFAULT_MESSAGE_LIMIT,
-        ge=1,
-        le=500,
+        ge=MIN_MESSAGE_LIMIT,
+        le=MAX_MESSAGE_LIMIT,
         description="Maximum messages to include",
     ),
 ) -> GetConversationResponse:
@@ -183,7 +182,7 @@ async def get_conversation(
                 raise ResourceNotFoundError("Conversation", conversation_id)
             raise InternalServerError("Get conversation", Exception(error_msg))
 
-        conversation = conv_result.unwrap()
+        conversation_dict = conv_result.unwrap()
 
         if include_messages and server.service_container:
             msg_service = server.service_container.message_service
@@ -197,14 +196,23 @@ async def get_conversation(
 
                 if msg_result.is_success():
                     messages_data = msg_result.unwrap()
-                    conversation["messages"] = messages_data.get("messages", [])
-                    conversation["message_count"] = messages_data.get("total", 0)
+                    conversation_dict["messages"] = messages_data.get("messages", [])
+                    conversation_dict["message_count"] = messages_data.get("total", 0)
                 else:
-                    conversation["messages"] = []
-                    conversation["message_count"] = 0
+                    conversation_dict["messages"] = []
+                    conversation_dict["message_count"] = 0
             else:
-                conversation["messages"] = []
-                conversation["message_count"] = 0
+                conversation_dict["messages"] = []
+                conversation_dict["message_count"] = 0
+
+        from .misc_models import Conversation, Message
+
+        if conversation_dict.get("messages"):
+            conversation_dict["messages"] = [
+                Message(**msg) for msg in conversation_dict["messages"]
+            ]
+
+        conversation = Conversation(**conversation_dict)
 
         return GetConversationResponse(conversation=conversation)
 

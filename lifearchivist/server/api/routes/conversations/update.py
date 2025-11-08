@@ -189,7 +189,11 @@ async def update_conversation(
                 raise ResourceNotFoundError("Conversation", conversation_id)
             raise InternalServerError("Update conversation", Exception(error_msg))
 
-        conversation = result.unwrap()
+        conversation_dict = result.unwrap()
+
+        from .misc_models import Conversation
+
+        conversation = Conversation(**conversation_dict)
 
         return UpdateConversationResponse(conversation=conversation)
 

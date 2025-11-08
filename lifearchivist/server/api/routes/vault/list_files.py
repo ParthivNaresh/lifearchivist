@@ -2,18 +2,66 @@
 List vault files endpoint.
 """
 
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Query, status
 
 from ..shared.dependencies import get_server
+from ..shared.exceptions import InternalServerError
+from .constants import (
+    DEFAULT_DIRECTORY,
+    DEFAULT_LIMIT,
+    DEFAULT_OFFSET,
+    MAX_LIMIT,
+    MIN_LIMIT,
+)
+from .misc_models import DatabaseRecord, VaultFile
+from .response_models import ListVaultFilesResponse
 
 router = APIRouter()
 
 
-@router.get("/files")
+@router.get(
+    "/files",
+    response_model=ListVaultFilesResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Limit must be between 1 and 1000"}
+                }
+            },
+        },
+        403: {
+            "description": "Permission denied",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Permission denied accessing vault directory"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "List vault files failed: <error>"}
+                }
+            },
+        },
+    },
+)
 async def list_vault_files(
-    directory: str = "content", limit: int = 100, offset: int = 0
-):
+    directory: str = Query(
+        default=DEFAULT_DIRECTORY, description="Vault subdirectory to list"
+    ),
+    limit: int = Query(
+        default=DEFAULT_LIMIT,
+        ge=MIN_LIMIT,
+        le=MAX_LIMIT,
+        description="Maximum files to return",
+    ),
+    offset: int = Query(default=DEFAULT_OFFSET, ge=0, description="Pagination offset"),
+) -> ListVaultFilesResponse:
     """
     List files in vault with database record linking.
 
@@ -38,47 +86,21 @@ async def list_vault_files(
 
     vault_path = server.settings.vault_path
     if not vault_path:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Vault path not configured",
-                "error_type": "ConfigurationError",
-            },
-            status_code=500,
-        )
-
-    if limit < 1 or limit > 1000:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Limit must be between 1 and 1000",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
-        )
-
-    if offset < 0:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Offset must be non-negative",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
+        raise InternalServerError(
+            "List vault files", RuntimeError("Vault path not configured")
         )
 
     try:
         target_dir = vault_path / directory
 
         if not target_dir.exists():
-            return {
-                "success": True,
-                "files": [],
-                "total": 0,
-                "directory": directory,
-                "limit": limit,
-                "offset": offset,
-            }
+            return ListVaultFilesResponse(
+                files=[],
+                total=0,
+                directory=directory,
+                limit=limit,
+                offset=offset,
+            )
 
         all_files = []
         for file_path in target_dir.rglob("*"):
@@ -109,59 +131,49 @@ async def list_vault_files(
                         if matching_docs:
                             doc = matching_docs[0]
                             metadata = doc.get("metadata", {})
-                            database_record = {
-                                "id": doc.get("document_id"),
-                                "original_path": metadata.get("original_path"),
-                                "status": metadata.get("status"),
-                            }
+                            database_record = DatabaseRecord(
+                                id=doc.get("document_id", ""),
+                                original_path=metadata.get("original_path"),
+                                status=metadata.get("status"),
+                            )
                     except Exception:
                         pass
 
                 all_files.append(
-                    {
-                        "path": (
+                    VaultFile(
+                        path=(
                             str(file_path.relative_to(vault_path))
                             if vault_path
                             else str(file_path)
                         ),
-                        "full_path": str(file_path),
-                        "hash": full_hash,
-                        "extension": file_path.suffix.lstrip("."),
-                        "size_bytes": stat.st_size,
-                        "created_at": stat.st_ctime,
-                        "modified_at": stat.st_mtime,
-                        "database_record": database_record,
-                    }
+                        full_path=str(file_path),
+                        hash=full_hash,
+                        extension=file_path.suffix.lstrip("."),
+                        size_bytes=stat.st_size,
+                        created_at=stat.st_ctime,
+                        modified_at=stat.st_mtime,
+                        database_record=database_record,
+                    )
                 )
 
-        all_files.sort(key=lambda x: float(str(x.get("created_at", 0))), reverse=True)
+        all_files.sort(key=lambda x: x.created_at, reverse=True)
 
         paginated_files = all_files[offset : offset + limit]
 
-        return {
-            "success": True,
-            "files": paginated_files,
-            "total": len(all_files),
-            "directory": directory,
-            "limit": limit,
-            "offset": offset,
-        }
+        return ListVaultFilesResponse(
+            files=paginated_files,
+            total=len(all_files),
+            directory=directory,
+            limit=limit,
+            offset=offset,
+        )
 
     except PermissionError as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Permission denied accessing vault directory: {str(e)}",
-                "error_type": "PermissionError",
-            },
-            status_code=403,
-        )
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Permission denied accessing vault directory: {str(e)}",
+        ) from e
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Failed to list vault files: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        raise InternalServerError("List vault files", e) from e

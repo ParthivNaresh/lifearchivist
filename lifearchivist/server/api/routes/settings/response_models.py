@@ -2,9 +2,11 @@
 Pydantic models for settings endpoints.
 """
 
-from typing import Any, Dict
+from typing import List
 
 from pydantic import BaseModel, Field
+
+from .misc_models import EmbeddingModel, LLMModel
 
 
 class SettingsResponse(BaseModel):
@@ -66,7 +68,35 @@ class SettingsResponse(BaseModel):
 class AvailableModelsResponse(BaseModel):
     """Response model for available models."""
 
-    llm_models: list[Dict[str, Any]] = Field(description="Available LLM models")
-    embedding_models: list[Dict[str, Any]] = Field(
+    llm_models: List[LLMModel] = Field(description="Available LLM models")
+    embedding_models: List[EmbeddingModel] = Field(
         description="Available embedding models"
     )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "llm_models": [
+                    {
+                        "id": "gpt-4",
+                        "name": "GPT-4",
+                        "description": "OPENAI model",
+                        "provider": "openai",
+                        "provider_id": "openai-main",
+                        "context_window": 8192,
+                        "supports_streaming": True,
+                        "cost_per_1k_input": 0.03,
+                        "cost_per_1k_output": 0.06,
+                    }
+                ],
+                "embedding_models": [
+                    {
+                        "id": "all-MiniLM-L6-v2",
+                        "name": "all-MiniLM-L6-v2",
+                        "description": "Fast and efficient",
+                        "dimensions": 384,
+                        "performance": "fast",
+                    }
+                ],
+            }
+        }

@@ -3,47 +3,13 @@ from typing import Any, Dict, Optional, Tuple
 
 from starlette.responses import JSONResponse
 
-from ..shared.responses import service_unavailable_response, validation_error_response
-
-
-def validate_llm_manager(server: Any) -> Tuple[Optional[Any], Optional[JSONResponse]]:
-    """
-    Validate LLM manager service availability.
-
-    Args:
-        server: Server instance
-
-    Returns:
-        Tuple of (service, error_response) where one is None
-    """
-    if not server.llm_manager:
-        return None, service_unavailable_response("LLM manager")
-
-    return server.llm_manager, None
-
-
-def validate_credential_service(
-    server: Any,
-) -> Tuple[Optional[Any], Optional[JSONResponse]]:
-    """
-    Validate credential service availability.
-
-    Args:
-        server: Server instance
-
-    Returns:
-        Tuple of (service, error_response) where one is None
-    """
-    if not server.credential_service:
-        return None, service_unavailable_response("Credential service")
-
-    return server.credential_service, None
+from ..shared.exceptions import ValidationError
 
 
 def parse_datetime_range(
     start_time: Optional[str],
     end_time: Optional[str],
-) -> Tuple[Optional[Tuple[datetime, datetime]], Optional[JSONResponse]]:
+) -> Tuple[datetime, datetime]:
     """
     Parse and validate ISO 8601 datetime strings for time range queries.
 
@@ -52,19 +18,20 @@ def parse_datetime_range(
         end_time: End time in ISO 8601 format
 
     Returns:
-        Tuple of ((start_datetime, end_datetime), error_response) where one is None
+        Tuple of (start_datetime, end_datetime)
+
+    Raises:
+        ValidationError: If times are missing or invalid format
     """
     if not start_time or not end_time:
-        return None, validation_error_response(
-            "start_time and end_time required for usage/cost reports"
-        )
+        raise ValidationError("start_time and end_time required for usage/cost reports")
 
     try:
         start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
         end_dt = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
-        return (start_dt, end_dt), None
+        return start_dt, end_dt
     except ValueError as e:
-        return None, validation_error_response(f"Invalid datetime format: {e}")
+        raise ValidationError(f"Invalid datetime format: {e}") from e
 
 
 async def fetch_provider_capabilities(
@@ -477,13 +444,7 @@ async def fetch_time_based_metadata(
     if not needs_time_range:
         return None
 
-    time_range, error_response = parse_datetime_range(start_time, end_time)
-    if error_response:
-        return error_response
-
-    assert time_range is not None
-
-    start_dt, end_dt = time_range
+    start_dt, end_dt = parse_datetime_range(start_time, end_time)
 
     if "usage" in requested:
         error_response = await fetch_provider_usage(

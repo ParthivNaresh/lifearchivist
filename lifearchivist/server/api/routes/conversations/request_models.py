@@ -2,6 +2,16 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from .constants import (
+    DEFAULT_CONTEXT_LIMIT,
+    MAX_CONTEXT_LIMIT,
+    MAX_MAX_TOKENS,
+    MAX_TEMPERATURE,
+    MIN_CONTEXT_LIMIT,
+    MIN_MAX_TOKENS,
+    MIN_TEMPERATURE,
+)
+
 
 class CreateConversationRequest(BaseModel):
     """Request model for creating a conversation."""
@@ -18,12 +28,15 @@ class CreateConversationRequest(BaseModel):
     )
     system_prompt: Optional[str] = Field(None, description="Custom system prompt")
     temperature: Optional[float] = Field(
-        None, ge=0, le=2, description="LLM temperature (uses user preferences if None)"
+        None,
+        ge=MIN_TEMPERATURE,
+        le=MAX_TEMPERATURE,
+        description="LLM temperature (uses user preferences if None)",
     )
     max_tokens: Optional[int] = Field(
         None,
-        ge=1,
-        le=100000,
+        ge=MIN_MAX_TOKENS,
+        le=MAX_MAX_TOKENS,
         description="Max tokens per response (uses user preferences if None)",
     )
 
@@ -33,7 +46,10 @@ class SendMessageRequest(BaseModel):
 
     content: str = Field(..., description="Message content (user question)")
     context_limit: int = Field(
-        default=5, ge=1, le=20, description="Number of context documents to use"
+        default=DEFAULT_CONTEXT_LIMIT,
+        ge=MIN_CONTEXT_LIMIT,
+        le=MAX_CONTEXT_LIMIT,
+        description="Number of context documents to use",
     )
 
 
@@ -48,8 +64,11 @@ class UpdateConversationRequest(BaseModel):
     )
     system_prompt: Optional[str] = Field(None, description="New system prompt")
     temperature: Optional[float] = Field(
-        None, ge=0, le=2, description="New temperature"
+        None,
+        ge=MIN_TEMPERATURE,
+        le=MAX_TEMPERATURE,
+        description="New temperature",
     )
     max_tokens: Optional[int] = Field(
-        None, ge=1, le=100000, description="New max tokens"
+        None, ge=MIN_MAX_TOKENS, le=MAX_MAX_TOKENS, description="New max tokens"
     )

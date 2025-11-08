@@ -2,17 +2,40 @@
 Ingest document endpoint.
 """
 
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
+from ..shared.exceptions import InternalServerError, ValidationError
 from .request_models import IngestRequest
+from .response_models import IngestResponse
 
 router = APIRouter()
 
 
-@router.post("/ingest")
-async def ingest_document(request: IngestRequest):
+@router.post(
+    "/ingest",
+    response_model=IngestResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Missing required field: path"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Document ingestion failed: <error>"}
+                }
+            },
+        },
+    },
+)
+async def ingest_document(request: IngestRequest) -> IngestResponse:
     """
     Ingest a document from a file path.
 
@@ -38,32 +61,28 @@ async def ingest_document(request: IngestRequest):
 
         if not result.get("success"):
             error_msg = result.get("error", "Import failed")
-            return JSONResponse(
-                content={
-                    "success": False,
-                    "error": error_msg,
-                    "error_type": "ImportError",
-                },
-                status_code=500,
+            return IngestResponse(
+                success=False,
+                document_id=None,
+                file_hash=None,
+                status=None,
+                metadata={},
+                error=error_msg,
+                error_type="ImportError",
             )
 
-        return {"success": True, **result["result"]}
+        result_data = result.get("result", {})
+        return IngestResponse(
+            success=True,
+            document_id=result_data.get("document_id"),
+            file_hash=result_data.get("file_hash"),
+            status=result_data.get("status"),
+            metadata=result_data.get("metadata", {}),
+            error=None,
+            error_type=None,
+        )
 
     except KeyError as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Missing required field: {str(e)}",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
-        )
+        raise ValidationError(f"Missing required field: {str(e)}") from e
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Document ingestion failed: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        raise InternalServerError("Document ingestion", e) from e

@@ -13,13 +13,11 @@ from ..shared.exceptions import (
     ServiceUnavailableError,
     ValidationError,
 )
+from .constants import DEFAULT_CHUNKS_LIMIT, MAX_CHUNKS_LIMIT, MIN_CHUNKS_LIMIT
+from .misc_models import DocumentChunk
 from .response_models import DocumentChunksResponse
 
 router = APIRouter()
-
-CHUNKS_MIN_LIMIT = 1
-CHUNKS_MAX_LIMIT = 100
-CHUNKS_DEFAULT_LIMIT = 20
 
 
 @router.get(
@@ -64,9 +62,9 @@ CHUNKS_DEFAULT_LIMIT = 20
 async def get_llamaindex_document_chunks(
     document_id: str = PathParam(..., description="Unique document identifier"),
     limit: int = Query(
-        default=CHUNKS_DEFAULT_LIMIT,
-        ge=CHUNKS_MIN_LIMIT,
-        le=CHUNKS_MAX_LIMIT,
+        default=DEFAULT_CHUNKS_LIMIT,
+        ge=MIN_CHUNKS_LIMIT,
+        le=MAX_CHUNKS_LIMIT,
         description="Maximum number of chunks to return",
     ),
     offset: int = Query(
@@ -171,7 +169,17 @@ async def get_llamaindex_document_chunks(
                 raise ResourceNotFoundError("Document", document_id)
             raise InternalServerError("Get document chunks", Exception(error_msg))
 
-        return DocumentChunksResponse(**result.value)
+        data = result.value
+
+        chunks = [DocumentChunk(**chunk) for chunk in data.get("chunks", [])]
+
+        return DocumentChunksResponse(
+            document_id=data["document_id"],
+            chunks=chunks,
+            total=data["total"],
+            limit=data["limit"],
+            offset=data["offset"],
+        )
 
     except (ServiceUnavailableError, ResourceNotFoundError, ValidationError):
         raise

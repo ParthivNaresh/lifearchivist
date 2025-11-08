@@ -180,8 +180,8 @@ async def delete_document(
             document_id=document_id,
             index_deleted=True,
             vault_deleted=vault_deleted,
-            file_hash=file_hash,
-            chunks_deleted=delete_info.get("chunks_deleted"),
+            file_hash=file_hash or "",
+            chunks_deleted=delete_info.get("chunks_deleted", 0),
         )
 
     except (ServiceUnavailableError, ResourceNotFoundError):

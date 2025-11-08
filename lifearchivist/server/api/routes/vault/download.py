@@ -2,15 +2,11 @@
 Download file from vault endpoint.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Path, status
 from fastapi.responses import FileResponse
 
 from ..shared.dependencies import get_server
-from ..shared.responses import (
-    error_response,
-    internal_error_response,
-    service_unavailable_response,
-)
+from ..shared.exceptions import InternalServerError, ServiceUnavailableError
 from .utils import (
     get_mime_type_and_disposition,
     get_original_filename,
@@ -21,8 +17,53 @@ from .utils import (
 router = APIRouter()
 
 
-@router.get("/file/{file_hash}")
-async def download_file_from_vault(file_hash: str):
+@router.get(
+    "/file/{file_hash}",
+    response_class=FileResponse,
+    responses={
+        200: {
+            "description": "File download",
+            "content": {"application/octet-stream": {}},
+        },
+        400: {
+            "description": "Invalid file hash",
+            "content": {
+                "application/json": {"example": {"detail": "Invalid file hash format"}}
+            },
+        },
+        403: {
+            "description": "Permission denied",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Permission denied accessing file"}
+                }
+            },
+        },
+        404: {
+            "description": "File not found",
+            "content": {
+                "application/json": {"example": {"detail": "File not found in vault"}}
+            },
+        },
+        503: {
+            "description": "Service unavailable",
+            "content": {
+                "application/json": {"example": {"detail": "Vault not available"}}
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Download file failed: <error>"}
+                }
+            },
+        },
+    },
+)
+async def download_file_from_vault(
+    file_hash: str = Path(..., description="SHA256 hash of the file (64 characters)"),
+) -> FileResponse:
     """
     Download or view a file from vault by its SHA256 hash.
 
@@ -48,19 +89,10 @@ async def download_file_from_vault(file_hash: str):
 
     try:
         if not server.vault:
-            return service_unavailable_response("Vault")
+            raise ServiceUnavailableError("Vault")
 
-        error_response_obj = validate_file_hash(file_hash)
-        if error_response_obj:
-            return error_response_obj
-
-        file_path, error_response_obj = resolve_vault_file_path(
-            server.vault.content_dir, file_hash
-        )
-        if error_response_obj:
-            return error_response_obj
-
-        assert file_path is not None
+        validate_file_hash(file_hash)
+        file_path = resolve_vault_file_path(server.vault.content_dir, file_hash)
 
         filename = await get_original_filename(
             server.llamaindex_service,
@@ -77,10 +109,11 @@ async def download_file_from_vault(file_hash: str):
         )
 
     except PermissionError as e:
-        return error_response(
-            error=f"Permission denied accessing file: {str(e)}",
-            error_type="PermissionError",
-            status_code=403,
-        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Permission denied accessing file: {str(e)}",
+        ) from e
+    except ServiceUnavailableError:
+        raise
     except Exception as e:
-        return internal_error_response("Download file", e)
+        raise InternalServerError("Download file", e) from e

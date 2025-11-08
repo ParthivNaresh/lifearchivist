@@ -1,25 +1,34 @@
 """
-Pydantic models for conversation endpoints.
+Response models for conversation endpoints.
 """
 
-from typing import Any, Dict, List
+from typing import List
 
 from pydantic import BaseModel, Field
+
+from .misc_models import Conversation, Message
 
 
 class ArchiveConversationResponse(BaseModel):
     """Response from archiving a conversation."""
 
-    conversation: Dict[str, Any] = Field(..., description="Archived conversation data")
+    conversation: Conversation = Field(..., description="Archived conversation data")
     message: str = Field(..., description="Success message")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "conversation": {
-                    "id": "conv_123",
+                    "id": "770e8400-e29b-41d4-a716-446655440000",
+                    "user_id": "default",
                     "title": "Archived Conversation",
-                    "archived_at": "2025-01-08T14:30:00Z",
+                    "model": "gpt-4",
+                    "provider_id": "openai-main",
+                    "temperature": 0.7,
+                    "max_tokens": 2000,
+                    "created_at": "2025-01-08T14:30:00Z",
+                    "updated_at": "2025-01-08T14:30:00Z",
+                    "archived_at": "2025-01-08T15:00:00Z",
                 },
                 "message": "Conversation archived successfully",
             }
@@ -29,17 +38,21 @@ class ArchiveConversationResponse(BaseModel):
 class CreateConversationResponse(BaseModel):
     """Response from creating a conversation."""
 
-    conversation: Dict[str, Any] = Field(..., description="Created conversation data")
+    conversation: Conversation = Field(..., description="Created conversation data")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "conversation": {
-                    "id": "conv_123",
+                    "id": "770e8400-e29b-41d4-a716-446655440000",
+                    "user_id": "default",
                     "title": "New Conversation",
                     "model": "gpt-4",
                     "provider_id": "openai-main",
+                    "temperature": 0.7,
+                    "max_tokens": 2000,
                     "created_at": "2025-01-08T14:30:00Z",
+                    "updated_at": "2025-01-08T14:30:00Z",
                 }
             }
         }
@@ -48,15 +61,21 @@ class CreateConversationResponse(BaseModel):
 class GetConversationResponse(BaseModel):
     """Response from getting a conversation."""
 
-    conversation: Dict[str, Any] = Field(..., description="Conversation data")
+    conversation: Conversation = Field(..., description="Conversation data")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "conversation": {
-                    "id": "conv_123",
+                    "id": "770e8400-e29b-41d4-a716-446655440000",
+                    "user_id": "default",
                     "title": "My Conversation",
                     "model": "gpt-4",
+                    "provider_id": "openai-main",
+                    "temperature": 0.7,
+                    "max_tokens": 2000,
+                    "created_at": "2025-01-08T14:30:00Z",
+                    "updated_at": "2025-01-08T14:30:00Z",
                     "messages": [],
                     "message_count": 0,
                 }
@@ -67,27 +86,32 @@ class GetConversationResponse(BaseModel):
 class ListConversationsResponse(BaseModel):
     """Response from listing conversations."""
 
-    conversations: List[Dict[str, Any]] = Field(
-        ..., description="List of conversations"
-    )
+    conversations: List[Conversation] = Field(..., description="List of conversations")
     total: int = Field(..., description="Total number of conversations")
     limit: int = Field(..., description="Applied limit")
     offset: int = Field(..., description="Applied offset")
+    has_more: bool = Field(..., description="Whether more results exist")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "conversations": [
                     {
-                        "id": "conv_123",
+                        "id": "770e8400-e29b-41d4-a716-446655440000",
+                        "user_id": "default",
                         "title": "My Conversation",
                         "model": "gpt-4",
+                        "provider_id": "openai-main",
+                        "temperature": 0.7,
+                        "max_tokens": 2000,
                         "created_at": "2025-01-08T14:30:00Z",
+                        "updated_at": "2025-01-08T14:30:00Z",
                     }
                 ],
                 "total": 1,
                 "limit": 50,
                 "offset": 0,
+                "has_more": False,
             }
         }
 
@@ -95,7 +119,7 @@ class ListConversationsResponse(BaseModel):
 class MessagesListResponse(BaseModel):
     """Response from getting messages."""
 
-    messages: List[Dict[str, Any]] = Field(..., description="List of messages")
+    messages: List[Message] = Field(..., description="List of messages")
     total: int = Field(..., description="Total number of messages")
     limit: int = Field(..., description="Applied limit")
     offset: int = Field(..., description="Applied offset")
@@ -105,7 +129,9 @@ class MessagesListResponse(BaseModel):
             "example": {
                 "messages": [
                     {
-                        "id": "msg_1",
+                        "id": "660e8400-e29b-41d4-a716-446655440000",
+                        "conversation_id": "770e8400-e29b-41d4-a716-446655440000",
+                        "sequence_number": 0,
                         "role": "user",
                         "content": "Hello",
                         "created_at": "2025-01-08T14:30:00Z",
@@ -124,10 +150,8 @@ class SendMessageResponse(BaseModel):
     success: bool = Field(
         default=True, description="Whether message was sent successfully"
     )
-    user_message: Dict[str, Any] = Field(..., description="User message data")
-    assistant_message: Dict[str, Any] = Field(
-        ..., description="Assistant response data"
-    )
+    user_message: Message = Field(..., description="User message data")
+    assistant_message: Message = Field(..., description="Assistant response data")
     latency_ms: int = Field(..., description="Response latency in milliseconds")
 
     class Config:
@@ -135,14 +159,24 @@ class SendMessageResponse(BaseModel):
             "example": {
                 "success": True,
                 "user_message": {
-                    "id": "msg_1",
+                    "id": "660e8400-e29b-41d4-a716-446655440000",
+                    "conversation_id": "770e8400-e29b-41d4-a716-446655440000",
+                    "sequence_number": 0,
                     "role": "user",
                     "content": "What is this about?",
+                    "created_at": "2025-01-08T14:30:00Z",
                 },
                 "assistant_message": {
-                    "id": "msg_2",
+                    "id": "660e8400-e29b-41d4-a716-446655440001",
+                    "conversation_id": "770e8400-e29b-41d4-a716-446655440000",
+                    "sequence_number": 1,
                     "role": "assistant",
                     "content": "Based on the documents...",
+                    "model": "gpt-4",
+                    "confidence": 0.8,
+                    "method": "rag_with_provider",
+                    "latency_ms": 1500,
+                    "created_at": "2025-01-08T14:30:02Z",
                     "citations": [],
                 },
                 "latency_ms": 1500,
@@ -153,16 +187,21 @@ class SendMessageResponse(BaseModel):
 class UpdateConversationResponse(BaseModel):
     """Response from updating a conversation."""
 
-    conversation: Dict[str, Any] = Field(..., description="Updated conversation data")
+    conversation: Conversation = Field(..., description="Updated conversation data")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "conversation": {
-                    "id": "conv_123",
+                    "id": "770e8400-e29b-41d4-a716-446655440000",
+                    "user_id": "default",
                     "title": "Updated Title",
                     "model": "gpt-4",
-                    "updated_at": "2025-01-08T14:30:00Z",
+                    "provider_id": "openai-main",
+                    "temperature": 0.7,
+                    "max_tokens": 2000,
+                    "created_at": "2025-01-08T14:30:00Z",
+                    "updated_at": "2025-01-08T15:00:00Z",
                 }
             }
         }

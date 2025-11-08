@@ -1,8 +1,39 @@
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
 from ..shared.constants import FieldDescriptions
+
+
+class FolderStatsResponse(BaseModel):
+    """Folder statistics response model."""
+
+    files_detected: int = Field(..., description="Total files detected")
+    files_ingested: int = Field(..., description="Successfully processed files")
+    files_skipped: int = Field(..., description="Skipped files (duplicates)")
+    files_failed: int = Field(..., description="Failed files")
+    bytes_processed: int = Field(..., description="Total bytes processed")
+    last_activity: Optional[str] = Field(None, description="Last activity timestamp")
+    last_success: Optional[str] = Field(None, description="Last success timestamp")
+    last_failure: Optional[str] = Field(None, description="Last failure timestamp")
+    error_count: int = Field(..., description="Consecutive error count")
+    last_error: str = Field(..., description="Last error message")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "files_detected": 100,
+                "files_ingested": 95,
+                "files_skipped": 3,
+                "files_failed": 2,
+                "bytes_processed": 52428800,
+                "last_activity": "2025-01-08T14:30:00Z",
+                "last_success": "2025-01-08T14:30:00Z",
+                "last_failure": "2025-01-08T14:25:00Z",
+                "error_count": 0,
+                "last_error": "",
+            }
+        }
 
 
 class FolderHealthCheckResponse(BaseModel):
@@ -41,7 +72,33 @@ class FolderResponse(BaseModel):
     health: str = Field(description="Health status (healthy/degraded/unhealthy)")
     is_active: bool = Field(description="Whether actively watching")
     success_rate: float = Field(description="Success rate 0.0-1.0")
-    stats: Dict[str, Any] = Field(description="Detailed statistics")
+    stats: FolderStatsResponse = Field(description="Detailed statistics")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "path": "/Users/username/Documents",
+                "enabled": True,
+                "created_at": "2025-01-08T12:00:00Z",
+                "status": "active",
+                "health": "healthy",
+                "is_active": True,
+                "success_rate": 0.98,
+                "stats": {
+                    "files_detected": 100,
+                    "files_ingested": 95,
+                    "files_skipped": 3,
+                    "files_failed": 2,
+                    "bytes_processed": 52428800,
+                    "last_activity": "2025-01-08T14:30:00Z",
+                    "last_success": "2025-01-08T14:30:00Z",
+                    "last_failure": None,
+                    "error_count": 0,
+                    "last_error": "",
+                },
+            }
+        }
 
 
 class FolderListResponse(BaseModel):

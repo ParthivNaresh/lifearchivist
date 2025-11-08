@@ -12,14 +12,15 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .constants import (
+    DEFAULT_LIMIT,
+    DEFAULT_OFFSET,
+    MAX_MESSAGE_LIMIT,
+    MIN_MESSAGE_LIMIT,
+)
 from .response_models import MessagesListResponse
 
 router = APIRouter()
-
-MIN_LIMIT = 1
-MAX_LIMIT = 500
-DEFAULT_LIMIT = 50
-DEFAULT_OFFSET = 0
 
 
 @router.get(
@@ -57,8 +58,8 @@ async def get_messages(
     conversation_id: str = PathParam(..., description="Unique conversation identifier"),
     limit: int = Query(
         default=DEFAULT_LIMIT,
-        ge=MIN_LIMIT,
-        le=MAX_LIMIT,
+        ge=MIN_MESSAGE_LIMIT,
+        le=MAX_MESSAGE_LIMIT,
         description="Maximum messages to return",
     ),
     offset: int = Query(
@@ -218,7 +219,22 @@ async def get_messages(
 
         data = result.unwrap()
 
-        return MessagesListResponse(**data)
+        from .misc_models import Citation, Message
+
+        messages = []
+        for msg_dict in data["messages"]:
+            if msg_dict.get("citations"):
+                msg_dict["citations"] = [
+                    Citation(**cit) for cit in msg_dict["citations"]
+                ]
+            messages.append(Message(**msg_dict))
+
+        return MessagesListResponse(
+            messages=messages,
+            total=data["total"],
+            limit=data["limit"],
+            offset=data["offset"],
+        )
 
     except (ServiceUnavailableError, ResourceNotFoundError):
         raise

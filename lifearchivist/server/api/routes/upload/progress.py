@@ -2,22 +2,60 @@
 Get upload progress endpoint.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Path, status
 
 from ..shared.dependencies import get_server
-from ..shared.responses import (
-    internal_error_response,
-    not_found_response,
-    service_unavailable_response,
-    success_response,
-    validation_error_response,
+from ..shared.exceptions import (
+    InternalServerError,
+    ResourceNotFoundError,
+    ServiceUnavailableError,
+    ValidationError,
 )
+from .response_models import ProgressResponse
 
 router = APIRouter()
 
 
-@router.get("/{file_id}/progress")
-async def get_upload_progress(file_id: str):
+@router.get(
+    "/{file_id}/progress",
+    response_model=ProgressResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {"example": {"detail": "Invalid file_id format"}}
+            },
+        },
+        404: {
+            "description": "Progress not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Progress not found: file_123"}
+                }
+            },
+        },
+        503: {
+            "description": "Service unavailable",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Progress tracking not available"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Get progress failed: <error>"}
+                }
+            },
+        },
+    },
+)
+async def get_upload_progress(
+    file_id: str = Path(..., description="File identifier for progress tracking"),
+) -> ProgressResponse:
     """
     Get upload progress for a specific file.
 
@@ -38,22 +76,31 @@ async def get_upload_progress(file_id: str):
     server = get_server()
 
     if not file_id or len(file_id) < 3:
-        return validation_error_response("Invalid file_id format")
+        raise ValidationError("Invalid file_id format")
 
     if not server.progress_manager:
-        return service_unavailable_response("Progress tracking")
+        raise ServiceUnavailableError("Progress tracking")
 
     try:
         progress = await server.progress_manager.get_progress(file_id)
 
         if not progress:
-            return not_found_response("Progress", file_id)
+            raise ResourceNotFoundError("Progress", file_id)
 
-        return success_response(progress.to_dict())
-
-    except AttributeError as e:
-        return internal_error_response(
-            "Get progress", RuntimeError(f"Progress data format error: {str(e)}")
+        progress_dict = progress.to_dict()
+        return ProgressResponse(
+            session_id=file_id,
+            progress=progress_dict.get("progress", 0.0),
+            status=progress_dict.get("status", "unknown"),
+            message=progress_dict.get("message"),
+            completed=progress_dict.get("completed", False),
         )
+
+    except (ValidationError, ResourceNotFoundError, ServiceUnavailableError):
+        raise
+    except AttributeError as e:
+        raise InternalServerError(
+            "Get progress", RuntimeError(f"Progress data format error: {str(e)}")
+        ) from e
     except Exception as e:
-        return internal_error_response("Get progress", e)
+        raise InternalServerError("Get progress", e) from e

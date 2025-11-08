@@ -8,6 +8,7 @@ from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .misc_models import EmbeddingModel, LLMModel
 from .response_models import AvailableModelsResponse
 
 router = APIRouter()
@@ -181,17 +182,17 @@ async def get_available_models() -> AvailableModelsResponse:
 
                     for model in models:
                         llm_models.append(
-                            {
-                                "id": model.id,
-                                "name": model.name,
-                                "description": f"{provider_type.upper()} model",
-                                "provider": provider_type,
-                                "provider_id": provider_id,
-                                "context_window": model.context_window,
-                                "supports_streaming": model.supports_streaming,
-                                "cost_per_1k_input": model.cost_per_1k_input,
-                                "cost_per_1k_output": model.cost_per_1k_output,
-                            }
+                            LLMModel(
+                                id=model.id,
+                                name=model.name,
+                                description=f"{provider_type.upper()} model",
+                                provider=provider_type,
+                                provider_id=provider_id,
+                                context_window=model.context_window,
+                                supports_streaming=model.supports_streaming,
+                                cost_per_1k_input=model.cost_per_1k_input,
+                                cost_per_1k_output=model.cost_per_1k_output,
+                            )
                         )
             except Exception as e:
                 logger.warning(
@@ -200,20 +201,20 @@ async def get_available_models() -> AvailableModelsResponse:
                 continue
 
         embedding_models = [
-            {
-                "id": "all-MiniLM-L6-v2",
-                "name": "all-MiniLM-L6-v2",
-                "description": "Fast and efficient for most use cases",
-                "dimensions": 384,
-                "performance": "fast",
-            },
-            {
-                "id": "all-mpnet-base-v2",
-                "name": "all-mpnet-base-v2",
-                "description": "Higher accuracy for semantic search",
-                "dimensions": 768,
-                "performance": "accurate",
-            },
+            EmbeddingModel(
+                id="all-MiniLM-L6-v2",
+                name="all-MiniLM-L6-v2",
+                description="Fast and efficient for most use cases",
+                dimensions=384,
+                performance="fast",
+            ),
+            EmbeddingModel(
+                id="all-mpnet-base-v2",
+                name="all-mpnet-base-v2",
+                description="Higher accuracy for semantic search",
+                dimensions=768,
+                performance="accurate",
+            ),
         ]
 
         return AvailableModelsResponse(

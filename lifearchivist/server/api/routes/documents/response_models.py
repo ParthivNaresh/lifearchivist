@@ -1,8 +1,12 @@
-from typing import Any, Dict, List, Optional
+"""
+Response models for document endpoints.
+"""
+
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
-from .misc_models import ClearAllSummary
+from .misc_models import ClearAllSummary, Document, DocumentChunk, DocumentNeighbor
 
 
 class ClearAllResponse(BaseModel):
@@ -47,8 +51,8 @@ class DeleteDocumentResponse(BaseModel):
     document_id: str = Field(..., description="Deleted document ID")
     index_deleted: bool = Field(..., description="Whether index entry was deleted")
     vault_deleted: bool = Field(..., description="Whether vault file was deleted")
-    file_hash: Optional[str] = Field(None, description="File hash of deleted document")
-    chunks_deleted: Optional[int] = Field(None, description="Number of chunks deleted")
+    file_hash: str = Field(..., description="File hash of deleted document")
+    chunks_deleted: int = Field(..., description="Number of chunks deleted")
 
     class Config:
         json_schema_extra = {
@@ -65,17 +69,26 @@ class DeleteDocumentResponse(BaseModel):
 class DocumentAnalysisResponse(BaseModel):
     """Response containing comprehensive document analysis."""
 
-    analysis: Dict[str, Any]
+    analysis: Dict[str, Any] = Field(..., description="Document analysis data")
 
     class Config:
-        extra = "allow"
+        json_schema_extra = {
+            "example": {
+                "analysis": {
+                    "document_id": "doc_123",
+                    "chunks": 15,
+                    "total_tokens": 5000,
+                    "metadata": {},
+                }
+            }
+        }
 
 
 class DocumentChunksResponse(BaseModel):
     """Response containing paginated document chunks."""
 
     document_id: str = Field(..., description="Document identifier")
-    chunks: List[Dict[str, Any]] = Field(..., description="List of chunk objects")
+    chunks: List[DocumentChunk] = Field(..., description="List of chunk objects")
     total: int = Field(..., description="Total number of chunks")
     limit: int = Field(..., description="Requested limit")
     offset: int = Field(..., description="Requested offset")
@@ -101,7 +114,7 @@ class DocumentChunksResponse(BaseModel):
 class DocumentListResponse(BaseModel):
     """Response containing list of documents."""
 
-    documents: List[Dict[str, Any]] = Field(..., description="List of documents")
+    documents: List[Document] = Field(..., description="List of documents")
     total: int = Field(..., description="Number of documents returned")
     limit: int = Field(..., description="Applied limit")
     offset: int = Field(..., description="Applied offset")
@@ -111,9 +124,16 @@ class DocumentListResponse(BaseModel):
             "example": {
                 "documents": [
                     {
-                        "document_id": "doc_123",
-                        "title": "Example Document",
+                        "id": "doc_123",
+                        "file_hash": "abc123",
+                        "original_path": "/path/to/doc.pdf",
                         "status": "completed",
+                        "size_bytes": 1024000,
+                        "created_at": "2025-01-08T14:30:00Z",
+                        "ingested_at": "2025-01-08T14:30:00Z",
+                        "has_content": True,
+                        "tags": [],
+                        "tag_count": 0,
                     }
                 ],
                 "total": 1,
@@ -139,7 +159,7 @@ class DocumentNeighborsResponse(BaseModel):
     """Response containing similar documents."""
 
     document_id: str = Field(..., description="Source document ID")
-    neighbors: List[Dict[str, Any]] = Field(
+    neighbors: List[DocumentNeighbor] = Field(
         ..., description="List of similar documents"
     )
     top_k: int = Field(..., description="Number of neighbors requested")
@@ -153,6 +173,7 @@ class DocumentNeighborsResponse(BaseModel):
                         "document_id": "doc_456",
                         "title": "Similar Document",
                         "similarity_score": 0.85,
+                        "metadata": {},
                     }
                 ],
                 "top_k": 10,

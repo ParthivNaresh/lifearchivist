@@ -1,13 +1,9 @@
 from typing import Any, Dict, Optional, Tuple
 
-from fastapi.responses import JSONResponse
-
-from ..shared.responses import validation_error_response
+from ..shared.exceptions import ValidationError
 
 
-def parse_date_filter(
-    date_str: Optional[str], filter_name: str
-) -> Tuple[Optional[Any], Optional[JSONResponse]]:
+def parse_date_filter(date_str: Optional[str], filter_name: str) -> Optional[Any]:
     """
     Parse ISO date string to date object.
 
@@ -16,17 +12,20 @@ def parse_date_filter(
         filter_name: Name of filter for error messages
 
     Returns:
-        Tuple of (date_object, error_response) where one is None
+        date object or None if no date string provided
+
+    Raises:
+        ValidationError: If date format is invalid
     """
     if not date_str:
-        return None, None
+        return None
 
     try:
         from datetime import datetime
 
-        return datetime.fromisoformat(date_str).date(), None
-    except ValueError:
-        return None, validation_error_response(f"Invalid {filter_name} format")
+        return datetime.fromisoformat(date_str).date()
+    except ValueError as e:
+        raise ValidationError(f"Invalid {filter_name} format") from e
 
 
 def extract_document_date(metadata: Dict[str, Any]) -> Optional[str]:

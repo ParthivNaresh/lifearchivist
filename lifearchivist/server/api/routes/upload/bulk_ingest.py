@@ -2,17 +2,39 @@
 Bulk ingest files endpoint.
 """
 
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
+from ..shared.exceptions import InternalServerError, ValidationError
+from .constants import MAX_BULK_FILES
 from .request_models import BulkIngestRequest
+from .response_models import BulkIngestResponse
 
 router = APIRouter()
 
 
-@router.post("/bulk-ingest")
-async def bulk_ingest_files(request: BulkIngestRequest):
+@router.post(
+    "/bulk-ingest",
+    response_model=BulkIngestResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {"example": {"detail": "No file paths provided"}}
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Bulk ingestion failed: <error>"}
+                }
+            },
+        },
+    },
+)
+async def bulk_ingest_files(request: BulkIngestRequest) -> BulkIngestResponse:
     """
     Bulk ingest multiple files from file paths.
 
@@ -35,23 +57,11 @@ async def bulk_ingest_files(request: BulkIngestRequest):
     folder_path = request.folder_path
 
     if not file_paths:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "No file paths provided",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
-        )
+        raise ValidationError("No file paths provided")
 
-    if len(file_paths) > 1000:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Too many files. Maximum 1000 files per request.",
-                "error_type": "ValidationError",
-            },
-            status_code=400,
+    if len(file_paths) > MAX_BULK_FILES:
+        raise ValidationError(
+            f"Too many files. Maximum {MAX_BULK_FILES} files per request."
         )
 
     results = []
@@ -104,24 +114,15 @@ async def bulk_ingest_files(request: BulkIngestRequest):
                     }
                 )
 
-        return {
-            "success": True,
-            "total_files": len(file_paths),
-            "successful_count": successful_count,
-            "failed_count": failed_count,
-            "success_rate": (
-                round(successful_count / len(file_paths) * 100, 2) if file_paths else 0
-            ),
-            "folder_path": folder_path,
-            "results": results,
-        }
-
-    except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Bulk ingestion failed: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
+        return BulkIngestResponse(
+            success=True,
+            total_files=len(file_paths),
+            successful=successful_count,
+            failed=failed_count,
+            results=results,
         )
+
+    except ValidationError:
+        raise
+    except Exception as e:
+        raise InternalServerError("Bulk ingestion", e) from e

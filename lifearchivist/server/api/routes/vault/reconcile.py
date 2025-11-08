@@ -2,18 +2,40 @@
 Reconcile vault endpoint.
 """
 
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, status
 
 from lifearchivist.storage.vault_reconciliation import VaultReconciliationService
 
 from ..shared.dependencies import get_server
+from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .misc_models import ReconciliationResult
+from .response_models import ReconcileVaultResponse
 
 router = APIRouter()
 
 
-@router.post("/reconcile")
-async def reconcile_vault():
+@router.post(
+    "/reconcile",
+    response_model=ReconcileVaultResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        503: {
+            "description": "Service unavailable",
+            "content": {
+                "application/json": {"example": {"detail": "Vault not available"}}
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Vault reconciliation failed: <error>"}
+                }
+            },
+        },
+    },
+)
+async def reconcile_vault() -> ReconcileVaultResponse:
     """
     Reconcile vault files with metadata stores.
 
@@ -38,24 +60,10 @@ async def reconcile_vault():
     server = get_server()
 
     if not server.vault:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "Vault not initialized",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+        raise ServiceUnavailableError("Vault")
 
     if not server.llamaindex_service:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": "LlamaIndex service not initialized",
-                "error_type": "ServiceUnavailable",
-            },
-            status_code=503,
-        )
+        raise ServiceUnavailableError("LlamaIndex service")
 
     try:
         reconciliation_service = VaultReconciliationService(
@@ -66,26 +74,16 @@ async def reconcile_vault():
 
         result = await reconciliation_service.reconcile()
 
-        return {
-            "success": True,
-            "reconciliation": result,
-        }
+        reconciliation = ReconciliationResult(**result)
 
-    except AttributeError as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Reconciliation service configuration error: {str(e)}",
-                "error_type": "ConfigurationError",
-            },
-            status_code=500,
-        )
+        return ReconcileVaultResponse(reconciliation=reconciliation)
+
+    except (ServiceUnavailableError, AttributeError) as e:
+        if isinstance(e, AttributeError):
+            raise InternalServerError(
+                "Reconciliation service",
+                RuntimeError(f"Configuration error: {str(e)}"),
+            ) from e
+        raise
     except Exception as e:
-        return JSONResponse(
-            content={
-                "success": False,
-                "error": f"Vault reconciliation failed: {str(e)}",
-                "error_type": type(e).__name__,
-            },
-            status_code=500,
-        )
+        raise InternalServerError("Vault reconciliation", e) from e

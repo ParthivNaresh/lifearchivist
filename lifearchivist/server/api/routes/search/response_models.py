@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
-from .misc_models import Citation
+from .misc_models import Citation, SearchResult
 
 
 class AskQuestionResponse(BaseModel):
@@ -40,7 +40,7 @@ class AskQuestionResponse(BaseModel):
 class SearchDocumentsResponse(BaseModel):
     """Response from searching documents."""
 
-    results: List[Dict[str, Any]] = Field(..., description="Search results")
+    results: List[SearchResult] = Field(..., description="Search results")
     count: int = Field(..., description="Number of results returned")
     mode: str = Field(..., description="Search mode used")
     query: str = Field(..., description="Search query")
@@ -51,8 +51,13 @@ class SearchDocumentsResponse(BaseModel):
                 "results": [
                     {
                         "document_id": "doc_123",
-                        "title": "Example Document",
+                        "title": "Example Document.pdf",
                         "score": 0.85,
+                        "snippet": "This document discusses...",
+                        "metadata": {
+                            "mime_type": "application/pdf",
+                            "status": "completed",
+                        },
                     }
                 ],
                 "count": 1,

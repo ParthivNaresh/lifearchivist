@@ -1,39 +1,33 @@
 from pathlib import Path
-from typing import Any, Optional, Tuple
-
-from fastapi.responses import JSONResponse
+from typing import Any, Tuple
 
 from ..constants import DocumentConstants, VaultConstants
-from ..shared.responses import not_found_response, validation_error_response
+from ..shared.exceptions import ResourceNotFoundError, ValidationError
 from ..shared.utils import extract_result_value
 
 
-def validate_file_hash(file_hash: str) -> Optional[JSONResponse]:
+def validate_file_hash(file_hash: str) -> None:
     """
     Validate SHA256 file hash format.
 
     Args:
         file_hash: Hash string to validate
 
-    Returns:
-        JSONResponse with error if invalid, None if valid
+    Raises:
+        ValidationError: If hash format is invalid
     """
     if not file_hash or len(file_hash) < VaultConstants.MIN_HASH_LENGTH:
-        return validation_error_response(
+        raise ValidationError(
             "Invalid file hash format. Expected SHA256 hash (64 characters)."
         )
 
     if len(file_hash) != VaultConstants.HASH_LENGTH:
-        return validation_error_response(
+        raise ValidationError(
             f"Invalid hash length: {len(file_hash)}. Expected {VaultConstants.HASH_LENGTH} characters."
         )
 
-    return None
 
-
-def resolve_vault_file_path(
-    content_dir: Path, file_hash: str
-) -> Tuple[Optional[Path], Optional[JSONResponse]]:
+def resolve_vault_file_path(content_dir: Path, file_hash: str) -> Path:
     """
     Resolve vault file path from hash using content-addressed storage structure.
 
@@ -45,7 +39,10 @@ def resolve_vault_file_path(
         file_hash: SHA256 hash of the file
 
     Returns:
-        Tuple of (file_path, error_response) where one is None
+        Path to the file
+
+    Raises:
+        ResourceNotFoundError: If file not found in vault
     """
     dir1 = file_hash[:2]
     dir2 = file_hash[2:4]
@@ -54,19 +51,19 @@ def resolve_vault_file_path(
     file_dir = content_dir / dir1 / dir2
 
     if not file_dir.exists():
-        return None, not_found_response("File", file_hash)
+        raise ResourceNotFoundError("File", file_hash)
 
     matching_files = list(file_dir.glob(f"{file_stem}.*"))
 
     if not matching_files:
-        return None, not_found_response("File", file_hash)
+        raise ResourceNotFoundError("File", file_hash)
 
     file_path = matching_files[0]
 
     if not file_path.exists():
-        return None, not_found_response("File", file_hash)
+        raise ResourceNotFoundError("File", file_hash)
 
-    return file_path, None
+    return file_path
 
 
 async def get_original_filename(

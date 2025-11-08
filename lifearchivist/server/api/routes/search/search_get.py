@@ -19,6 +19,7 @@ from .constants import (
     MIN_LIMIT,
     VALID_MODES,
 )
+from .misc_models import SearchResult
 from .response_models import SearchDocumentsResponse
 from .utils import build_search_filters, execute_search
 
@@ -212,9 +213,20 @@ async def search_documents_get(
         if result.is_failure():
             raise InternalServerError("Search documents", Exception(result.error))
 
-        search_results = result.value
+        search_results_raw = result.value
         if offset > 0:
-            search_results = search_results[offset:]
+            search_results_raw = search_results_raw[offset:]
+
+        search_results = [
+            SearchResult(
+                document_id=r.get("document_id", ""),
+                title=r.get("title", "Unknown Document"),
+                score=r.get("score", 0.0),
+                snippet=r.get("snippet"),
+                metadata=r.get("metadata", {}),
+            )
+            for r in search_results_raw
+        ]
 
         return SearchDocumentsResponse(
             results=search_results,

@@ -8,16 +8,18 @@ from fastapi import APIRouter, Query, status
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .constants import (
+    COUNT_QUERY_LIMIT,
+    DEFAULT_LIMIT,
+    DEFAULT_OFFSET,
+    MAX_LIMIT,
+    MIN_LIMIT,
+)
+from .misc_models import Document
 from .response_models import DocumentCountResponse, DocumentListResponse
 from .utils import format_document_for_ui
 
 router = APIRouter()
-
-MIN_LIMIT = 1
-MAX_LIMIT = 10000
-DEFAULT_LIMIT = 20
-DEFAULT_OFFSET = 0
-COUNT_QUERY_LIMIT = 10000
 
 
 @router.get(
@@ -180,9 +182,11 @@ async def list_documents(
         raw_documents = raw_documents_result.value or []
         formatted_documents = [format_document_for_ui(doc) for doc in raw_documents]
 
+        documents = [Document(**doc) for doc in formatted_documents]
+
         return DocumentListResponse(
-            documents=formatted_documents,
-            total=len(formatted_documents),
+            documents=documents,
+            total=len(documents),
             limit=limit,
             offset=offset,
         )

@@ -9,6 +9,19 @@ import logging
 from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
+from pydantic import ValidationError as PydanticValidationError
+
+from .websocket.constants import (
+    MESSAGE_TYPE_AGENT_QUERY,
+    MESSAGE_TYPE_TOOL_EXECUTE,
+)
+from .websocket.message_models import (
+    AgentQueryMessage,
+    AgentResultMessage,
+    ErrorMessage,
+    ToolExecuteMessage,
+    ToolResultMessage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +41,12 @@ async def send_error(
         error_type: Type of error
         message_id: Optional message ID for correlation
     """
-    error_payload: Dict[str, Any] = {
-        "type": "error",
-        "error": error,
-        "error_type": error_type,
-    }
-    if message_id is not None:
-        error_payload["id"] = message_id
-
-    await websocket.send_json(error_payload)
+    error_msg = ErrorMessage(
+        id=message_id,
+        error=error,
+        error_type=error_type,
+    )
+    await websocket.send_json(error_msg.model_dump(exclude_none=True))
 
 
 def validate_message_structure(data: Any) -> Optional[str]:
@@ -56,7 +66,7 @@ def validate_message_structure(data: Any) -> Optional[str]:
 
 async def handle_tool_execute(
     websocket: WebSocket,
-    data: Dict[str, Any],
+    message: ToolExecuteMessage,
     server: Any,
 ) -> None:
     """
@@ -64,44 +74,29 @@ async def handle_tool_execute(
 
     Args:
         websocket: WebSocket connection
-        data: Message data containing tool name and parameters
+        message: Validated tool execute message
         server: Server instance with execute_tool method
     """
-    message_id = data.get("id")
-    tool_name = data.get("tool")
-    params = data.get("params", {})
-
-    if not tool_name:
-        await send_error(
-            websocket,
-            "Missing 'tool' field",
-            "ValidationError",
-            message_id,
-        )
-        return
-
     try:
-        result = await server.execute_tool(tool_name, params)
-        await websocket.send_json(
-            {
-                "type": "tool_result",
-                "id": message_id,
-                "result": result,
-            }
+        result = await server.execute_tool(message.tool, message.params)
+        response = ToolResultMessage(
+            id=message.id,
+            result=result,
         )
+        await websocket.send_json(response.model_dump(exclude_none=True))
     except Exception as e:
         logger.error(f"Tool execution error: {e}", exc_info=True)
         await send_error(
             websocket,
             f"Tool execution failed: {str(e)}",
             type(e).__name__,
-            message_id,
+            message.id,
         )
 
 
 async def handle_agent_query(
     websocket: WebSocket,
-    data: Dict[str, Any],
+    message: AgentQueryMessage,
     server: Any,
 ) -> None:
     """
@@ -109,38 +104,23 @@ async def handle_agent_query(
 
     Args:
         websocket: WebSocket connection
-        data: Message data containing agent name and query
+        message: Validated agent query message
         server: Server instance with query_agent_async method
     """
-    message_id = data.get("id")
-    agent_name = data.get("agent")
-    query = data.get("query")
-
-    if not agent_name or not query:
-        await send_error(
-            websocket,
-            "Missing 'agent' or 'query' field",
-            "ValidationError",
-            message_id,
-        )
-        return
-
     try:
-        result = await server.query_agent_async(agent_name, query)
-        await websocket.send_json(
-            {
-                "type": "agent_result",
-                "id": message_id,
-                "result": result,
-            }
+        result = await server.query_agent_async(message.agent, message.query)
+        response = AgentResultMessage(
+            id=message.id,
+            result=result,
         )
+        await websocket.send_json(response.model_dump(exclude_none=True))
     except Exception as e:
         logger.error(f"Agent query error: {e}", exc_info=True)
         await send_error(
             websocket,
             f"Agent query failed: {str(e)}",
             type(e).__name__,
-            message_id,
+            message.id,
         )
 
 
@@ -186,9 +166,20 @@ async def process_websocket_message(
     message_type = data.get("type")
     message_id = data.get("id")
 
-    if message_type == "tool_execute":
-        await handle_tool_execute(websocket, data, server)
-    elif message_type == "agent_query":
-        await handle_agent_query(websocket, data, server)
-    else:
-        await handle_unknown_message_type(websocket, message_type, message_id)
+    try:
+        if message_type == MESSAGE_TYPE_TOOL_EXECUTE:
+            tool_message = ToolExecuteMessage(**data)
+            await handle_tool_execute(websocket, tool_message, server)
+        elif message_type == MESSAGE_TYPE_AGENT_QUERY:
+            agent_message = AgentQueryMessage(**data)
+            await handle_agent_query(websocket, agent_message, server)
+        else:
+            await handle_unknown_message_type(websocket, message_type, message_id)
+    except PydanticValidationError as e:
+        logger.warning(f"Message validation error: {e}")
+        await send_error(
+            websocket,
+            f"Invalid message format: {str(e)}",
+            "ValidationError",
+            message_id,
+        )

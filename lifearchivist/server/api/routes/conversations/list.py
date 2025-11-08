@@ -6,14 +6,10 @@ from fastapi import APIRouter, Query, status
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
+from .constants import DEFAULT_LIMIT, DEFAULT_OFFSET, MAX_LIMIT, MIN_LIMIT
 from .response_models import ListConversationsResponse
 
 router = APIRouter()
-
-MIN_LIMIT = 1
-MAX_LIMIT = 100
-DEFAULT_LIMIT = 50
-DEFAULT_OFFSET = 0
 
 
 @router.get(
@@ -164,7 +160,17 @@ async def list_conversations(
 
         data = result.unwrap()
 
-        return ListConversationsResponse(**data)
+        from .misc_models import Conversation
+
+        conversations = [Conversation(**conv) for conv in data["conversations"]]
+
+        return ListConversationsResponse(
+            conversations=conversations,
+            total=data["total"],
+            limit=data["limit"],
+            offset=data["offset"],
+            has_more=data["has_more"],
+        )
 
     except ServiceUnavailableError:
         raise

@@ -11,6 +11,7 @@ from ..shared.exceptions import (
     InternalServerError,
     ResourceNotFoundError,
     ServiceUnavailableError,
+    ValidationError,
 )
 from .misc_models import CostInfo, UsageInfo, WorkspaceInfo
 from .response_models import (
@@ -196,24 +197,32 @@ async def get_provider_metadata(
                     status_code=error_response.status_code, detail=error_msg
                 )
 
-        error_response = await fetch_time_based_metadata(
-            server.llm_manager, provider_id, requested, start_time, end_time, response
-        )
-        if error_response:
-            import json
-
-            body_bytes = (
-                bytes(error_response.body)
-                if isinstance(error_response.body, memoryview)
-                else error_response.body
+        try:
+            error_response = await fetch_time_based_metadata(
+                server.llm_manager,
+                provider_id,
+                requested,
+                start_time,
+                end_time,
+                response,
             )
-            content = json.loads(body_bytes.decode())
-            error_msg = content.get("error", "Unknown error")
-            from fastapi import HTTPException
+            if error_response:
+                import json
 
-            raise HTTPException(
-                status_code=error_response.status_code, detail=error_msg
-            )
+                body_bytes = (
+                    bytes(error_response.body)
+                    if isinstance(error_response.body, memoryview)
+                    else error_response.body
+                )
+                content = json.loads(body_bytes.decode())
+                error_msg = content.get("error", "Unknown error")
+                from fastapi import HTTPException
+
+                raise HTTPException(
+                    status_code=error_response.status_code, detail=error_msg
+                )
+        except ValidationError:
+            raise
 
         capabilities = response.get("capabilities")
         workspaces_data = response.get("workspaces")
@@ -264,7 +273,7 @@ async def get_provider_metadata(
             costs=costs,
         )
 
-    except (ServiceUnavailableError, ResourceNotFoundError):
+    except (ServiceUnavailableError, ResourceNotFoundError, ValidationError):
         raise
     except Exception as e:
         raise InternalServerError("Get provider metadata", e) from e

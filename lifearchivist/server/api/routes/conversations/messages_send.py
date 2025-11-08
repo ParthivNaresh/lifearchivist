@@ -381,10 +381,20 @@ async def send_message(
             if citation_result.is_success():
                 assistant_message["citations"] = citation_result.unwrap()
 
+        from .misc_models import Citation, Message
+
+        if assistant_message.get("citations"):
+            assistant_message["citations"] = [
+                Citation(**cit) for cit in assistant_message["citations"]
+            ]
+
+        user_msg = Message(**user_message)
+        assistant_msg = Message(**assistant_message)
+
         return SendMessageResponse(
             success=True,
-            user_message=user_message,
-            assistant_message=assistant_message,
+            user_message=user_msg,
+            assistant_message=assistant_msg,
             latency_ms=latency_ms,
         )
 

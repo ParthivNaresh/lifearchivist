@@ -8,7 +8,6 @@ from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError
 from .request_models import CreateConversationRequest
 from .response_models import CreateConversationResponse
-from .utils import serialize_for_json
 
 router = APIRouter()
 
@@ -149,9 +148,13 @@ async def create_conversation(
         if result.is_failure():
             raise InternalServerError("Create conversation", Exception(result.error))
 
-        conversation = result.unwrap()
+        conversation_dict = result.unwrap()
 
-        return CreateConversationResponse(conversation=serialize_for_json(conversation))
+        from .misc_models import Conversation
+
+        conversation = Conversation(**conversation_dict)
+
+        return CreateConversationResponse(conversation=conversation)
 
     except ServiceUnavailableError:
         raise

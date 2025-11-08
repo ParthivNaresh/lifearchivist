@@ -7,25 +7,42 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, File, Form, UploadFile, status
 
 from ..shared.dependencies import get_server
-from ..shared.responses import (
-    internal_error_response,
-    success_response,
-    validation_error_response,
-)
+from ..shared.exceptions import InternalServerError, ValidationError
+from .response_models import FileUploadResponse
 
 router = APIRouter()
 
 
-@router.post("/")
+@router.post(
+    "/",
+    response_model=FileUploadResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        400: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {"example": {"detail": "No filename provided"}}
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Upload file failed: <error>"}
+                }
+            },
+        },
+    },
+)
 async def upload_file(
     file: UploadFile = File(...),  # noqa: B008
     tags: str = Form("[]"),  # noqa: B008
     metadata: str = Form("{}"),  # noqa: B008
     session_id: Optional[str] = Form(None),  # noqa: B008
-):
+) -> FileUploadResponse:
     """
     Upload and ingest a file with progress tracking.
 
@@ -47,21 +64,19 @@ async def upload_file(
 
     try:
         if not file.filename:
-            return validation_error_response("No filename provided")
+            raise ValidationError("No filename provided")
 
         try:
             tags_list = json.loads(tags)
             metadata_dict = json.loads(metadata)
         except json.JSONDecodeError as e:
-            return validation_error_response(
-                f"Invalid JSON in tags or metadata: {str(e)}"
-            )
+            raise ValidationError(f"Invalid JSON in tags or metadata: {str(e)}") from e
 
         if not isinstance(tags_list, list):
-            return validation_error_response("Tags must be a JSON array")
+            raise ValidationError("Tags must be a JSON array")
 
         if not isinstance(metadata_dict, dict):
-            return validation_error_response("Metadata must be a JSON object")
+            raise ValidationError("Metadata must be a JSON object")
 
         with tempfile.NamedTemporaryFile(
             delete=False, suffix=Path(file.filename).suffix
@@ -89,14 +104,22 @@ async def upload_file(
 
         if not result.get("success"):
             error_msg = result.get("error", "Upload failed")
-            return internal_error_response("Upload file", RuntimeError(error_msg))
+            raise InternalServerError("Upload file", RuntimeError(error_msg))
 
-        return success_response(result["result"])
+        return FileUploadResponse(
+            success=True,
+            filename=file.filename,
+            file_path=temp_file_path,
+            file_size=len(content),
+            mime_type=file.content_type,
+        )
 
+    except (ValidationError, InternalServerError):
+        raise
     except json.JSONDecodeError as e:
-        return validation_error_response(f"JSON parsing error: {str(e)}")
+        raise ValidationError(f"JSON parsing error: {str(e)}") from e
     except Exception as e:
-        return internal_error_response("Upload file", e)
+        raise InternalServerError("Upload file", e) from e
     finally:
         if temp_file_path:
             try:

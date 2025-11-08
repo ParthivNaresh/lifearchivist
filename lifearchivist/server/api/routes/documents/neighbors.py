@@ -12,13 +12,11 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .constants import DEFAULT_NEIGHBORS, MAX_NEIGHBORS, MIN_NEIGHBORS
+from .misc_models import DocumentNeighbor
 from .response_models import DocumentNeighborsResponse
 
 router = APIRouter()
-
-MIN_TOP_K = 1
-MAX_TOP_K = 50
-DEFAULT_TOP_K = 10
 
 
 @router.get(
@@ -57,9 +55,9 @@ DEFAULT_TOP_K = 10
 async def get_llamaindex_document_neighbors(
     document_id: str = PathParam(..., description="Unique document identifier"),
     top_k: int = Query(
-        default=DEFAULT_TOP_K,
-        ge=MIN_TOP_K,
-        le=MAX_TOP_K,
+        default=DEFAULT_NEIGHBORS,
+        ge=MIN_NEIGHBORS,
+        le=MAX_NEIGHBORS,
         description="Number of similar documents to return",
     ),
 ) -> DocumentNeighborsResponse:
@@ -168,13 +166,32 @@ async def get_llamaindex_document_neighbors(
                     "Get document neighbors", RuntimeError(error_msg)
                 )
 
-            return DocumentNeighborsResponse(**result)
+            neighbors = [
+                DocumentNeighbor(**neighbor) for neighbor in result.get("neighbors", [])
+            ]
+
+            return DocumentNeighborsResponse(
+                document_id=result["document_id"],
+                neighbors=neighbors,
+                top_k=result["top_k"],
+            )
 
         if hasattr(result, "value"):
-            return DocumentNeighborsResponse(**result.value)
+            data = result.value
+            neighbors = [
+                DocumentNeighbor(**neighbor) for neighbor in data.get("neighbors", [])
+            ]
+
+            return DocumentNeighborsResponse(
+                document_id=data["document_id"],
+                neighbors=neighbors,
+                top_k=data["top_k"],
+            )
+
+        neighbors = [DocumentNeighbor(**neighbor) for neighbor in result]
 
         return DocumentNeighborsResponse(
-            document_id=document_id, neighbors=result, top_k=top_k
+            document_id=document_id, neighbors=neighbors, top_k=top_k
         )
 
     except (ServiceUnavailableError, ResourceNotFoundError):

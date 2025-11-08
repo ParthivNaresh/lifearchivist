@@ -2,31 +2,8 @@
 Utility functions for folder watch endpoints.
 """
 
-from typing import Any, Optional, Tuple
-
-from fastapi.responses import JSONResponse
-
-from ..shared.responses import service_unavailable_response
 from .misc_models import WatchedFolder
-from .response_models import FolderResponse
-
-
-def validate_folder_watcher(
-    server: Any,
-) -> Tuple[Optional[Any], Optional[JSONResponse]]:
-    """
-    Validate folder watcher service availability.
-
-    Args:
-        server: Server instance
-
-    Returns:
-        Tuple of (service, error_response) where one is None
-    """
-    if not server.folder_watcher:
-        return None, service_unavailable_response("Folder watcher")
-
-    return server.folder_watcher, None
+from .response_models import FolderResponse, FolderStatsResponse
 
 
 def folder_to_response(folder: WatchedFolder) -> FolderResponse:
@@ -41,6 +18,9 @@ def folder_to_response(folder: WatchedFolder) -> FolderResponse:
     Returns:
         FolderResponse for API
     """
+    stats_dict = folder.stats.to_dict()
+    stats = FolderStatsResponse(**stats_dict)
+
     return FolderResponse(
         id=folder.id,
         path=str(folder.path),
@@ -50,5 +30,5 @@ def folder_to_response(folder: WatchedFolder) -> FolderResponse:
         health=folder.stats.get_health_status().value,
         is_active=folder.is_active(),
         success_rate=folder.stats.get_success_rate(),
-        stats=folder.stats.to_dict(),
+        stats=stats,
     )

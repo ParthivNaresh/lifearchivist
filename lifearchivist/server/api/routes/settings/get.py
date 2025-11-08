@@ -6,15 +6,16 @@ from fastapi import APIRouter, status
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError
+from .constants import (
+    DEFAULT_CONTEXT_WINDOW_SIZE,
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_RESPONSE_FORMAT,
+    DEFAULT_RESPONSE_TIMEOUT,
+    DEFAULT_TEMPERATURE,
+)
 from .response_models import SettingsResponse
 
 router = APIRouter()
-
-DEFAULT_TEMPERATURE = 0.7
-DEFAULT_MAX_OUTPUT_TOKENS = 2000
-DEFAULT_RESPONSE_FORMAT = "concise"
-DEFAULT_CONTEXT_WINDOW_SIZE = 10
-DEFAULT_RESPONSE_TIMEOUT = 30
 
 
 @router.get(
