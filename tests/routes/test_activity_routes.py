@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from numpy.ma.testutils import assert_equal
 
 
 class TestGetActivityEventsEndpoint:
@@ -11,8 +12,6 @@ class TestGetActivityEventsEndpoint:
         response = client_with_activity.get("/api/activity/events")
         assert response.status_code == 200
         data = response.json()
-        assert "success" in data
-        assert data["success"] is True
         assert "events" in data
         assert "count" in data
         assert isinstance(data["events"], list)
@@ -22,9 +21,8 @@ class TestGetActivityEventsEndpoint:
         response = client_no_activity.get("/api/activity/events")
         assert response.status_code == 503
         data = response.json()
-        assert data["success"] is False
-        assert data["error_type"] == "ServiceUnavailable"
-        assert "ActivityManager" in data["error"]
+        assert "detail" in data
+        assert_equal(data["detail"], "Activity manager not available")
 
     def test_events_default_limit(self, client_with_activity: TestClient):
         response = client_with_activity.get("/api/activity/events")
@@ -40,23 +38,20 @@ class TestGetActivityEventsEndpoint:
         response = client_with_activity.get(f"/api/activity/events?limit={limit}")
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
         assert isinstance(data["events"], list)
 
     def test_events_limit_enforcement(self, client_with_activity: TestClient):
         response = client_with_activity.get("/api/activity/events?limit=500")
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
+        assert "events" in data
 
     def test_events_response_structure(self, client_with_activity: TestClient):
         response = client_with_activity.get("/api/activity/events")
         assert response.status_code == 200
         data = response.json()
-        assert "success" in data
         assert "events" in data
         assert "count" in data
-        assert data["success"] is True
         assert isinstance(data["events"], list)
         assert isinstance(data["count"], int)
         assert data["count"] == len(data["events"])
@@ -69,9 +64,9 @@ class TestGetActivityEventsEndpoint:
         self, client_with_activity: TestClient, limit: int
     ):
         response = client_with_activity.get(f"/api/activity/events?limit={limit}")
-        assert response.status_code == 200
+        assert response.status_code == 422
         data = response.json()
-        assert data["success"] is True
+        assert "detail" in data
 
     def test_events_string_limit(self, client_with_activity: TestClient):
         response = client_with_activity.get("/api/activity/events?limit=abc")
@@ -91,8 +86,6 @@ class TestGetActivityCountEndpoint:
         response = client_with_activity.get("/api/activity/count")
         assert response.status_code == 200
         data = response.json()
-        assert "success" in data
-        assert data["success"] is True
         assert "count" in data
         assert "max_events" in data
         assert isinstance(data["count"], int)
@@ -102,18 +95,15 @@ class TestGetActivityCountEndpoint:
         response = client_no_activity.get("/api/activity/count")
         assert response.status_code == 503
         data = response.json()
-        assert data["success"] is False
-        assert data["error_type"] == "ServiceUnavailable"
-        assert "ActivityManager" in data["error"]
+        assert "detail" in data
+        assert_equal(data["detail"], "Activity manager not available")
 
     def test_count_response_structure(self, client_with_activity: TestClient):
         response = client_with_activity.get("/api/activity/count")
         assert response.status_code == 200
         data = response.json()
-        assert "success" in data
         assert "count" in data
         assert "max_events" in data
-        assert data["success"] is True
         assert data["count"] >= 0
         assert data["max_events"] == 50
 
@@ -139,8 +129,6 @@ class TestClearActivityEventsEndpoint:
         response = client_with_activity.delete("/api/activity/events")
         assert response.status_code == 200
         data = response.json()
-        assert "success" in data
-        assert data["success"] is True
         assert "message" in data
         assert "events_cleared" in data
         assert isinstance(data["events_cleared"], int)
@@ -149,18 +137,15 @@ class TestClearActivityEventsEndpoint:
         response = client_no_activity.delete("/api/activity/events")
         assert response.status_code == 503
         data = response.json()
-        assert data["success"] is False
-        assert data["error_type"] == "ServiceUnavailable"
-        assert "ActivityManager" in data["error"]
+        assert "detail" in data
+        assert_equal(data["detail"], "Activity manager not available")
 
     def test_clear_response_structure(self, client_with_activity: TestClient):
         response = client_with_activity.delete("/api/activity/events")
         assert response.status_code == 200
         data = response.json()
-        assert "success" in data
         assert "message" in data
         assert "events_cleared" in data
-        assert data["success"] is True
         assert isinstance(data["message"], str)
         assert isinstance(data["events_cleared"], int)
         assert data["events_cleared"] >= 0
@@ -231,8 +216,7 @@ class TestActivityEndpointsIntegration:
 
             assert response.status_code == 503
             data = response.json()
-            assert data["success"] is False
-            assert data["error_type"] == "ServiceUnavailable"
+            assert "detail" in data
 
     def test_error_response_consistency(self, client_no_activity: TestClient):
         endpoints = [
@@ -244,20 +228,16 @@ class TestActivityEndpointsIntegration:
             response = client_no_activity.get(endpoint)
             data = response.json()
 
-            assert "success" in data
-            assert "error" in data
-            assert "error_type" in data
-            assert data["success"] is False
-            assert isinstance(data["error"], str)
-            assert isinstance(data["error_type"], str)
+            assert "detail" in data
+            assert isinstance(data["detail"], str)
 
 
 class TestActivityEndpointsEdgeCases:
     def test_events_with_very_large_limit(self, client_with_activity: TestClient):
         response = client_with_activity.get("/api/activity/events?limit=999999")
-        assert response.status_code == 200
+        assert response.status_code == 422
         data = response.json()
-        assert data["success"] is True
+        assert "detail" in data
 
     def test_events_with_multiple_params(self, client_with_activity: TestClient):
         response = client_with_activity.get(
