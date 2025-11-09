@@ -2,9 +2,10 @@
 Get provider metadata endpoint.
 """
 
-from typing import Any, Dict, List, Optional
+import json
+from typing import Any, Dict, List, NoReturn, Optional, Set
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -24,6 +25,146 @@ from .utils import (
 )
 
 router = APIRouter()
+
+
+class MetadataHandler:
+    """Handles provider metadata retrieval workflow."""
+
+    def __init__(
+        self,
+        server: Any,
+        provider_id: str,
+        include: List[str],
+        start_time: Optional[str],
+        end_time: Optional[str],
+    ):
+        self.server = server
+        self.provider_id = provider_id
+        self.include = include
+        self.start_time = start_time
+        self.end_time = end_time
+        self.response: Dict[str, Any] = {"provider_id": provider_id}
+
+    def validate_and_get_provider(self) -> Any:
+        """Validate LLM manager and get provider."""
+        if not self.server.llm_manager:
+            raise ServiceUnavailableError("LLM manager")
+
+        provider = self.server.llm_manager.get_provider(self.provider_id)
+        if provider is None:
+            raise ResourceNotFoundError("Provider", self.provider_id)
+
+        return provider
+
+    def get_requested_metadata_types(self) -> Set[str]:
+        """Get valid requested metadata types."""
+        valid_includes = {"capabilities", "workspaces", "usage", "costs"}
+        return set(self.include) & valid_includes
+
+    async def fetch_capabilities(self, requested: Set[str]) -> None:
+        """Fetch provider capabilities if requested."""
+        if "capabilities" in requested:
+            fetch_provider_capabilities(
+                self.server.llm_manager, self.provider_id, self.response
+            )
+
+    async def fetch_workspaces(self, requested: Set[str], provider: Any) -> None:
+        """Fetch provider workspaces if requested."""
+        if "workspaces" not in requested:
+            return
+
+        error_response = await fetch_provider_workspaces(
+            self.server.llm_manager, provider, self.provider_id, self.response
+        )
+        if error_response:
+            self._handle_error_response(error_response)
+
+    async def fetch_time_metadata(self, requested: Set[str]) -> None:
+        """Fetch time-based metadata (usage/costs) if requested."""
+        error_response = await fetch_time_based_metadata(
+            self.server.llm_manager,
+            self.provider_id,
+            requested,
+            self.start_time,
+            self.end_time,
+            self.response,
+        )
+        if error_response:
+            self._handle_error_response(error_response)
+
+    def _handle_error_response(self, error_response: Any) -> NoReturn:
+        """Handle error response from fetch operations."""
+        body_bytes = self._extract_body_bytes(error_response.body)
+        content = json.loads(body_bytes.decode())
+        error_msg = content.get("error", "Unknown error")
+        raise HTTPException(status_code=error_response.status_code, detail=error_msg)
+
+    def _extract_body_bytes(self, body: Any) -> bytes:
+        """Extract bytes from response body."""
+        if isinstance(body, memoryview):
+            return bytes(body)
+        if isinstance(body, bytes):
+            return body
+        # If it's neither memoryview nor bytes, convert to bytes
+        return str(body).encode("utf-8")
+
+    def build_response(self) -> ProviderMetadataResponse:
+        """Build final metadata response."""
+        return ProviderMetadataResponse(
+            provider_id=self.provider_id,
+            capabilities=self.response.get("capabilities"),
+            workspaces=self._build_workspaces(),
+            usage=self._build_usage(),
+            costs=self._build_costs(),
+        )
+
+    def _build_workspaces(self) -> Optional[List[WorkspaceInfo]]:
+        """Build workspace info list from response data."""
+        workspaces_data = self.response.get("workspaces")
+        if not workspaces_data:
+            return None
+
+        return [
+            WorkspaceInfo(
+                id=ws["id"],
+                name=ws["name"],
+                is_default=ws["is_default"],
+                metadata=ws.get("metadata"),
+            )
+            for ws in workspaces_data
+        ]
+
+    def _build_usage(self) -> Optional[UsageInfo]:
+        """Build usage info from response data."""
+        usage_data = self.response.get("usage")
+        if not usage_data:
+            return None
+
+        return UsageInfo(
+            start_time=usage_data["start_time"],
+            end_time=usage_data["end_time"],
+            total_tokens=usage_data["total_tokens"],
+            input_tokens=usage_data["input_tokens"],
+            output_tokens=usage_data["output_tokens"],
+            cached_tokens=usage_data.get("cached_tokens"),
+            requests_count=usage_data["requests_count"],
+            metadata=usage_data.get("metadata"),
+        )
+
+    def _build_costs(self) -> Optional[CostInfo]:
+        """Build cost info from response data."""
+        costs_data = self.response.get("costs")
+        if not costs_data:
+            return None
+
+        return CostInfo(
+            start_time=costs_data["start_time"],
+            end_time=costs_data["end_time"],
+            total_cost_usd=costs_data["total_cost_usd"],
+            currency=costs_data["currency"],
+            breakdown=costs_data.get("breakdown"),
+            metadata=costs_data.get("metadata"),
+        )
 
 
 @router.get(
@@ -156,124 +297,25 @@ async def get_provider_metadata(
     - Capabilities are always available for all providers
     - Null fields indicate feature not requested or not supported
     """
-    server = get_server()
-
-    if not server.llm_manager:
-        raise ServiceUnavailableError("LLM manager")
-
     try:
-        provider = server.llm_manager.get_provider(provider_id)
+        server = get_server()
+        handler = MetadataHandler(server, provider_id, include, start_time, end_time)
 
-        if provider is None:
-            raise ResourceNotFoundError("Provider", provider_id)
+        provider = handler.validate_and_get_provider()
+        requested = handler.get_requested_metadata_types()
 
-        response: Dict[str, Any] = {
-            "provider_id": provider_id,
-        }
+        await handler.fetch_capabilities(requested)
+        await handler.fetch_workspaces(requested, provider)
+        await handler.fetch_time_metadata(requested)
 
-        valid_includes = {"capabilities", "workspaces", "usage", "costs"}
-        requested = set(include) & valid_includes
+        return handler.build_response()
 
-        if "capabilities" in requested:
-            fetch_provider_capabilities(server.llm_manager, provider_id, response)
-
-        if "workspaces" in requested:
-            error_response = await fetch_provider_workspaces(
-                server.llm_manager, provider, provider_id, response
-            )
-            if error_response:
-                import json
-
-                body_bytes = (
-                    bytes(error_response.body)
-                    if isinstance(error_response.body, memoryview)
-                    else error_response.body
-                )
-                content = json.loads(body_bytes.decode())
-                error_msg = content.get("error", "Unknown error")
-                from fastapi import HTTPException
-
-                raise HTTPException(
-                    status_code=error_response.status_code, detail=error_msg
-                )
-
-        try:
-            error_response = await fetch_time_based_metadata(
-                server.llm_manager,
-                provider_id,
-                requested,
-                start_time,
-                end_time,
-                response,
-            )
-            if error_response:
-                import json
-
-                body_bytes = (
-                    bytes(error_response.body)
-                    if isinstance(error_response.body, memoryview)
-                    else error_response.body
-                )
-                content = json.loads(body_bytes.decode())
-                error_msg = content.get("error", "Unknown error")
-                from fastapi import HTTPException
-
-                raise HTTPException(
-                    status_code=error_response.status_code, detail=error_msg
-                )
-        except ValidationError:
-            raise
-
-        capabilities = response.get("capabilities")
-        workspaces_data = response.get("workspaces")
-        usage_data = response.get("usage")
-        costs_data = response.get("costs")
-
-        workspaces = None
-        if workspaces_data:
-            workspaces = [
-                WorkspaceInfo(
-                    id=ws["id"],
-                    name=ws["name"],
-                    is_default=ws["is_default"],
-                    metadata=ws.get("metadata"),
-                )
-                for ws in workspaces_data
-            ]
-
-        usage = None
-        if usage_data:
-            usage = UsageInfo(
-                start_time=usage_data["start_time"],
-                end_time=usage_data["end_time"],
-                total_tokens=usage_data["total_tokens"],
-                input_tokens=usage_data["input_tokens"],
-                output_tokens=usage_data["output_tokens"],
-                cached_tokens=usage_data.get("cached_tokens"),
-                requests_count=usage_data["requests_count"],
-                metadata=usage_data.get("metadata"),
-            )
-
-        costs = None
-        if costs_data:
-            costs = CostInfo(
-                start_time=costs_data["start_time"],
-                end_time=costs_data["end_time"],
-                total_cost_usd=costs_data["total_cost_usd"],
-                currency=costs_data["currency"],
-                breakdown=costs_data.get("breakdown"),
-                metadata=costs_data.get("metadata"),
-            )
-
-        return ProviderMetadataResponse(
-            provider_id=provider_id,
-            capabilities=capabilities,
-            workspaces=workspaces,
-            usage=usage,
-            costs=costs,
-        )
-
-    except (ServiceUnavailableError, ResourceNotFoundError, ValidationError):
+    except (
+        ServiceUnavailableError,
+        ResourceNotFoundError,
+        ValidationError,
+        HTTPException,
+    ):
         raise
     except Exception as e:
         raise InternalServerError("Get provider metadata", e) from e

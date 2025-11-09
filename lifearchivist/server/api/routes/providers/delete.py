@@ -2,6 +2,8 @@
 Delete provider endpoint.
 """
 
+from typing import Any, NoReturn
+
 from fastapi import APIRouter, Query, status
 
 from ..shared.dependencies import get_server
@@ -14,6 +16,106 @@ from .response_models import DeleteProviderResponse
 from .utils import determine_fallback_provider, update_conversations_provider
 
 router = APIRouter()
+
+
+class ProviderDeletionHandler:
+    """Handles the provider deletion workflow."""
+
+    def __init__(self, server: Any, provider_id: str, update_conversations: bool):
+        self.server = server
+        self.provider_id = provider_id
+        self.update_conversations = update_conversations
+        self.affected_conversations = 0
+
+    def validate_services(self) -> None:
+        """Validate all required services are available."""
+        if not self.server.llm_manager:
+            raise ServiceUnavailableError("LLM Manager")
+        if not self.server.credential_service:
+            raise ServiceUnavailableError("Credential Service")
+        if not self.server.service_container:
+            raise ServiceUnavailableError("Service Container")
+        if not self.server.service_container.conversation_service:
+            raise ServiceUnavailableError("Conversation Service")
+        if not self.server.service_container.conversation_service.db_pool:
+            raise ServiceUnavailableError("Database Pool")
+
+    async def migrate_conversations_if_needed(self) -> None:
+        """Migrate conversations to fallback provider if requested."""
+        if not self._should_update_conversations():
+            return
+
+        fallback_provider_id, fallback_model = await determine_fallback_provider(
+            self.server.llm_manager, self.provider_id
+        )
+
+        db_pool = self.server.service_container.conversation_service.db_pool
+        self.affected_conversations = await update_conversations_provider(
+            db_pool,
+            self.provider_id,
+            fallback_provider_id,
+            fallback_model,
+        )
+
+    def _should_update_conversations(self) -> bool:
+        """Check if conversations should be updated."""
+        return (
+            self.update_conversations
+            and self.server.service_container
+            and self.server.service_container.conversation_service
+        )
+
+    async def remove_from_manager(self) -> None:
+        """Remove provider from LLM manager."""
+        remove_result = await self.server.llm_manager.remove_provider(self.provider_id)
+
+        if remove_result.is_failure():
+            self._handle_removal_failure(remove_result)
+
+    def _handle_removal_failure(self, remove_result: Any) -> NoReturn:
+        """Handle provider removal failure."""
+        error = remove_result.error_or("Unknown error")
+        error_type = remove_result.error_type
+        status_code = remove_result.status_code
+
+        if status_code == 404 or error_type == "ProviderNotFound":
+            raise ResourceNotFoundError("Provider", self.provider_id)
+        else:
+            raise InternalServerError(
+                "Remove provider", Exception(f"{error_type}: {error}")
+            )
+
+    async def delete_credentials(self) -> None:
+        """Delete provider credentials from storage."""
+        delete_result = await self.server.credential_service.delete_provider(
+            self.provider_id
+        )
+
+        if delete_result.is_failure():
+            self._handle_deletion_failure(delete_result)
+
+    def _handle_deletion_failure(self, delete_result: Any) -> NoReturn:
+        """Handle credential deletion failure."""
+        error = delete_result.error_or("Unknown error")
+        error_type = delete_result.error_type
+        status_code = delete_result.status_code
+
+        if status_code == 404 or error_type == "NotFoundError":
+            raise ResourceNotFoundError("Provider credentials", self.provider_id)
+        else:
+            raise InternalServerError(
+                "Delete credentials", Exception(f"{error_type}: {error}")
+            )
+
+    def create_response(self) -> DeleteProviderResponse:
+        """Create deletion response."""
+        return DeleteProviderResponse(
+            provider_id=self.provider_id,
+            message="Provider deleted successfully",
+            affected_conversations=self.affected_conversations,
+            conversations_updated=self.update_conversations
+            and self.affected_conversations > 0,
+        )
 
 
 @router.delete(
@@ -103,79 +205,16 @@ async def delete_provider(
     - All resources are cleaned up (connections, sessions, etc.)
     - Credentials are permanently deleted from secure storage
     """
-    server = get_server()
-
-    if not server.llm_manager:
-        raise ServiceUnavailableError("LLM Manager")
-
-    if not server.credential_service:
-        raise ServiceUnavailableError("Credential Service")
-
-    if not server.service_container:
-        raise ServiceUnavailableError("Service Container")
-
-    if not server.service_container.conversation_service:
-        raise ServiceUnavailableError("Conversation Service")
-
-    if not server.service_container.conversation_service.db_pool:
-        raise ServiceUnavailableError("Database Pool")
-
     try:
-        affected_conversations = 0
+        server = get_server()
+        handler = ProviderDeletionHandler(server, provider_id, update_conversations)
 
-        should_update = (
-            update_conversations
-            and server.service_container
-            and server.service_container.conversation_service
-        )
+        handler.validate_services()
+        await handler.migrate_conversations_if_needed()
+        await handler.remove_from_manager()
+        await handler.delete_credentials()
 
-        if should_update:
-            fallback_provider_id, fallback_model = await determine_fallback_provider(
-                server.llm_manager, provider_id
-            )
-
-            db_pool = server.service_container.conversation_service.db_pool
-            affected_conversations = await update_conversations_provider(
-                db_pool,
-                provider_id,
-                fallback_provider_id,
-                fallback_model,
-            )
-
-        remove_result = await server.llm_manager.remove_provider(provider_id)
-
-        if remove_result.is_failure():
-            error = remove_result.error_or("Unknown error")
-            error_type = remove_result.error_type
-            status_code = remove_result.status_code
-
-            if status_code == 404 or error_type == "ProviderNotFound":
-                raise ResourceNotFoundError("Provider", provider_id)
-            else:
-                raise InternalServerError(
-                    "Remove provider", Exception(f"{error_type}: {error}")
-                )
-
-        delete_result = await server.credential_service.delete_provider(provider_id)
-
-        if delete_result.is_failure():
-            error = delete_result.error_or("Unknown error")
-            error_type = delete_result.error_type
-            status_code = delete_result.status_code
-
-            if status_code == 404 or error_type == "NotFoundError":
-                raise ResourceNotFoundError("Provider credentials", provider_id)
-            else:
-                raise InternalServerError(
-                    "Delete credentials", Exception(f"{error_type}: {error}")
-                )
-
-        return DeleteProviderResponse(
-            provider_id=provider_id,
-            message="Provider deleted successfully",
-            affected_conversations=affected_conversations,
-            conversations_updated=update_conversations and affected_conversations > 0,
-        )
+        return handler.create_response()
 
     except (ServiceUnavailableError, ResourceNotFoundError):
         raise

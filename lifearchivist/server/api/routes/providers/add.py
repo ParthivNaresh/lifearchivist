@@ -2,6 +2,8 @@
 Add provider endpoint.
 """
 
+from typing import Any, NoReturn
+
 from fastapi import APIRouter, status
 
 from ..shared.constants import UNKNOWN_ERROR
@@ -17,6 +19,122 @@ from .request_models import AddProviderRequest
 from .response_models import AddProviderResponse
 
 router = APIRouter()
+
+
+class ProviderAdditionHandler:
+    """Handles the provider addition workflow with automatic rollback."""
+
+    def __init__(self, server: Any, request: AddProviderRequest):
+        self.server = server
+        self.request = request
+        self.provider_id = request.provider_id
+        self.set_as_default = request.set_as_default
+
+    def validate_services(self) -> None:
+        """Validate required services are available."""
+        if not self.server.llm_manager:
+            raise ServiceUnavailableError("LLM manager")
+        if not self.server.credential_service:
+            raise ServiceUnavailableError("Credential service")
+
+    def parse_configuration(self) -> tuple[Any, Any]:
+        """Parse and validate provider configuration."""
+        try:
+            provider_type = parse_provider_type(self.request.provider_type)
+            config = create_provider_config(provider_type, self.request.config)
+            return provider_type, config
+        except ValueError as e:
+            raise ValidationError(str(e)) from e
+        except Exception as e:
+            raise InternalServerError("Parse provider configuration", e) from e
+
+    async def store_credentials(self, provider_type: Any, config: Any) -> None:
+        """Store provider credentials in secure storage."""
+        store_result = await self.server.credential_service.add_provider(
+            provider_id=self.provider_id,
+            provider_type=provider_type,
+            config=config,
+            is_default=self.set_as_default,
+        )
+
+        if store_result.is_failure():
+            self._handle_store_failure(store_result)
+
+    def _handle_store_failure(self, store_result: Any) -> NoReturn:
+        """Handle credential storage failure."""
+        error = store_result.error_or(UNKNOWN_ERROR)
+        error_type = store_result.error_type
+        status_code = store_result.status_code
+
+        if status_code == 409 or error_type == "ConflictError":
+            raise ConflictError(f"Provider already exists: {self.provider_id}")
+        elif status_code == 400 or error_type == "ValidationError":
+            raise ValidationError(error)
+        else:
+            raise InternalServerError(
+                "Store credentials", Exception(f"{error_type}: {error}")
+            )
+
+    async def load_and_add_provider(self) -> Any:
+        """Load provider and add to manager with rollback on failure."""
+        if not self.server.provider_loader:
+            return None
+
+        provider = await self._load_provider()
+        await self._add_to_manager(provider)
+        return provider
+
+    async def _load_provider(self) -> Any:
+        """Load provider instance from stored configuration."""
+        load_result = await self.server.provider_loader.load_provider(self.provider_id)
+
+        if load_result.is_failure():
+            await self._rollback_credentials()
+            self._handle_load_failure(load_result)
+
+        return load_result.unwrap()
+
+    def _handle_load_failure(self, load_result: Any) -> NoReturn:
+        """Handle provider loading failure."""
+        error = load_result.error_or(UNKNOWN_ERROR)
+        error_type = load_result.error_type
+        status_code = load_result.status_code
+
+        if status_code == 400 or error_type == "ValidationError":
+            raise ValidationError(f"Failed to load provider: {error}")
+        else:
+            raise InternalServerError(
+                "Load provider", Exception(f"{error_type}: {error}")
+            )
+
+    async def _add_to_manager(self, provider: Any) -> None:
+        """Add provider to LLM manager."""
+        add_result = await self.server.llm_manager.add_provider(
+            provider, set_as_default=self.set_as_default
+        )
+
+        if add_result.is_failure():
+            await self._rollback_credentials()
+            self._handle_add_failure(add_result)
+
+    def _handle_add_failure(self, add_result: Any) -> NoReturn:
+        """Handle manager addition failure."""
+        error = add_result.error_or(UNKNOWN_ERROR)
+        error_type = add_result.error_type
+        raise InternalServerError("Add to manager", Exception(f"{error_type}: {error}"))
+
+    async def _rollback_credentials(self) -> None:
+        """Rollback stored credentials on failure."""
+        await self.server.credential_service.delete_provider(self.provider_id)
+
+    def create_response(self, provider_type: Any) -> AddProviderResponse:
+        """Create successful response."""
+        return AddProviderResponse(
+            provider_id=self.provider_id,
+            provider_type=provider_type.value,
+            is_default=self.set_as_default,
+            message="Provider added successfully",
+        )
 
 
 @router.post(
@@ -140,85 +258,17 @@ async def add_provider(request: AddProviderRequest) -> AddProviderResponse:
     - Configuration is provider-specific
     - Returns 201 Created on success
     """
-    server = get_server()
-
-    if not server.llm_manager:
-        raise ServiceUnavailableError("LLM manager")
-
-    if not server.credential_service:
-        raise ServiceUnavailableError("Credential service")
-
     try:
-        provider_type = parse_provider_type(request.provider_type)
-        config = create_provider_config(provider_type, request.config)
-    except ValueError as e:
-        raise ValidationError(str(e)) from e
-    except Exception as e:
-        raise InternalServerError("Parse provider configuration", e) from e
+        server = get_server()
+        handler = ProviderAdditionHandler(server, request)
 
-    try:
-        store_result = await server.credential_service.add_provider(
-            provider_id=request.provider_id,
-            provider_type=provider_type,
-            config=config,
-            is_default=request.set_as_default,
-        )
+        handler.validate_services()
+        provider_type, config = handler.parse_configuration()
 
-        if store_result.is_failure():
-            error = store_result.error_or(UNKNOWN_ERROR)
-            error_type = store_result.error_type
-            status_code = store_result.status_code
+        await handler.store_credentials(provider_type, config)
+        await handler.load_and_add_provider()
 
-            if status_code == 409 or error_type == "ConflictError":
-                raise ConflictError(f"Provider already exists: {request.provider_id}")
-            elif status_code == 400 or error_type == "ValidationError":
-                raise ValidationError(error)
-            else:
-                raise InternalServerError(
-                    "Store credentials", Exception(f"{error_type}: {error}")
-                )
-
-        if server.provider_loader:
-            load_result = await server.provider_loader.load_provider(
-                request.provider_id
-            )
-
-            if load_result.is_failure():
-                await server.credential_service.delete_provider(request.provider_id)
-
-                error = load_result.error_or(UNKNOWN_ERROR)
-                error_type = load_result.error_type
-                status_code = load_result.status_code
-
-                if status_code == 400 or error_type == "ValidationError":
-                    raise ValidationError(f"Failed to load provider: {error}")
-                else:
-                    raise InternalServerError(
-                        "Load provider", Exception(f"{error_type}: {error}")
-                    )
-
-            provider = load_result.unwrap()
-
-            add_result = await server.llm_manager.add_provider(
-                provider, set_as_default=request.set_as_default
-            )
-
-            if add_result.is_failure():
-                await server.credential_service.delete_provider(request.provider_id)
-
-                error = add_result.error_or(UNKNOWN_ERROR)
-                error_type = add_result.error_type
-
-                raise InternalServerError(
-                    "Add to manager", Exception(f"{error_type}: {error}")
-                )
-
-        return AddProviderResponse(
-            provider_id=request.provider_id,
-            provider_type=provider_type.value,
-            is_default=request.set_as_default,
-            message="Provider added successfully",
-        )
+        return handler.create_response(provider_type)
 
     except (ServiceUnavailableError, ValidationError, ConflictError):
         raise

@@ -2,6 +2,9 @@
 Update provider endpoint.
 """
 
+import json
+from typing import Any, NoReturn, Optional, Tuple
+
 from fastapi import APIRouter, status
 
 from ..shared.constants import UNKNOWN_ERROR
@@ -18,6 +21,130 @@ from .response_models import UpdateProviderResponse
 from .utils import reload_provider_with_new_config, update_provider_default_status
 
 router = APIRouter()
+
+
+class ProviderUpdateHandler:
+    """Handles provider update workflow."""
+
+    def __init__(self, server: Any, provider_id: str, request: UpdateProviderRequest):
+        self.server = server
+        self.provider_id = provider_id
+        self.request = request
+        self.config_updated = False
+        self.default_updated = False
+
+    def validate_services(self) -> None:
+        """Validate required services are available."""
+        if not self.server.llm_manager:
+            raise ServiceUnavailableError("LLM manager")
+        if not self.server.credential_service:
+            raise ServiceUnavailableError("Credential service")
+
+    def validate_request(self) -> None:
+        """Validate that at least one update field is provided."""
+        if self.request.config is None and self.request.set_as_default is None:
+            raise ValidationError(
+                "Must provide at least one of: config, set_as_default"
+            )
+
+    async def get_provider_metadata(self) -> Tuple[Any, Any]:
+        """Retrieve and validate provider metadata."""
+        metadata_result = await self.server.credential_service.get_provider_metadata(
+            self.provider_id
+        )
+
+        if metadata_result.is_failure():
+            self._handle_metadata_failure(metadata_result)
+
+        metadata = metadata_result.unwrap()
+        provider_type = parse_provider_type(metadata["provider_type"])
+        return metadata, provider_type
+
+    def _handle_metadata_failure(self, metadata_result: Any) -> NoReturn:
+        """Handle metadata retrieval failure."""
+        error = metadata_result.error_or(UNKNOWN_ERROR)
+        error_type = metadata_result.error_type
+        status_code = metadata_result.status_code
+
+        if status_code == 404 or error_type == "NotFoundError":
+            raise ResourceNotFoundError("Provider", self.provider_id)
+        else:
+            raise InternalServerError(
+                "Get provider metadata", Exception(f"{error_type}: {error}")
+            )
+
+    def prepare_new_config(self, provider_type: Any) -> Optional[Any]:
+        """Prepare new configuration if provided."""
+        if self.request.config is None:
+            return None
+
+        try:
+            return create_provider_config(provider_type, self.request.config)
+        except ValueError as e:
+            raise ValidationError(str(e)) from e
+
+    async def update_configuration(self, new_config: Optional[Any]) -> None:
+        """Update provider configuration if new config provided."""
+        if new_config is None or not self.server.provider_loader:
+            return
+
+        error_response = await reload_provider_with_new_config(
+            self.server.credential_service,
+            self.server.provider_loader,
+            self.server.llm_manager,
+            self.provider_id,
+            new_config,
+            self.request.set_as_default,
+        )
+
+        if error_response:
+            self._handle_error_response(error_response, "Reload provider")
+
+        self.config_updated = True
+        if self.request.set_as_default is not None:
+            self.default_updated = True
+
+    async def update_default_status_only(self) -> None:
+        """Update only the default status if no config changes."""
+        if self.config_updated or self.request.set_as_default is None:
+            return
+
+        error_response = await update_provider_default_status(
+            self.server.credential_service,
+            self.server.llm_manager,
+            self.provider_id,
+            self.request.set_as_default,
+        )
+
+        if error_response:
+            self._handle_error_response(error_response, "Update default status")
+
+        self.default_updated = True
+
+    def _handle_error_response(self, error_response: Any, operation: str) -> NoReturn:
+        """Handle error response from update operations."""
+        body_bytes = self._extract_body_bytes(error_response.body)
+        content = json.loads(body_bytes.decode())
+        error_msg = content.get("error", UNKNOWN_ERROR)
+        raise InternalServerError(operation, Exception(error_msg))
+
+    def _extract_body_bytes(self, body: Any) -> bytes:
+        """Extract bytes from response body."""
+        if isinstance(body, memoryview):
+            return bytes(body)
+        if isinstance(body, bytes):
+            return body
+        # If it's neither memoryview nor bytes, convert to bytes
+        return str(body).encode("utf-8")
+
+    def create_response(self) -> UpdateProviderResponse:
+        """Create update response."""
+        return UpdateProviderResponse(
+            provider_id=self.provider_id,
+            message="Provider updated successfully",
+            config_updated=self.config_updated,
+            default_updated=self.default_updated,
+        )
 
 
 @router.patch(
@@ -147,92 +274,20 @@ async def update_provider(
     - Returns 404 if provider doesn't exist
     - Validates new configuration before applying
     """
-    server = get_server()
-
-    if not server.llm_manager:
-        raise ServiceUnavailableError("LLM manager")
-
-    if not server.credential_service:
-        raise ServiceUnavailableError("Credential service")
-
-    if request.config is None and request.set_as_default is None:
-        raise ValidationError("Must provide at least one of: config, set_as_default")
-
     try:
-        metadata_result = await server.credential_service.get_provider_metadata(
-            provider_id
-        )
+        server = get_server()
+        handler = ProviderUpdateHandler(server, provider_id, request)
 
-        if metadata_result.is_failure():
-            error = metadata_result.error_or(UNKNOWN_ERROR)
-            error_type = metadata_result.error_type
-            status_code = metadata_result.status_code
+        handler.validate_services()
+        handler.validate_request()
 
-            if status_code == 404 or error_type == "NotFoundError":
-                raise ResourceNotFoundError("Provider", provider_id)
-            else:
-                raise InternalServerError(
-                    "Get provider metadata", Exception(f"{error_type}: {error}")
-                )
+        metadata, provider_type = await handler.get_provider_metadata()
+        new_config = handler.prepare_new_config(provider_type)
 
-        metadata = metadata_result.unwrap()
-        provider_type = parse_provider_type(metadata["provider_type"])
+        await handler.update_configuration(new_config)
+        await handler.update_default_status_only()
 
-        new_config = None
-        if request.config is not None:
-            try:
-                new_config = create_provider_config(provider_type, request.config)
-            except ValueError as e:
-                raise ValidationError(str(e)) from e
-
-        if new_config is not None and server.provider_loader:
-            error_response = await reload_provider_with_new_config(
-                server.credential_service,
-                server.provider_loader,
-                server.llm_manager,
-                provider_id,
-                new_config,
-                request.set_as_default,
-            )
-            if error_response:
-                import json
-
-                body_bytes = (
-                    bytes(error_response.body)
-                    if isinstance(error_response.body, memoryview)
-                    else error_response.body
-                )
-                content = json.loads(body_bytes.decode())
-                error_msg = content.get("error", UNKNOWN_ERROR)
-                raise InternalServerError("Reload provider", Exception(error_msg))
-        else:
-            if request.set_as_default is not None:
-                error_response = await update_provider_default_status(
-                    server.credential_service,
-                    server.llm_manager,
-                    provider_id,
-                    request.set_as_default,
-                )
-                if error_response:
-                    import json
-
-                    body_bytes = (
-                        bytes(error_response.body)
-                        if isinstance(error_response.body, memoryview)
-                        else error_response.body
-                    )
-                    content = json.loads(body_bytes.decode())
-                    error_msg = content.get("error", UNKNOWN_ERROR)
-                    raise InternalServerError(
-                        "Update default status", Exception(error_msg)
-                    )
-
-        return UpdateProviderResponse(
-            provider_id=provider_id,
-            message="Provider updated successfully",
-            config_updated=new_config is not None,
-            default_updated=request.set_as_default is not None,
-        )
+        return handler.create_response()
 
     except (ServiceUnavailableError, ResourceNotFoundError, ValidationError):
         raise
