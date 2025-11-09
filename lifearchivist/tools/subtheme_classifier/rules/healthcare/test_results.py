@@ -13,12 +13,14 @@ from typing import Dict, List
 
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
 
+from .constants import HEALTHCARE_LABEL, TEST_RESULTS_LABEL
+
 # Lab Results - Laboratory test results and reports
 LAB_RESULTS = SubthemeRule(
     name="lab_results",
     display_name="Lab Results",
-    parent_theme="Healthcare",
-    subtheme_category="Test Results",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=TEST_RESULTS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core laboratory result patterns
@@ -314,8 +316,8 @@ LAB_RESULTS = SubthemeRule(
 IMAGING_REPORT = SubthemeRule(
     name="imaging_report",
     display_name="Imaging Report",
-    parent_theme="Healthcare",
-    subtheme_category="Test Results",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=TEST_RESULTS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core imaging report patterns
@@ -546,8 +548,8 @@ IMAGING_REPORT = SubthemeRule(
 DIAGNOSTIC_TEST = SubthemeRule(
     name="diagnostic_test",
     display_name="Diagnostic Test",
-    parent_theme="Healthcare",
-    subtheme_category="Test Results",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=TEST_RESULTS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Cardiac diagnostic tests

@@ -26,6 +26,8 @@ from lifearchivist.utils.result import (
     validation_error,
 )
 
+from .constants import NOT_INITIALIZED_INDEX, NOT_INITIALIZED_TRACKER
+
 
 class DocumentService(ABC):
     """
@@ -193,7 +195,7 @@ class LlamaIndexDocumentService(DocumentService):
                 level=logging.ERROR,
             )
             return internal_error(
-                "Index not initialized - cannot add documents",
+                NOT_INITIALIZED_INDEX,
                 context={"document_id": document_id, "service": "document_service"},
             )
 
@@ -580,7 +582,7 @@ class LlamaIndexDocumentService(DocumentService):
                 level=logging.ERROR,
             )
             return internal_error(
-                "Document tracker not initialized",
+                NOT_INITIALIZED_TRACKER,
                 context={"document_id": document_id, "service": "document_service"},
             )
 
@@ -731,7 +733,7 @@ class LlamaIndexDocumentService(DocumentService):
         """
         if not self.doc_tracker:
             return internal_error(
-                "Document tracker not initialized",
+                NOT_INITIALIZED_TRACKER,
                 context={"service": "document_service"},
             )
 
@@ -918,14 +920,14 @@ class LlamaIndexDocumentService(DocumentService):
                 level=logging.DEBUG,
             )
             return internal_error(
-                "Index not initialized",
+                NOT_INITIALIZED_INDEX,
                 context={"document_id": document_id, "service": "document_service"},
             )
 
         # Validate tracker availability
         if not self.doc_tracker:
             return internal_error(
-                "Document tracker not initialized",
+                NOT_INITIALIZED_TRACKER,
                 context={"document_id": document_id, "service": "document_service"},
             )
 

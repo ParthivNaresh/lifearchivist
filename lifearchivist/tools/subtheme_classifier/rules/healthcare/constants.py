@@ -1,0 +1,5 @@
+HEALTHCARE_LABEL = "Healthcare"
+MEDICAL_RECORDS_LABEL = "Medical Records"
+PRESCRIPTIONS_AND_MEDICATIONS_LABEL = "Prescriptions and Medications"
+ADMINISTRATIVE_AND_INSURANCE_LABEL = "Administrative and Insurance"
+TEST_RESULTS_LABEL = "Test Results"

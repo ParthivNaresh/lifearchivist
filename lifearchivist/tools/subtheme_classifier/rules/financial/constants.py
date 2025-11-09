@@ -1,0 +1,7 @@
+FINANCIAL_LABEL = "Financial"
+BANKING_LABEL = "Banking"
+INSURANCE_LABEL = "Insurance"
+INVESTMENT_LABEL = "Investment"
+LOAN_LABEL = "Loan"
+RETIREMENT_LABEL = "Retirement"
+TAX_LABEL = "Tax"

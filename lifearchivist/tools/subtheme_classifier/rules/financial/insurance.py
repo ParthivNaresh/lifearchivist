@@ -11,12 +11,14 @@ These rules use the SubthemeRule data structure with a cascade-friendly layout.
 
 from lifearchivist.tools.subtheme_classifier.rules import SubthemeRule
 
+from .constants import FINANCIAL_LABEL, INSURANCE_LABEL
+
 # Insurance Policy
 INSURANCE_POLICY = SubthemeRule(
     name="insurance_policy",
     display_name="Insurance Policy",
-    parent_theme="Financial",
-    subtheme_category="Insurance",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=INSURANCE_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core policy identifiers
@@ -83,16 +85,11 @@ INSURANCE_POLICY = SubthemeRule(
     # Exclusions to prevent confusion with other insurance documents
     exclude_patterns={
         # EOB-specific patterns
-        r"explanation\s*of\s*benefits",
-        r"this\s*is\s*not\s*a\s*bill",
-        r"patient\s*responsibility",
         r"allowed\s*amount",
         r"provider\s*charges",
         # Claim-specific patterns
         r"claim\s*number",
-        r"date\s*of\s*loss",
         r"claim\s*status",
-        r"settlement\s*amount",
         # Medical/healthcare specific
         r"diagnosis\s*code",
         r"procedure\s*code",
@@ -108,8 +105,8 @@ INSURANCE_POLICY = SubthemeRule(
 INSURANCE_CLAIM = SubthemeRule(
     name="insurance_claim",
     display_name="Insurance Claim",
-    parent_theme="Financial",
-    subtheme_category="Insurance",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=INSURANCE_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core claim identifiers
@@ -167,7 +164,6 @@ INSURANCE_CLAIM = SubthemeRule(
     # Exclusions to prevent confusion with policy and EOB documents
     exclude_patterns={
         # Policy-specific patterns
-        r"declarations?\s*page",
         r"policy\s*effective\s*date",
         r"annual\s*premium",
         r"coverage\s*limits",
@@ -190,8 +186,8 @@ INSURANCE_CLAIM = SubthemeRule(
 INSURANCE_EOB = SubthemeRule(
     name="insurance_eob",
     display_name="Explanation of Benefits",
-    parent_theme="Financial",
-    subtheme_category="Insurance",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=INSURANCE_LABEL,
     # Primary identifiers (high confidence, specific to EOBs)
     unique_patterns=[
         # Definitive EOB header

@@ -17,6 +17,8 @@ import redis.asyncio as redis
 
 from lifearchivist.utils.logging import log_event, track
 
+from .constants import NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE
+
 
 class RedisDocumentTracker:
     """
@@ -133,7 +135,7 @@ class RedisDocumentTracker:
     def _client(self) -> "redis.Redis":
         """Return a non-optional Redis client or raise if not initialized."""
         if self.redis_client is None:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
         return self.redis_client
 
     async def close(self) -> None:
@@ -179,7 +181,7 @@ class RedisDocumentTracker:
             ValueError: If document_id or node_ids are invalid
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         if not document_id or not node_ids:
             raise ValueError("document_id and node_ids are required")
@@ -212,7 +214,7 @@ class RedisDocumentTracker:
             List of node IDs, or None if document not found
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         nodes_key = f"{self.key_prefix}:nodes:{document_id}"
 
@@ -245,7 +247,7 @@ class RedisDocumentTracker:
             True if document was removed, False if not found
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         if not await self.document_exists(document_id):
             return False
@@ -289,7 +291,7 @@ class RedisDocumentTracker:
             True if document exists
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         all_index_key = f"{self.key_prefix}:index:all"
 
@@ -315,7 +317,7 @@ class RedisDocumentTracker:
             Number of documents
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         count_key = f"{self.key_prefix}:count"
 
@@ -339,7 +341,7 @@ class RedisDocumentTracker:
             List of all document IDs
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         all_index_key = f"{self.key_prefix}:index:all"
 
@@ -371,7 +373,7 @@ class RedisDocumentTracker:
             metadata: Complete metadata dictionary
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         metadata_key = f"{self.key_prefix}:meta:{document_id}"
 
@@ -412,7 +414,7 @@ class RedisDocumentTracker:
             Full metadata dictionary, or None if not found
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         metadata_key = f"{self.key_prefix}:meta:{document_id}"
 
@@ -460,7 +462,7 @@ class RedisDocumentTracker:
             True if metadata was updated, False if document not found
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         metadata_key = f"{self.key_prefix}:meta:{document_id}"
 
@@ -559,7 +561,7 @@ class RedisDocumentTracker:
             List of document IDs matching all filters
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         if not filters:
             all_ids: List[str] = await self.get_all_document_ids()
@@ -605,7 +607,7 @@ class RedisDocumentTracker:
             Statistics about what was cleared
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         doc_count = await self.get_document_count()
 
@@ -702,7 +704,7 @@ class RedisDocumentTracker:
             new_metadata: New metadata (for indexing)
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         old_indexable = (
             self._extract_indexable_fields(old_metadata) if old_metadata else {}
@@ -736,7 +738,7 @@ class RedisDocumentTracker:
             metadata: Metadata containing index values
         """
         if not self._initialized:
-            raise RuntimeError("RedisDocumentTracker not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE)
 
         indexable = self._extract_indexable_fields(metadata)
 

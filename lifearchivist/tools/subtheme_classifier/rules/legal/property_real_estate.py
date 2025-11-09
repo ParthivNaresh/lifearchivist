@@ -15,12 +15,14 @@ from typing import Dict, List
 
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
 
+from .constants import LEGAL_LABEL, PROPERTY_AND_REAL_ESTATE_LABEL
+
 # Property Deed - Warranty deeds, quitclaim deeds, title documents
 PROPERTY_DEED = SubthemeRule(
     name="property_deed",
     display_name="Property Deed",
-    parent_theme="Legal",
-    subtheme_category="Property and Real Estate",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=PROPERTY_AND_REAL_ESTATE_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core deed patterns (highly distinctive)
@@ -182,11 +184,8 @@ PROPERTY_DEED = SubthemeRule(
         r"interest\s*rate",
         # Title insurance patterns
         r"title\s*insurance\s*policy",
-        r"title\s*commitment",
         r"schedule\s*[AB]\s*exceptions",
         # HOA patterns
-        r"homeowners?\s*association",
-        r"cc&rs?",
         r"bylaws",
         # Transfer tax patterns
         r"transfer\s*tax",
@@ -194,10 +193,6 @@ PROPERTY_DEED = SubthemeRule(
     },
     exclude_phrases={
         "mortgage agreement",
-        "deed of trust",
-        "title insurance",
-        "hoa agreement",
-        "easement agreement",
     },
 )
 
@@ -205,8 +200,8 @@ PROPERTY_DEED = SubthemeRule(
 MORTGAGE_DOCUMENT = SubthemeRule(
     name="mortgage_document",
     display_name="Mortgage Document",
-    parent_theme="Legal",
-    subtheme_category="Property and Real Estate",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=PROPERTY_AND_REAL_ESTATE_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core mortgage patterns (highly distinctive)
@@ -287,7 +282,6 @@ MORTGAGE_DOCUMENT = SubthemeRule(
         (r"insurance\s*requirements:?\s*", 0.44),
         # Property description
         (r"property\s*address:?\s*", 0.44),
-        (r"legal\s*description:?\s*", 0.42),
         (r"parcel\s*(?:number|id):?\s*", 0.40),
         # Financial terms
         (r"escrow:?\s*", 0.42),
@@ -354,28 +348,18 @@ MORTGAGE_DOCUMENT = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Pure deed patterns
-        r"warranty\s*deed",
-        r"quitclaim\s*deed",
         r"grant\s*deed",
         r"bargain\s*and\s*sale",
         # Title patterns
-        r"title\s*insurance",
-        r"title\s*report",
         r"title\s*commitment",
         # HOA patterns
-        r"homeowners?\s*association",
-        r"cc&rs?",
         r"architectural\s*committee",
         # Pure transfer patterns
         r"easement\s*agreement",
         r"right\s*of\s*way",
     },
     exclude_phrases={
-        "warranty deed",
         "quitclaim deed",
-        "title insurance",
-        "hoa agreement",
-        "easement agreement",
     },
 )
 
@@ -383,8 +367,8 @@ MORTGAGE_DOCUMENT = SubthemeRule(
 TITLE_DOCUMENT = SubthemeRule(
     name="title_document",
     display_name="Title Document",
-    parent_theme="Legal",
-    subtheme_category="Property and Real Estate",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=PROPERTY_AND_REAL_ESTATE_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core title patterns (highly distinctive)
@@ -462,7 +446,6 @@ TITLE_DOCUMENT = SubthemeRule(
         (r"exclusions:?\s*", 0.44),
         (r"conditions:?\s*", 0.42),
         # Property information
-        (r"legal\s*description:?\s*", 0.44),
         (r"property\s*address:?\s*", 0.42),
         (r"vesting:?\s*", 0.42),
         (r"estate\s*or\s*interest:?\s*", 0.40),
@@ -530,27 +513,17 @@ TITLE_DOCUMENT = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Deed patterns
-        r"warranty\s*deed",
-        r"quitclaim\s*deed",
         r"grant\s*deed",
         r"grantor.*grantee",
         # Mortgage patterns
-        r"mortgage\s*agreement",
-        r"deed\s*of\s*trust",
         r"mortgagor.*mortgagee",
-        r"principal\s*amount",
         # HOA patterns
-        r"homeowners?\s*association",
-        r"cc&rs?",
         r"dues\s*and\s*assessments",
         # Transfer patterns
         r"transfer\s*(?:of\s*)?ownership",
         r"conveyance\s*document",
     },
     exclude_phrases={
-        "warranty deed",
-        "mortgage agreement",
-        "deed of trust",
         "hoa agreement",
         "transfer document",
     },
@@ -560,8 +533,8 @@ TITLE_DOCUMENT = SubthemeRule(
 HOA_DOCUMENT = SubthemeRule(
     name="hoa_document",
     display_name="HOA Document",
-    parent_theme="Legal",
-    subtheme_category="Property and Real Estate",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=PROPERTY_AND_REAL_ESTATE_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core HOA patterns (highly distinctive)
@@ -716,7 +689,6 @@ HOA_DOCUMENT = SubthemeRule(
     exclude_patterns={
         # Deed patterns
         r"warranty\s*deed",
-        r"quitclaim\s*deed",
         r"grantor.*grantee",
         # Mortgage patterns
         r"mortgage\s*agreement",
@@ -731,9 +703,6 @@ HOA_DOCUMENT = SubthemeRule(
         r"right\s*of\s*way",
     },
     exclude_phrases={
-        "warranty deed",
-        "mortgage agreement",
-        "title insurance",
         "easement agreement",
         "transfer document",
     },
@@ -743,8 +712,8 @@ HOA_DOCUMENT = SubthemeRule(
 PROPERTY_TRANSFER = SubthemeRule(
     name="property_transfer",
     display_name="Property Transfer",
-    parent_theme="Legal",
-    subtheme_category="Property and Real Estate",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=PROPERTY_AND_REAL_ESTATE_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core transfer patterns (highly distinctive)
@@ -906,11 +875,9 @@ PROPERTY_TRANSFER = SubthemeRule(
     exclude_patterns={
         # Deed patterns
         r"warranty\s*deed",
-        r"quitclaim\s*deed",
         r"bargain\s*and\s*sale",
         # Mortgage patterns
         r"mortgage\s*agreement",
-        r"deed\s*of\s*trust",
         r"principal\s*amount",
         # Title patterns
         r"title\s*insurance",
@@ -922,10 +889,7 @@ PROPERTY_TRANSFER = SubthemeRule(
     },
     exclude_phrases={
         "warranty deed",
-        "mortgage agreement",
-        "title insurance",
         "hoa agreement",
-        "deed of trust",
     },
 )
 

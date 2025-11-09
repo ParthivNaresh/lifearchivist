@@ -27,6 +27,8 @@ from lifearchivist.utils.result import (
     service_unavailable,
 )
 
+from .constants import NOT_AVAILABLE_BASE_QUERY_ENGINE
+
 
 class QueryService(ABC):
     """Abstract base class for query services with Result types."""
@@ -250,7 +252,7 @@ class LlamaIndexQueryService(QueryService):
         """
         if not self.query_engine:
             return service_unavailable(
-                "Query engine not available", context={"service": "query"}
+                NOT_AVAILABLE_BASE_QUERY_ENGINE, context={"service": "query"}
             )
 
         try:
@@ -521,7 +523,7 @@ class LlamaIndexQueryService(QueryService):
             # For now, let the query engine handle its own retrieval
             engine = self.query_engine
             if engine is None:
-                raise RuntimeError("Query engine not available")
+                raise RuntimeError(NOT_AVAILABLE_BASE_QUERY_ENGINE)
             response = engine.query(question)
 
             # Log the generation details
@@ -665,7 +667,7 @@ class LlamaIndexQueryService(QueryService):
             yield {
                 "type": "error",
                 "data": {
-                    "error": "Query engine not available",
+                    "error": NOT_AVAILABLE_BASE_QUERY_ENGINE,
                     "error_type": "ServiceUnavailable",
                 },
             }
@@ -835,7 +837,7 @@ class LlamaIndexQueryService(QueryService):
         try:
             engine = self.query_engine
             if engine is None:
-                raise RuntimeError("Query engine not available")
+                raise RuntimeError(NOT_AVAILABLE_BASE_QUERY_ENGINE)
 
             # Execute query (LlamaIndex handles streaming internally)
             response = engine.query(question)

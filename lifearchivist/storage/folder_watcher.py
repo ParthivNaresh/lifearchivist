@@ -32,6 +32,8 @@ from watchdog.observers import Observer
 from lifearchivist.storage.redis_folder_watch_store import RedisFolderWatchStore
 from lifearchivist.utils.logging import log_event
 
+from .constants import NOT_INITIALIZED_FOLDER_WATCHER_SERVICE
+
 logger = logging.getLogger(__name__)
 
 
@@ -170,9 +172,7 @@ class FolderWatcherService:
             RuntimeError: If service not initialized
         """
         if self.store is None:
-            raise RuntimeError(
-                "FolderWatcherService not initialized. Call initialize() first."
-            )
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
         return self.store
 
     async def cleanup(self) -> None:
@@ -222,7 +222,7 @@ class FolderWatcherService:
         from lifearchivist.storage.utils import FolderWatchUtils
 
         if not self._initialized:
-            raise RuntimeError("FolderWatcherService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
 
         if len(self.watched_folders) >= self.max_folders:
             raise ValueError(
@@ -306,7 +306,7 @@ class FolderWatcherService:
             Exception: If removal fails (folder remains in inconsistent state)
         """
         if not self._initialized:
-            raise RuntimeError("FolderWatcherService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
 
         if folder_id not in self.watched_folders:
             return False
@@ -367,7 +367,7 @@ class FolderWatcherService:
             True if folder was enabled, False if not found
         """
         if not self._initialized:
-            raise RuntimeError("FolderWatcherService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
 
         if folder_id not in self.watched_folders:
             return False
@@ -405,7 +405,7 @@ class FolderWatcherService:
             True if folder was disabled, False if not found
         """
         if not self._initialized:
-            raise RuntimeError("FolderWatcherService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
 
         if folder_id not in self.watched_folders:
             return False

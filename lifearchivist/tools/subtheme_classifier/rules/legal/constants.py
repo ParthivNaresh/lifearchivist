@@ -1,0 +1,5 @@
+LEGAL_LABEL = "Legal"
+CONTRACTS_AND_AGREEMENTS_LABEL = "Contracts and Agreements"
+COURT_AND_LEGAL_PROCEEDINGS_LABEL = "Court and Legal Proceedings"
+ESTATE_AND_FAMILY_LABEL = "Estate and Family"
+PROPERTY_AND_REAL_ESTATE_LABEL = "Property and Real Estate"

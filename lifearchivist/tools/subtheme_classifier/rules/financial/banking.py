@@ -11,12 +11,14 @@ These rules use the SubthemeRule data structure with a cascade-friendly layout.
 
 from lifearchivist.tools.subtheme_classifier.rules import SubthemeRule
 
+from .constants import BANKING_LABEL, FINANCIAL_LABEL
+
 # Bank Statement
 BANK_STATEMENT = SubthemeRule(
     name="bank_statement",
     display_name="Bank Statement",
-    parent_theme="Financial",
-    subtheme_category="Banking",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=BANKING_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core statement sections
@@ -116,8 +118,8 @@ BANK_STATEMENT = SubthemeRule(
 CREDIT_CARD_STATEMENT = SubthemeRule(
     name="credit_card_statement",
     display_name="Credit Card Statement",
-    parent_theme="Financial",
-    subtheme_category="Banking",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=BANKING_LABEL,
     # Primary identifiers (high confidence, specific to credit cards)
     unique_patterns=[
         (r"payment\s*due\s*date", 0.95, "payment_due_date"),

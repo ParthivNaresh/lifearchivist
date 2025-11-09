@@ -15,12 +15,14 @@ from typing import Dict, List
 
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
 
+from .constants import COURT_AND_LEGAL_PROCEEDINGS_LABEL, LEGAL_LABEL
+
 # Court Order - Judicial orders, judgments, verdicts, restraining orders
 COURT_ORDER = SubthemeRule(
     name="court_order",
     display_name="Court Order",
-    parent_theme="Legal",
-    subtheme_category="Court and Legal Proceedings",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=COURT_AND_LEGAL_PROCEEDINGS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core court order patterns (highly distinctive)
@@ -171,22 +173,12 @@ COURT_ORDER = SubthemeRule(
         r"subpoena",
         # Filing patterns
         r"complaint",
-        r"petition\s*for",
-        r"motion\s*(?:to|for)",
         r"brief",
         # Settlement patterns
-        r"settlement\s*agreement",
         r"mediation\s*agreement",
-        # Correspondence patterns
-        r"retainer\s*agreement",
-        r"attorney\s*letter",
     },
     exclude_phrases={
-        "legal notice",
-        "court filing",
-        "settlement agreement",
         "attorney correspondence",
-        "demand letter",
     },
 )
 
@@ -194,8 +186,8 @@ COURT_ORDER = SubthemeRule(
 LEGAL_NOTICE = SubthemeRule(
     name="legal_notice",
     display_name="Legal Notice",
-    parent_theme="Legal",
-    subtheme_category="Court and Legal Proceedings",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=COURT_AND_LEGAL_PROCEEDINGS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core notice patterns (highly distinctive)
@@ -346,27 +338,17 @@ LEGAL_NOTICE = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Order patterns
-        r"(?:court\s*)?order",
         r"judgment",
         r"verdict",
         r"decree",
         # Filing patterns
         r"complaint",
-        r"petition\s*for",
-        r"motion\s*(?:to|for)",
         r"brief",
         # Settlement patterns
-        r"settlement\s*agreement",
         r"mediation",
         # Correspondence patterns
-        r"retainer\s*agreement",
-        r"legal\s*opinion",
     },
     exclude_phrases={
-        "court order",
-        "court filing",
-        "settlement agreement",
-        "retainer agreement",
         "legal opinion",
     },
 )
@@ -375,8 +357,8 @@ LEGAL_NOTICE = SubthemeRule(
 COURT_FILING = SubthemeRule(
     name="court_filing",
     display_name="Court Filing",
-    parent_theme="Legal",
-    subtheme_category="Court and Legal Proceedings",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=COURT_AND_LEGAL_PROCEEDINGS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core filing patterns (highly distinctive)
@@ -530,28 +512,20 @@ COURT_FILING = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Order patterns
-        r"(?:court\s*)?order",
         r"judgment",
         r"verdict",
         r"decree",
         # Notice patterns
         r"summons",
         r"subpoena",
-        r"notice\s*of\s*hearing",
         # Settlement patterns
-        r"settlement\s*agreement",
         r"mediation\s*agreement",
         # Correspondence patterns
-        r"retainer\s*agreement",
         r"attorney\s*letter",
         r"legal\s*opinion",
     },
     exclude_phrases={
         "court order",
-        "legal notice",
-        "settlement agreement",
-        "retainer agreement",
-        "legal opinion",
     },
 )
 
@@ -559,8 +533,8 @@ COURT_FILING = SubthemeRule(
 SETTLEMENT_AGREEMENT = SubthemeRule(
     name="settlement_agreement",
     display_name="Settlement Agreement",
-    parent_theme="Legal",
-    subtheme_category="Court and Legal Proceedings",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=COURT_AND_LEGAL_PROCEEDINGS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core settlement patterns (highly distinctive)
@@ -703,7 +677,6 @@ SETTLEMENT_AGREEMENT = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Order patterns
-        r"(?:court\s*)?order",
         r"judgment",
         r"verdict",
         # Notice patterns
@@ -720,11 +693,8 @@ SETTLEMENT_AGREEMENT = SubthemeRule(
         r"legal\s*opinion",
     },
     exclude_phrases={
-        "court order",
-        "legal notice",
         "court filing",
         "retainer agreement",
-        "legal opinion",
     },
 )
 
@@ -732,8 +702,8 @@ SETTLEMENT_AGREEMENT = SubthemeRule(
 LEGAL_CORRESPONDENCE = SubthemeRule(
     name="legal_correspondence",
     display_name="Legal Correspondence",
-    parent_theme="Legal",
-    subtheme_category="Court and Legal Proceedings",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=COURT_AND_LEGAL_PROCEEDINGS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core correspondence patterns (highly distinctive)
@@ -892,7 +862,6 @@ LEGAL_CORRESPONDENCE = SubthemeRule(
         r"release\s*of\s*claims",
     },
     exclude_phrases={
-        "court order",
         "legal notice",
         "court filing",
         "settlement agreement",
