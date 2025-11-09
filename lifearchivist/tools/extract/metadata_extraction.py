@@ -108,6 +108,8 @@ async def extract_pdf_metadata(file_path: Path) -> Dict[str, Any]:
     Returns:
         Dictionary with extracted metadata
     """
+    from lifearchivist.tools.extract.utils import PDFMetadataExtractor
+
     try:
         with open(file_path, "rb") as f:
             reader = PdfReader(f)
@@ -119,28 +121,15 @@ async def extract_pdf_metadata(file_path: Path) -> Dict[str, Any]:
                 )
                 return {}
 
-            # Extract and parse metadata
-            metadata = {}
+            created_date = PDFMetadataExtractor.extract_date_field(
+                pdf_metadata, "/CreationDate", parse_pdf_date
+            )
 
-            # Dates
-            if "/CreationDate" in pdf_metadata:
-                raw_created = pdf_metadata.get("/CreationDate")
-                created = parse_pdf_date(
-                    str(raw_created) if raw_created is not None else None
-                )
-                if created:
-                    metadata["document_created_at"] = created
+            modified_date = PDFMetadataExtractor.extract_date_field(
+                pdf_metadata, "/ModDate", parse_pdf_date
+            )
 
-            if "/ModDate" in pdf_metadata:
-                raw_modified = pdf_metadata.get("/ModDate")
-                modified = parse_pdf_date(
-                    str(raw_modified) if raw_modified is not None else None
-                )
-                if modified:
-                    metadata["document_modified_at"] = modified
-
-            # Text fields
-            text_fields = {
+            text_field_mapping = {
                 "/Author": "document_author",
                 "/Title": "document_title",
                 "/Subject": "document_subject",
@@ -149,13 +138,14 @@ async def extract_pdf_metadata(file_path: Path) -> Dict[str, Any]:
                 "/Creator": "document_creator",
             }
 
-            for pdf_key, metadata_key in text_fields.items():
-                if pdf_key in pdf_metadata:
-                    value = pdf_metadata[pdf_key]
-                    if value and isinstance(value, str):
-                        metadata[metadata_key] = value.strip()
+            text_fields = PDFMetadataExtractor.extract_text_fields(
+                pdf_metadata, text_field_mapping
+            )
 
-            # Log successful extraction
+            metadata = PDFMetadataExtractor.create_metadata_dict(
+                created_date, modified_date, text_fields
+            )
+
             if metadata:
                 log_event(
                     "pdf_metadata_extracted",

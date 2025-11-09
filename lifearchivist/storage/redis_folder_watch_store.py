@@ -12,7 +12,7 @@ This implementation provides:
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Awaitable, Dict, List, Optional, Set, cast
 from uuid import uuid4
 
@@ -201,7 +201,7 @@ class RedisFolderWatchStore:
         if not folder_id:
             folder_id = str(uuid4())
 
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
 
         folder_key = f"{self.key_prefix}:folders:{folder_id}"
         ids_key = f"{self.key_prefix}:folder_ids"
@@ -447,7 +447,7 @@ class RedisFolderWatchStore:
         )
 
         # Update last_activity timestamp
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         await cast(Awaitable[int], client.hset(folder_key, "last_activity", now))
 
         return new_value
@@ -528,7 +528,9 @@ class RedisFolderWatchStore:
         async with client.pipeline(transaction=True) as pipe:
             pipe.hset(folder_key, "last_error", error_message)
             pipe.hincrby(folder_key, "error_count", 1)
-            pipe.hset(folder_key, "last_activity", datetime.utcnow().isoformat())
+            pipe.hset(
+                folder_key, "last_activity", datetime.now(timezone.utc).isoformat()
+            )
             await pipe.execute()
 
     async def clear_folder_error(self, folder_id: str) -> None:

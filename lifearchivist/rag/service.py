@@ -4,6 +4,7 @@ Conversation RAG service for orchestrating retrieval-augmented generation.
 Bridges document retrieval with LLM generation for context-aware responses.
 """
 
+import asyncio
 import logging
 import time
 from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Optional, Tuple, cast
@@ -70,6 +71,435 @@ class ConversationRAGService:
         self._sequence_counter += 1
         return self._sequence_counter
 
+    async def _validate_and_save_user_message(
+        self,
+        conversation_id: str,
+        message_content: str,
+    ) -> Result[Tuple[Dict, StreamEvent], StreamEvent]:
+        """
+        Validate conversation and save user message.
+
+        Args:
+            conversation_id: Conversation identifier
+            message_content: User's message
+
+        Returns:
+            Result with (conversation, user_message_event) or error event
+        """
+        conversation_result = await self.conversation_service.get_conversation(
+            conversation_id
+        )
+        if conversation_result.is_failure():
+            return Failure(
+                StreamEvent.error(
+                    "ConversationNotFound",
+                    f"Conversation {conversation_id} not found",
+                    sequence=self._next_sequence(),
+                )
+            )
+
+        conversation = conversation_result.unwrap()
+
+        user_msg_result = await self.message_service.add_message(
+            conversation_id=conversation_id,
+            role="user",
+            content=message_content,
+        )
+
+        if user_msg_result.is_failure():
+            return Failure(
+                StreamEvent.error(
+                    "MessageSaveFailed",
+                    "Failed to save user message",
+                    sequence=self._next_sequence(),
+                )
+            )
+
+        user_message = user_msg_result.unwrap()
+        user_message_event = StreamEvent(
+            type=StreamEventType.USER_MESSAGE,
+            data=user_message,
+            sequence_number=self._next_sequence(),
+        )
+
+        return Success((conversation, user_message_event))
+
+    async def _process_context_retrieval(
+        self,
+        message_content: str,
+        config: ContextConfig,
+    ) -> Tuple[str, List[Citation], List[StreamEvent]]:
+        """
+        Process context retrieval and return events.
+
+        Args:
+            message_content: User's message
+            config: Context configuration
+
+        Returns:
+            Tuple of (context_text, citations, events_to_yield)
+        """
+        events = []
+
+        is_document_query = self._classify_intent(message_content)
+        events.append(
+            StreamEvent.intent(
+                is_document_query=is_document_query,
+                requires_context=is_document_query and config.enable_rag,
+                sequence=self._next_sequence(),
+            )
+        )
+
+        citations: List[Citation] = []
+        context = ""
+
+        if is_document_query and config.enable_rag:
+            context_result = await self._retrieve_context(message_content, config)
+
+            if context_result.is_success():
+                log_event("rag_context_unwrapping")
+                context, citations = context_result.unwrap()
+                log_event(
+                    "rag_context_unwrapped",
+                    {
+                        "context_length": len(context),
+                        "citations_count": len(citations),
+                    },
+                )
+                events.append(
+                    StreamEvent.context(
+                        citations=citations,
+                        context_length=len(context),
+                        sequence=self._next_sequence(),
+                    )
+                )
+                log_event("rag_context_event_yielded")
+
+                events.append(
+                    StreamEvent.sources(
+                        citations=citations,
+                        sequence=self._next_sequence(),
+                    )
+                )
+                log_event("rag_sources_event_yielded")
+            else:
+                error_msg = context_result.error_or("Context retrieval failed")
+                log_event(
+                    "rag_context_retrieval_failed",
+                    {"error": error_msg},
+                    level=logging.WARNING,
+                )
+
+        return context, citations, events
+
+    async def _get_user_preferences(
+        self,
+        user_id: str,
+    ) -> Tuple[Optional[str], int]:
+        """
+        Get user preferences for response format and timeout.
+
+        Args:
+            user_id: User identifier
+
+        Returns:
+            Tuple of (response_format, response_timeout)
+        """
+        response_format = None
+        response_timeout = 30
+
+        if self.conversation_service:
+            async with self.conversation_service.db_pool.acquire() as conn:
+                prefs = await conn.fetchrow(
+                    "SELECT response_format, response_timeout FROM user_preferences WHERE user_id = $1",
+                    user_id,
+                )
+                if prefs:
+                    response_format = prefs["response_format"]
+                    if prefs["response_timeout"]:
+                        response_timeout = prefs["response_timeout"]
+
+        return response_format, response_timeout
+
+    async def _stream_llm_response(
+        self,
+        messages: List[LLMMessage],
+        conversation: Dict,
+        response_timeout: int,
+    ) -> Tuple[str, Optional[int], Optional[float], List[StreamEvent]]:
+        """
+        Stream LLM response and collect token events.
+
+        Args:
+            messages: Messages to send to LLM
+            conversation: Conversation dict
+            response_timeout: Timeout in seconds
+
+        Returns:
+            Tuple of (accumulated_response, tokens_used, cost_usd, events)
+        """
+        accumulated_response = ""
+        tokens_used = None
+        cost_usd = None
+        events = []
+
+        log_event(
+            "rag_llm_generation_starting",
+            {
+                "model": conversation["model"],
+                "provider_id": conversation.get("provider_id"),
+                "num_messages": len(messages),
+                "timeout_seconds": response_timeout,
+            },
+        )
+
+        import asyncio
+
+        async with asyncio.timeout(response_timeout):
+            async for chunk in self.provider_manager.generate_stream(
+                messages=messages,
+                model=conversation["model"],
+                provider_id=conversation["provider_id"],
+                temperature=conversation.get("temperature", 0.7),
+                max_tokens=conversation.get("max_tokens", 2000),
+            ):
+                if chunk.content:
+                    accumulated_response += chunk.content
+                    events.append(
+                        StreamEvent.token(
+                            chunk.content,
+                            sequence=self._next_sequence(),
+                        )
+                    )
+
+                if chunk.is_final and chunk.metadata:
+                    tokens_used = chunk.metadata.get("tokens_used")
+                    cost_usd = chunk.metadata.get("cost_usd")
+
+        return accumulated_response, tokens_used, cost_usd, events
+
+    async def _handle_timeout_error(
+        self,
+        conversation_id: str,
+        conversation: Dict,
+        response_timeout: int,
+        start_time: float,
+    ) -> AsyncGenerator[StreamEvent, None]:
+        """
+        Handle timeout error and save error message.
+
+        Args:
+            conversation_id: Conversation identifier
+            conversation: Conversation dict
+            response_timeout: Timeout that was exceeded
+            start_time: Request start time
+
+        Yields:
+            Error event
+        """
+        error_message = f"Response generation timed out after {response_timeout} seconds. You can increase the timeout in Advanced Settings."
+
+        log_event(
+            "rag_timeout_error",
+            {
+                "conversation_id": conversation_id,
+                "timeout_seconds": response_timeout,
+            },
+            level=logging.ERROR,
+        )
+
+        error_metadata = {
+            "is_error": True,
+            "error_type": "TimeoutError",
+            "provider_id": conversation.get("provider_id", "default"),
+            "model": conversation.get("model", "unknown"),
+            "retryable": True,
+            "raw_error": f"asyncio.TimeoutError: Response generation exceeded {response_timeout}s timeout",
+        }
+
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        await self.message_service.add_message(
+            conversation_id=conversation_id,
+            role="assistant",
+            content=error_message,
+            model=conversation.get("model"),
+            confidence=0.0,
+            method="error",
+            latency_ms=processing_time_ms,
+            metadata=error_metadata,
+        )
+
+        yield StreamEvent.error(
+            error_type="TimeoutError",
+            message=error_message,
+            sequence=self._next_sequence(),
+        )
+
+    async def _handle_general_error(
+        self,
+        conversation_id: str,
+        error: Exception,
+        conversation: Optional[Dict],
+        start_time: float,
+    ) -> AsyncGenerator[StreamEvent, None]:
+        """
+        Handle general error and save error message.
+
+        Args:
+            conversation_id: Conversation identifier
+            error: Exception that occurred
+            conversation: Conversation dict (may be None)
+            start_time: Request start time
+
+        Yields:
+            Error event
+        """
+        log_event(
+            "rag_processing_error",
+            {
+                "error": str(error),
+                "error_type": type(error).__name__,
+                "conversation_id": conversation_id,
+            },
+            level=logging.ERROR,
+        )
+
+        error_metadata = {
+            "is_error": True,
+            "error_type": type(error).__name__,
+            "provider_id": (
+                conversation.get("provider_id", "default")
+                if conversation
+                else "default"
+            ),
+            "model": (
+                conversation.get("model", "unknown") if conversation else "unknown"
+            ),
+            "retryable": False,
+            "raw_error": str(error)[:500],
+        }
+
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        await self.message_service.add_message(
+            conversation_id=conversation_id,
+            role="assistant",
+            content=f"An error occurred: {str(error)}",
+            model=conversation.get("model") if conversation else None,
+            confidence=0.0,
+            method="error",
+            latency_ms=processing_time_ms,
+            metadata=error_metadata,
+        )
+
+        yield StreamEvent.error(
+            error_type=type(error).__name__,
+            message=str(error),
+            sequence=self._next_sequence(),
+        )
+
+    def _build_messages_for_llm(
+        self,
+        message_content: str,
+        context: str,
+        conversation_history: List[LLMMessage],
+        conversation: Dict,
+        response_format: Optional[str],
+        config: ContextConfig,
+    ) -> List[LLMMessage]:
+        """
+        Build messages for LLM generation.
+
+        Args:
+            message_content: User's message
+            context: Retrieved context
+            conversation_history: Previous messages
+            conversation: Conversation dict
+            response_format: User's preferred format
+            config: Context configuration
+
+        Returns:
+            List of messages for LLM
+        """
+        history = conversation_history if config.include_conversation_history else []
+
+        return self.prompt_builder.build_rag_messages(
+            user_query=message_content,
+            context=context,
+            conversation_history=history,
+            system_prompt=conversation.get("system_prompt"),
+            response_format=response_format,
+        )
+
+    async def _finalize_response(
+        self,
+        conversation_id: str,
+        message_content: str,
+        accumulated_response: str,
+        citations: List[Citation],
+        context: str,
+        conversation: Dict,
+        start_time: float,
+        tokens_used: Optional[int],
+        cost_usd: Optional[float],
+    ) -> AsyncGenerator[StreamEvent, None]:
+        """
+        Finalize response with metadata and persistence.
+
+        Args:
+            conversation_id: Conversation identifier
+            message_content: User's message
+            accumulated_response: Generated response
+            citations: Source citations
+            context: Retrieved context
+            conversation: Conversation dict
+            start_time: Request start time
+            tokens_used: Tokens consumed
+            cost_usd: Cost in USD
+
+        Yields:
+            Metadata and done events
+        """
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        confidence_score = self._calculate_confidence(
+            accumulated_response, citations, context
+        )
+
+        metadata = MetadataInfo(
+            model=conversation["model"],
+            provider_id=conversation["provider_id"],
+            confidence_score=confidence_score,
+            response_mode="rag" if context else "direct",
+            num_sources=len(citations),
+            context_length=len(context),
+            answer_length=len(accumulated_response),
+            unique_documents=len(set(c.document_id for c in citations)),
+            processing_time_ms=processing_time_ms,
+            tokens_used=tokens_used,
+            cost_usd=cost_usd,
+        )
+
+        yield StreamEvent.metadata(metadata, sequence=self._next_sequence())
+
+        await self._save_assistant_message(
+            conversation_id=conversation_id,
+            assistant_response=accumulated_response,
+            citations=citations,
+            metadata=metadata.to_dict(),
+        )
+
+        if self.activity_manager:
+            await self._track_activity(
+                message_content,
+                accumulated_response,
+                citations,
+                processing_time_ms,
+            )
+
+        yield StreamEvent.done(sequence=self._next_sequence())
+
     @track(
         operation="rag_process_message",
         include_args=["conversation_id"],
@@ -104,86 +534,27 @@ class ConversationRAGService:
         """
         start_time = time.time()
         config = context_config or ContextConfig()
+        conversation = None
+        response_timeout = 30
 
         try:
-            conversation_result = await self.conversation_service.get_conversation(
-                conversation_id
+            validation_result = await self._validate_and_save_user_message(
+                conversation_id, message_content
             )
-            if conversation_result.is_failure():
-                yield StreamEvent.error(
-                    "ConversationNotFound",
-                    f"Conversation {conversation_id} not found",
-                    sequence=self._next_sequence(),
-                )
+
+            if validation_result.is_failure():
+                failure_result = cast(Failure[StreamEvent], validation_result)
+                yield failure_result.error
                 return
 
-            conversation = conversation_result.unwrap()
+            conversation, user_message_event = validation_result.unwrap()
+            yield user_message_event
 
-            user_msg_result = await self.message_service.add_message(
-                conversation_id=conversation_id,
-                role="user",
-                content=message_content,
+            context, citations, context_events = await self._process_context_retrieval(
+                message_content, config
             )
-
-            if user_msg_result.is_failure():
-                yield StreamEvent.error(
-                    "MessageSaveFailed",
-                    "Failed to save user message",
-                    sequence=self._next_sequence(),
-                )
-                return
-
-            user_message = user_msg_result.unwrap()
-
-            # Emit user message event for UI
-            yield StreamEvent(
-                type=StreamEventType.USER_MESSAGE,
-                data=user_message,
-                sequence_number=self._next_sequence(),
-            )
-
-            is_document_query = self._classify_intent(message_content)
-            yield StreamEvent.intent(
-                is_document_query=is_document_query,
-                requires_context=is_document_query and config.enable_rag,
-                sequence=self._next_sequence(),
-            )
-
-            citations: List[Citation] = []
-            context = ""
-
-            if is_document_query and config.enable_rag:
-                context_result = await self._retrieve_context(message_content, config)
-
-                if context_result.is_success():
-                    log_event("rag_context_unwrapping")
-                    context, citations = context_result.unwrap()
-                    log_event(
-                        "rag_context_unwrapped",
-                        {
-                            "context_length": len(context),
-                            "citations_count": len(citations),
-                        },
-                    )
-                    yield StreamEvent.context(
-                        citations=citations,
-                        context_length=len(context),
-                        sequence=self._next_sequence(),
-                    )
-                    log_event("rag_context_event_yielded")
-
-                    yield StreamEvent.sources(
-                        citations=citations,
-                        sequence=self._next_sequence(),
-                    )
-                    log_event("rag_sources_event_yielded")
-                else:
-                    error_msg = context_result.error_or("Context retrieval failed")
-                    log_event(
-                        "rag_context_retrieval_failed",
-                        {"error": error_msg},
-                        level=logging.WARNING,
-                    )
+            for event in context_events:
+                yield event
 
             log_event(
                 "rag_getting_conversation_history",
@@ -197,6 +568,10 @@ class ConversationRAGService:
                 conversation_id, config.conversation_history_limit
             )
 
+            response_format, response_timeout = await self._get_user_preferences(
+                user_id
+            )
+
             log_event(
                 "rag_building_messages",
                 {
@@ -206,203 +581,54 @@ class ConversationRAGService:
                 },
             )
 
-            # Get response format preference
-            response_format = None
-            if self.conversation_service:
-                async with self.conversation_service.db_pool.acquire() as conn:
-                    prefs = await conn.fetchrow(
-                        "SELECT response_format FROM user_preferences WHERE user_id = $1",
-                        user_id,
-                    )
-                    if prefs:
-                        response_format = prefs["response_format"]
-
-            messages = self.prompt_builder.build_rag_messages(
-                user_query=message_content,
-                context=context,
-                conversation_history=(
-                    conversation_history if config.include_conversation_history else []
-                ),
-                system_prompt=conversation.get("system_prompt"),
-                response_format=response_format,
+            messages = self._build_messages_for_llm(
+                message_content,
+                context,
+                conversation_history,
+                conversation,
+                response_format,
+                config,
             )
 
-            # Get response timeout preference
-            response_timeout = 30  # Default
-            if self.conversation_service:
-                async with self.conversation_service.db_pool.acquire() as conn:
-                    timeout_prefs = await conn.fetchrow(
-                        "SELECT response_timeout FROM user_preferences WHERE user_id = $1",
-                        user_id,
-                    )
-                    if timeout_prefs and timeout_prefs["response_timeout"]:
-                        response_timeout = timeout_prefs["response_timeout"]
-
-            accumulated_response = ""
-            token_count = 0
-
-            log_event(
-                "rag_llm_generation_starting",
-                {
-                    "model": conversation["model"],
-                    "provider_id": conversation.get("provider_id"),
-                    "num_messages": len(messages),
-                    "has_context": bool(context),
-                    "timeout_seconds": response_timeout,
-                },
+            (
+                accumulated_response,
+                tokens_used,
+                cost_usd,
+                token_events,
+            ) = await self._stream_llm_response(
+                messages, conversation, response_timeout
             )
 
-            import asyncio
+            for event in token_events:
+                yield event
 
-            async with asyncio.timeout(response_timeout):
-                async for chunk in self.provider_manager.generate_stream(
-                    messages=messages,
-                    model=conversation["model"],
-                    provider_id=conversation["provider_id"],
-                    temperature=conversation.get("temperature", 0.7),
-                    max_tokens=conversation.get("max_tokens", 2000),
-                ):
-                    if chunk.content:
-                        accumulated_response += chunk.content
-                        token_count += 1
-                        yield StreamEvent.token(
-                            chunk.content,
-                            sequence=self._next_sequence(),
-                        )
-
-                    if chunk.is_final and chunk.metadata:
-                        tokens_used = chunk.metadata.get("tokens_used")
-                        cost_usd = chunk.metadata.get("cost_usd")
-
-            processing_time_ms = int((time.time() - start_time) * 1000)
-
-            confidence_score = self._calculate_confidence(
-                accumulated_response, citations, context
-            )
-
-            metadata = MetadataInfo(
-                model=conversation["model"],
-                provider_id=conversation["provider_id"],
-                confidence_score=confidence_score,
-                response_mode="rag" if context else "direct",
-                num_sources=len(citations),
-                context_length=len(context),
-                answer_length=len(accumulated_response),
-                unique_documents=len(set(c.document_id for c in citations)),
-                processing_time_ms=processing_time_ms,
-                tokens_used=tokens_used if "tokens_used" in locals() else None,
-                cost_usd=cost_usd if "cost_usd" in locals() else None,
-            )
-
-            yield StreamEvent.metadata(metadata, sequence=self._next_sequence())
-
-            await self._save_assistant_message(
-                conversation_id=conversation_id,
-                assistant_response=accumulated_response,
-                citations=citations,
-                metadata=metadata.to_dict(),
-            )
-
-            if self.activity_manager:
-                await self._track_activity(
-                    message_content,
-                    accumulated_response,
-                    citations,
-                    processing_time_ms,
-                )
-
-            yield StreamEvent.done(sequence=self._next_sequence())
+            async for event in self._finalize_response(
+                conversation_id,
+                message_content,
+                accumulated_response,
+                citations,
+                context,
+                conversation,
+                start_time,
+                tokens_used,
+                cost_usd,
+            ):
+                yield event
 
         except asyncio.TimeoutError:
-            timeout_seconds = response_timeout if "response_timeout" in locals() else 30
-            error_message = f"Response generation timed out after {timeout_seconds} seconds. You can increase the timeout in Advanced Settings."
+            async for event in self._handle_timeout_error(
+                conversation_id,
+                conversation or {},
+                response_timeout,
+                start_time,
+            ):
+                yield event
 
-            log_event(
-                "rag_timeout_error",
-                {
-                    "conversation_id": conversation_id,
-                    "timeout_seconds": timeout_seconds,
-                },
-                level=logging.ERROR,
-            )
-
-            error_metadata = {
-                "is_error": True,
-                "error_type": "TimeoutError",
-                "provider_id": conversation.get("provider_id", "default"),
-                "model": conversation.get("model", "unknown"),
-                "retryable": True,
-                "raw_error": f"asyncio.TimeoutError: Response generation exceeded {timeout_seconds}s timeout",
-            }
-
-            processing_time_ms = int((time.time() - start_time) * 1000)
-
-            await self.message_service.add_message(
-                conversation_id=conversation_id,
-                role="assistant",
-                content=error_message,
-                model=conversation.get("model"),
-                confidence=0.0,
-                method="error",
-                latency_ms=processing_time_ms,
-                metadata=error_metadata,
-            )
-
-            yield StreamEvent.error(
-                error_type="TimeoutError",
-                message=error_message,
-                sequence=self._next_sequence(),
-            )
         except Exception as e:
-            log_event(
-                "rag_processing_error",
-                {
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                    "conversation_id": conversation_id,
-                },
-                level=logging.ERROR,
-            )
-
-            error_metadata = {
-                "is_error": True,
-                "error_type": type(e).__name__,
-                "provider_id": (
-                    conversation.get("provider_id", "default")
-                    if "conversation" in locals()
-                    else "default"
-                ),
-                "model": (
-                    conversation.get("model", "unknown")
-                    if "conversation" in locals()
-                    else "unknown"
-                ),
-                "retryable": False,
-                "raw_error": str(e)[:500],
-            }
-
-            processing_time_ms = (
-                int((time.time() - start_time) * 1000)
-                if "start_time" in locals()
-                else 0
-            )
-
-            await self.message_service.add_message(
-                conversation_id=conversation_id,
-                role="assistant",
-                content=f"An error occurred: {str(e)}",
-                model=conversation.get("model") if "conversation" in locals() else None,
-                confidence=0.0,
-                method="error",
-                latency_ms=processing_time_ms,
-                metadata=error_metadata,
-            )
-
-            yield StreamEvent.error(
-                error_type=type(e).__name__,
-                message=str(e),
-                sequence=self._next_sequence(),
-            )
+            async for event in self._handle_general_error(
+                conversation_id, e, conversation, start_time
+            ):
+                yield event
 
     def _classify_intent(self, query: str) -> bool:
         """

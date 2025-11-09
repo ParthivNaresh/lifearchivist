@@ -28,9 +28,8 @@ class SessionManager:
     def __init__(self):
         self.sessions: Dict[str, WebSocket] = {}
 
-    async def connect(self, session_id: str, websocket: WebSocket):
+    def connect(self, session_id: str, websocket: WebSocket):
         """Register a new WebSocket session."""
-        await websocket.accept()
         self.sessions[session_id] = websocket
         log_event("websocket_session_connected", {"session_id": session_id})
 

@@ -469,56 +469,79 @@ class RedisDocumentTracker:
         if not exists:
             return False
 
+        old_metadata = await self.get_full_metadata(document_id)
+
         if merge_mode == "replace":
-            old_metadata = await self.get_full_metadata(document_id)
-
-            serialized = {
-                k: self._serialize_metadata_value(v)
-                for k, v in metadata_updates.items()
-            }
-
-            await cast(Awaitable[int], client.delete(metadata_key))
-            if serialized:
-                await cast(
-                    Awaitable[int], client.hset(metadata_key, mapping=serialized)
-                )
-
-            await self._update_metadata_indexes(
-                document_id, old_metadata, metadata_updates
+            await self._handle_replace_mode(
+                client, metadata_key, document_id, old_metadata, metadata_updates
             )
         else:
-            old_metadata = await self.get_full_metadata(document_id)
-
-            merged = old_metadata.copy() if old_metadata else {}
-
-            for key, value in metadata_updates.items():
-                if key in ["content_dates", "tags", "provenance"] and isinstance(
-                    value, list
-                ):
-                    existing = merged.get(key, [])
-                    if isinstance(existing, list):
-                        if key == "tags":
-                            merged[key] = list(set(existing + value))
-                        else:
-                            merged[key] = existing + value
-                    else:
-                        merged[key] = value
-                else:
-                    merged[key] = value
-
-            serialized = {
-                k: self._serialize_metadata_value(merged[k])
-                for k in metadata_updates.keys()
-            }
-
-            if serialized:
-                await cast(
-                    Awaitable[int], client.hset(metadata_key, mapping=serialized)
-                )
-
-            await self._update_metadata_indexes(document_id, old_metadata, merged)
+            await self._handle_update_mode(
+                client, metadata_key, document_id, old_metadata, metadata_updates
+            )
 
         return True
+
+    async def _handle_replace_mode(
+        self,
+        client: "redis.Redis",
+        metadata_key: str,
+        document_id: str,
+        old_metadata: Optional[Dict[str, Any]],
+        metadata_updates: Dict[str, Any],
+    ) -> None:
+        """
+        Handle replace mode metadata update.
+
+        Args:
+            client: Redis client
+            metadata_key: Redis key for metadata
+            document_id: Document ID
+            old_metadata: Existing metadata
+            metadata_updates: New metadata
+        """
+        serialized = {
+            k: self._serialize_metadata_value(v) for k, v in metadata_updates.items()
+        }
+
+        await cast(Awaitable[int], client.delete(metadata_key))
+        if serialized:
+            await cast(Awaitable[int], client.hset(metadata_key, mapping=serialized))
+
+        await self._update_metadata_indexes(document_id, old_metadata, metadata_updates)
+
+    async def _handle_update_mode(
+        self,
+        client: "redis.Redis",
+        metadata_key: str,
+        document_id: str,
+        old_metadata: Optional[Dict[str, Any]],
+        metadata_updates: Dict[str, Any],
+    ) -> None:
+        """
+        Handle update mode metadata update.
+
+        Args:
+            client: Redis client
+            metadata_key: Redis key for metadata
+            document_id: Document ID
+            old_metadata: Existing metadata
+            metadata_updates: New metadata
+        """
+        from lifearchivist.storage.utils import MetadataUpdateHandler
+
+        merged = MetadataUpdateHandler.merge_metadata_fields(
+            old_metadata, metadata_updates
+        )
+
+        serialized = MetadataUpdateHandler.serialize_updates(
+            merged, list(metadata_updates.keys()), self._serialize_metadata_value
+        )
+
+        if serialized:
+            await cast(Awaitable[int], client.hset(metadata_key, mapping=serialized))
+
+        await self._update_metadata_indexes(document_id, old_metadata, merged)
 
     async def query_by_multiple_filters(self, filters: Dict[str, Any]) -> List[str]:
         """

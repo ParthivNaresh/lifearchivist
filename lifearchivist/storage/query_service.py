@@ -11,7 +11,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
-from llama_index.core import QueryBundle
 from llama_index.core.base.response.schema import Response
 from llama_index.core.indices.base import BaseIndex
 from llama_index.core.query_engine import BaseQueryEngine
@@ -19,7 +18,6 @@ from llama_index.core.query_engine import BaseQueryEngine
 from lifearchivist.storage.utils import (
     ChunkUtils,
     ConfidenceCalculator,
-    MetadataFilterUtils,
 )
 from lifearchivist.utils.logging import log_event, track
 from lifearchivist.utils.result import (
@@ -379,7 +377,7 @@ class LlamaIndexQueryService(QueryService):
     @track(
         operation="context_building",
         include_args=["top_k"],
-        include_result=False,  # Don't log full context
+        include_result=False,
         track_performance=True,
         frequency="high_frequency",
     )
@@ -398,88 +396,27 @@ class LlamaIndexQueryService(QueryService):
         Returns:
             Success with tuple of (combined_context, source_chunks), or Failure with error
         """
+        from lifearchivist.storage.utils import ContextBuilder
+
         try:
-            source_chunks = []
+            source_chunks: List[Dict[str, Any]] = []
 
-            # Use search service if available for more control
             if self.search_service:
-                log_event(
-                    "context_retrieval_method",
-                    {"method": "search_service"},
-                    level=logging.DEBUG,
+                retrieval_result = await ContextBuilder.retrieve_from_search_service(
+                    self.search_service, question, top_k, filters
                 )
+                retrieved_chunks, error_result = retrieval_result
 
-                # Perform semantic search with filters (returns Result now)
-                search_result = await self.search_service.semantic_search(
-                    query=question,
-                    top_k=top_k,
-                    similarity_threshold=0.45,  # Minimum relevance threshold
-                    filters=filters,
-                )
+                if error_result:
+                    return error_result
 
-                # Handle Result type
-                if search_result.is_failure():
-                    log_event(
-                        "context_search_failed",
-                        {"error": str(search_result.error)},
-                        level=logging.WARNING,
-                    )
-                    failure_result: Result[Tuple[str, List[Dict[str, Any]]], str] = (
-                        search_result
-                    )
-                    return failure_result
-
-                # Unwrap successful result
-                search_results: List[Dict[str, Any]] = search_result.value
-
-                # Convert search results to source chunks format
-                for result in search_results:
-                    source_chunks.append(
-                        {
-                            "text": result.get("text", ""),
-                            "score": result.get("score", 0.0),
-                            "metadata": result.get("metadata", {}),
-                            "node_id": result.get("node_id"),
-                            "document_id": result.get("document_id", "unknown"),
-                        }
-                    )
+                if retrieved_chunks is not None:
+                    source_chunks = retrieved_chunks
 
             elif self.query_engine and hasattr(self.query_engine, "retriever"):
-                log_event(
-                    "context_retrieval_method",
-                    {"method": "query_engine_retriever"},
-                    level=logging.DEBUG,
+                source_chunks = ContextBuilder.retrieve_from_query_engine(
+                    self.query_engine, question, filters
                 )
-
-                # Use query engine's retriever
-                retriever = self.query_engine.retriever
-                nodes = retriever.retrieve(QueryBundle(query_str=question))
-
-                # Convert nodes to source chunks format
-                for node in nodes:
-                    if hasattr(node, "node"):
-                        text = node.node.text if hasattr(node.node, "text") else ""
-                        metadata = (
-                            node.node.metadata if hasattr(node.node, "metadata") else {}
-                        )
-
-                        # Apply filters if provided
-                        if filters and not MetadataFilterUtils.matches_filters(
-                            metadata, filters
-                        ):
-                            continue
-
-                        source_chunks.append(
-                            {
-                                "text": text,
-                                "score": float(node.score) if node.score else 0.0,
-                                "metadata": metadata,
-                                "node_id": (
-                                    node.node.id_ if hasattr(node.node, "id_") else None
-                                ),
-                                "document_id": metadata.get("document_id", "unknown"),
-                            }
-                        )
             else:
                 log_event(
                     "context_retrieval_failed",
@@ -491,27 +428,27 @@ class LlamaIndexQueryService(QueryService):
                     context={"service": "context_building"},
                 )
 
-            # Enrich metadata if metadata service available
-            if self.metadata_service:
-                source_chunks = await self._enrich_source_metadata(source_chunks)
+            enriched_chunks = await ContextBuilder.enrich_chunks_metadata(
+                source_chunks, self.metadata_service
+            )
 
-            # Combine chunks into context using shared utility
-            context = ChunkUtils.combine_chunks_to_context(source_chunks)
+            context = ChunkUtils.combine_chunks_to_context(enriched_chunks)
 
             log_event(
                 "context_built",
                 {
-                    "num_chunks": len(source_chunks),
+                    "num_chunks": len(enriched_chunks),
                     "context_length": len(context),
                     "avg_score": (
-                        sum(c["score"] for c in source_chunks) / len(source_chunks)
-                        if source_chunks
+                        sum(c["score"] for c in enriched_chunks) / len(enriched_chunks)
+                        if enriched_chunks
                         else 0
                     ),
                 },
             )
 
-            return Success((context, source_chunks))
+            result_tuple: Tuple[str, List[Dict[str, Any]]] = (context, enriched_chunks)
+            return Success(result_tuple)
 
         except Exception as e:
             log_event(

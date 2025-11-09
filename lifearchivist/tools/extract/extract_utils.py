@@ -10,7 +10,6 @@ from typing import List, Tuple
 import aiofiles
 import chardet
 import pytesseract
-from dateutil import parser as date_parser  # type: ignore[import-untyped]
 from docx import Document
 from docx.oxml.table import CT_Tbl
 from docx.oxml.text.paragraph import CT_P
@@ -141,7 +140,7 @@ async def _extract_docx_text(file_path: Path) -> str:
         ) from None
 
 
-async def _pdf_needs_ocr(
+def _pdf_needs_ocr(
     pdf_reader: PdfReader, min_chars_per_page: int = 200, min_unique_words: int = 20
 ) -> bool:
     """
@@ -251,7 +250,7 @@ async def _extract_pdf_with_ocr(file_path: Path) -> str:
                 logging.info(f"Processing page {page_num}/{len(images)} with OCR")
 
                 # Preprocess image for better OCR
-                processed_image = await _preprocess_image_for_ocr(image)
+                processed_image = _preprocess_image_for_ocr(image)
 
                 # Run OCR
                 try:
@@ -307,35 +306,40 @@ async def _extract_pdf_text(file_path: Path) -> str:
     Returns:
         Extracted text content
     """
-    try:
-        # First attempt: Standard text extraction
+
+    def _read_and_extract_pdf(path: Path) -> tuple[str, bool]:
+        """Synchronous PDF reading and extraction to run in thread pool."""
         text_content = []
         needs_ocr = False
 
-        with open(file_path, "rb") as file:
+        with open(path, "rb") as file:
             pdf_reader = PdfReader(file)
 
-            # Check if OCR is needed
-            needs_ocr = await _pdf_needs_ocr(pdf_reader)
+            needs_ocr = _pdf_needs_ocr(pdf_reader)
 
             if not needs_ocr:
-                # Standard extraction is sufficient
-                logging.info(
-                    f"Using standard text extraction for PDF: {file_path.name}"
-                )
+                logging.info(f"Using standard text extraction for PDF: {path.name}")
                 for page in pdf_reader.pages:
                     text_content.append(page.extract_text())
 
                 extracted_text = "\n".join(text_content)
 
-                # Final sanity check - if we got very little text from a multi-page PDF
                 if len(pdf_reader.pages) > 5 and len(extracted_text.strip()) < 500:
                     logging.warning(
                         f"Suspiciously little text ({len(extracted_text)} chars) from {len(pdf_reader.pages)} pages, trying OCR"
                     )
                     needs_ocr = True
+                    return "", needs_ocr
 
-        # If standard extraction failed or was insufficient, use OCR
+                return extracted_text, needs_ocr
+
+        return "", needs_ocr
+
+    try:
+        extracted_text, needs_ocr = await asyncio.to_thread(
+            _read_and_extract_pdf, file_path
+        )
+
         if needs_ocr:
             logging.info(f"PDF requires OCR extraction: {file_path.name}")
             extracted_text = await _extract_pdf_with_ocr(file_path)
@@ -344,7 +348,6 @@ async def _extract_pdf_text(file_path: Path) -> str:
 
     except Exception as e:
         logging.error(f"Error extracting PDF text from {file_path}: {e}")
-        # Try OCR as last resort
         try:
             logging.info(
                 f"Standard extraction failed, attempting OCR fallback for: {file_path.name}"
@@ -366,61 +369,25 @@ def _format_cell_value(cell: Cell) -> str:
     Returns:
         Formatted string representation of the cell value
     """
+    from lifearchivist.tools.extract.utils import CellValueFormatter
+
     value = cell.value
 
     if value is None:
         return ""
 
-    # Handle dates and times
     if isinstance(value, datetime):
-        # Check if it's a date only (time is midnight)
-        if value.time() == datetime.min.time():
-            return value.strftime("%Y-%m-%d")
-        else:
-            return value.strftime("%Y-%m-%d %H:%M:%S")
+        return CellValueFormatter.format_datetime(value)
 
-    # Handle boolean values
     if isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
+        return CellValueFormatter.format_boolean(value)
 
-    # Handle numbers with appropriate formatting
     if isinstance(value, (int, float)):
-        # Check if it's a percentage (based on cell format)
-        if cell.number_format and "%" in str(cell.number_format):
-            return f"{value * 100:.2f}%"
-        # Check if it's currency (common currency symbols)
-        elif cell.number_format and any(
-            symbol in str(cell.number_format) for symbol in ["$", "€", "£", "¥"]
-        ):
-            # Extract currency symbol if present
-            format_str = str(cell.number_format)
-            if "$" in format_str:
-                return f"${value:,.2f}"
-            elif "€" in format_str:
-                return f"€{value:,.2f}"
-            elif "£" in format_str:
-                return f"£{value:,.2f}"
-            elif "¥" in format_str:
-                return f"¥{value:,.2f}"
-            else:
-                return f"{value:,.2f}"
-        # Handle large numbers with thousand separators
-        elif isinstance(value, int) and abs(value) >= 1000:
-            return f"{value:,}"
-        else:
-            # Remove unnecessary decimal points for whole numbers
-            if isinstance(value, float) and value.is_integer():
-                return str(int(value))
-            return str(value)
+        return CellValueFormatter.format_numeric_value(cell, value)
 
-    # Handle formulas (show result, not formula)
     if hasattr(cell, "data_type") and cell.data_type == "f":
-        # The value should already be the calculated result
-        if value is not None:
-            return str(value)
-        return "[Formula Error]"
+        return CellValueFormatter.format_formula_result(cell, value)
 
-    # Default string conversion
     return str(value).strip()
 
 
@@ -480,13 +447,14 @@ async def _extract_excel_text(file_path: Path) -> str:
     - Empty cells and sparse data
     - Large spreadsheets efficiently
     """
+    from lifearchivist.tools.extract.utils import ExcelSheetProcessor
+
     try:
-        # Load workbook in read-only mode for better performance with large files
         workbook = load_workbook(
             str(file_path),
             read_only=True,
-            data_only=True,  # Get values, not formulas
-            keep_links=False,  # Don't load external links
+            data_only=True,
+            keep_links=False,
         )
 
         extracted_content = []
@@ -494,76 +462,17 @@ async def _extract_excel_text(file_path: Path) -> str:
         for sheet_name in workbook.sheetnames:
             sheet = workbook[sheet_name]
 
-            # Skip empty sheets
-            if sheet.max_row == 0 or sheet.max_column == 0:
-                continue
-
-            sheet_content = [f"\n[SHEET: {sheet_name}]"]
-            sheet_content.append(
-                f"[DIMENSIONS: {sheet.max_row} rows × {sheet.max_column} columns]"
+            sheet_content = ExcelSheetProcessor.process_single_sheet(
+                sheet, sheet_name, _format_cell_value, _detect_header_row
             )
 
-            # Detect headers
-            header_row_idx, headers = _detect_header_row(sheet)
-
-            if headers and any(headers):
-                # Format headers
-                header_text = " | ".join(
-                    h if h else f"Column {i+1}" for i, h in enumerate(headers)
-                )
-                sheet_content.append(f"[HEADERS] {header_text}")
-                sheet_content.append("-" * 80)  # Separator line
-
-            # Extract data rows
-            data_rows = []
-            empty_row_count = 0
-            max_empty_rows = 5  # Stop after 5 consecutive empty rows
-
-            start_row = header_row_idx + 1 if header_row_idx > 0 else 1
-
-            for row_idx in range(start_row, sheet.max_row + 1):
-                row_values = []
-                has_content = False
-
-                for col_idx in range(1, sheet.max_column + 1):
-                    cell = sheet.cell(row=row_idx, column=col_idx)
-                    value = _format_cell_value(cell)
-                    row_values.append(value)
-                    if value:
-                        has_content = True
-
-                if has_content:
-                    empty_row_count = 0
-                    # Join with pipe separator, preserving empty cells
-                    row_text = " | ".join(row_values)
-                    data_rows.append(row_text)
-
-                    # Limit extraction for very large sheets
-                    if len(data_rows) >= 10000:
-                        data_rows.append("[... truncated after 10,000 rows ...]")
-                        break
-                else:
-                    empty_row_count += 1
-                    if empty_row_count >= max_empty_rows:
-                        # Stop processing if we hit too many empty rows
-                        break
-
-            # Add data rows to sheet content
-            if data_rows:
-                sheet_content.extend(data_rows)
-            else:
-                sheet_content.append("[No data rows found]")
-
-            # Add sheet content to overall content
-            extracted_content.extend(sheet_content)
-            extracted_content.append("")  # Empty line between sheets
+            if sheet_content:
+                extracted_content.extend(sheet_content)
+                extracted_content.append("")
 
         workbook.close()
 
-        # Join all content
         full_text = "\n".join(extracted_content)
-
-        # Clean up excessive whitespace
         full_text = re.sub(r"\n{4,}", "\n\n\n", full_text)
 
         return full_text.strip()
@@ -586,24 +495,20 @@ async def _detect_csv_encoding(file_path: Path, sample_size: int = 10000) -> str
         Detected encoding string
     """
     try:
-        with open(file_path, "rb") as f:
-            raw_data = f.read(sample_size)
+        async with aiofiles.open(file_path, "rb") as f:
+            raw_data = await f.read(sample_size)
 
-        # Try to detect encoding
         result = chardet.detect(raw_data)
         encoding = result.get("encoding", "utf-8")
         confidence = result.get("confidence", 0)
 
-        # Fallback for low confidence or None result
         if not encoding or confidence < 0.7:
-            # Try common encodings
             for enc in ["utf-8", "latin-1", "cp1252", "iso-8859-1"]:
                 try:
                     raw_data.decode(enc)
                     return enc
                 except UnicodeDecodeError:
                     continue
-            # Default to utf-8 with error handling
             return "utf-8"
 
         return encoding
@@ -640,10 +545,11 @@ def _detect_csv_delimiter(content: str, sample_lines: int = 10) -> str:
     # Return delimiter with highest count
     if delimiter_counts:
         return max(delimiter_counts, key=lambda d: delimiter_counts.get(d, 0))
+
     return ","  # Default to comma
 
 
-async def _preprocess_image_for_ocr(image: Image.Image) -> Image.Image:
+def _preprocess_image_for_ocr(image: Image.Image) -> Image.Image:
     """
     Preprocess image to improve OCR accuracy.
 
@@ -700,101 +606,32 @@ async def _extract_image_text(file_path: Path) -> str:
     Returns:
         Extracted text only (no metadata markers)
     """
+    from lifearchivist.tools.extract.utils import OCRProcessor
+
     try:
-        # Open image
         image = Image.open(file_path)
 
-        # Log image metadata for debugging (not included in extracted text)
         logging.info(
             f"OCR processing image: Format={image.format}, Size={image.size[0]}x{image.size[1]}, Mode={image.mode}"
         )
 
-        # Handle multi-page images (like TIFF)
-        if hasattr(image, "n_frames"):
-            num_pages = image.n_frames
-        else:
-            num_pages = 1
-
+        num_pages = OCRProcessor.get_num_pages(image)
         all_text: List[str] = []
         total_confidence: List[int] = []
 
         for page_num in range(num_pages):
-            if num_pages > 1:
-                image.seek(page_num)
-                logging.info(f"Processing page {page_num + 1} of {num_pages}")
+            text, confidences = await OCRProcessor.process_single_page(
+                image, page_num, num_pages, _preprocess_image_for_ocr
+            )
 
-            # Preprocess image for better OCR
-            processed_image = await _preprocess_image_for_ocr(image.copy())
-
-            # Run OCR with Tesseract
-            # Use asyncio.to_thread for non-blocking execution
-            try:
-                # Configure Tesseract for better accuracy
-                custom_config = r"--oem 3 --psm 3"  # OEM 3 = Default, PSM 3 = Fully automatic page segmentation
-
-                # Extract text
-                text = await asyncio.to_thread(
-                    pytesseract.image_to_string, processed_image, config=custom_config
-                )
-
-                # Also get detailed data for confidence scores (for logging only)
-                data = await asyncio.to_thread(
-                    pytesseract.image_to_data,
-                    processed_image,
-                    output_type=pytesseract.Output.DICT,
-                    config=custom_config,
-                )
-
-                # Calculate average confidence (excluding -1 values which mean no text)
-                confidences = [conf for conf in data["conf"] if conf > 0]
-                avg_confidence = (
-                    sum(confidences) / len(confidences) if confidences else 0
-                )
+            if text:
+                all_text.append(text)
                 total_confidence.extend(confidences)
 
-                if text.strip():
-                    # For multi-page documents, add page separator
-                    if num_pages > 1 and all_text:
-                        all_text.append(f"\n--- Page {page_num + 1} ---\n")
-                    all_text.append(text.strip())
+        formatted_text = OCRProcessor.format_multipage_text(all_text, num_pages)
+        OCRProcessor.log_ocr_summary(num_pages, all_text, total_confidence)
 
-                    # Log confidence level for debugging
-                    if avg_confidence > 80:
-                        confidence_level = "High"
-                    elif avg_confidence > 60:
-                        confidence_level = "Medium"
-                    else:
-                        confidence_level = "Low"
-
-                    logging.info(
-                        f"OCR confidence for page {page_num + 1}: {confidence_level} ({avg_confidence:.1f}%)"
-                    )
-
-            except pytesseract.TesseractNotFoundError as e:
-                raise ValueError(
-                    "Tesseract OCR is not installed. Please install it using: "
-                    "brew install tesseract (macOS) or apt-get install tesseract-ocr (Linux)"
-                ) from e
-            except Exception as ocr_error:
-                logging.warning(f"OCR failed for page {page_num + 1}: {ocr_error}")
-                # Don't include error messages in extracted text
-
-        # Log summary statistics
-        if all_text:
-            word_count = sum(len(text.split()) for text in all_text)
-            overall_confidence = (
-                sum(total_confidence) / len(total_confidence) if total_confidence else 0
-            )
-            logging.info(
-                f"OCR complete: {num_pages} pages, {word_count} words, {overall_confidence:.1f}% avg confidence"
-            )
-
-            # Return ONLY the extracted text, no metadata
-            return "\n".join(all_text)
-        else:
-            logging.warning("No text detected in image")
-            # Return empty string if no text was extracted
-            return ""
+        return "\n".join(formatted_text) if formatted_text else ""
 
     except Exception as e:
         raise ValueError(f"Error extracting text from image {file_path}: {e}") from None
@@ -812,114 +649,40 @@ async def _extract_csv_text(file_path: Path) -> str:
     - Malformed CSV data
     - Date and number formatting
     """
+    from lifearchivist.tools.extract.utils import CSVProcessor
+
     try:
-        # Detect encoding
         encoding = await _detect_csv_encoding(file_path)
-
-        # Read file with detected encoding
-        try:
-            async with aiofiles.open(
-                file_path, "r", encoding=encoding, errors="replace"
-            ) as f:
-                content = await f.read()
-        except UnicodeDecodeError:
-            # Fallback to latin-1 which accepts all byte values
-            async with aiofiles.open(
-                file_path, "r", encoding="latin-1", errors="replace"
-            ) as f:
-                content = await f.read()
-
-        # Detect delimiter
+        content = await CSVProcessor.read_csv_content(file_path, encoding)
         delimiter = _detect_csv_delimiter(content)
 
-        # Parse CSV
         csv_reader = csv.reader(io.StringIO(content), delimiter=delimiter)
 
         extracted_rows = []
         header_row = None
         row_count = 0
-        max_rows = 10000  # Limit for very large files
+        max_rows = 10000
 
         for row_idx, row in enumerate(csv_reader):
-            # Skip completely empty rows
             if not any(cell.strip() for cell in row):
                 continue
 
-            # Process and clean cell values
-            cleaned_row = []
-            for cell in row:
-                cell_value = cell.strip()
+            cleaned_row = CSVProcessor.process_csv_row(row)
 
-                # Try to detect and format dates
-                if (
-                    cell_value
-                    and not cell_value.replace(".", "")
-                    .replace(",", "")
-                    .replace("-", "")
-                    .isdigit()
-                ):
-                    try:
-                        # Try parsing as date
-                        parsed_date = date_parser.parse(cell_value, fuzzy=False)
-                        # Only treat as date if it's not just a number
-                        if not cell_value.isdigit():
-                            cell_value = parsed_date.strftime("%Y-%m-%d")
-                    except (ValueError, TypeError):
-                        pass  # Not a date, keep original value
-
-                # Format numbers with thousand separators if large
-                if (
-                    cell_value.replace(",", "")
-                    .replace(".", "")
-                    .replace("-", "")
-                    .isdigit()
-                ):
-                    try:
-                        # Remove existing formatting
-                        clean_num = cell_value.replace(",", "")
-                        if "." in clean_num:
-                            num = float(clean_num)
-                            if num.is_integer():
-                                cell_value = f"{int(num):,}"
-                            else:
-                                cell_value = f"{num:,.2f}"
-                        else:
-                            num = int(clean_num)
-                            if abs(num) >= 1000:
-                                cell_value = f"{num:,}"
-                    except ValueError:
-                        pass  # Keep original value
-
-                cleaned_row.append(cell_value)
-
-            # First non-empty row is likely headers
             if row_idx == 0 and any(cleaned_row):
                 header_row = cleaned_row
-                header_text = " | ".join(cleaned_row)
-                extracted_rows.append(f"[CSV HEADERS] {header_text}")
-                extracted_rows.append("-" * 80)
+                extracted_rows.extend(CSVProcessor.format_header_row(cleaned_row))
             else:
-                # Format data row
-                row_text = " | ".join(cleaned_row)
-                extracted_rows.append(row_text)
+                extracted_rows.append(CSVProcessor.format_data_row(cleaned_row))
 
             row_count += 1
             if row_count >= max_rows:
                 extracted_rows.append(f"[... truncated after {max_rows} rows ...]")
                 break
 
-        # Add summary information
-        summary = [
-            "",
-            "[CSV SUMMARY]",
-            f"Total rows processed: {row_count}",
-            f"Delimiter used: '{delimiter}'",
-            f"Encoding: {encoding}",
-        ]
-
-        if header_row:
-            summary.append(f"Number of columns: {len(header_row)}")
-
+        summary = CSVProcessor.create_summary(
+            row_count, delimiter, encoding, header_row
+        )
         extracted_rows.extend(summary)
 
         return "\n".join(extracted_rows)

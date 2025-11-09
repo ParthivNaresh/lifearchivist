@@ -15,20 +15,20 @@ import asyncio
 import hashlib
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 from uuid import uuid4
 
 import aiofiles
-from watchdog.events import FileSystemEvent, FileSystemEventHandler
-from watchdog.observers import Observer
-
-from lifearchivist.models.folder_watch import (
+from server.api.routes.folder_watch.misc_models import (
     FolderStats,
     FolderWatchStatus,
     WatchedFolder,
 )
+from watchdog.events import FileSystemEvent, FileSystemEventHandler
+from watchdog.observers import Observer
+
 from lifearchivist.storage.redis_folder_watch_store import RedisFolderWatchStore
 from lifearchivist.utils.logging import log_event
 
@@ -219,38 +219,31 @@ class FolderWatcherService:
             ValueError: If path already watched, folder limit reached, or path invalid
             RuntimeError: If service not initialized
         """
+        from lifearchivist.storage.utils import FolderWatchUtils
+
         if not self._initialized:
             raise RuntimeError("FolderWatcherService not initialized")
 
-        # Validate folder count
         if len(self.watched_folders) >= self.max_folders:
             raise ValueError(
                 f"Maximum folder limit reached ({self.max_folders}). "
                 f"Remove a folder before adding more."
             )
 
-        # Validate path
-        if not path.exists():
-            raise ValueError(f"Folder does not exist: {path}")
+        FolderWatchUtils.validate_folder_path(path)
 
-        if not path.is_dir():
-            raise ValueError(f"Path is not a directory: {path}")
-
-        # Check if path already watched
         existing_id = await self._store.get_folder_id_by_path(str(path))
         if existing_id:
             raise ValueError(f"Folder already being watched: {path}")
 
-        # Generate folder_id if not provided
         if not folder_id:
             folder_id = str(uuid4())
 
-        # Create WatchedFolder instance first (in-memory only)
         watched_folder = WatchedFolder(
             id=folder_id,
             path=path,
             enabled=enabled,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             stats=FolderStats(),
             observer=None,
             handler=None,
@@ -261,15 +254,12 @@ class FolderWatcherService:
         watching_started = False
 
         try:
-            # Add to in-memory state first
             self.watched_folders[folder_id] = watched_folder
 
-            # Start watching if enabled (before Redis to fail fast)
             if enabled:
                 await self._start_watching(folder_id)
                 watching_started = True
 
-            # Persist to Redis last (after everything else succeeds)
             await self._store.add_folder(
                 path=str(path), folder_id=folder_id, enabled=enabled
             )
@@ -289,28 +279,16 @@ class FolderWatcherService:
             return folder_id
 
         except Exception as e:
-            # Cleanup in reverse order of operations
             logger.error(f"Failed to add folder {path}: {e}", exc_info=True)
 
-            # Stop watching if we started it
-            if watching_started:
-                try:
-                    await self._stop_watching(folder_id)
-                except Exception as stop_err:
-                    logger.error(f"Error stopping watcher during cleanup: {stop_err}")
-
-            # Remove from Redis if we persisted it
-            if redis_persisted:
-                try:
-                    await self._store.remove_folder(folder_id)
-                except Exception as redis_err:
-                    logger.error(
-                        f"Error removing from Redis during cleanup: {redis_err}"
-                    )
-
-            # Remove from in-memory state
-            if folder_id in self.watched_folders:
-                del self.watched_folders[folder_id]
+            await FolderWatchUtils.cleanup_failed_add(
+                folder_id,
+                self.watched_folders,
+                self._store,
+                watching_started,
+                redis_persisted,
+                self._stop_watching,
+            )
 
             raise
 

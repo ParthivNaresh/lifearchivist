@@ -26,6 +26,10 @@ class ErrorMessages:
 
     SERVICE_NOT_INITIALIZED: Final[str] = "{service} service not initialized"
     SERVICE_NOT_AVAILABLE: Final[str] = "{service} service not available"
+    SERVICES_NOT_AVAILABLE: Final[str] = "Services not available"
+    CONVERSATION_SERVICE_NOT_AVAILABLE: Final[str] = (
+        "Conversation service not available"
+    )
     INVALID_PATH: Final[str] = "Invalid {path_type} path: {error}"
     RESOURCE_NOT_FOUND: Final[str] = "{resource} not found: {identifier}"
     OPERATION_FAILED: Final[str] = "Failed to {operation}: {error}"

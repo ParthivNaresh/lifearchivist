@@ -24,11 +24,14 @@ from ...utils.result import (
     validation_error,
 )
 from .utils import (
+    build_conversation_updates,
     build_insert_query,
     build_update_query,
     parse_uuid,
     record_to_dict,
     records_to_list,
+    validate_max_tokens,
+    validate_temperature,
 )
 
 
@@ -368,45 +371,32 @@ class ConversationService:
             Success with updated conversation dict, or Failure with error
         """
         try:
-            # Parse UUID
             conv_uuid = parse_uuid(conversation_id)
 
-            # Build updates - dict can contain various types
-            updates: Dict[str, Any] = {}
-
-            if title is not None:
-                updates["title"] = title
-
-            if model is not None:
-                updates["model"] = model
-
-            if provider_id is not None:
-                updates["provider_id"] = provider_id
-
-            if context_documents is not None:
-                updates["context_documents"] = context_documents
-
-            if system_prompt is not None:
-                updates["system_prompt"] = system_prompt
-
             if temperature is not None:
-                if temperature < 0 or temperature > 2:
+                error_msg = validate_temperature(temperature)
+                if error_msg:
                     return validation_error(
-                        "Temperature must be between 0 and 2",
-                        context={"temperature": temperature},
+                        error_msg, context={"temperature": temperature}
                     )
-                updates["temperature"] = temperature
 
             if max_tokens is not None:
-                if max_tokens < 1 or max_tokens > 100000:
+                error_msg = validate_max_tokens(max_tokens)
+                if error_msg:
                     return validation_error(
-                        "Max tokens must be between 1 and 100000",
-                        context={"max_tokens": max_tokens},
+                        error_msg, context={"max_tokens": max_tokens}
                     )
-                updates["max_tokens"] = max_tokens
 
-            if metadata is not None:
-                updates["metadata"] = metadata
+            updates = build_conversation_updates(
+                title,
+                model,
+                provider_id,
+                context_documents,
+                system_prompt,
+                temperature,
+                max_tokens,
+                metadata,
+            )
 
             if not updates:
                 return validation_error(
@@ -414,7 +404,6 @@ class ConversationService:
                     context={"conversation_id": conversation_id},
                 )
 
-            # Build and execute query
             query, values = build_update_query(
                 "conversations", updates, f"id = ${len(updates) + 1}"
             )

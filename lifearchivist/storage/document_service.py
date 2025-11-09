@@ -1088,69 +1088,22 @@ class LlamaIndexDocumentService(DocumentService):
 
         This replaces the old docstore-based method.
         """
-        text_length = len(text)
-        word_count = len(text.split())
+        from lifearchivist.storage.utils import ChunkInfoBuilder
 
-        # Get metadata from Qdrant payload (minimal metadata)
-        metadata = {}
-        for key in [
-            "document_id",
-            "title",
-            "mime_type",
-            "status",
-            "theme",
-            "uploaded_date",
-            "file_hash_short",
-        ]:
-            if key in point.payload:
-                metadata[key] = point.payload[key]
+        metadata = ChunkInfoBuilder.extract_metadata_from_payload(point.payload)
+        start_char, end_char, relationships = ChunkInfoBuilder.parse_node_content(
+            point.payload
+        )
 
-        # Parse _node_content for additional info if available
-        try:
-            import json
-
-            if "_node_content" in point.payload:
-                node_data = json.loads(point.payload["_node_content"])
-
-                # Extract start/end char indices if available
-                start_char = node_data.get("start_char_idx")
-                end_char = node_data.get("end_char_idx")
-
-                # Extract relationships if available
-                relationships = {}
-                if "relationships" in node_data:
-                    for rel_type, rel_info in node_data["relationships"].items():
-                        if isinstance(rel_info, dict):
-                            relationships[rel_type] = {
-                                "node_id": rel_info.get("node_id"),
-                            }
-        except Exception as e:
-            log_event(
-                "node_content_parse_error",
-                {"node_id": str(point.id), "error": str(e)},
-                level=logging.DEBUG,
-            )
-            start_char = None
-            end_char = None
-            relationships = {}
-
-        chunk_info = {
-            "chunk_index": chunk_index,
-            "node_id": str(point.id),
-            "text": text,
-            "text_length": text_length,
-            "word_count": word_count,
-            "metadata": metadata,
-            "relationships": relationships if relationships else {},
-        }
-
-        # Add start/end char if available
-        if start_char is not None:
-            chunk_info["start_char"] = start_char
-        if end_char is not None:
-            chunk_info["end_char"] = end_char
-
-        return chunk_info
+        return ChunkInfoBuilder.build_chunk_info(
+            str(point.id),
+            text,
+            chunk_index,
+            metadata,
+            start_char,
+            end_char,
+            relationships,
+        )
 
     def _calculate_chunk_statistics(
         self,

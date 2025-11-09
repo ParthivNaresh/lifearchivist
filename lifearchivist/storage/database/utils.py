@@ -225,3 +225,266 @@ def format_timestamp(dt: Any) -> Optional[str]:
     # Explicit cast to satisfy type checker
     result: str = str(dt)
     return result if result else None
+
+
+def validate_temperature(temperature: float) -> Optional[str]:
+    """
+    Validate temperature parameter.
+
+    Args:
+        temperature: Temperature value to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if temperature < 0 or temperature > 2:
+        return "Temperature must be between 0 and 2"
+    return None
+
+
+def validate_max_tokens(max_tokens: int) -> Optional[str]:
+    """
+    Validate max_tokens parameter.
+
+    Args:
+        max_tokens: Max tokens value to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if max_tokens < 1 or max_tokens > 100000:
+        return "Max tokens must be between 1 and 100000"
+    return None
+
+
+def build_conversation_updates(
+    title: Optional[str],
+    model: Optional[str],
+    provider_id: Optional[str],
+    context_documents: Optional[List[str]],
+    system_prompt: Optional[str],
+    temperature: Optional[float],
+    max_tokens: Optional[int],
+    metadata: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """
+    Build updates dictionary for conversation update.
+
+    Args:
+        title: New title
+        model: New model
+        provider_id: New provider ID
+        context_documents: New context documents
+        system_prompt: New system prompt
+        temperature: New temperature
+        max_tokens: New max tokens
+        metadata: New metadata
+
+    Returns:
+        Dictionary of updates to apply
+    """
+    updates: Dict[str, Any] = {}
+
+    if title is not None:
+        updates["title"] = title
+
+    if model is not None:
+        updates["model"] = model
+
+    if provider_id is not None:
+        updates["provider_id"] = provider_id
+
+    if context_documents is not None:
+        updates["context_documents"] = context_documents
+
+    if system_prompt is not None:
+        updates["system_prompt"] = system_prompt
+
+    if temperature is not None:
+        updates["temperature"] = temperature
+
+    if max_tokens is not None:
+        updates["max_tokens"] = max_tokens
+
+    if metadata is not None:
+        updates["metadata"] = metadata
+
+    return updates
+
+
+def validate_message_role(role: str) -> Optional[str]:
+    """
+    Validate message role.
+
+    Args:
+        role: Role to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if role not in ("user", "assistant", "system"):
+        return f"Invalid role: {role}. Must be 'user', 'assistant', or 'system'"
+    return None
+
+
+def validate_message_content(content: str) -> Optional[str]:
+    """
+    Validate message content.
+
+    Args:
+        content: Content to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if not content or not content.strip():
+        return "Message content cannot be empty"
+    return None
+
+
+def validate_confidence(confidence: float) -> Optional[str]:
+    """
+    Validate confidence score.
+
+    Args:
+        confidence: Confidence value to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if confidence < 0 or confidence > 1:
+        return "Confidence must be between 0 and 1"
+    return None
+
+
+def build_message_data(
+    conv_uuid: Any,
+    role: str,
+    content: str,
+    sequence_number: int,
+    model: Optional[str],
+    confidence: Optional[float],
+    method: Optional[str],
+    tokens_used: Optional[int],
+    latency_ms: Optional[int],
+    parent_uuid: Optional[Any],
+    metadata: Optional[Any],
+) -> Dict[str, Any]:
+    """
+    Build message data dictionary for insertion.
+
+    Args:
+        conv_uuid: Conversation UUID
+        role: Message role
+        content: Message content
+        sequence_number: Sequence number
+        model: Model used
+        confidence: Confidence score
+        method: Method used
+        tokens_used: Token count
+        latency_ms: Latency in milliseconds
+        parent_uuid: Parent message UUID
+        metadata: Additional metadata
+
+    Returns:
+        Dictionary of message data
+    """
+    import json
+
+    data: Dict[str, Any] = {
+        "conversation_id": conv_uuid,
+        "role": role,
+        "content": content.strip(),
+        "sequence_number": sequence_number,
+    }
+
+    if model:
+        data["model"] = model
+    if confidence is not None:
+        data["confidence"] = confidence
+    if method:
+        data["method"] = method
+    if tokens_used is not None:
+        data["tokens_used"] = tokens_used
+    if latency_ms is not None:
+        data["latency_ms"] = latency_ms
+    if parent_uuid:
+        data["parent_message_id"] = parent_uuid
+    if metadata:
+        data["metadata"] = (
+            json.dumps(metadata) if isinstance(metadata, dict) else metadata
+        )
+
+    return data
+
+
+def validate_citation_score(score: float) -> Optional[str]:
+    """
+    Validate citation score.
+
+    Args:
+        score: Score value to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if score < 0 or score > 1:
+        return "Citation score must be between 0 and 1"
+    return None
+
+
+def validate_single_citation(
+    citation: Dict[str, Any],
+    index: int,
+) -> Optional[str]:
+    """
+    Validate a single citation.
+
+    Args:
+        citation: Citation dictionary to validate
+        index: Citation index for error messages
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if "document_id" not in citation:
+        return f"Citation {index} missing document_id"
+
+    score = citation.get("score")
+    if score is not None:
+        error_msg = validate_citation_score(score)
+        if error_msg:
+            return f"Citation {index} score must be between 0 and 1"
+
+    return None
+
+
+def build_citation_data(
+    msg_uuid: Any,
+    citation: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Build citation data dictionary for insertion.
+
+    Args:
+        msg_uuid: Message UUID
+        citation: Citation dictionary
+
+    Returns:
+        Dictionary of citation data
+    """
+    data: Dict[str, Any] = {
+        "message_id": msg_uuid,
+        "document_id": citation["document_id"],
+    }
+
+    if "chunk_id" in citation:
+        data["chunk_id"] = citation["chunk_id"]
+    if "score" in citation:
+        data["score"] = citation["score"]
+    if "snippet" in citation:
+        data["snippet"] = citation["snippet"]
+    if "position" in citation:
+        data["position"] = citation["position"]
+
+    return data

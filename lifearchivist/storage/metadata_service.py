@@ -685,33 +685,14 @@ class LlamaIndexMetadataService(MetadataService):
         Args:
             node_ids: List of node IDs to analyze
         """
-        total_chars = 0
-        total_words = 0
-        chunk_sizes = []
-        word_counts = []
-        chunks_preview: List[Dict[str, Any]] = []
+        from lifearchivist.storage.utils import (
+            DocumentMetricsCollector,
+            QdrantNodeUtils,
+        )
 
         if not self.qdrant_client:
-            # Fallback to empty metrics if Qdrant not available
-            return {
-                "total_chars": 0,
-                "total_words": 0,
-                "num_chunks": 0,
-                "chunks_preview": [],
-                "processing_info": {
-                    "total_chars": 0,
-                    "total_words": 0,
-                    "num_chunks": 0,
-                    "avg_chunk_size": 0,
-                    "min_chunk_size": 0,
-                    "max_chunk_size": 0,
-                    "avg_word_count": 0,
-                },
-            }
+            return DocumentMetricsCollector.create_empty_metrics()
 
-        from lifearchivist.storage.utils import QdrantNodeUtils
-
-        # Retrieve all nodes from Qdrant in batch
         try:
             points = self.qdrant_client.retrieve(
                 collection_name="lifearchivist",
@@ -725,27 +706,14 @@ class LlamaIndexMetadataService(MetadataService):
                 {"node_count": len(node_ids), "error": str(e)},
                 level=logging.ERROR,
             )
-            # Return empty metrics on error
-            return {
-                "total_chars": 0,
-                "total_words": 0,
-                "num_chunks": 0,
-                "chunks_preview": [],
-                "processing_info": {
-                    "total_chars": 0,
-                    "total_words": 0,
-                    "num_chunks": 0,
-                    "avg_chunk_size": 0,
-                    "min_chunk_size": 0,
-                    "max_chunk_size": 0,
-                    "avg_word_count": 0,
-                },
-            }
+            return DocumentMetricsCollector.create_empty_metrics()
 
-        # Process each point
+        chunk_sizes = []
+        word_counts = []
+        chunks_preview: List[Dict[str, Any]] = []
+
         for point in points:
             try:
-                # Extract text from Qdrant payload
                 text = QdrantNodeUtils.extract_text_from_node(point.payload)
                 if not text:
                     continue
@@ -753,12 +721,9 @@ class LlamaIndexMetadataService(MetadataService):
                 text_length = len(text)
                 word_count = len(text.split())
 
-                total_chars += text_length
-                total_words += word_count
                 chunk_sizes.append(text_length)
                 word_counts.append(word_count)
 
-                # Add to preview (first 3 chunks)
                 if len(chunks_preview) < 3:
                     chunk_preview = {
                         "node_id": str(point.id),
@@ -776,27 +741,16 @@ class LlamaIndexMetadataService(MetadataService):
                 )
                 continue
 
-        # Calculate statistics
-        num_chunks = len(chunk_sizes)
-        avg_chunk_size = sum(chunk_sizes) / num_chunks if num_chunks > 0 else 0
-        avg_word_count = sum(word_counts) / num_chunks if num_chunks > 0 else 0
-        min_chunk_size = min(chunk_sizes) if chunk_sizes else 0
-        max_chunk_size = max(chunk_sizes) if chunk_sizes else 0
+        stats = DocumentMetricsCollector.calculate_chunk_statistics(
+            chunk_sizes, word_counts
+        )
 
         return {
-            "total_chars": total_chars,
-            "total_words": total_words,
-            "num_chunks": num_chunks,
+            "total_chars": stats["total_chars"],
+            "total_words": stats["total_words"],
+            "num_chunks": stats["num_chunks"],
             "chunks_preview": chunks_preview,
-            "processing_info": {
-                "total_chars": total_chars,
-                "total_words": total_words,
-                "num_chunks": num_chunks,
-                "avg_chunk_size": round(avg_chunk_size, 2),
-                "min_chunk_size": min_chunk_size,
-                "max_chunk_size": max_chunk_size,
-                "avg_word_count": round(avg_word_count, 2),
-            },
+            "processing_info": stats,
         }
 
     def _get_storage_info(self) -> Dict[str, Any]:

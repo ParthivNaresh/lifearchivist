@@ -170,6 +170,8 @@ class LlamaIndexSearchService(SearchService):
         Returns:
             Success with list of search results, or Failure with error
         """
+        from lifearchivist.storage.utils import SearchResultProcessor
+
         if not self.index:
             log_event(
                 "semantic_search_skipped",
@@ -192,46 +194,33 @@ class LlamaIndexSearchService(SearchService):
                 },
             )
 
-            # Update retriever settings
             self.semantic_retriever.similarity_top_k = top_k
-
-            # Retrieve nodes
             nodes = self.semantic_retriever.retrieve(query)
 
-            # Filter by similarity threshold and format results
+            filtered_nodes, nodes_below_threshold = (
+                SearchResultProcessor.filter_by_threshold(nodes, similarity_threshold)
+            )
+
             results = []
-            nodes_below_threshold = 0
+            for node in filtered_nodes:
+                score, metadata, text, node_id = (
+                    SearchResultProcessor.extract_node_data(node)
+                )
 
-            for node in nodes:
-                # Qdrant returns scores as cosine similarity (0-1 range)
-                score = float(node.score) if node.score else 0.0
+                if filters and not MetadataFilterUtils.matches_filters(
+                    metadata, filters
+                ):
+                    continue
 
-                if score >= similarity_threshold:
-                    # Extract metadata and text
-                    metadata = (
-                        node.node.metadata if hasattr(node.node, "metadata") else {}
-                    )
-
-                    # Apply metadata filters if provided
-                    if filters and not MetadataFilterUtils.matches_filters(
-                        metadata, filters
-                    ):
-                        continue
-
-                    text = node.node.text if hasattr(node.node, "text") else ""
-
-                    # Create result entry
-                    result = {
-                        "document_id": metadata.get("document_id", "unknown"),
-                        "text": text[:500] + "..." if len(text) > 500 else text,
-                        "score": score,
-                        "metadata": metadata,
-                        "node_id": node.node.id_ if hasattr(node.node, "id_") else None,
-                        "search_type": "semantic",
-                    }
-                    results.append(result)
-                else:
-                    nodes_below_threshold += 1
+                result = SearchResultProcessor.create_search_result(
+                    metadata.get("document_id", "unknown"),
+                    text,
+                    score,
+                    metadata,
+                    node_id,
+                    "semantic",
+                )
+                results.append(result)
 
             log_event(
                 "semantic_search_completed",
@@ -240,11 +229,7 @@ class LlamaIndexSearchService(SearchService):
                     "nodes_above_threshold": len(results),
                     "nodes_below_threshold": nodes_below_threshold,
                     "threshold": similarity_threshold,
-                    "avg_score": (
-                        sum(r["score"] for r in results) / len(results)
-                        if results
-                        else 0
-                    ),
+                    "avg_score": SearchResultProcessor.calculate_avg_score(results),
                 },
             )
 
@@ -375,51 +360,43 @@ class LlamaIndexSearchService(SearchService):
         Returns:
             List of enriched result dictionaries
         """
+        from lifearchivist.storage.utils import BM25ResultEnricher
+
         enriched = []
 
         for document_id, score in bm25_results:
             try:
-                # Get full metadata from doc_tracker
-                if self.doc_tracker:
-                    metadata = await self.doc_tracker.get_full_metadata(document_id)
-                    if not metadata:
-                        continue
+                metadata = await BM25ResultEnricher.get_document_metadata(
+                    self.doc_tracker, document_id
+                )
+                if not metadata:
+                    continue
 
-                    # Apply filters if provided
-                    if filters and not MetadataFilterUtils.matches_filters(
-                        metadata, filters
-                    ):
-                        continue
+                if filters and not MetadataFilterUtils.matches_filters(
+                    metadata, filters
+                ):
+                    continue
 
-                    # Get text preview from first node
-                    node_ids = await self.doc_tracker.get_node_ids(document_id)
-                    text_preview = ""
-                    if node_ids and self.index:
-                        # Get text from first chunk
-                        text_preview = await self._get_text_from_node(node_ids[0])
+                text_preview = await BM25ResultEnricher.get_text_preview(
+                    self.doc_tracker, self.index, document_id, self._get_text_from_node
+                )
 
-                    enriched.append(
-                        {
-                            "document_id": document_id,
-                            "text": (
-                                text_preview[:500] + "..."
-                                if len(text_preview) > 500
-                                else text_preview
-                            ),
-                            "score": score,
-                            "metadata": metadata,
-                            "node_id": node_ids[0] if node_ids else None,
-                            "search_type": "keyword",
-                        }
-                    )
+                node_ids = (
+                    await self.doc_tracker.get_node_ids(document_id)
+                    if self.doc_tracker
+                    else None
+                )
+                node_id = node_ids[0] if node_ids else None
+
+                result = BM25ResultEnricher.create_enriched_result(
+                    document_id, score, metadata, text_preview, node_id
+                )
+                enriched.append(result)
 
             except Exception as e:
                 log_event(
                     "bm25_result_enrichment_failed",
-                    {
-                        "document_id": document_id,
-                        "error": str(e),
-                    },
+                    {"document_id": document_id, "error": str(e)},
                     level=logging.DEBUG,
                 )
                 continue
