@@ -2,8 +2,9 @@
 Send message endpoint.
 """
 
+import math
 import time
-from typing import List
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter
 from fastapi import Path as PathParam
@@ -20,10 +21,290 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
+from .misc_models import LLMConfig, MessageContext, SearchContext
 from .request_models import SendMessageRequest
 from .response_models import SendMessageResponse
 
 router = APIRouter()
+
+
+class MessageProcessor:
+    """Handles message processing logic."""
+
+    def __init__(self, server: Any):
+        self.server = server
+        self._validate_services()
+
+    def _validate_services(self) -> None:
+        """Validate required services are available."""
+        if not self.server.service_container:
+            raise ServiceUnavailableError("Service container")
+
+        if not self.server.service_container.conversation_service:
+            raise ServiceUnavailableError("Conversation service")
+
+        if not self.server.service_container.message_service:
+            raise ServiceUnavailableError("Message service")
+
+        if not self.server.service_container.llamaindex_service:
+            raise ServiceUnavailableError("LlamaIndex service")
+
+        if not self.server.service_container.llm_provider_manager:
+            raise ServiceUnavailableError("LLM provider manager")
+
+    async def fetch_conversation(self, conversation_id: str) -> Dict[str, Any]:
+        """Fetch conversation data."""
+        conv_service = self.server.service_container.conversation_service
+        conv_result = await conv_service.get_conversation(conversation_id)
+
+        if conv_result.is_failure():
+            error_msg = conv_result.error
+            if "not found" in error_msg.lower():
+                raise ResourceNotFoundError("Conversation", conversation_id)
+            raise InternalServerError("Get conversation", Exception(error_msg))
+
+        conversation_data: Dict[str, Any] = conv_result.unwrap()
+        return conversation_data
+
+    async def add_user_message(
+        self, conversation_id: str, content: str
+    ) -> Dict[str, Any]:
+        """Add user message to conversation."""
+        msg_service = self.server.service_container.message_service
+        user_msg_result = await msg_service.add_message(
+            conversation_id=conversation_id,
+            role="user",
+            content=content,
+        )
+
+        if user_msg_result.is_failure():
+            raise InternalServerError(
+                "Add user message", Exception(user_msg_result.error)
+            )
+
+        message_data: Dict[str, Any] = user_msg_result.unwrap()
+        return message_data
+
+    async def perform_semantic_search(self, context: MessageContext) -> SearchContext:
+        """Perform semantic search for context."""
+        llamaindex_service = self.server.service_container.llamaindex_service
+
+        filters = self._build_search_filters(context.conversation)
+
+        search_results = await llamaindex_service.semantic_search(
+            query=context.user_content,
+            top_k=context.context_limit,
+            filters=filters,
+        )
+
+        sources = self._extract_sources(search_results)
+        context_text = self._build_context_text(sources) if sources else None
+
+        return SearchContext(sources=sources, context_text=context_text)
+
+    def _build_search_filters(
+        self, conversation: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Build search filters from conversation context."""
+        if conversation.get("context_documents"):
+            return {"document_id": {"$in": conversation["context_documents"]}}
+        return None
+
+    def _extract_sources(self, search_results: List[Any]) -> List[Dict[str, Any]]:
+        """Extract source information from search results."""
+        return [
+            {
+                "document_id": result.get("document_id", ""),
+                "node_id": result.get("node_id"),
+                "score": result.get("score", 0.0),
+                "text": result.get("text", ""),
+                "metadata": result.get("metadata", {}),
+            }
+            for result in search_results
+        ]
+
+    def _build_context_text(self, sources: List[Dict[str, Any]]) -> str:
+        """Build context text from sources."""
+        return "\n\n".join(
+            f"[Document {i+1}]\n{source.get('text', '')}"
+            for i, source in enumerate(sources[:5])
+        )
+
+    async def get_llm_config(self, conversation: Dict[str, Any]) -> LLMConfig:
+        """Get LLM configuration from conversation and preferences."""
+        response_format = await self._fetch_response_format()
+        temperature, max_tokens = await self._fetch_generation_params(conversation)
+
+        base_system_prompt = (
+            conversation.get("system_prompt")
+            or "You are a helpful assistant that answers questions based on the provided context."
+        )
+
+        return LLMConfig(
+            provider_id=conversation.get("provider_id"),
+            model=conversation.get("model") or get_settings().llm_model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            system_prompt=base_system_prompt,
+            response_format=response_format,
+        )
+
+    async def _fetch_response_format(self) -> Optional[str]:
+        """Fetch response format from user preferences."""
+        db_pool = self.server.service_container.conversation_service.db_pool
+        async with db_pool.acquire() as conn:
+            prefs = await conn.fetchrow(
+                "SELECT response_format FROM user_preferences WHERE user_id = 'default'"
+            )
+            return prefs["response_format"] if prefs else None
+
+    async def _fetch_generation_params(
+        self, conversation: Dict[str, Any]
+    ) -> Tuple[float, int]:
+        """Fetch temperature and max tokens from preferences."""
+        temperature = conversation.get("temperature", 0.7)
+        max_tokens = conversation.get("max_tokens", 2000)
+
+        if (
+            math.isclose(temperature, 0.7, rel_tol=1e-09, abs_tol=1e-09)
+            or max_tokens == 2000
+        ):
+            db_pool = self.server.service_container.conversation_service.db_pool
+            async with db_pool.acquire() as conn:
+                prefs = await conn.fetchrow(
+                    "SELECT temperature, max_output_tokens FROM user_preferences WHERE user_id = 'default'"
+                )
+                if prefs:
+                    if math.isclose(temperature, 0.7, rel_tol=1e-09, abs_tol=1e-09):
+                        temperature = prefs["temperature"]
+                    if max_tokens == 2000:
+                        max_tokens = prefs["max_output_tokens"]
+
+        return temperature, max_tokens
+
+    def build_llm_messages(
+        self, config: LLMConfig, search_context: SearchContext, user_content: str
+    ) -> List[LLMMessage]:
+        """Build LLM messages with context."""
+        system_prompt = PromptFormatter.apply_response_format(
+            config.system_prompt, config.response_format
+        )
+
+        if search_context.context_text:
+            system_content = (
+                f"{system_prompt}\n\nContext:\n{search_context.context_text}"
+            )
+        else:
+            system_content = system_prompt
+
+        return [
+            LLMMessage(role="system", content=system_content),
+            LLMMessage(role="user", content=user_content),
+        ]
+
+    async def generate_response(
+        self, messages: List[LLMMessage], config: LLMConfig
+    ) -> Tuple[str, int]:
+        """Generate LLM response."""
+        provider_manager = self.server.service_container.llm_provider_manager
+
+        gen_result = await provider_manager.generate(
+            messages=messages,
+            model=config.model,
+            provider_id=config.provider_id,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+        )
+
+        if gen_result.is_failure():
+            raise InternalServerError("Generate response", Exception(gen_result.error))
+
+        response = gen_result.unwrap()
+        return response.content, 0
+
+    async def handle_generation_error(
+        self,
+        error: Exception,
+        context: MessageContext,
+        config: LLMConfig,
+        latency_ms: int,
+    ) -> None:
+        """Handle LLM generation errors."""
+        user_friendly_message = format_llm_error(error, config.model)
+        error_metadata = create_error_metadata(
+            error, config.provider_id or "default", config.model
+        )
+
+        msg_service = self.server.service_container.message_service
+        await msg_service.add_message(
+            conversation_id=context.conversation_id,
+            role="assistant",
+            content=user_friendly_message,
+            model=config.model,
+            confidence=0.0,
+            method="error",
+            latency_ms=latency_ms,
+            metadata=error_metadata,
+        )
+
+    async def add_assistant_message(
+        self,
+        context: MessageContext,
+        content: str,
+        config: LLMConfig,
+        has_sources: bool,
+        latency_ms: int,
+    ) -> Dict[str, Any]:
+        """Add assistant message to conversation."""
+        msg_service = self.server.service_container.message_service
+
+        confidence = 0.8 if has_sources else 0.5
+        method = "rag_with_provider" if has_sources else "direct_provider"
+
+        assistant_msg_result = await msg_service.add_message(
+            conversation_id=context.conversation_id,
+            role="assistant",
+            content=content,
+            model=config.model,
+            confidence=confidence,
+            method=method,
+            latency_ms=latency_ms,
+        )
+
+        if assistant_msg_result.is_failure():
+            raise InternalServerError(
+                "Add assistant message", Exception(assistant_msg_result.error)
+            )
+
+        assistant_data: Dict[str, Any] = assistant_msg_result.unwrap()
+        return assistant_data
+
+    async def add_citations(
+        self, message_id: str, sources: List[Dict[str, Any]]
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Add citations to assistant message."""
+        if not sources:
+            return None
+
+        msg_service = self.server.service_container.message_service
+
+        citations = [
+            {
+                "document_id": source.get("document_id", ""),
+                "chunk_id": source.get("node_id"),
+                "score": source.get("score"),
+                "snippet": source.get("text", "")[:500],
+                "position": i,
+            }
+            for i, source in enumerate(sources)
+        ]
+
+        citation_result = await msg_service.add_citations(
+            message_id=str(message_id),
+            citations=citations,
+        )
+
+        return citation_result.unwrap() if citation_result.is_success() else None
 
 
 @router.post(
@@ -185,201 +466,52 @@ async def send_message(
     - Confidence based on context availability
     - Method indicates RAG vs direct
     """
-    server = get_server()
-
-    if not server.service_container:
-        raise ServiceUnavailableError("Service container")
-
-    conv_service = server.service_container.conversation_service
-    msg_service = server.service_container.message_service
-    llamaindex_service = server.service_container.llamaindex_service
-
-    if not conv_service or not msg_service:
-        raise ServiceUnavailableError("Message service")
-
-    if not llamaindex_service:
-        raise ServiceUnavailableError("LlamaIndex service")
-
     try:
-        conv_result = await conv_service.get_conversation(conversation_id)
-        if conv_result.is_failure():
-            error_msg = conv_result.error
-            if "not found" in error_msg.lower():
-                raise ResourceNotFoundError("Conversation", conversation_id)
-            raise InternalServerError("Get conversation", Exception(error_msg))
-
-        conversation = conv_result.unwrap()
-
-        user_msg_result = await msg_service.add_message(
-            conversation_id=conversation_id,
-            role="user",
-            content=request.content,
-        )
-
-        if user_msg_result.is_failure():
-            raise InternalServerError(
-                "Add user message", Exception(user_msg_result.error)
-            )
-
-        user_message = user_msg_result.unwrap()
+        server = get_server()
+        processor = MessageProcessor(server)
 
         start_time = time.time()
 
-        filters = None
-        if conversation.get("context_documents"):
-            filters = {"document_id": {"$in": conversation["context_documents"]}}
-
-        search_results = await llamaindex_service.semantic_search(
-            query=request.content,
-            top_k=request.context_limit,
-            filters=filters,
+        conversation = await processor.fetch_conversation(conversation_id)
+        user_message = await processor.add_user_message(
+            conversation_id, request.content
         )
 
-        sources = []
-        for result in search_results:
-            sources.append(
-                {
-                    "document_id": result.get("document_id", ""),
-                    "node_id": result.get("node_id"),
-                    "score": result.get("score", 0.0),
-                    "text": result.get("text", ""),
-                    "metadata": result.get("metadata", {}),
-                }
-            )
-
-        messages: List[LLMMessage] = []
-
-        response_format = None
-        if server.service_container and server.service_container.conversation_service:
-            db_pool = server.service_container.conversation_service.db_pool
-            async with db_pool.acquire() as conn:
-                prefs = await conn.fetchrow(
-                    "SELECT response_format FROM user_preferences WHERE user_id = 'default'"
-                )
-                if prefs:
-                    response_format = prefs["response_format"]
-
-        base_system_prompt = (
-            conversation.get("system_prompt")
-            or "You are a helpful assistant that answers questions based on the provided context."
+        context = MessageContext(
+            conversation_id=conversation_id,
+            conversation=conversation,
+            user_content=request.content,
+            context_limit=request.context_limit,
+            start_time=start_time,
         )
 
-        system_prompt = PromptFormatter.apply_response_format(
-            base_system_prompt, response_format
-        )
-
-        if sources:
-            context_text = "\n\n".join(
-                [
-                    f"[Document {i+1}]\n{source.get('text', '')}"
-                    for i, source in enumerate(sources[:5])
-                ]
-            )
-            system_content = f"{system_prompt}\n\nContext:\n{context_text}"
-        else:
-            system_content = system_prompt
-
-        messages.append(LLMMessage(role="system", content=system_content))
-        messages.append(LLMMessage(role="user", content=request.content))
-
-        provider_manager = server.service_container.llm_provider_manager
-        if not provider_manager:
-            raise ServiceUnavailableError("LLM provider manager")
-
-        provider_id = conversation.get("provider_id")
-        model = conversation.get("model") or get_settings().llm_model
-
-        temperature = conversation.get("temperature", 0.7)
-        max_tokens = conversation.get("max_tokens", 2000)
-
-        if temperature == 0.7 or max_tokens == 2000:
-            if (
-                server.service_container
-                and server.service_container.conversation_service
-            ):
-                db_pool = server.service_container.conversation_service.db_pool
-                async with db_pool.acquire() as conn:
-                    prefs = await conn.fetchrow(
-                        "SELECT temperature, max_output_tokens FROM user_preferences WHERE user_id = 'default'"
-                    )
-                    if prefs:
-                        if temperature == 0.7:
-                            temperature = prefs["temperature"]
-                        if max_tokens == 2000:
-                            max_tokens = prefs["max_output_tokens"]
-
-        gen_result = await provider_manager.generate(
-            messages=messages,
-            model=model,
-            provider_id=provider_id,
-            temperature=temperature,
-            max_tokens=max_tokens,
+        search_context = await processor.perform_semantic_search(context)
+        llm_config = await processor.get_llm_config(conversation)
+        messages = processor.build_llm_messages(
+            llm_config, search_context, request.content
         )
 
         latency_ms = int((time.time() - start_time) * 1000)
 
-        if gen_result.is_failure():
-            error = RuntimeError(gen_result.error)
-            user_friendly_message = format_llm_error(error, model)
-            error_metadata = create_error_metadata(
-                error, provider_id or "default", model
-            )
+        try:
+            answer, _ = await processor.generate_response(messages, llm_config)
+        except InternalServerError as e:
+            cause = e.__cause__ if e.__cause__ else e
+            if isinstance(cause, Exception):
+                await processor.handle_generation_error(
+                    cause, context, llm_config, latency_ms
+                )
+            raise
 
-            await msg_service.add_message(
-                conversation_id=conversation_id,
-                role="assistant",
-                content=user_friendly_message,
-                model=model,
-                confidence=0.0,
-                method="error",
-                latency_ms=latency_ms,
-                metadata=error_metadata,
-            )
-
-            raise InternalServerError("Generate response", Exception(gen_result.error))
-
-        response = gen_result.unwrap()
-        answer = response.content
-        confidence = 0.8 if sources else 0.5
-        method = "rag_with_provider" if sources else "direct_provider"
-
-        assistant_msg_result = await msg_service.add_message(
-            conversation_id=conversation_id,
-            role="assistant",
-            content=answer,
-            model=model,
-            confidence=confidence,
-            method=method,
-            latency_ms=latency_ms,
+        assistant_message = await processor.add_assistant_message(
+            context, answer, llm_config, bool(search_context.sources), latency_ms
         )
 
-        if assistant_msg_result.is_failure():
-            raise InternalServerError(
-                "Add assistant message", Exception(assistant_msg_result.error)
-            )
-
-        assistant_message = assistant_msg_result.unwrap()
-
-        if sources:
-            citations = []
-            for i, source in enumerate(sources):
-                citations.append(
-                    {
-                        "document_id": source.get("document_id", ""),
-                        "chunk_id": source.get("node_id"),
-                        "score": source.get("score"),
-                        "snippet": source.get("text", "")[:500],
-                        "position": i,
-                    }
-                )
-
-            citation_result = await msg_service.add_citations(
-                message_id=str(assistant_message["id"]),
-                citations=citations,
-            )
-
-            if citation_result.is_success():
-                assistant_message["citations"] = citation_result.unwrap()
+        citations = await processor.add_citations(
+            str(assistant_message["id"]), search_context.sources
+        )
+        if citations:
+            assistant_message["citations"] = citations
 
         from .misc_models import Citation, Message
 

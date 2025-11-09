@@ -2,6 +2,8 @@
 Get conversation endpoint.
 """
 
+from typing import Any, Dict, Optional
+
 from fastapi import APIRouter
 from fastapi import Path as PathParam
 from fastapi import Query, status
@@ -16,6 +18,73 @@ from .constants import DEFAULT_MESSAGE_LIMIT, MAX_MESSAGE_LIMIT, MIN_MESSAGE_LIM
 from .response_models import GetConversationResponse
 
 router = APIRouter()
+
+
+async def _fetch_conversation(
+    conversation_service: Any, conversation_id: str
+) -> Dict[str, Any]:
+    """Fetch conversation data from service."""
+    conv_result = await conversation_service.get_conversation(conversation_id)
+
+    if conv_result.is_failure():
+        error_msg = conv_result.error
+        if "not found" in error_msg.lower():
+            raise ResourceNotFoundError("Conversation", conversation_id)
+        raise InternalServerError("Get conversation", Exception(error_msg))
+
+    conversation_data: Dict[str, Any] = conv_result.unwrap()
+    return conversation_data
+
+
+async def _fetch_messages(
+    message_service: Any, conversation_id: str, message_limit: int
+) -> Dict[str, Any]:
+    """Fetch messages for a conversation."""
+    msg_result = await message_service.get_messages(
+        conversation_id=conversation_id,
+        limit=message_limit,
+        offset=0,
+        include_citations=True,
+    )
+
+    if msg_result.is_success():
+        messages_data: Dict[str, Any] = msg_result.unwrap()
+        return messages_data
+
+    return {"messages": [], "total": 0}
+
+
+def _enrich_conversation_with_messages(
+    conversation_dict: Dict[str, Any], messages_data: Optional[Dict[str, Any]]
+) -> None:
+    """Add message data to conversation dictionary."""
+    if messages_data:
+        conversation_dict["messages"] = messages_data.get("messages", [])
+        conversation_dict["message_count"] = messages_data.get("total", 0)
+    else:
+        conversation_dict["messages"] = []
+        conversation_dict["message_count"] = 0
+
+
+def _convert_messages_to_models(conversation_dict: Dict[str, Any]) -> None:
+    """Convert message dictionaries to Message models."""
+    if not conversation_dict.get("messages"):
+        return
+
+    from .misc_models import Message
+
+    conversation_dict["messages"] = [
+        Message(**msg) for msg in conversation_dict["messages"]
+    ]
+
+
+def _validate_services(server: Any) -> None:
+    """Validate required services are available."""
+    if not server.service_container:
+        raise ServiceUnavailableError("Service Container")
+
+    if not server.service_container.conversation_service:
+        raise ServiceUnavailableError("Conversation service")
 
 
 @router.get(
@@ -163,54 +232,30 @@ async def get_conversation(
     """
     server = get_server()
 
-    if not server.service_container:
-        raise ServiceUnavailableError("Service Container")
-
-    if not server.service_container.conversation_service:
-        raise ServiceUnavailableError("Conversation service")
-
     try:
-        conv_result = (
-            await server.service_container.conversation_service.get_conversation(
-                conversation_id
-            )
+        _validate_services(server)
+
+        if not server.service_container:
+            raise ServiceUnavailableError("Service Container")
+
+        conversation_dict = await _fetch_conversation(
+            server.service_container.conversation_service, conversation_id
         )
 
-        if conv_result.is_failure():
-            error_msg = conv_result.error
-            if "not found" in error_msg.lower():
-                raise ResourceNotFoundError("Conversation", conversation_id)
-            raise InternalServerError("Get conversation", Exception(error_msg))
+        if include_messages:
+            message_service = server.service_container.message_service
+            messages_data = None
 
-        conversation_dict = conv_result.unwrap()
-
-        if include_messages and server.service_container:
-            msg_service = server.service_container.message_service
-            if msg_service:
-                msg_result = await msg_service.get_messages(
-                    conversation_id=conversation_id,
-                    limit=message_limit,
-                    offset=0,
-                    include_citations=True,
+            if message_service:
+                messages_data = await _fetch_messages(
+                    message_service, conversation_id, message_limit
                 )
 
-                if msg_result.is_success():
-                    messages_data = msg_result.unwrap()
-                    conversation_dict["messages"] = messages_data.get("messages", [])
-                    conversation_dict["message_count"] = messages_data.get("total", 0)
-                else:
-                    conversation_dict["messages"] = []
-                    conversation_dict["message_count"] = 0
-            else:
-                conversation_dict["messages"] = []
-                conversation_dict["message_count"] = 0
+            _enrich_conversation_with_messages(conversation_dict, messages_data)
 
-        from .misc_models import Conversation, Message
+        _convert_messages_to_models(conversation_dict)
 
-        if conversation_dict.get("messages"):
-            conversation_dict["messages"] = [
-                Message(**msg) for msg in conversation_dict["messages"]
-            ]
+        from .misc_models import Conversation
 
         conversation = Conversation(**conversation_dict)
 

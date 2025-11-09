@@ -2,6 +2,7 @@
 Miscellaneous models for conversation endpoints.
 """
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -128,3 +129,34 @@ class Conversation(BaseModel):
                 "metadata": {},
             }
         }
+
+
+@dataclass
+class MessageContext:
+    """Context for message processing."""
+
+    conversation_id: str
+    conversation: Dict[str, Any]
+    user_content: str
+    context_limit: int
+    start_time: float
+
+
+@dataclass
+class SearchContext:
+    """Search results and sources."""
+
+    sources: List[Dict[str, Any]]
+    context_text: Optional[str]
+
+
+@dataclass
+class LLMConfig:
+    """LLM configuration parameters."""
+
+    provider_id: Optional[str]
+    model: str
+    temperature: float
+    max_tokens: int
+    system_prompt: str
+    response_format: Optional[str]

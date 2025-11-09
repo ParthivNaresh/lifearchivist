@@ -399,7 +399,7 @@ class ConversationRAGService:
             sequence=self._next_sequence(),
         )
 
-    async def _build_messages_for_llm(
+    def _build_messages_for_llm(
         self,
         message_content: str,
         context: str,
@@ -581,7 +581,7 @@ class ConversationRAGService:
                 },
             )
 
-            messages = await self._build_messages_for_llm(
+            messages = self._build_messages_for_llm(
                 message_content,
                 context,
                 conversation_history,
