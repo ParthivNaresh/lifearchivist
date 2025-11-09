@@ -4,6 +4,8 @@ Constants for WebSocket endpoints.
 
 MIN_SESSION_ID_LENGTH = 3
 
+MESSAGE_TYPE_DESCRIPTION = "Message type"
+MESSAGE_TYPE_CORRELATION = "Message ID for correlation"
 MESSAGE_TYPE_TOOL_EXECUTE = "tool_execute"
 MESSAGE_TYPE_AGENT_QUERY = "agent_query"
 

@@ -6,6 +6,7 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
+from ..shared.constants import CREATION_TIMESTAMP_EXAMPLE
 from .misc_models import Conversation, Message
 
 
@@ -26,9 +27,9 @@ class ArchiveConversationResponse(BaseModel):
                     "provider_id": "openai-main",
                     "temperature": 0.7,
                     "max_tokens": 2000,
-                    "created_at": "2025-01-08T14:30:00Z",
-                    "updated_at": "2025-01-08T14:30:00Z",
-                    "archived_at": "2025-01-08T15:00:00Z",
+                    "created_at": CREATION_TIMESTAMP_EXAMPLE,
+                    "updated_at": CREATION_TIMESTAMP_EXAMPLE,
+                    "archived_at": CREATION_TIMESTAMP_EXAMPLE,
                 },
                 "message": "Conversation archived successfully",
             }
@@ -51,8 +52,8 @@ class CreateConversationResponse(BaseModel):
                     "provider_id": "openai-main",
                     "temperature": 0.7,
                     "max_tokens": 2000,
-                    "created_at": "2025-01-08T14:30:00Z",
-                    "updated_at": "2025-01-08T14:30:00Z",
+                    "created_at": CREATION_TIMESTAMP_EXAMPLE,
+                    "updated_at": CREATION_TIMESTAMP_EXAMPLE,
                 }
             }
         }
@@ -74,8 +75,8 @@ class GetConversationResponse(BaseModel):
                     "provider_id": "openai-main",
                     "temperature": 0.7,
                     "max_tokens": 2000,
-                    "created_at": "2025-01-08T14:30:00Z",
-                    "updated_at": "2025-01-08T14:30:00Z",
+                    "created_at": CREATION_TIMESTAMP_EXAMPLE,
+                    "updated_at": CREATION_TIMESTAMP_EXAMPLE,
                     "messages": [],
                     "message_count": 0,
                 }
@@ -104,8 +105,8 @@ class ListConversationsResponse(BaseModel):
                         "provider_id": "openai-main",
                         "temperature": 0.7,
                         "max_tokens": 2000,
-                        "created_at": "2025-01-08T14:30:00Z",
-                        "updated_at": "2025-01-08T14:30:00Z",
+                        "created_at": CREATION_TIMESTAMP_EXAMPLE,
+                        "updated_at": CREATION_TIMESTAMP_EXAMPLE,
                     }
                 ],
                 "total": 1,
@@ -134,7 +135,7 @@ class MessagesListResponse(BaseModel):
                         "sequence_number": 0,
                         "role": "user",
                         "content": "Hello",
-                        "created_at": "2025-01-08T14:30:00Z",
+                        "created_at": CREATION_TIMESTAMP_EXAMPLE,
                     }
                 ],
                 "total": 1,

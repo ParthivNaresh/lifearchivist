@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from ..shared.constants import FieldDescriptions
+from ..shared.constants import CREATION_TIMESTAMP_EXAMPLE, FieldDescriptions
 
 
 class FolderStatsResponse(BaseModel):
@@ -27,9 +27,9 @@ class FolderStatsResponse(BaseModel):
                 "files_skipped": 3,
                 "files_failed": 2,
                 "bytes_processed": 52428800,
-                "last_activity": "2025-01-08T14:30:00Z",
-                "last_success": "2025-01-08T14:30:00Z",
-                "last_failure": "2025-01-08T14:25:00Z",
+                "last_activity": CREATION_TIMESTAMP_EXAMPLE,
+                "last_success": CREATION_TIMESTAMP_EXAMPLE,
+                "last_failure": CREATION_TIMESTAMP_EXAMPLE,
                 "error_count": 0,
                 "last_error": "",
             }

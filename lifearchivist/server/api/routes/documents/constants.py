@@ -2,6 +2,8 @@
 Constants for document endpoints.
 """
 
+DOC_NEIGHBORS_LABEL = "Get document neighbors"
+
 MIN_LIMIT = 1
 MAX_LIMIT = 10000
 DEFAULT_LIMIT = 20

@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from ..shared.constants import CREATION_TIMESTAMP_EXAMPLE
+
 
 class ClearAllSummary(BaseModel):
     """Summary of clear all operation."""
@@ -87,9 +89,9 @@ class Document(BaseModel):
                 "original_path": "/path/to/document.pdf",
                 "mime_type": "application/pdf",
                 "size_bytes": 1024000,
-                "created_at": "2025-01-08T14:30:00Z",
-                "modified_at": "2025-01-08T14:30:00Z",
-                "ingested_at": "2025-01-08T14:30:00Z",
+                "created_at": CREATION_TIMESTAMP_EXAMPLE,
+                "modified_at": CREATION_TIMESTAMP_EXAMPLE,
+                "ingested_at": CREATION_TIMESTAMP_EXAMPLE,
                 "status": "completed",
                 "error_message": None,
                 "word_count": 5000,

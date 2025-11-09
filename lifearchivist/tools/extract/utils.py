@@ -423,7 +423,10 @@ class OCRProcessor:
             word_count = sum(len(text.split()) for text in all_text)
             overall_confidence = OCRProcessor.calculate_avg_confidence(total_confidence)
             logging.info(
-                f"OCR complete: {num_pages} pages, {word_count} words, {overall_confidence:.1f}% avg confidence"
+                "OCR complete: %d pages, %d words, %.1f%% avg confidence",
+                num_pages,
+                word_count,
+                overall_confidence,
             )
         else:
             logging.warning("No text detected in image")

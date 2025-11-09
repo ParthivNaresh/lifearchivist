@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from ..shared.constants import SUCCESS_MESSAGE
 from .misc_models import (
     ConversationSample,
     CostInfo,
@@ -22,7 +23,7 @@ class AddProviderResponse(BaseModel):
         ..., description="Provider type (openai, anthropic, ollama, etc)"
     )
     is_default: bool = Field(..., description="Whether this is the default provider")
-    message: str = Field(..., description="Success message")
+    message: str = Field(..., description=SUCCESS_MESSAGE)
 
     class Config:
         json_schema_extra = {
@@ -37,7 +38,7 @@ class AddProviderResponse(BaseModel):
 
 class DeleteProviderResponse(BaseModel):
     provider_id: str = Field(..., description="ID of the deleted provider")
-    message: str = Field(..., description="Success message")
+    message: str = Field(..., description=SUCCESS_MESSAGE)
     affected_conversations: int = Field(
         ..., description="Number of conversations that were affected"
     )
@@ -183,7 +184,7 @@ class SetDefaultResponse(BaseModel):
     default_model: Optional[str] = Field(
         None, description="Default model that was set (if provided)"
     )
-    message: str = Field(..., description="Success message")
+    message: str = Field(..., description=SUCCESS_MESSAGE)
 
     class Config:
         json_schema_extra = {
@@ -214,7 +215,7 @@ class TestProviderResponse(BaseModel):
 
 class UpdateProviderResponse(BaseModel):
     provider_id: str = Field(..., description="ID of the updated provider")
-    message: str = Field(..., description="Success message")
+    message: str = Field(..., description=SUCCESS_MESSAGE)
     config_updated: bool = Field(..., description="Whether configuration was updated")
     default_updated: bool = Field(..., description="Whether default status was updated")
 

@@ -9,6 +9,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from ..shared.constants import CREATION_TIMESTAMP_LABEL
+
 
 class Citation(BaseModel):
     """
@@ -22,7 +24,7 @@ class Citation(BaseModel):
     score: Optional[float] = Field(None, description="Relevance score (0-1)")
     snippet: Optional[str] = Field(None, description="Text excerpt from document")
     position: Optional[int] = Field(None, description="Position in citation list")
-    created_at: datetime = Field(..., description="Creation timestamp")
+    created_at: datetime = Field(..., description=CREATION_TIMESTAMP_LABEL)
 
     class Config:
         json_schema_extra: Dict[str, Any] = {
@@ -57,7 +59,7 @@ class Message(BaseModel):
     method: Optional[str] = Field(None, description="Generation method")
     tokens_used: Optional[int] = Field(None, description="Token count")
     latency_ms: Optional[int] = Field(None, description="Generation latency")
-    created_at: datetime = Field(..., description="Creation timestamp")
+    created_at: datetime = Field(..., description=CREATION_TIMESTAMP_LABEL)
     edited_at: Optional[datetime] = Field(None, description="Edit timestamp")
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
     citations: Optional[List[Citation]] = Field(None, description="Document citations")
@@ -76,7 +78,7 @@ class Message(BaseModel):
                 "method": "rag_with_provider",
                 "tokens_used": 150,
                 "latency_ms": 1500,
-                "created_at": "2025-01-08T14:30:00Z",
+                "created_at": "2025-01-08T14:30:01Z",
                 "edited_at": None,
                 "metadata": {},
                 "citations": [],
@@ -100,7 +102,7 @@ class Conversation(BaseModel):
     system_prompt: Optional[str] = Field(None, description="Custom system prompt")
     temperature: float = Field(..., description="Model temperature")
     max_tokens: int = Field(..., description="Maximum tokens")
-    created_at: datetime = Field(..., description="Creation timestamp")
+    created_at: datetime = Field(..., description=CREATION_TIMESTAMP_LABEL)
     updated_at: datetime = Field(..., description="Last update timestamp")
     last_message_at: Optional[datetime] = Field(
         None, description="Last message timestamp"
@@ -122,8 +124,8 @@ class Conversation(BaseModel):
                 "system_prompt": "You are a helpful assistant.",
                 "temperature": 0.7,
                 "max_tokens": 2000,
-                "created_at": "2025-01-08T14:30:00Z",
-                "updated_at": "2025-01-08T14:30:00Z",
+                "created_at": "2025-01-08T14:30:02Z",
+                "updated_at": "2025-01-08T14:30:03Z",
                 "last_message_at": None,
                 "archived_at": None,
                 "metadata": {},

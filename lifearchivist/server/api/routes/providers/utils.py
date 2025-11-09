@@ -34,7 +34,7 @@ def parse_datetime_range(
         raise ValidationError(f"Invalid datetime format: {e}") from e
 
 
-async def fetch_provider_capabilities(
+def fetch_provider_capabilities(
     llm_manager: Any,
     provider_id: str,
     response: Dict[str, Any],

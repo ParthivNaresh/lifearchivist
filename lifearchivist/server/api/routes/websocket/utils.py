@@ -61,7 +61,7 @@ async def handle_connection_setup(
         return False
 
     await websocket.accept()
-    await server.session_manager.connect(session_id, websocket)
+    server.session_manager.connect(session_id, websocket)
     logger.info(f"WebSocket connected: session_id={session_id}")
     return True
 

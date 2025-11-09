@@ -2,7 +2,7 @@
 Export settings endpoint.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from fastapi import APIRouter, status
@@ -137,7 +137,7 @@ async def export_settings() -> ExportSettingsResponse:
         return ExportSettingsResponse(
             success=True,
             settings=current_settings.dict(),
-            exported_at=datetime.utcnow().isoformat() + "Z",
+            exported_at=datetime.now(timezone.utc).isoformat() + "Z",
             version=SETTINGS_VERSION,
         )
 

@@ -4,6 +4,7 @@ Update provider endpoint.
 
 from fastapi import APIRouter, status
 
+from ..shared.constants import UNKNOWN_ERROR
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
     InternalServerError,
@@ -163,7 +164,7 @@ async def update_provider(
         )
 
         if metadata_result.is_failure():
-            error = metadata_result.error_or("Unknown error")
+            error = metadata_result.error_or(UNKNOWN_ERROR)
             error_type = metadata_result.error_type
             status_code = metadata_result.status_code
 
@@ -202,7 +203,7 @@ async def update_provider(
                     else error_response.body
                 )
                 content = json.loads(body_bytes.decode())
-                error_msg = content.get("error", "Unknown error")
+                error_msg = content.get("error", UNKNOWN_ERROR)
                 raise InternalServerError("Reload provider", Exception(error_msg))
         else:
             if request.set_as_default is not None:
@@ -221,7 +222,7 @@ async def update_provider(
                         else error_response.body
                     )
                     content = json.loads(body_bytes.decode())
-                    error_msg = content.get("error", "Unknown error")
+                    error_msg = content.get("error", UNKNOWN_ERROR)
                     raise InternalServerError(
                         "Update default status", Exception(error_msg)
                     )

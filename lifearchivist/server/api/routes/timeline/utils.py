@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, Tuple
 
+from ..shared.constants import TIMESTAMP_ZONE
 from ..shared.exceptions import ValidationError
 
 
@@ -63,7 +64,7 @@ def parse_document_date(date_str: str) -> Optional[Any]:
     try:
         from datetime import datetime
 
-        doc_date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        doc_date = datetime.fromisoformat(date_str.replace("Z", TIMESTAMP_ZONE))
         return doc_date.date()
     except (ValueError, AttributeError):
         return None
@@ -233,7 +234,7 @@ def process_timeline_document(
         doc_date_only, earliest_date, latest_date
     )
 
-    doc_date = datetime.fromisoformat(doc_date_str.replace("Z", "+00:00"))
+    doc_date = datetime.fromisoformat(doc_date_str.replace("Z", TIMESTAMP_ZONE))
     year = str(doc_date.year)
     month = f"{doc_date.month:02d}"
 
@@ -301,7 +302,7 @@ def process_summary_document(
         return earliest_date, latest_date
 
     try:
-        doc_date = datetime.fromisoformat(doc_date_str.replace("Z", "+00:00"))
+        doc_date = datetime.fromisoformat(doc_date_str.replace("Z", TIMESTAMP_ZONE))
         doc_date_only = doc_date.date()
 
         earliest_date, latest_date = update_date_range(

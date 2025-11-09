@@ -4,6 +4,7 @@ Add provider endpoint.
 
 from fastapi import APIRouter, status
 
+from ..shared.constants import UNKNOWN_ERROR
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
     ConflictError,
@@ -164,7 +165,7 @@ async def add_provider(request: AddProviderRequest) -> AddProviderResponse:
         )
 
         if store_result.is_failure():
-            error = store_result.error_or("Unknown error")
+            error = store_result.error_or(UNKNOWN_ERROR)
             error_type = store_result.error_type
             status_code = store_result.status_code
 
@@ -185,7 +186,7 @@ async def add_provider(request: AddProviderRequest) -> AddProviderResponse:
             if load_result.is_failure():
                 await server.credential_service.delete_provider(request.provider_id)
 
-                error = load_result.error_or("Unknown error")
+                error = load_result.error_or(UNKNOWN_ERROR)
                 error_type = load_result.error_type
                 status_code = load_result.status_code
 
@@ -205,7 +206,7 @@ async def add_provider(request: AddProviderRequest) -> AddProviderResponse:
             if add_result.is_failure():
                 await server.credential_service.delete_provider(request.provider_id)
 
-                error = add_result.error_or("Unknown error")
+                error = add_result.error_or(UNKNOWN_ERROR)
                 error_type = add_result.error_type
 
                 raise InternalServerError(

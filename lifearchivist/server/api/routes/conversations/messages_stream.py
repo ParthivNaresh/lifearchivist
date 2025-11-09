@@ -234,7 +234,7 @@ class DirectStreamProcessor(StreamProcessor):
             yield SSEFormatter.format_event(EventType.SOURCES, context.sources)
 
             config = await self._get_stream_config(context)
-            messages = await self._build_messages(context, config)
+            messages = self._build_messages(context, config)
 
             async for event in self._stream_response(context, messages, config):
                 yield event
@@ -358,7 +358,7 @@ class DirectStreamProcessor(StreamProcessor):
             if prefs["response_timeout"]:
                 config.response_timeout = prefs["response_timeout"]
 
-    async def _build_messages(
+    def _build_messages(
         self, context: StreamContext, config: StreamConfig
     ) -> List[LLMMessage]:
         """Build LLM messages."""
@@ -417,7 +417,7 @@ class DirectStreamProcessor(StreamProcessor):
                         finish_reason = chunk.finish_reason
 
         except asyncio.TimeoutError:
-            async for event in self._handle_timeout(context, config.response_timeout):
+            async for event in self._handle_timeout(context, config):
                 yield event
             return
         except Exception as e:
@@ -431,11 +431,11 @@ class DirectStreamProcessor(StreamProcessor):
             yield event
 
     async def _handle_timeout(
-        self, context: StreamContext, timeout: int
+        self, context: StreamContext, config: StreamConfig
     ) -> AsyncGenerator[str, None]:
         """Handle timeout error."""
         latency_ms = int((time.time() - context.start_time) * 1000)
-        message = f"Query timeout after {timeout} seconds. Please try again with a shorter query or increase the timeout in settings."
+        message = f"Query timeout after {config.response_timeout} seconds. Please try again with a shorter query or increase the timeout in settings."
 
         await self._save_error_message(context, message, latency_ms)
         yield SSEFormatter.format_error(message, "TimeoutError")

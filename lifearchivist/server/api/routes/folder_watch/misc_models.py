@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
     from watchdog.observers.api import BaseObserver
@@ -147,7 +147,7 @@ class WatchedFolder:
 
     # Persistent configuration (stored in Redis)
     id: str  # UUID
-    path: Union[str, Path]  # Absolute path to watched folder (accepts str or Path)
+    path: str | Path  # Absolute path to watched folder (accepts str or Path)
     enabled: bool  # Whether watching is active
     created_at: datetime  # When folder was added
     stats: FolderStats = field(default_factory=FolderStats)

@@ -12,7 +12,12 @@ from ..shared.exceptions import (
     ResourceNotFoundError,
     ServiceUnavailableError,
 )
-from .constants import DEFAULT_NEIGHBORS, MAX_NEIGHBORS, MIN_NEIGHBORS
+from .constants import (
+    DEFAULT_NEIGHBORS,
+    DOC_NEIGHBORS_LABEL,
+    MAX_NEIGHBORS,
+    MIN_NEIGHBORS,
+)
 from .misc_models import DocumentNeighbor
 from .response_models import DocumentNeighborsResponse
 
@@ -155,16 +160,14 @@ async def get_llamaindex_document_neighbors(
             error_msg = result.error
             if "not found" in error_msg.lower():
                 raise ResourceNotFoundError("Document", document_id)
-            raise InternalServerError("Get document neighbors", Exception(error_msg))
+            raise InternalServerError(DOC_NEIGHBORS_LABEL, Exception(error_msg))
 
         if isinstance(result, dict):
             if "error" in result:
                 error_msg = result["error"]
                 if "not found" in error_msg.lower():
                     raise ResourceNotFoundError("Document", document_id)
-                raise InternalServerError(
-                    "Get document neighbors", RuntimeError(error_msg)
-                )
+                raise InternalServerError(DOC_NEIGHBORS_LABEL, RuntimeError(error_msg))
 
             neighbors = [
                 DocumentNeighbor(**neighbor) for neighbor in result.get("neighbors", [])
@@ -197,4 +200,4 @@ async def get_llamaindex_document_neighbors(
     except (ServiceUnavailableError, ResourceNotFoundError):
         raise
     except Exception as e:
-        raise InternalServerError("Get document neighbors", e) from e
+        raise InternalServerError(DOC_NEIGHBORS_LABEL, e) from e

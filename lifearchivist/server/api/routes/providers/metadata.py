@@ -175,7 +175,7 @@ async def get_provider_metadata(
         requested = set(include) & valid_includes
 
         if "capabilities" in requested:
-            await fetch_provider_capabilities(server.llm_manager, provider_id, response)
+            fetch_provider_capabilities(server.llm_manager, provider_id, response)
 
         if "workspaces" in requested:
             error_response = await fetch_provider_workspaces(
