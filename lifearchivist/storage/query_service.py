@@ -314,7 +314,7 @@ class LlamaIndexQueryService(QueryService):
             context, source_chunks = context_tuple
 
             # Generate response using query engine
-            response = await self._generate_response(
+            response = self._generate_response(
                 question=question,
                 context=context,
                 response_mode=response_mode,
@@ -507,7 +507,7 @@ class LlamaIndexQueryService(QueryService):
 
         return response
 
-    async def _generate_response(
+    def _generate_response(
         self,
         question: str,
         context: str,

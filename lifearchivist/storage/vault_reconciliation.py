@@ -156,7 +156,7 @@ class VaultReconciliationService:
             return None
 
         # Check if vault file exists
-        file_exists = await self.vault.file_exists(file_hash)
+        file_exists = self.vault.file_exists(file_hash)
 
         if file_exists:
             # File exists, no cleanup needed

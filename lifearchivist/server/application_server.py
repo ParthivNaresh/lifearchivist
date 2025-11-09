@@ -138,7 +138,7 @@ class ApplicationServer:
 
             # Phase 3: Initialize application services
             await self._init_activity_manager()
-            self._init_progress_manager()  # Synchronous - uses sync Redis
+            await self._init_progress_manager()
             await self._init_enrichment_queue()
             await self._init_background_tasks()
 
@@ -153,7 +153,7 @@ class ApplicationServer:
 
             # Phase 7: Initialize agents (if enabled)
             if self.settings.enable_agents:
-                await self._init_agents()
+                self._init_agents()
 
             self._initialized = True
 
@@ -218,6 +218,12 @@ class ApplicationServer:
             self.enrichment_queue,
             "cleanup",
             "enrichment_queue",
+        )
+
+        await self._cleanup_service(
+            self.progress_manager,
+            "close",
+            "progress_manager",
         )
 
         await self._cleanup_service(
@@ -344,15 +350,8 @@ class ApplicationServer:
             )
             self.activity_manager = None
 
-    def _init_progress_manager(self):
-        """
-        Initialize progress tracking manager.
-
-        Note: This is synchronous because ProgressManager uses the synchronous
-        Redis client. This is acceptable for progress tracking which is not
-        on the critical path. For proper async implementation, ProgressManager
-        should be refactored to use redis.asyncio.
-        """
+    async def _init_progress_manager(self):
+        """Initialize progress tracking manager with async Redis."""
         if not self.settings.enable_websockets:
             log_event("progress_manager_disabled", {"reason": "websockets_disabled"})
             return
@@ -362,6 +361,7 @@ class ApplicationServer:
                 redis_url=self.settings.redis_url,
                 session_manager=self.session_manager,
             )
+            await self.progress_manager.initialize()
             log_event("progress_manager_initialized")
         except Exception as e:
             log_event(
@@ -488,7 +488,7 @@ class ApplicationServer:
             )
             self.folder_watcher = None
 
-    async def _init_agents(self):
+    def _init_agents(self):
         """Initialize agents (if enabled)."""
         try:
             from ..agents.ingestion import IngestionAgent

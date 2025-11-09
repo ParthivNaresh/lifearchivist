@@ -108,9 +108,11 @@ async def extract_pdf_metadata(file_path: Path) -> Dict[str, Any]:
     Returns:
         Dictionary with extracted metadata
     """
+    import asyncio
+
     from lifearchivist.tools.extract.utils import PDFMetadataExtractor
 
-    try:
+    def _read_pdf_metadata() -> Dict[str, Any]:
         with open(file_path, "rb") as f:
             reader = PdfReader(f)
             pdf_metadata = reader.metadata
@@ -159,6 +161,8 @@ async def extract_pdf_metadata(file_path: Path) -> Dict[str, Any]:
 
             return metadata
 
+    try:
+        return await asyncio.to_thread(_read_pdf_metadata)
     except Exception as e:
         log_event(
             "pdf_metadata_extraction_failed",

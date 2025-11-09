@@ -149,6 +149,106 @@ class LlamaIndexDocumentService(DocumentService):
         self.settings = settings
         self.bm25_service = bm25_service
 
+    def _validate_document_prerequisites(
+        self, document_id: str, content: str
+    ) -> Optional[Result[Dict[str, Any], str]]:
+        """
+        Validate document prerequisites before adding.
+
+        Args:
+            document_id: Document identifier
+            content: Document content
+
+        Returns:
+            Error Result if validation fails, None if valid
+        """
+        if not self.index:
+            log_event(
+                "document_add_failed",
+                {"document_id": document_id, "reason": "no_index"},
+                level=logging.ERROR,
+            )
+            return internal_error(
+                NOT_INITIALIZED_INDEX,
+                context={"document_id": document_id, "service": "document_service"},
+            )
+
+        if not content or not content.strip():
+            log_event(
+                "document_add_failed",
+                {"document_id": document_id, "reason": "empty_content"},
+                level=logging.WARNING,
+            )
+            return validation_error(
+                "Document content cannot be empty",
+                context={"document_id": document_id},
+            )
+
+        return None
+
+    async def _prepare_document_metadata(
+        self, document_id: str, metadata: Optional[Dict[str, Any]]
+    ) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """
+        Prepare full and chunk metadata for document.
+
+        Args:
+            document_id: Document identifier
+            metadata: Optional metadata dictionary
+
+        Returns:
+            Tuple of (full_metadata, chunk_metadata)
+        """
+        full_metadata = metadata or {}
+        full_metadata["document_id"] = document_id
+
+        chunk_metadata = (
+            self.metadata_service.create_minimal_chunk_metadata(full_metadata)
+            if self.metadata_service
+            else self._create_minimal_chunk_metadata_fallback(full_metadata)
+        )
+
+        if self.doc_tracker is not None:
+            try:
+                await self.doc_tracker.store_full_metadata(document_id, full_metadata)
+            except Exception as e:
+                log_event(
+                    "metadata_storage_failed",
+                    {"document_id": document_id, "error": str(e)},
+                    level=logging.WARNING,
+                )
+
+        return full_metadata, chunk_metadata
+
+    async def _index_document_to_bm25(self, document_id: str, content: str) -> None:
+        """
+        Add document to BM25 index for keyword search.
+
+        Args:
+            document_id: Document identifier
+            content: Document content
+        """
+        if not self.bm25_service:
+            return
+
+        try:
+            await self.bm25_service.add_document(document_id, content)
+            log_event(
+                "bm25_document_indexed",
+                {"document_id": document_id},
+                level=logging.DEBUG,
+            )
+        except Exception as e:
+            log_event(
+                "bm25_indexing_failed",
+                {
+                    "document_id": document_id,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                level=logging.WARNING,
+            )
+
     @track(
         operation="document_addition",
         include_args=["document_id"],
@@ -187,75 +287,28 @@ class LlamaIndexDocumentService(DocumentService):
                 - status: Document status ("indexed")
             Or Failure with error details
         """
-        # Validate index availability
-        if not self.index:
-            log_event(
-                "document_add_failed",
-                {"document_id": document_id, "reason": "no_index"},
-                level=logging.ERROR,
-            )
-            return internal_error(
-                NOT_INITIALIZED_INDEX,
-                context={"document_id": document_id, "service": "document_service"},
-            )
-
-        # Validate content
-        if not content or not content.strip():
-            log_event(
-                "document_add_failed",
-                {"document_id": document_id, "reason": "empty_content"},
-                level=logging.WARNING,
-            )
-            return validation_error(
-                "Document content cannot be empty",
-                context={"document_id": document_id},
-            )
+        validation_error_result = self._validate_document_prerequisites(
+            document_id, content
+        )
+        if validation_error_result:
+            return validation_error_result
 
         try:
-            # Store full metadata separately (for retrieval by API endpoints)
-            full_metadata = metadata or {}
-            full_metadata["document_id"] = document_id
+            full_metadata, chunk_metadata = await self._prepare_document_metadata(
+                document_id, metadata
+            )
 
-            # Create minimal metadata for chunks using metadata service
-            if self.metadata_service:
-                chunk_metadata = self.metadata_service.create_minimal_chunk_metadata(
-                    full_metadata
-                )
-            else:
-                # Fallback if metadata service not available
-                chunk_metadata = self._create_minimal_chunk_metadata_fallback(
-                    full_metadata
-                )
-
-            # Store full metadata using the tracker
-            if self.doc_tracker is not None:
-                try:
-                    await self.doc_tracker.store_full_metadata(
-                        document_id, full_metadata
-                    )
-                except Exception as e:
-                    log_event(
-                        "metadata_storage_failed",
-                        {"document_id": document_id, "error": str(e)},
-                        level=logging.WARNING,
-                    )
-                    # Continue - this is not fatal
-
-            # Create LlamaIndex document
             document = Document(
                 text=content,
-                metadata=chunk_metadata,  # Use minimal metadata for chunks
+                metadata=chunk_metadata,
                 id_=document_id,
             )
 
-            # Insert into index - this creates nodes
             insert_result = await self._insert_document_into_index(
                 document, document_id, content
             )
 
-            # Check if insertion failed
             if insert_result.is_failure():
-                # Extract error message from the failure
                 error_msg = (
                     str(insert_result.error)
                     if hasattr(insert_result, "error")
@@ -270,30 +323,9 @@ class LlamaIndexDocumentService(DocumentService):
                 )
 
             nodes_created: List[str] = insert_result.unwrap()
-
-            # Calculate statistics
             word_count = len(content.split())
 
-            # Add to BM25 index for keyword search
-            if self.bm25_service:
-                try:
-                    await self.bm25_service.add_document(document_id, content)
-                    log_event(
-                        "bm25_document_indexed",
-                        {"document_id": document_id},
-                        level=logging.DEBUG,
-                    )
-                except Exception as e:
-                    log_event(
-                        "bm25_indexing_failed",
-                        {
-                            "document_id": document_id,
-                            "error": str(e),
-                            "error_type": type(e).__name__,
-                        },
-                        level=logging.WARNING,
-                    )
-                    # Don't fail the whole operation if BM25 indexing fails
+            await self._index_document_to_bm25(document_id, content)
 
             log_event(
                 "document_added",
@@ -385,7 +417,7 @@ class LlamaIndexDocumentService(DocumentService):
             )
 
             # Track which nodes belong to this document
-            doc_nodes: List[str] = await self._find_document_nodes(document_id)
+            doc_nodes: List[str] = self._find_document_nodes(document_id)
 
             if not doc_nodes:
                 log_event(
@@ -452,7 +484,7 @@ class LlamaIndexDocumentService(DocumentService):
                 },
             )
 
-    async def _find_document_nodes(self, document_id: str) -> List[str]:
+    def _find_document_nodes(self, document_id: str) -> List[str]:
         """
         Find all nodes belonging to a document after insertion using Qdrant.
 
@@ -617,7 +649,7 @@ class LlamaIndexDocumentService(DocumentService):
             # Delete from Qdrant if client available
             if self.qdrant_client:
                 try:
-                    await self._delete_from_vector_store(document_id)
+                    self._delete_from_vector_store(document_id)
                 except Exception as e:
                     log_event(
                         "vector_deletion_warning",
@@ -694,7 +726,7 @@ class LlamaIndexDocumentService(DocumentService):
                 },
             )
 
-    async def _delete_from_vector_store(self, document_id: str) -> None:
+    def _delete_from_vector_store(self, document_id: str) -> None:
         """Delete document vectors from Qdrant."""
         try:
             from qdrant_client.models import FieldCondition, Filter, MatchValue
@@ -783,7 +815,7 @@ class LlamaIndexDocumentService(DocumentService):
             # Recreate Qdrant collection if client available
             if self.qdrant_client:
                 try:
-                    await self._recreate_vector_collection()
+                    self._recreate_vector_collection()
                 except Exception as e:
                     return storage_error(
                         f"Failed to recreate vector collection: {str(e)}",
@@ -848,7 +880,7 @@ class LlamaIndexDocumentService(DocumentService):
                 context={"error_type": type(e).__name__},
             )
 
-    async def _recreate_vector_collection(self) -> None:
+    def _recreate_vector_collection(self) -> None:
         """Recreate the Qdrant collection."""
         try:
             # Delete existing collection
@@ -958,7 +990,7 @@ class LlamaIndexDocumentService(DocumentService):
             paginated_node_ids = node_ids[offset : offset + limit]
 
             # Retrieve and enrich chunks
-            enriched_chunks = await self._retrieve_and_enrich_chunks(
+            enriched_chunks = self._retrieve_and_enrich_chunks(
                 paginated_node_ids, offset
             )
 
@@ -1004,7 +1036,7 @@ class LlamaIndexDocumentService(DocumentService):
                 },
             )
 
-    async def _retrieve_and_enrich_chunks(
+    def _retrieve_and_enrich_chunks(
         self,
         node_ids: List[str],
         offset: int,

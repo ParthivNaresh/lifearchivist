@@ -7,7 +7,7 @@ Provides structured types for configuration, streaming events, and citations.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 
 class StreamEventType(Enum):
@@ -232,7 +232,7 @@ class StreamEvent:
     """
 
     type: StreamEventType
-    data: Union[ContextData, str, MetadataInfo, ErrorInfo, IntentData, List[Citation]]
+    data: ContextData | str | MetadataInfo | ErrorInfo | IntentData | List[Citation]
     timestamp: datetime = field(default_factory=datetime.utcnow)
     sequence_number: int = 0
 

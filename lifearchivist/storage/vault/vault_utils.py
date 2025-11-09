@@ -83,7 +83,7 @@ def safe_get_file_size(file_path: Path) -> int:
         return 0
 
 
-async def count_directory_files(directory: Path) -> Dict[str, int]:
+def count_directory_files(directory: Path) -> Dict[str, int]:
     """Count files and calculate total size in a directory."""
     stats = {"files": 0, "bytes": 0}
 
@@ -98,7 +98,7 @@ async def count_directory_files(directory: Path) -> Dict[str, int]:
     return stats
 
 
-async def delete_file_safely(
+def delete_file_safely(
     file_path: Path, metrics: Dict[str, Any], metric_prefix: str = ""
 ):
     """Safely delete a file and update metrics."""
@@ -138,7 +138,7 @@ async def clear_directory_files(
 
     for file_path in directory.rglob("*"):
         if file_path.is_file() and file_path.name not in exclude_files:
-            await delete_file_safely(file_path, metrics, metric_prefix)
+            delete_file_safely(file_path, metrics, metric_prefix)
 
 
 async def cleanup_empty_directories(
@@ -165,7 +165,7 @@ async def cleanup_empty_directories(
             pass
 
 
-async def generate_image_thumbnail(
+def generate_image_thumbnail(
     source_path: Path,
     thumbnail_path: Path,
     size: tuple[int, int] = (256, 256),
@@ -209,7 +209,7 @@ def bytes_to_mb(bytes_value: int) -> float:
     return round(bytes_value / (1024 * 1024), 2)
 
 
-async def cleanup_old_temp_files(temp_dir: Path, hours_old: int = 24) -> Dict[str, Any]:
+def cleanup_old_temp_files(temp_dir: Path, hours_old: int = 24) -> Dict[str, Any]:
     """Clean up temporary files older than specified hours."""
     if not temp_dir.exists():
         return {"cleaned_files": 0, "cleaned_bytes": 0, "errors": []}
@@ -258,7 +258,7 @@ def find_files_by_hash_pattern(directory: Path, file_hash: str) -> List[Path]:
     return matching_files
 
 
-async def get_comprehensive_directory_stats(
+def get_comprehensive_directory_stats(
     directories: Dict[str, Path],
 ) -> Dict[str, Any]:
     """Get comprehensive statistics for multiple directories."""
@@ -270,7 +270,7 @@ async def get_comprehensive_directory_stats(
 
     try:
         for dir_name, directory in directories.items():
-            dir_stats = await count_directory_files(directory)
+            dir_stats = count_directory_files(directory)
 
             # Add individual directory stats
             stats[f"{dir_name}_files"] = dir_stats["files"]

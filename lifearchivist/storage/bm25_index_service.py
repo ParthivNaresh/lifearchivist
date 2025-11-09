@@ -471,7 +471,7 @@ class BM25IndexService:
 
         return top_results
 
-    async def get_document_count(self) -> int:
+    def get_document_count(self) -> int:
         """
         Get number of documents in index.
 
@@ -480,7 +480,7 @@ class BM25IndexService:
         """
         return len(self.document_ids)
 
-    async def document_exists(self, document_id: str) -> bool:
+    def document_exists(self, document_id: str) -> bool:
         """
         Check if a document exists in the index.
 

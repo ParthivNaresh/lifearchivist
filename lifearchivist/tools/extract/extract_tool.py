@@ -109,7 +109,7 @@ class ExtractTextTool(BaseTool):
             if extension.startswith("."):
                 extension = extension[1:]
 
-            actual_file_path = await self.vault.get_file_path(file_hash, extension)
+            actual_file_path = self.vault.get_file_path(file_hash, extension)
 
         # Verify file exists
         if not actual_file_path or not actual_file_path.exists():

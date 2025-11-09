@@ -88,37 +88,42 @@ class EnrichmentWorker:
         self.running = True
         log_event("enrichment_worker_started", {})
 
-        while self.running and not self.shutdown_event.is_set():
-            try:
-                task = await self.queue.get_next_task(timeout=1)
+        try:
+            while self.running and not self.shutdown_event.is_set():
+                try:
+                    async with asyncio.timeout(1):
+                        task = await self.queue.get_next_task()
 
-                if not task:
+                    if not task:
+                        await asyncio.sleep(0.1)
+                        continue
+
+                    await self._process_task(task)
+
+                except asyncio.TimeoutError:
                     await asyncio.sleep(0.1)
                     continue
-
-                await self._process_task(task)
-
-            except asyncio.CancelledError:
-                log_event(
-                    "enrichment_worker_cancelled",
-                    {
-                        "tasks_processed": self.tasks_processed,
-                        "tasks_failed": self.tasks_failed,
-                    },
-                )
-                break
-            except Exception as e:
-                log_event(
-                    "enrichment_worker_error",
-                    {
-                        "error_type": type(e).__name__,
-                        "error": str(e),
-                    },
-                    level=logging.ERROR,
-                )
-                await asyncio.sleep(1)
-
-        await self._shutdown()
+                except asyncio.CancelledError:
+                    log_event(
+                        "enrichment_worker_cancelled",
+                        {
+                            "tasks_processed": self.tasks_processed,
+                            "tasks_failed": self.tasks_failed,
+                        },
+                    )
+                    raise
+                except Exception as e:
+                    log_event(
+                        "enrichment_worker_error",
+                        {
+                            "error_type": type(e).__name__,
+                            "error": str(e),
+                        },
+                        level=logging.ERROR,
+                    )
+                    await asyncio.sleep(1)
+        finally:
+            await self._shutdown()
 
     @track(
         operation="process_enrichment_task",
