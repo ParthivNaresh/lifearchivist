@@ -78,7 +78,9 @@ class FileUploadHandler:
         return temp_path
 
     async def process_file(
-        self, tags_list: list, metadata_dict: dict, content: bytes
+        self,
+        tags_list: list,
+        metadata_dict: dict,
     ) -> None:
         """Process the uploaded file through the ingestion pipeline."""
         import_params = {
@@ -172,7 +174,7 @@ async def upload_file(
         content = await file.read()
         handler.temp_file_path = await handler.save_to_temp_file(content)
 
-        await handler.process_file(tags_list, metadata_dict, content)
+        await handler.process_file(tags_list, metadata_dict)
 
         return handler.create_response(len(content))
 

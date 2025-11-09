@@ -12,7 +12,6 @@ from ..shared.exceptions import (
     InternalServerError,
     ResourceNotFoundError,
     ServiceUnavailableError,
-    ValidationError,
 )
 from .misc_models import CostInfo, UsageInfo, WorkspaceInfo
 from .response_models import (
@@ -61,7 +60,7 @@ class MetadataHandler:
         valid_includes = {"capabilities", "workspaces", "usage", "costs"}
         return set(self.include) & valid_includes
 
-    async def fetch_capabilities(self, requested: Set[str]) -> None:
+    def fetch_capabilities(self, requested: Set[str]) -> None:
         """Fetch provider capabilities if requested."""
         if "capabilities" in requested:
             fetch_provider_capabilities(
@@ -304,18 +303,13 @@ async def get_provider_metadata(
         provider = handler.validate_and_get_provider()
         requested = handler.get_requested_metadata_types()
 
-        await handler.fetch_capabilities(requested)
+        handler.fetch_capabilities(requested)
         await handler.fetch_workspaces(requested, provider)
         await handler.fetch_time_metadata(requested)
 
         return handler.build_response()
 
-    except (
-        ServiceUnavailableError,
-        ResourceNotFoundError,
-        ValidationError,
-        HTTPException,
-    ):
+    except HTTPException:
         raise
     except Exception as e:
         raise InternalServerError("Get provider metadata", e) from e

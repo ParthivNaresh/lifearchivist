@@ -3,7 +3,7 @@ Update provider endpoint.
 """
 
 import json
-from typing import Any, NoReturn, Optional, Tuple
+from typing import Any, NoReturn, Optional
 
 from fastapi import APIRouter, status
 
@@ -47,8 +47,8 @@ class ProviderUpdateHandler:
                 "Must provide at least one of: config, set_as_default"
             )
 
-    async def get_provider_metadata(self) -> Tuple[Any, Any]:
-        """Retrieve and validate provider metadata."""
+    async def get_provider_type(self) -> Any:
+        """Retrieve and validate provider type from metadata."""
         metadata_result = await self.server.credential_service.get_provider_metadata(
             self.provider_id
         )
@@ -58,7 +58,7 @@ class ProviderUpdateHandler:
 
         metadata = metadata_result.unwrap()
         provider_type = parse_provider_type(metadata["provider_type"])
-        return metadata, provider_type
+        return provider_type
 
     def _handle_metadata_failure(self, metadata_result: Any) -> NoReturn:
         """Handle metadata retrieval failure."""
@@ -281,7 +281,7 @@ async def update_provider(
         handler.validate_services()
         handler.validate_request()
 
-        metadata, provider_type = await handler.get_provider_metadata()
+        provider_type = await handler.get_provider_type()
         new_config = handler.prepare_new_config(provider_type)
 
         await handler.update_configuration(new_config)
