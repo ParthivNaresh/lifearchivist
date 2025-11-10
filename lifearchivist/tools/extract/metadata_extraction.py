@@ -172,6 +172,50 @@ async def extract_pdf_metadata(file_path: Path) -> Dict[str, Any]:
         return {}
 
 
+def _extract_docx_fields(core_props) -> Dict[str, Any]:
+    """
+    Extract fields from DOCX core properties.
+
+    Args:
+        core_props: Document core properties object
+
+    Returns:
+        Dictionary with extracted metadata fields
+    """
+    metadata = {}
+
+    date_fields = [
+        ("created", "document_created_at"),
+        ("modified", "document_modified_at"),
+    ]
+
+    for prop_name, meta_key in date_fields:
+        value = getattr(core_props, prop_name, None)
+        if value:
+            metadata[meta_key] = value.isoformat()
+
+    text_fields = [
+        ("author", "document_author"),
+        ("title", "document_title"),
+        ("subject", "document_subject"),
+        ("keywords", "document_keywords"),
+        ("last_modified_by", "document_last_modified_by"),
+    ]
+
+    for prop_name, meta_key in text_fields:
+        value = getattr(core_props, prop_name, None)
+        if value:
+            metadata[meta_key] = value.strip()
+
+    if core_props.revision:
+        try:
+            metadata["document_revision"] = int(core_props.revision)
+        except (ValueError, TypeError):
+            pass
+
+    return metadata
+
+
 async def extract_docx_metadata(file_path: Path) -> Dict[str, Any]:
     """
     Extract metadata from Word documents.
@@ -196,36 +240,7 @@ async def extract_docx_metadata(file_path: Path) -> Dict[str, Any]:
 
     def _read_docx_metadata() -> Dict[str, Any]:
         doc = Document(str(file_path))
-        core_props = doc.core_properties
-
-        metadata = {}
-
-        if core_props.created:
-            metadata["document_created_at"] = core_props.created.isoformat()
-
-        if core_props.modified:
-            metadata["document_modified_at"] = core_props.modified.isoformat()
-
-        if core_props.author:
-            metadata["document_author"] = core_props.author.strip()
-
-        if core_props.title:
-            metadata["document_title"] = core_props.title.strip()
-
-        if core_props.subject:
-            metadata["document_subject"] = core_props.subject.strip()
-
-        if core_props.keywords:
-            metadata["document_keywords"] = core_props.keywords.strip()
-
-        if core_props.last_modified_by:
-            metadata["document_last_modified_by"] = core_props.last_modified_by.strip()
-
-        if core_props.revision:
-            try:
-                metadata["document_revision"] = int(core_props.revision)
-            except (ValueError, TypeError):
-                pass
+        metadata = _extract_docx_fields(doc.core_properties)
 
         if metadata:
             log_event(
@@ -251,6 +266,44 @@ async def extract_docx_metadata(file_path: Path) -> Dict[str, Any]:
         return {}
 
 
+def _extract_xlsx_fields(props) -> Dict[str, Any]:
+    """
+    Extract fields from XLSX workbook properties.
+
+    Args:
+        props: Workbook properties object
+
+    Returns:
+        Dictionary with extracted metadata fields
+    """
+    metadata = {}
+
+    date_fields = [
+        ("created", "document_created_at"),
+        ("modified", "document_modified_at"),
+    ]
+
+    for prop_name, meta_key in date_fields:
+        value = getattr(props, prop_name, None)
+        if value:
+            metadata[meta_key] = value.isoformat()
+
+    text_fields = [
+        ("creator", "document_author"),
+        ("lastModifiedBy", "document_last_modified_by"),
+        ("title", "document_title"),
+        ("subject", "document_subject"),
+        ("keywords", "document_keywords"),
+    ]
+
+    for prop_name, meta_key in text_fields:
+        value = getattr(props, prop_name, None)
+        if value:
+            metadata[meta_key] = value.strip()
+
+    return metadata
+
+
 async def extract_xlsx_metadata(file_path: Path) -> Dict[str, Any]:
     """
     Extract metadata from Excel workbooks.
@@ -274,31 +327,7 @@ async def extract_xlsx_metadata(file_path: Path) -> Dict[str, Any]:
 
     def _read_xlsx_metadata() -> Dict[str, Any]:
         wb = load_workbook(str(file_path), read_only=True, data_only=True)
-        props = wb.properties
-
-        metadata = {}
-
-        if props.created:
-            metadata["document_created_at"] = props.created.isoformat()
-
-        if props.modified:
-            metadata["document_modified_at"] = props.modified.isoformat()
-
-        if props.creator:
-            metadata["document_author"] = props.creator.strip()
-
-        if props.lastModifiedBy:
-            metadata["document_last_modified_by"] = props.lastModifiedBy.strip()
-
-        if props.title:
-            metadata["document_title"] = props.title.strip()
-
-        if props.subject:
-            metadata["document_subject"] = props.subject.strip()
-
-        if props.keywords:
-            metadata["document_keywords"] = props.keywords.strip()
-
+        metadata = _extract_xlsx_fields(wb.properties)
         wb.close()
 
         if metadata:
@@ -323,6 +352,57 @@ async def extract_xlsx_metadata(file_path: Path) -> Dict[str, Any]:
             level=logging.WARNING,
         )
         return {}
+
+
+def _extract_exif_date(exif_data) -> Optional[str]:
+    """
+    Extract date from EXIF data.
+
+    Args:
+        exif_data: EXIF data dictionary
+
+    Returns:
+        ISO 8601 formatted date string or None
+    """
+    DATETIME_ORIGINAL = 36867
+    DATETIME_DIGITIZED = 36868
+
+    date_fields = [DATETIME_ORIGINAL, DATETIME_DIGITIZED]
+
+    for field_id in date_fields:
+        if field_id in exif_data:
+            date_str = exif_data[field_id]
+            try:
+                dt = datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
+                return dt.isoformat()
+            except ValueError:
+                continue
+
+    return None
+
+
+def _extract_exif_camera_info(exif_data) -> Dict[str, str]:
+    """
+    Extract camera information from EXIF data.
+
+    Args:
+        exif_data: EXIF data dictionary
+
+    Returns:
+        Dictionary with camera make and model
+    """
+    MAKE = 271
+    MODEL = 272
+
+    camera_info = {}
+
+    if MAKE in exif_data:
+        camera_info["camera_make"] = exif_data[MAKE].strip()
+
+    if MODEL in exif_data:
+        camera_info["camera_model"] = exif_data[MODEL].strip()
+
+    return camera_info
 
 
 async def extract_image_metadata(file_path: Path) -> Dict[str, Any]:
@@ -351,31 +431,12 @@ async def extract_image_metadata(file_path: Path) -> Dict[str, Any]:
 
         metadata = {}
 
-        DATETIME_ORIGINAL = 36867
-        DATETIME_DIGITIZED = 36868
-        MAKE = 271
-        MODEL = 272
+        created_date = _extract_exif_date(exif_data)
+        if created_date:
+            metadata["document_created_at"] = created_date
 
-        if DATETIME_ORIGINAL in exif_data:
-            date_str = exif_data[DATETIME_ORIGINAL]
-            try:
-                dt = datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
-                metadata["document_created_at"] = dt.isoformat()
-            except ValueError:
-                pass
-        elif DATETIME_DIGITIZED in exif_data:
-            date_str = exif_data[DATETIME_DIGITIZED]
-            try:
-                dt = datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
-                metadata["document_created_at"] = dt.isoformat()
-            except ValueError:
-                pass
-
-        if MAKE in exif_data:
-            metadata["camera_make"] = exif_data[MAKE].strip()
-
-        if MODEL in exif_data:
-            metadata["camera_model"] = exif_data[MODEL].strip()
+        camera_info = _extract_exif_camera_info(exif_data)
+        metadata.update(camera_info)
 
         if metadata:
             log_event(
