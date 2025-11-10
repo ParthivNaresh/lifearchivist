@@ -440,7 +440,7 @@ class ApplicationServer:
             return
 
         try:
-            await self.service_container.init_rag_service(
+            self.service_container.init_rag_service(
                 activity_manager=self.activity_manager
             )
             log_event("rag_service_initialized_with_activity_manager")

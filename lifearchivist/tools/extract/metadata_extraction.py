@@ -192,20 +192,20 @@ async def extract_docx_metadata(file_path: Path) -> Dict[str, Any]:
     Returns:
         Dictionary with extracted metadata
     """
-    try:
+    import asyncio
+
+    def _read_docx_metadata() -> Dict[str, Any]:
         doc = Document(str(file_path))
         core_props = doc.core_properties
 
         metadata = {}
 
-        # Dates
         if core_props.created:
             metadata["document_created_at"] = core_props.created.isoformat()
 
         if core_props.modified:
             metadata["document_modified_at"] = core_props.modified.isoformat()
 
-        # Text fields
         if core_props.author:
             metadata["document_author"] = core_props.author.strip()
 
@@ -227,7 +227,6 @@ async def extract_docx_metadata(file_path: Path) -> Dict[str, Any]:
             except (ValueError, TypeError):
                 pass
 
-        # Log successful extraction
         if metadata:
             log_event(
                 "docx_metadata_extracted",
@@ -241,6 +240,8 @@ async def extract_docx_metadata(file_path: Path) -> Dict[str, Any]:
 
         return metadata
 
+    try:
+        return await asyncio.to_thread(_read_docx_metadata)
     except Exception as e:
         log_event(
             "docx_metadata_extraction_failed",
@@ -269,21 +270,20 @@ async def extract_xlsx_metadata(file_path: Path) -> Dict[str, Any]:
     Returns:
         Dictionary with extracted metadata
     """
-    try:
-        # Load in read-only mode for performance
+    import asyncio
+
+    def _read_xlsx_metadata() -> Dict[str, Any]:
         wb = load_workbook(str(file_path), read_only=True, data_only=True)
         props = wb.properties
 
         metadata = {}
 
-        # Dates
         if props.created:
             metadata["document_created_at"] = props.created.isoformat()
 
         if props.modified:
             metadata["document_modified_at"] = props.modified.isoformat()
 
-        # Text fields
         if props.creator:
             metadata["document_author"] = props.creator.strip()
 
@@ -301,7 +301,6 @@ async def extract_xlsx_metadata(file_path: Path) -> Dict[str, Any]:
 
         wb.close()
 
-        # Log successful extraction
         if metadata:
             log_event(
                 "xlsx_metadata_extracted",
@@ -315,6 +314,8 @@ async def extract_xlsx_metadata(file_path: Path) -> Dict[str, Any]:
 
         return metadata
 
+    try:
+        return await asyncio.to_thread(_read_xlsx_metadata)
     except Exception as e:
         log_event(
             "xlsx_metadata_extraction_failed",
@@ -339,7 +340,9 @@ async def extract_image_metadata(file_path: Path) -> Dict[str, Any]:
     Returns:
         Dictionary with extracted metadata
     """
-    try:
+    import asyncio
+
+    def _read_image_metadata() -> Dict[str, Any]:
         image = Image.open(file_path)
         exif_data = image.getexif()
 
@@ -348,17 +351,14 @@ async def extract_image_metadata(file_path: Path) -> Dict[str, Any]:
 
         metadata = {}
 
-        # EXIF tag IDs
-        DATETIME_ORIGINAL = 36867  # DateTimeOriginal
-        DATETIME_DIGITIZED = 36868  # DateTimeDigitized
-        MAKE = 271  # Camera make
-        MODEL = 272  # Camera model
+        DATETIME_ORIGINAL = 36867
+        DATETIME_DIGITIZED = 36868
+        MAKE = 271
+        MODEL = 272
 
-        # Extract date taken
         if DATETIME_ORIGINAL in exif_data:
             date_str = exif_data[DATETIME_ORIGINAL]
             try:
-                # EXIF format: "YYYY:MM:DD HH:MM:SS"
                 dt = datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
                 metadata["document_created_at"] = dt.isoformat()
             except ValueError:
@@ -371,14 +371,12 @@ async def extract_image_metadata(file_path: Path) -> Dict[str, Any]:
             except ValueError:
                 pass
 
-        # Camera info
         if MAKE in exif_data:
             metadata["camera_make"] = exif_data[MAKE].strip()
 
         if MODEL in exif_data:
             metadata["camera_model"] = exif_data[MODEL].strip()
 
-        # Log successful extraction
         if metadata:
             log_event(
                 "image_metadata_extracted",
@@ -392,6 +390,8 @@ async def extract_image_metadata(file_path: Path) -> Dict[str, Any]:
 
         return metadata
 
+    try:
+        return await asyncio.to_thread(_read_image_metadata)
     except Exception as e:
         log_event(
             "image_metadata_extraction_failed",

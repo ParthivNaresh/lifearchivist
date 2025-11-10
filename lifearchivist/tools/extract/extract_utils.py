@@ -435,7 +435,7 @@ def _detect_header_row(sheet, max_rows: int = 10) -> Tuple[int, List[str]]:
     return 0, []
 
 
-async def _extract_excel_text(file_path: Path) -> str:
+def _extract_excel_text(file_path: Path) -> str:
     """
     Extract text from Excel files with comprehensive data handling.
 
@@ -532,7 +532,7 @@ def _detect_csv_delimiter(content: str, sample_lines: int = 10) -> str:
 
     # Common delimiters to check
     delimiters = [",", ";", "\t", "|"]
-    delimiter_counts = {d: 0 for d in delimiters}
+    delimiter_counts = dict.fromkeys(delimiters, 0)
 
     for line in lines:
         if not line.strip():
@@ -717,7 +717,7 @@ async def _extract_text_by_type(file_path: Path, mime_type: str) -> str:
             "application/x-excel",
             "application/x-msexcel",
         ]:
-            return await _extract_excel_text(file_path)
+            return _extract_excel_text(file_path)
         # Image files
         elif mime_type.startswith("image/"):
             return await _extract_image_text(file_path)

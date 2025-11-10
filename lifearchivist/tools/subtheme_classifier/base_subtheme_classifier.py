@@ -430,37 +430,11 @@ class BaseSubthemeClassifier:
         if tertiary_matches:
             all_matches["tertiary"] = tertiary_matches
 
-        # Determine final confidence based on cascade approach
-        final_confidence = 0.0
-        subclassification_match_tier = ""
-
-        if primary_confidence >= 0.85:
-            final_confidence = primary_confidence
-            subclassification_match_tier = "primary"
-        elif secondary_confidence >= 0.60:
-            final_confidence = secondary_confidence
-            subclassification_match_tier = "secondary"
-        elif primary_confidence > 0 and secondary_confidence > 0:
-            # Weighted combination
-            final_confidence = min(
-                0.95, primary_confidence * 0.7 + secondary_confidence * 0.3
+        final_confidence, subclassification_match_tier = (
+            self._calculate_final_confidence(
+                primary_confidence, secondary_confidence, tertiary_confidence
             )
-            subclassification_match_tier = "combined_primary_secondary"
-        elif primary_confidence > 0:
-            final_confidence = primary_confidence
-            subclassification_match_tier = "primary"
-        elif secondary_confidence > 0 and tertiary_confidence > 0:
-            # Boost secondary if tertiary also matches
-            final_confidence = min(
-                0.80, secondary_confidence * 0.8 + tertiary_confidence * 0.2
-            )
-            subclassification_match_tier = "combined_secondary_tertiary"
-        elif secondary_confidence > 0:
-            final_confidence = secondary_confidence
-            subclassification_match_tier = "secondary"
-        else:
-            final_confidence = tertiary_confidence
-            subclassification_match_tier = "tertiary" if tertiary_confidence > 0 else ""
+        )
 
         # Build detailed match info
         match_details = {
@@ -470,6 +444,46 @@ class BaseSubthemeClassifier:
         }
 
         return final_confidence, match_details
+
+    def _calculate_final_confidence(
+        self,
+        primary_confidence: float,
+        secondary_confidence: float,
+        tertiary_confidence: float,
+    ) -> Tuple[float, str]:
+        """
+        Calculate final confidence score using cascade approach.
+
+        Args:
+            primary_confidence: Confidence from primary identifiers
+            secondary_confidence: Confidence from secondary identifiers
+            tertiary_confidence: Confidence from tertiary identifiers
+
+        Returns:
+            Tuple of (final_confidence, classification_tier)
+        """
+        if primary_confidence >= 0.85:
+            return primary_confidence, "primary"
+
+        if secondary_confidence >= 0.60:
+            return secondary_confidence, "secondary"
+
+        if primary_confidence > 0 and secondary_confidence > 0:
+            combined = min(0.95, primary_confidence * 0.7 + secondary_confidence * 0.3)
+            return combined, "combined_primary_secondary"
+
+        if primary_confidence > 0:
+            return primary_confidence, "primary"
+
+        if secondary_confidence > 0 and tertiary_confidence > 0:
+            combined = min(0.80, secondary_confidence * 0.8 + tertiary_confidence * 0.2)
+            return combined, "combined_secondary_tertiary"
+
+        if secondary_confidence > 0:
+            return secondary_confidence, "secondary"
+
+        tier = "tertiary" if tertiary_confidence > 0 else ""
+        return tertiary_confidence, tier
 
     def _check_exclusions(self, rule: SubthemeRule, text_lower: str) -> bool:
         """

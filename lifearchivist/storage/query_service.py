@@ -499,7 +499,7 @@ class LlamaIndexQueryService(QueryService):
             "answer_length": len(answer),
             "context_length": len(context),
             "num_sources": len(sources),
-            "unique_documents": len(set(s.get("document_id", "") for s in sources)),
+            "unique_documents": len({s.get("document_id", "") for s in sources}),
             "avg_relevance_score": (
                 sum(s.get("score", 0) for s in sources) / len(sources) if sources else 0
             ),
@@ -776,7 +776,7 @@ class LlamaIndexQueryService(QueryService):
                     "context_length": len(context),
                     "answer_length": len(accumulated_text),
                     "unique_documents": len(
-                        set(s.get("document_id", "") for s in formatted_sources)
+                        {s.get("document_id", "") for s in formatted_sources}
                     ),
                     "avg_relevance_score": (
                         sum(s.get("score", 0) for s in formatted_sources)
