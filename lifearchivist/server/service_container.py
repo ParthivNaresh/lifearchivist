@@ -158,7 +158,7 @@ class ServiceContainer:
             await self._init_bm25()
 
             # Phase 3.5: LLM provider services (depend on Redis)
-            await self._init_credential_service()
+            self._init_credential_service()
             await self._init_llm_provider_manager()
 
             # Phase 4: High-level services (depend on everything)
@@ -528,7 +528,7 @@ class ServiceContainer:
                 f"Failed to initialize message service: {str(e)}"
             ) from e
 
-    async def _init_credential_service(self) -> None:
+    def _init_credential_service(self) -> None:
         """
         Initialize credential service for API key storage.
 
@@ -643,7 +643,7 @@ class ServiceContainer:
         except Exception:
             return "postgresql://****:****@****:****/****"
 
-    async def init_rag_service(
+    def init_rag_service(
         self, activity_manager: Optional["ActivityManager"] = None
     ) -> None:
         """

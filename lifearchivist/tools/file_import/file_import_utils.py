@@ -112,7 +112,7 @@ def get_platform_creation_date(file_path: Path) -> Optional[str]:
                     date_obj = plistlib.loads(date_data)
                     if isinstance(date_obj, datetime):
                         return date_obj.isoformat()
-            except (ImportError, KeyError, Exception):
+            except Exception:
                 # xattr not available or attribute doesn't exist
                 # Fall back to stat
                 pass
@@ -142,16 +142,15 @@ async def calculate_file_hash(file_path: Path) -> str:
     Returns:
         SHA256 hash as hexadecimal string
     """
+    import aiofiles
+
     hash_sha256 = hashlib.sha256()
-    bytes_processed = 0
 
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(HASH_CHUNK_SIZE), b""):
+    async with aiofiles.open(file_path, "rb") as f:
+        while chunk := await f.read(HASH_CHUNK_SIZE):
             hash_sha256.update(chunk)
-            bytes_processed += len(chunk)
 
-    file_hash = hash_sha256.hexdigest()
-    return file_hash
+    return hash_sha256.hexdigest()
 
 
 def create_document_metadata(

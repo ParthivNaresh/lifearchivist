@@ -146,7 +146,7 @@ class ApplicationServer:
             await self._init_tool_registry()
 
             # Phase 5: Initialize RAG service with activity manager
-            await self._init_rag_service()
+            self._init_rag_service()
 
             # Phase 6: Initialize folder watcher
             await self._init_folder_watcher()
@@ -429,7 +429,7 @@ class ApplicationServer:
         tool_count = len(self.tool_registry.tools)
         log_event("tool_registry_initialized", {"tools_registered": tool_count})
 
-    async def _init_rag_service(self):
+    def _init_rag_service(self):
         """Initialize RAG service with activity manager."""
         if not self.service_container:
             log_event(
@@ -440,7 +440,7 @@ class ApplicationServer:
             return
 
         try:
-            await self.service_container.init_rag_service(
+            self.service_container.init_rag_service(
                 activity_manager=self.activity_manager
             )
             log_event("rag_service_initialized_with_activity_manager")

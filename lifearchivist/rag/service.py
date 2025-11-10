@@ -475,7 +475,7 @@ class ConversationRAGService:
             num_sources=len(citations),
             context_length=len(context),
             answer_length=len(accumulated_response),
-            unique_documents=len(set(c.document_id for c in citations)),
+            unique_documents=len({c.document_id for c in citations}),
             processing_time_ms=processing_time_ms,
             tokens_used=tokens_used,
             cost_usd=cost_usd,
@@ -1019,7 +1019,7 @@ class ConversationRAGService:
                         "query": query[:100],
                         "response_length": len(response),
                         "sources_count": len(citations),
-                        "unique_documents": len(set(c.document_id for c in citations)),
+                        "unique_documents": len({c.document_id for c in citations}),
                         "avg_relevance": (
                             sum(c.relevance_score for c in citations) / len(citations)
                             if citations

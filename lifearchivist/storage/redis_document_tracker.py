@@ -348,7 +348,7 @@ class RedisDocumentTracker:
         client = self._client()
         members = await cast(Awaitable[Set[str]], client.smembers(all_index_key))
 
-        return sorted(list(members)) if members else []
+        return sorted(members) if members else []
 
     @track(
         operation="redis_store_full_metadata",
@@ -580,12 +580,12 @@ class RedisDocumentTracker:
         if len(index_keys) == 1:
             client = self._client()
             members = await cast(Awaitable[Set[str]], client.smembers(index_keys[0]))
-            members_list: List[str] = sorted(list(members)) if members else []
+            members_list: List[str] = sorted(members) if members else []
             return members_list
 
         client = self._client()
         result = await cast(Awaitable[Set[str]], client.sinter(index_keys))
-        result_list: List[str] = sorted(list(result)) if result else []
+        result_list: List[str] = sorted(result) if result else []
         return result_list
 
     @track(
@@ -681,7 +681,7 @@ class RedisDocumentTracker:
 
         try:
             return json.loads(value)
-        except (json.JSONDecodeError, ValueError):
+        except ValueError:
             return value
 
     async def _update_metadata_indexes(
