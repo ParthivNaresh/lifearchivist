@@ -185,7 +185,7 @@ class Vault:
 
         # If no file hashes provided or we need comprehensive cleanup, clear all files
         if not file_hashes:
-            await self._clear_all_vault_files(cleared_metrics)
+            self._clear_all_vault_files(cleared_metrics)
 
         # Clean up empty directories
         dirs_cleaned = await self._cleanup_empty_directories()
@@ -206,7 +206,7 @@ class Vault:
 
         return cleared_metrics
 
-    async def _clear_all_vault_files(self, metrics: Dict[str, Any]):
+    def _clear_all_vault_files(self, metrics: Dict[str, Any]):
         """
         Remove all files from vault storage directories (comprehensive cleanup).
 
@@ -219,7 +219,7 @@ class Vault:
             # Use empty prefix for main vault clearing (not "orphaned_")
             clear_directory_files(directory, metrics, None, "")
 
-    async def delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
+    def delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
         """
         Delete all files (content and thumbnails) associated with a specific hash.
 
@@ -582,7 +582,7 @@ class Vault:
             raise RuntimeError(f"Failed to copy file to vault: {e}") from None
 
         # Generate thumbnail for images
-        thumbnail_generated = await self._generate_thumbnail(target_path, file_hash)
+        thumbnail_generated = self._generate_thumbnail(target_path, file_hash)
 
         # Get file size
         size_bytes = safe_get_file_size(target_path)
@@ -649,7 +649,7 @@ class Vault:
         file_path = self._get_content_path(file_hash, extension)
         return file_path if file_path.exists() else None
 
-    async def _generate_thumbnail(self, file_path: Path, file_hash: str) -> bool:
+    def _generate_thumbnail(self, file_path: Path, file_hash: str) -> bool:
         """
         Generate a thumbnail for an image file (internal method).
 

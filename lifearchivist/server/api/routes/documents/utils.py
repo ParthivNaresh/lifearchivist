@@ -130,7 +130,7 @@ async def delete_vault_file_safe(
             "bytes_reclaimed": 0,
             "errors": [],
         }
-        await vault.delete_file_by_hash(file_hash, metrics)
+        vault.delete_file_by_hash(file_hash, metrics)
 
         files_deleted_count = metrics.get("files_deleted", 0)
         return isinstance(files_deleted_count, int) and files_deleted_count > 0
