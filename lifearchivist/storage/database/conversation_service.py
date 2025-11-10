@@ -57,6 +57,100 @@ class ConversationService:
         """
         self.db_pool = db_pool
 
+    async def _get_user_preferences(self, user_id: str) -> tuple[float, int]:
+        """
+        Get or create user preferences for temperature and max_tokens.
+
+        Args:
+            user_id: User identifier
+
+        Returns:
+            Tuple of (temperature, max_output_tokens)
+        """
+        async with self.db_pool.acquire() as conn:
+            prefs = await conn.fetchrow(
+                """
+                INSERT INTO user_preferences (user_id)
+                VALUES ($1)
+                ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
+                RETURNING temperature, max_output_tokens
+                """,
+                user_id,
+            )
+            return prefs["temperature"], prefs["max_output_tokens"]
+
+    def _validate_conversation_params(
+        self, temperature: float, max_tokens: int
+    ) -> Optional[Result[Dict[str, Any], str]]:
+        """
+        Validate temperature and max_tokens parameters.
+
+        Args:
+            temperature: Temperature value
+            max_tokens: Max tokens value
+
+        Returns:
+            Validation error Result if invalid, None if valid
+        """
+        temp_error = validate_temperature(temperature)
+        if temp_error:
+            return validation_error(temp_error, context={"temperature": temperature})
+
+        tokens_error = validate_max_tokens(max_tokens)
+        if tokens_error:
+            return validation_error(tokens_error, context={"max_tokens": max_tokens})
+
+        return None
+
+    def _build_conversation_data(
+        self,
+        user_id: str,
+        model: str,
+        temperature: float,
+        max_tokens: int,
+        title: Optional[str],
+        provider_id: Optional[str],
+        context_documents: Optional[List[str]],
+        system_prompt: Optional[str],
+        metadata: Optional[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """
+        Build conversation data dictionary for insertion.
+
+        Args:
+            user_id: User identifier
+            model: LLM model
+            temperature: Temperature value
+            max_tokens: Max tokens value
+            title: Optional title
+            provider_id: Optional provider ID
+            context_documents: Optional context documents
+            system_prompt: Optional system prompt
+            metadata: Optional metadata
+
+        Returns:
+            Dictionary of conversation data
+        """
+        data: Dict[str, Any] = {
+            "user_id": user_id,
+            "model": model,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+
+        if title:
+            data["title"] = title
+        if provider_id:
+            data["provider_id"] = provider_id
+        if context_documents:
+            data["context_documents"] = context_documents
+        if system_prompt:
+            data["system_prompt"] = system_prompt
+        if metadata:
+            data["metadata"] = metadata
+
+        return data
+
     @track(
         operation="conversation_create",
         include_args=["user_id", "model", "provider_id"],
@@ -94,67 +188,32 @@ class ConversationService:
             Success with conversation dict, or Failure with error
         """
         try:
-            # Get user preferences if temperature or max_tokens not specified
             if temperature is None or max_tokens is None:
-                async with self.db_pool.acquire() as conn:
-                    # Get or create user preferences
-                    prefs = await conn.fetchrow(
-                        """
-                        INSERT INTO user_preferences (user_id)
-                        VALUES ($1)
-                        ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
-                        RETURNING temperature, max_output_tokens
-                        """,
-                        user_id,
-                    )
+                pref_temp, pref_tokens = await self._get_user_preferences(user_id)
+                temperature = temperature if temperature is not None else pref_temp
+                max_tokens = max_tokens if max_tokens is not None else pref_tokens
 
-                    if temperature is None:
-                        temperature = prefs["temperature"]
-                    if max_tokens is None:
-                        max_tokens = prefs["max_output_tokens"]
-
-            # Use current settings if model not specified
             if model is None:
-                settings = get_settings()
-                model = settings.llm_model
+                model = get_settings().llm_model
 
-            # Validate inputs
-            if temperature < 0 or temperature > 2:
-                return validation_error(
-                    "Temperature must be between 0 and 2",
-                    context={"temperature": temperature},
-                )
+            validation_error_result = self._validate_conversation_params(
+                temperature, max_tokens
+            )
+            if validation_error_result:
+                return validation_error_result
 
-            if max_tokens < 1 or max_tokens > 100000:
-                return validation_error(
-                    "Max tokens must be between 1 and 100000",
-                    context={"max_tokens": max_tokens},
-                )
+            data = self._build_conversation_data(
+                user_id,
+                model,
+                temperature,
+                max_tokens,
+                title,
+                provider_id,
+                context_documents,
+                system_prompt,
+                metadata,
+            )
 
-            # Prepare data
-            data = {
-                "user_id": user_id,
-                "model": model,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
-
-            if title:
-                data["title"] = title
-
-            if provider_id:
-                data["provider_id"] = provider_id
-
-            if context_documents:
-                data["context_documents"] = context_documents
-
-            if system_prompt:
-                data["system_prompt"] = system_prompt
-
-            if metadata:
-                data["metadata"] = metadata
-
-            # Insert conversation
             query, values = build_insert_query("conversations", data)
 
             async with self.db_pool.acquire() as conn:

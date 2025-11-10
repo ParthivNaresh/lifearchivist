@@ -32,6 +32,8 @@ from watchdog.observers import Observer
 from lifearchivist.storage.redis_folder_watch_store import RedisFolderWatchStore
 from lifearchivist.utils.logging import log_event
 
+from .constants import NOT_INITIALIZED_FOLDER_WATCHER_SERVICE
+
 logger = logging.getLogger(__name__)
 
 
@@ -170,9 +172,7 @@ class FolderWatcherService:
             RuntimeError: If service not initialized
         """
         if self.store is None:
-            raise RuntimeError(
-                "FolderWatcherService not initialized. Call initialize() first."
-            )
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
         return self.store
 
     async def cleanup(self) -> None:
@@ -222,7 +222,7 @@ class FolderWatcherService:
         from lifearchivist.storage.utils import FolderWatchUtils
 
         if not self._initialized:
-            raise RuntimeError("FolderWatcherService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
 
         if len(self.watched_folders) >= self.max_folders:
             raise ValueError(
@@ -257,7 +257,7 @@ class FolderWatcherService:
             self.watched_folders[folder_id] = watched_folder
 
             if enabled:
-                await self._start_watching(folder_id)
+                self._start_watching(folder_id)
                 watching_started = True
 
             await self._store.add_folder(
@@ -306,7 +306,7 @@ class FolderWatcherService:
             Exception: If removal fails (folder remains in inconsistent state)
         """
         if not self._initialized:
-            raise RuntimeError("FolderWatcherService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
 
         if folder_id not in self.watched_folders:
             return False
@@ -317,7 +317,7 @@ class FolderWatcherService:
         try:
             # Stop watching if active
             if watched_folder.is_active():
-                await self._stop_watching(folder_id)
+                self._stop_watching(folder_id)
 
             # Cancel pending tasks for this folder
             tasks_to_cancel = [
@@ -367,7 +367,7 @@ class FolderWatcherService:
             True if folder was enabled, False if not found
         """
         if not self._initialized:
-            raise RuntimeError("FolderWatcherService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
 
         if folder_id not in self.watched_folders:
             return False
@@ -384,7 +384,7 @@ class FolderWatcherService:
             await self._store.update_folder(folder_id, {"enabled": True})
 
             # Start watching
-            await self._start_watching(folder_id)
+            self._start_watching(folder_id)
 
             logger.info(f"Enabled folder watching: {watched_folder.path}")
 
@@ -405,7 +405,7 @@ class FolderWatcherService:
             True if folder was disabled, False if not found
         """
         if not self._initialized:
-            raise RuntimeError("FolderWatcherService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_FOLDER_WATCHER_SERVICE)
 
         if folder_id not in self.watched_folders:
             return False
@@ -418,7 +418,7 @@ class FolderWatcherService:
 
         try:
             # Stop watching
-            await self._stop_watching(folder_id)
+            self._stop_watching(folder_id)
 
             # Update state
             watched_folder.enabled = False
@@ -432,7 +432,7 @@ class FolderWatcherService:
             logger.error(f"Error disabling folder {folder_id}: {e}", exc_info=True)
             raise
 
-    async def get_folder(self, folder_id: str) -> Optional[WatchedFolder]:
+    def get_folder(self, folder_id: str) -> Optional[WatchedFolder]:
         """
         Get folder by ID.
 
@@ -486,7 +486,7 @@ class FolderWatcherService:
 
         return folders
 
-    async def _start_watching(self, folder_id: str) -> None:
+    def _start_watching(self, folder_id: str) -> None:
         """
         Start watching a folder (internal method).
 
@@ -538,7 +538,7 @@ class FolderWatcherService:
             )
             raise
 
-    async def _stop_watching(self, folder_id: str) -> None:
+    def _stop_watching(self, folder_id: str) -> None:
         """
         Stop watching a folder (internal method).
 
@@ -641,7 +641,7 @@ class FolderWatcherService:
 
                     # Start watching if enabled
                     if enabled:
-                        await self._start_watching(folder_id)
+                        self._start_watching(folder_id)
                         resumed_count += 1
                     else:
                         logger.info(f"Loaded disabled folder: {folder_path}")
@@ -760,8 +760,8 @@ class FolderWatcherService:
             await self._ingest_file(folder_id, file_path)
 
         except asyncio.CancelledError:
-            # Task was cancelled (new event for same file)
             logger.debug(f"Ingestion cancelled: {file_path}")
+            raise
         except Exception as e:
             logger.error(f"Error during debounced ingestion: {e}", exc_info=True)
             await self._record_file_failed(folder_id, file_path, str(e))

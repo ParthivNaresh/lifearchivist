@@ -169,7 +169,7 @@ class Vault:
         # Clear files by specific hashes
         for file_hash in file_hashes:
             try:
-                await self._delete_file_by_hash(file_hash, cleared_metrics)
+                self._delete_file_by_hash(file_hash, cleared_metrics)
             except Exception as e:
                 error_msg = f"Failed to delete files for hash {file_hash}: {e}"
                 if isinstance(cleared_metrics["errors"], list):
@@ -185,7 +185,7 @@ class Vault:
 
         # If no file hashes provided or we need comprehensive cleanup, clear all files
         if not file_hashes:
-            await self._clear_all_vault_files(cleared_metrics)
+            self._clear_all_vault_files(cleared_metrics)
 
         # Clean up empty directories
         dirs_cleaned = await self._cleanup_empty_directories()
@@ -206,7 +206,7 @@ class Vault:
 
         return cleared_metrics
 
-    async def _clear_all_vault_files(self, metrics: Dict[str, Any]):
+    def _clear_all_vault_files(self, metrics: Dict[str, Any]):
         """
         Remove all files from vault storage directories (comprehensive cleanup).
 
@@ -217,9 +217,9 @@ class Vault:
 
         for directory in directories_to_clear:
             # Use empty prefix for main vault clearing (not "orphaned_")
-            await clear_directory_files(directory, metrics, None, "")
+            clear_directory_files(directory, metrics, None, "")
 
-    async def delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
+    def delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
         """
         Delete all files (content and thumbnails) associated with a specific hash.
 
@@ -229,9 +229,9 @@ class Vault:
             file_hash: SHA256 hash of the file to delete
             metrics: Dictionary to update with deletion statistics
         """
-        await self._delete_file_by_hash(file_hash, metrics)
+        self._delete_file_by_hash(file_hash, metrics)
 
-    async def _delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
+    def _delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
         """
         Delete all files (content and thumbnails) associated with a specific hash.
 
@@ -246,11 +246,11 @@ class Vault:
         matching_files = find_files_by_hash_pattern(content_directory, file_hash)
 
         for file_path in matching_files:
-            await delete_file_safely(file_path, metrics)
+            delete_file_safely(file_path, metrics)
 
         # Thumbnail files
         thumbnail_path = self._get_thumbnail_path(file_hash)
-        await delete_file_safely(thumbnail_path, metrics)
+        delete_file_safely(thumbnail_path, metrics)
 
     def _get_content_directory(self, file_hash: str) -> Path:
         """
@@ -335,7 +335,7 @@ class Vault:
                 "exports": self.exports_dir,
             }
 
-            flat_stats = await get_comprehensive_directory_stats(directories)
+            flat_stats = get_comprehensive_directory_stats(directories)
 
             # Transform flat structure to nested structure expected by UI
             nested_directories = {}
@@ -582,7 +582,7 @@ class Vault:
             raise RuntimeError(f"Failed to copy file to vault: {e}") from None
 
         # Generate thumbnail for images
-        thumbnail_generated = await self._generate_thumbnail(target_path, file_hash)
+        thumbnail_generated = self._generate_thumbnail(target_path, file_hash)
 
         # Get file size
         size_bytes = safe_get_file_size(target_path)
@@ -604,7 +604,7 @@ class Vault:
             "existed": False,
         }
 
-    async def file_exists(self, file_hash: str) -> bool:
+    def file_exists(self, file_hash: str) -> bool:
         """
         Check if a file with the given hash exists in the vault.
 
@@ -635,7 +635,7 @@ class Vault:
         matching_files = list(file_dir.glob(f"{file_stem}.*"))
         return len(matching_files) > 0
 
-    async def get_file_path(self, file_hash: str, extension: str) -> Optional[Path]:
+    def get_file_path(self, file_hash: str, extension: str) -> Optional[Path]:
         """
         Get the path to a stored file if it exists in the vault.
 
@@ -649,20 +649,7 @@ class Vault:
         file_path = self._get_content_path(file_hash, extension)
         return file_path if file_path.exists() else None
 
-    async def get_thumbnail_path(self, file_hash: str) -> Optional[Path]:
-        """
-        Get the path to a file's thumbnail image if it exists.
-
-        Args:
-            file_hash: SHA256 hash of the original file
-
-        Returns:
-            Path to the thumbnail file if it exists, None otherwise
-        """
-        thumbnail_path = self._get_thumbnail_path(file_hash)
-        return thumbnail_path if thumbnail_path.exists() else None
-
-    async def _generate_thumbnail(self, file_path: Path, file_hash: str) -> bool:
+    def _generate_thumbnail(self, file_path: Path, file_hash: str) -> bool:
         """
         Generate a thumbnail for an image file (internal method).
 
@@ -677,7 +664,7 @@ class Vault:
             True if thumbnail was generated, False otherwise
         """
         thumbnail_path = self._get_thumbnail_path(file_hash)
-        generated = await generate_image_thumbnail(file_path, thumbnail_path)
+        generated = generate_image_thumbnail(file_path, thumbnail_path)
 
         if generated:
             log_event(
@@ -817,7 +804,7 @@ class Vault:
             level=logging.DEBUG,
         )
 
-        cleanup_result = await cleanup_old_temp_files(self.temp_dir)
+        cleanup_result = cleanup_old_temp_files(self.temp_dir)
 
         if cleanup_result.get("cleaned_files", 0) > 0:
             log_event(

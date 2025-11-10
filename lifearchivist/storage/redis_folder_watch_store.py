@@ -20,6 +20,8 @@ import redis.asyncio as redis
 
 from lifearchivist.utils.logging import log_event, track
 
+from .constants import NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE
+
 logger = logging.getLogger(__name__)
 
 
@@ -142,7 +144,7 @@ class RedisFolderWatchStore:
     def _client(self) -> "redis.Redis":
         """Return a non-optional Redis client or raise if not initialized."""
         if self.redis_client is None:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
         return self.redis_client
 
     async def close(self) -> None:
@@ -190,7 +192,7 @@ class RedisFolderWatchStore:
             RuntimeError: If store not initialized
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         # Check if path already exists
         existing_id = await self.get_folder_id_by_path(path)
@@ -263,7 +265,7 @@ class RedisFolderWatchStore:
             Folder configuration dict, or None if not found
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         folder_key = f"{self.key_prefix}:folders:{folder_id}"
 
@@ -292,7 +294,7 @@ class RedisFolderWatchStore:
             List of folder configuration dicts
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         ids_key = f"{self.key_prefix}:folder_ids"
 
@@ -334,7 +336,7 @@ class RedisFolderWatchStore:
             True if folder was updated, False if not found
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         folder_key = f"{self.key_prefix}:folders:{folder_id}"
 
@@ -376,7 +378,7 @@ class RedisFolderWatchStore:
             True if folder was removed, False if not found
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         # Get folder data for cleanup
         folder = await self.get_folder(folder_id)
@@ -433,7 +435,7 @@ class RedisFolderWatchStore:
             ValueError: If folder not found
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         folder_key = f"{self.key_prefix}:folders:{folder_id}"
 
@@ -463,7 +465,7 @@ class RedisFolderWatchStore:
             folder_id if found, None otherwise
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         path_index_key = f"{self.key_prefix}:path_index"
 
@@ -485,7 +487,7 @@ class RedisFolderWatchStore:
             True if folder exists
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         ids_key = f"{self.key_prefix}:folder_ids"
 
@@ -502,7 +504,7 @@ class RedisFolderWatchStore:
             Number of folders
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         ids_key = f"{self.key_prefix}:folder_ids"
 
@@ -520,7 +522,7 @@ class RedisFolderWatchStore:
             error_message: Error description
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         folder_key = f"{self.key_prefix}:folders:{folder_id}"
 
@@ -541,7 +543,7 @@ class RedisFolderWatchStore:
             folder_id: Folder UUID
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         folder_key = f"{self.key_prefix}:folders:{folder_id}"
 
@@ -564,7 +566,7 @@ class RedisFolderWatchStore:
             Statistics about what was cleared
         """
         if not self._initialized:
-            raise RuntimeError("RedisFolderWatchStore not initialized")
+            raise RuntimeError(NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE)
 
         folder_count = await self.get_folder_count()
 

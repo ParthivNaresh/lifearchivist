@@ -38,6 +38,14 @@ from lifearchivist.utils.result import (
     internal_error,
 )
 
+from ..constants import (
+    NOT_AVAILABLE_QDRANT_CLIENT,
+    NOT_INITIALIZED_DOCUMENT_SERVICE,
+    NOT_INITIALIZED_LLAMA_INDEX_QDRANT_SERVICE,
+    NOT_INITIALIZED_LLAMA_INDEX_SEARCH_SERVICE,
+    NOT_INITIALIZED_METADATA_SERVICE,
+)
+
 
 class LlamaIndexQdrantService:
     """
@@ -481,7 +489,7 @@ class LlamaIndexQdrantService:
         # Check if initialized
         if not self._initialized:
             return internal_error(
-                "Service not initialized. Call ensure_initialized() first or use async context manager.",
+                NOT_INITIALIZED_LLAMA_INDEX_SEARCH_SERVICE,
                 context={"document_id": document_id},
             )
 
@@ -497,7 +505,7 @@ class LlamaIndexQdrantService:
                 level=logging.ERROR,
             )
             return internal_error(
-                "Document service not initialized",
+                NOT_INITIALIZED_DOCUMENT_SERVICE,
                 context={
                     "document_id": document_id,
                     "has_index": self.index is not None,
@@ -642,7 +650,7 @@ class LlamaIndexQdrantService:
         """
         if not self.document_service:
             return internal_error(
-                "Document service not initialized",
+                NOT_INITIALIZED_DOCUMENT_SERVICE,
                 context={"service": "llamaindex_service"},
             )
 
@@ -666,7 +674,7 @@ class LlamaIndexQdrantService:
                 level=logging.WARNING,
             )
             return internal_error(
-                "Document service not initialized",
+                NOT_INITIALIZED_DOCUMENT_SERVICE,
                 context={"document_id": document_id, "service": "llamaindex_service"},
             )
 
@@ -689,7 +697,7 @@ class LlamaIndexQdrantService:
             # Use document service to clear data
             if not self.document_service:
                 return internal_error(
-                    "Document service not initialized",
+                    NOT_INITIALIZED_DOCUMENT_SERVICE,
                     context={"service": "llamaindex_service"},
                 )
 
@@ -751,7 +759,7 @@ class LlamaIndexQdrantService:
             level=logging.WARNING,
         )
         return internal_error(
-            "Metadata service not available",
+            NOT_INITIALIZED_METADATA_SERVICE,
             context={"document_id": document_id},
         )
 
@@ -777,7 +785,7 @@ class LlamaIndexQdrantService:
                 level=logging.WARNING,
             )
             return internal_error(
-                "Service not initialized. Call ensure_initialized() first or use async context manager.",
+                NOT_INITIALIZED_LLAMA_INDEX_QDRANT_SERVICE,
                 context={"filters": filters},
             )
 
@@ -791,7 +799,7 @@ class LlamaIndexQdrantService:
 
         # Fallback if metadata service not available
         return internal_error(
-            "Metadata service not available", context={"filters": filters}
+            NOT_INITIALIZED_METADATA_SERVICE, context={"filters": filters}
         )
 
     async def get_document_analysis(
@@ -813,7 +821,7 @@ class LlamaIndexQdrantService:
 
         # Fallback if metadata service not available
         return internal_error(
-            "Metadata service not available", context={"document_id": document_id}
+            NOT_INITIALIZED_METADATA_SERVICE, context={"document_id": document_id}
         )
 
     def _get_embedding_stats(self) -> Dict[str, Any]:
@@ -841,7 +849,7 @@ class LlamaIndexQdrantService:
         """
         if not self.document_service:
             return internal_error(
-                "Document service not initialized",
+                NOT_INITIALIZED_DOCUMENT_SERVICE,
                 context={"document_id": document_id, "service": "llamaindex_service"},
             )
 
@@ -864,12 +872,12 @@ class LlamaIndexQdrantService:
         try:
             if not self.search_service:
                 return DocumentNeighborUtils.create_error_response(
-                    document_id, "Search service not initialized"
+                    document_id, NOT_INITIALIZED_LLAMA_INDEX_SEARCH_SERVICE
                 )
 
             if not self.qdrant_client:
                 return DocumentNeighborUtils.create_error_response(
-                    document_id, "Qdrant client not available"
+                    document_id, NOT_AVAILABLE_QDRANT_CLIENT
                 )
 
             error_msg = await DocumentNeighborUtils.validate_document_exists(

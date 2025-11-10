@@ -10,14 +10,19 @@ Defines precise, production-ready patterns for:
 These rules use the SubthemeRule data structure with a cascade-friendly layout.
 """
 
+from tools.subtheme_classifier.rules.financial.constants import (
+    FINANCIAL_LABEL,
+    TAX_LABEL,
+)
+
 from lifearchivist.tools.subtheme_classifier.rules import SubthemeRule
 
 # W-2 Form
 TAX_W2 = SubthemeRule(
     name="tax_w2",
     display_name="W-2 Form",
-    parent_theme="Financial",
-    subtheme_category="Tax",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=TAX_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core W-2 identifiers
@@ -84,7 +89,6 @@ TAX_W2 = SubthemeRule(
     exclude_patterns={
         # 1099 forms
         r"form\s*1099",
-        r"nonemployee\s*compensation",
         r"miscellaneous\s*income",
         r"interest\s*income",
         r"dividend\s*(?:income|distribution)",
@@ -109,8 +113,8 @@ TAX_W2 = SubthemeRule(
 TAX_1099 = SubthemeRule(
     name="tax_1099",
     display_name="1099 Form",
-    parent_theme="Financial",
-    subtheme_category="Tax",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=TAX_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core 1099 identifiers
@@ -180,8 +184,6 @@ TAX_1099 = SubthemeRule(
     # Exclusions to prevent confusion with other tax forms
     exclude_patterns={
         # W-2 forms
-        r"form\s*w-?2",
-        r"wage\s*and\s*tax\s*statement",
         r"employee'?s?\s*social\s*security",
         r"box\s*[1-9]\s*[:\-]?\s*wages",
         # Tax returns
@@ -205,8 +207,8 @@ TAX_1099 = SubthemeRule(
 TAX_RETURN = SubthemeRule(
     name="tax_return",
     display_name="Tax Return",
-    parent_theme="Financial",
-    subtheme_category="Tax",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=TAX_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core tax return identifiers

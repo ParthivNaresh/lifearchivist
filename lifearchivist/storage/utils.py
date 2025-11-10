@@ -374,7 +374,7 @@ class FolderWatchUtils:
 
         if watching_started:
             try:
-                await stop_watching_func(folder_id)
+                stop_watching_func(folder_id)
             except Exception as stop_err:
                 logger.error(f"Error stopping watcher during cleanup: {stop_err}")
 
@@ -440,7 +440,7 @@ class BM25ResultEnricher:
         try:
             node_ids = await doc_tracker.get_node_ids(document_id)
             if node_ids:
-                result = await text_getter(node_ids[0])
+                result = text_getter(node_ids[0])
                 return str(result) if result is not None else ""
         except Exception:
             pass

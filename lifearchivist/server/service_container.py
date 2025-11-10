@@ -447,7 +447,7 @@ class ServiceContainer:
             )
             await self.bm25_service.initialize()
 
-            doc_count = await self.bm25_service.get_document_count()
+            doc_count = self.bm25_service.get_document_count()
 
             log_event("bm25_initialized", {"document_count": doc_count})
 

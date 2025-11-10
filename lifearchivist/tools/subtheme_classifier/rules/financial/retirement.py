@@ -13,12 +13,14 @@ These rules use the SubthemeRule data structure with a cascade-friendly layout.
 
 from lifearchivist.tools.subtheme_classifier.rules import SubthemeRule
 
+from .constants import FINANCIAL_LABEL, RETIREMENT_LABEL
+
 # 401(k) Statement
 RETIREMENT_401K = SubthemeRule(
     name="retirement_401k",
     display_name="401(k) Statement",
-    parent_theme="Financial",
-    subtheme_category="Retirement",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=RETIREMENT_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core 401(k) identifiers
@@ -99,7 +101,6 @@ RETIREMENT_401K = SubthemeRule(
         r"monthly\s*pension",
         # Social Security
         r"social\s*security\s*(?:administration|statement)",
-        r"ssa\s*statement",
         # General brokerage
         r"brokerage\s*statement",
         r"trade\s*confirmation",
@@ -115,8 +116,8 @@ RETIREMENT_401K = SubthemeRule(
 RETIREMENT_IRA = SubthemeRule(
     name="retirement_ira",
     display_name="IRA Statement",
-    parent_theme="Financial",
-    subtheme_category="Retirement",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=RETIREMENT_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core IRA identifiers
@@ -183,17 +184,11 @@ RETIREMENT_IRA = SubthemeRule(
     # Exclusions to prevent confusion with 401(k) and other documents
     exclude_patterns={
         # 401(k)-specific patterns
-        r"401\s*\(?\s*k\s*\)?",
-        r"employer\s*(?:match|contribution)",
         r"participant\s*(?:id|number)",
-        r"salary\s*deferral",
         # Pension-specific
         r"defined\s*benefit",
         r"pension\s*(?:benefit|payment)",
         r"annuity\s*payment",
-        # Social Security
-        r"social\s*security",
-        r"ssa\s*statement",
         # General investment
         r"brokerage\s*account",
         r"trade\s*confirmation",
@@ -201,7 +196,6 @@ RETIREMENT_IRA = SubthemeRule(
     exclude_phrases={
         "401k plan",
         "employer sponsored",
-        "pension statement",
     },
 )
 
@@ -209,8 +203,8 @@ RETIREMENT_IRA = SubthemeRule(
 PENSION_STATEMENT = SubthemeRule(
     name="pension_statement",
     display_name="Pension Statement",
-    parent_theme="Financial",
-    subtheme_category="Retirement",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=RETIREMENT_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core pension identifiers
@@ -276,13 +270,9 @@ PENSION_STATEMENT = SubthemeRule(
     # Exclusions to prevent confusion with 401(k), IRA, and Social Security
     exclude_patterns={
         # 401(k)-specific
-        r"401\s*\(?\s*k\s*\)?",
         r"employer\s*match",
         r"salary\s*deferral",
         r"investment\s*elections",
-        # IRA-specific
-        r"individual\s*retirement",
-        r"\bira\b",
         r"roth\s*(?:ira|conversion)",
         r"required\s*minimum\s*distribution",
         # Social Security
@@ -304,8 +294,8 @@ PENSION_STATEMENT = SubthemeRule(
 SOCIAL_SECURITY = SubthemeRule(
     name="social_security",
     display_name="Social Security Statement",
-    parent_theme="Financial",
-    subtheme_category="Retirement",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=RETIREMENT_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core Social Security identifiers
@@ -403,8 +393,8 @@ SOCIAL_SECURITY = SubthemeRule(
 EDUCATION_529 = SubthemeRule(
     name="education_529",
     display_name="529 Education Savings Plan",
-    parent_theme="Financial",
-    subtheme_category="Retirement",  # Often grouped with retirement due to tax-advantaged nature
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=RETIREMENT_LABEL,  # Often grouped with retirement due to tax-advantaged nature
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core 529 identifiers

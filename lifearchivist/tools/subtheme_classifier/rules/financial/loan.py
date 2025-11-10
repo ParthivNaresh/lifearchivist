@@ -11,12 +11,14 @@ These rules use the SubthemeRule data structure with a cascade-friendly layout.
 
 from lifearchivist.tools.subtheme_classifier.rules import SubthemeRule
 
+from .constants import FINANCIAL_LABEL, LOAN_LABEL
+
 # Mortgage Statement
 MORTGAGE_STATEMENT = SubthemeRule(
     name="mortgage_statement",
     display_name="Mortgage Statement",
-    parent_theme="Financial",
-    subtheme_category="Loan",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=LOAN_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core mortgage identifiers
@@ -110,8 +112,8 @@ MORTGAGE_STATEMENT = SubthemeRule(
 LOAN_AGREEMENT = SubthemeRule(
     name="loan_agreement",
     display_name="Loan Agreement",
-    parent_theme="Financial",
-    subtheme_category="Loan",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=LOAN_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core loan agreement identifiers
@@ -202,8 +204,8 @@ LOAN_AGREEMENT = SubthemeRule(
 STUDENT_LOAN = SubthemeRule(
     name="student_loan",
     display_name="Student Loan",
-    parent_theme="Financial",
-    subtheme_category="Loan",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=LOAN_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core student loan identifiers

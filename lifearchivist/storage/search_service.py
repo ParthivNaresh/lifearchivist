@@ -403,7 +403,7 @@ class LlamaIndexSearchService(SearchService):
 
         return enriched
 
-    async def _get_text_from_node(self, node_id: str) -> str:
+    def _get_text_from_node(self, node_id: str) -> str:
         """
         Get text content from a node using Qdrant.
 

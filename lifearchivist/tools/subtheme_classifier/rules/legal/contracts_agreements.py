@@ -15,12 +15,14 @@ from typing import Dict, List
 
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
 
+from .constants import CONTRACTS_AND_AGREEMENTS_LABEL, LEGAL_LABEL
+
 # Lease Agreement - Residential and commercial lease agreements
 LEASE_AGREEMENT = SubthemeRule(
     name="lease_agreement",
     display_name="Lease Agreement",
-    parent_theme="Legal",
-    subtheme_category="Contracts and Agreements",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=CONTRACTS_AND_AGREEMENTS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core lease patterns
@@ -91,9 +93,6 @@ LEASE_AGREEMENT = SubthemeRule(
         (r"rent:?\s*", 0.45),
         (r"utilities:?\s*", 0.42),
         (r"parking:?\s*", 0.40),
-        # Legal clauses
-        (r"governing\s*law:?\s*", 0.42),
-        (r"entire\s*agreement:?\s*", 0.40),
         (r"severability:?\s*", 0.38),
         (r"notices:?\s*", 0.38),
         # Restrictions
@@ -180,19 +179,12 @@ LEASE_AGREEMENT = SubthemeRule(
         r"milestone",
         r"consulting\s*agreement",
         # Purchase patterns
-        r"purchase\s*price",
-        r"bill\s*of\s*sale",
         r"warranty",
         # NDA patterns
-        r"confidential\s*information",
         r"non-disclosure",
         r"proprietary",
     },
     exclude_phrases={
-        "employment agreement",
-        "service agreement",
-        "purchase agreement",
-        "non-disclosure agreement",
         "loan agreement",
     },
 )
@@ -201,8 +193,8 @@ LEASE_AGREEMENT = SubthemeRule(
 EMPLOYMENT_AGREEMENT = SubthemeRule(
     name="employment_agreement",
     display_name="Employment Agreement",
-    parent_theme="Legal",
-    subtheme_category="Contracts and Agreements",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=CONTRACTS_AND_AGREEMENTS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core employment patterns
@@ -280,9 +272,7 @@ EMPLOYMENT_AGREEMENT = SubthemeRule(
         (r"401k:?\s*", 0.38),
         (r"insurance:?\s*", 0.38),
         # Legal sections
-        (r"governing\s*law:?\s*", 0.38),
         (r"arbitration:?\s*", 0.36),
-        (r"entire\s*agreement:?\s*", 0.36),
     ],
     # Tertiary identifiers (keywords and filename hints 0.40-0.70)
     keywords={
@@ -340,27 +330,17 @@ EMPLOYMENT_AGREEMENT = SubthemeRule(
     },
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
-        # Lease patterns
-        r"monthly\s*rent",
-        r"security\s*deposit",
         r"landlord",
         r"tenant",
         # Service patterns
-        r"scope\s*of\s*services",
         r"deliverables",
         r"milestone",
         r"invoice",
-        # Purchase patterns
-        r"purchase\s*price",
-        r"bill\s*of\s*sale",
         # Pure NDA patterns
         r"solely\s*for\s*the\s*purpose\s*of\s*evaluating",
         r"mutual\s*non-disclosure",
     },
     exclude_phrases={
-        "lease agreement",
-        "service agreement",
-        "purchase agreement",
         "consulting agreement",
     },
 )
@@ -369,8 +349,8 @@ EMPLOYMENT_AGREEMENT = SubthemeRule(
 SERVICE_CONTRACT = SubthemeRule(
     name="service_contract",
     display_name="Service Contract",
-    parent_theme="Legal",
-    subtheme_category="Contracts and Agreements",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=CONTRACTS_AND_AGREEMENTS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core service patterns
@@ -510,27 +490,19 @@ SERVICE_CONTRACT = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Lease patterns
-        r"monthly\s*rent",
-        r"security\s*deposit",
         r"landlord",
         # Employment patterns
-        r"employee\s*benefits",
-        r"annual\s*salary",
         r"w-?2\s*form",
         r"at-will\s*employment",
         # Purchase patterns
         r"purchase\s*price",
-        r"bill\s*of\s*sale",
         r"transfer\s*of\s*ownership",
         # NDA patterns
         r"solely\s*for\s*the\s*purpose\s*of\s*evaluating",
         r"confidential\s*information\s*only",
     },
     exclude_phrases={
-        "lease agreement",
-        "employment agreement",
         "purchase agreement",
-        "non-disclosure agreement",
     },
 )
 
@@ -538,8 +510,8 @@ SERVICE_CONTRACT = SubthemeRule(
 PURCHASE_AGREEMENT = SubthemeRule(
     name="purchase_agreement",
     display_name="Purchase Agreement",
-    parent_theme="Legal",
-    subtheme_category="Contracts and Agreements",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=CONTRACTS_AND_AGREEMENTS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core purchase patterns
@@ -613,7 +585,6 @@ PURCHASE_AGREEMENT = SubthemeRule(
         (r"disclaimer:?\s*", 0.38),
         (r"limitation\s*of\s*liability:?\s*", 0.38),
         # Legal sections
-        (r"governing\s*law:?\s*", 0.38),
         (r"risk\s*of\s*loss:?\s*", 0.36),
         (r"entire\s*agreement:?\s*", 0.36),
     ],
@@ -691,7 +662,6 @@ PURCHASE_AGREEMENT = SubthemeRule(
         r"non-disclosure",
     },
     exclude_phrases={
-        "lease agreement",
         "employment agreement",
         "service agreement",
         "non-disclosure agreement",
@@ -702,8 +672,8 @@ PURCHASE_AGREEMENT = SubthemeRule(
 NDA = SubthemeRule(
     name="nda",
     display_name="NDA",
-    parent_theme="Legal",
-    subtheme_category="Contracts and Agreements",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=CONTRACTS_AND_AGREEMENTS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core NDA patterns
@@ -859,9 +829,6 @@ NDA = SubthemeRule(
     },
     exclude_phrases={
         "lease agreement",
-        "employment agreement",  # Unless it's an employment NDA
-        "service agreement",
-        "purchase agreement",
     },
 )
 

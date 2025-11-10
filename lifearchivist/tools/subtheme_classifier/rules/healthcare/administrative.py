@@ -13,12 +13,14 @@ from typing import Dict, List
 
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
 
+from .constants import ADMINISTRATIVE_AND_INSURANCE_LABEL, HEALTHCARE_LABEL
+
 # Medical Bill - Healthcare billing statements and invoices
 MEDICAL_BILL = SubthemeRule(
     name="medical_bill",
     display_name="Medical Bill",
-    parent_theme="Healthcare",
-    subtheme_category="Administrative and Insurance",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=ADMINISTRATIVE_AND_INSURANCE_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core billing patterns
@@ -135,12 +137,7 @@ MEDICAL_BILL = SubthemeRule(
         # Insurance card patterns
         r"member\s*(?:id|number):?\s*[A-Z0-9\-]{6,}",
         r"group\s*(?:number|#):?\s*[A-Z0-9\-]{4,}",
-        r"(?:rx\s*)?bin:?\s*\d{6}",
-        # HIPAA patterns
-        r"hipaa\s*(?:notice|authorization|form)",
-        r"notice\s*of\s*privacy\s*practices",
         # Medical record patterns
-        r"chief\s*complaint",
         r"history\s*of\s*present\s*illness",
         # Test result patterns
         r"lab(?:oratory)?\s*results?",
@@ -149,11 +146,7 @@ MEDICAL_BILL = SubthemeRule(
     exclude_phrases={
         "explanation of benefits",
         "not a bill",
-        "insurance card",
-        "member id",
-        "hipaa authorization",
         "privacy practices",
-        "medical history",
         "lab results",
     },
 )
@@ -162,8 +155,8 @@ MEDICAL_BILL = SubthemeRule(
 INSURANCE_CARD = SubthemeRule(
     name="insurance_card",
     display_name="Insurance Card",
-    parent_theme="Healthcare",
-    subtheme_category="Administrative and Insurance",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=ADMINISTRATIVE_AND_INSURANCE_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core insurance card patterns
@@ -260,8 +253,6 @@ INSURANCE_CARD = SubthemeRule(
         r"chief\s*complaint",
     },
     exclude_phrases={
-        "amount due",
-        "billing statement",
         "hipaa authorization",
         "privacy notice",
         "explanation of benefits",
@@ -273,8 +264,8 @@ INSURANCE_CARD = SubthemeRule(
 HIPAA_FORMS = SubthemeRule(
     name="hipaa_forms",
     display_name="HIPAA Forms",
-    parent_theme="Healthcare",
-    subtheme_category="Administrative and Insurance",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=ADMINISTRATIVE_AND_INSURANCE_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core HIPAA patterns

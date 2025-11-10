@@ -177,8 +177,8 @@ class LlamaIndexMetadataService(MetadataService):
             # Update minimal metadata in Qdrant if updating filterable fields
             updated_nodes = 0
             if self.qdrant_client:
-                updated_nodes = await self._update_qdrant_metadata(
-                    node_ids, document_id, metadata_updates, merge_mode
+                updated_nodes = self._update_qdrant_metadata(
+                    node_ids, document_id, metadata_updates
                 )
 
             log_event(
@@ -216,12 +216,11 @@ class LlamaIndexMetadataService(MetadataService):
                 context={"document_id": document_id, "error_type": type(e).__name__},
             )
 
-    async def _update_qdrant_metadata(
+    def _update_qdrant_metadata(
         self,
         node_ids: List[str],
         document_id: str,
         metadata_updates: Dict[str, Any],
-        merge_mode: str,
     ) -> int:
         """
         Update minimal metadata in Qdrant for filterable fields.
@@ -474,7 +473,7 @@ class LlamaIndexMetadataService(MetadataService):
         full_metadata: Dict[str, Any] = full_metadata_result.unwrap()
 
         # Generate text preview from first node using Qdrant
-        text_preview = await self._get_text_preview_from_qdrant(node_ids[0])
+        text_preview = self._get_text_preview_from_qdrant(node_ids[0])
 
         return {
             "document_id": document_id,
@@ -486,9 +485,7 @@ class LlamaIndexMetadataService(MetadataService):
     # Filter matching now uses shared utility
     # Removed _metadata_matches_filter method - using MetadataFilterUtils.matches_filters instead
 
-    async def _get_text_preview_from_qdrant(
-        self, node_id: str, max_length: int = 200
-    ) -> str:
+    def _get_text_preview_from_qdrant(self, node_id: str, max_length: int = 200) -> str:
         """
         Get a text preview from a node using Qdrant directly.
 
@@ -636,7 +633,7 @@ class LlamaIndexMetadataService(MetadataService):
             full_metadata = metadata_result.unwrap()
 
             # Collect metrics from Qdrant
-            analysis = await self._collect_document_metrics(node_ids)
+            analysis = self._collect_document_metrics(node_ids)
 
             log_event(
                 "document_analysis_completed",
@@ -675,7 +672,7 @@ class LlamaIndexMetadataService(MetadataService):
                 context={"document_id": document_id, "error_type": type(e).__name__},
             )
 
-    async def _collect_document_metrics(
+    def _collect_document_metrics(
         self,
         node_ids: List[str],
     ) -> Dict[str, Any]:

@@ -9,14 +9,19 @@ Defines precise, production-ready patterns for:
 These rules use the SubthemeRule data structure with a cascade-friendly layout.
 """
 
+from tools.subtheme_classifier.rules.financial.constants import (
+    FINANCIAL_LABEL,
+    INVESTMENT_LABEL,
+)
+
 from lifearchivist.tools.subtheme_classifier.rules import SubthemeRule
 
 # Brokerage Statement
 BROKERAGE_STATEMENT = SubthemeRule(
     name="brokerage_statement",
     display_name="Brokerage Statement",
-    parent_theme="Financial",
-    subtheme_category="Investment",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=INVESTMENT_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core brokerage statement sections
@@ -107,9 +112,7 @@ BROKERAGE_STATEMENT = SubthemeRule(
         r"required\s*minimum\s*distribution",
         r"employer\s*(?:match|contribution)",
         # Trade confirmation specific
-        r"trade\s*confirmation",
         r"execution\s*(?:time|price)",
-        r"settlement\s*date",
         # Prospectus specific
         r"investment\s*objectives",
         r"risk\s*factors",
@@ -125,8 +128,8 @@ BROKERAGE_STATEMENT = SubthemeRule(
 TRADE_CONFIRMATION = SubthemeRule(
     name="trade_confirmation",
     display_name="Trade Confirmation",
-    parent_theme="Financial",
-    subtheme_category="Investment",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=INVESTMENT_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core trade confirmation identifiers
@@ -222,8 +225,8 @@ TRADE_CONFIRMATION = SubthemeRule(
 PROSPECTUS = SubthemeRule(
     name="prospectus",
     display_name="Investment Prospectus",
-    parent_theme="Financial",
-    subtheme_category="Investment",
+    parent_theme=FINANCIAL_LABEL,
+    subtheme_category=INVESTMENT_LABEL,
     # Primary identifiers (high confidence)
     unique_patterns=[
         # Core prospectus identifiers
@@ -307,8 +310,6 @@ PROSPECTUS = SubthemeRule(
     },
     exclude_phrases={
         "account statement",
-        "trade executed",
-        "order confirmation",
         "transaction details",
     },
 )

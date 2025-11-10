@@ -13,12 +13,14 @@ from typing import Dict, List
 
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
 
+from .constants import HEALTHCARE_LABEL, MEDICAL_RECORDS_LABEL
+
 # Medical History - Patient medical history, consultation reports, and clinical notes
 MEDICAL_HISTORY = SubthemeRule(
     name="medical_history",
     display_name="Medical History",
-    parent_theme="Healthcare",
-    subtheme_category="Medical Records",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=MEDICAL_RECORDS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core medical history identifiers
@@ -34,7 +36,6 @@ MEDICAL_HISTORY = SubthemeRule(
             "medical_record_number",
         ),
         (r"chief\s*complaint:?\s*.{5,}", 0.90, "chief_complaint_section"),
-        (r"history\s*of\s*present\s*illness", 0.92, "hpi_section"),
         (r"past\s*medical\s*history", 0.91, "pmh_section"),
         (r"review\s*of\s*systems", 0.89, "ros_section"),
         (r"physical\s*exam(?:ination)?:?\s*", 0.88, "physical_exam_section"),
@@ -95,7 +96,6 @@ MEDICAL_HISTORY = SubthemeRule(
         "referral consultation": 0.88,
         "consultative opinion": 0.89,
         # Progress notes
-        "progress note": 0.90,
         "office visit": 0.86,
         "follow-up visit": 0.86,
         "clinic note": 0.87,
@@ -233,7 +233,6 @@ MEDICAL_HISTORY = SubthemeRule(
     exclude_patterns={
         # Discharge summary patterns
         r"discharge\s*(?:summary|instructions)",
-        r"hospital\s*course",
         r"admission\s*date.*discharge\s*date",
         r"discharge\s*diagnosis",
         r"discharge\s*medications",
@@ -260,7 +259,6 @@ MEDICAL_HISTORY = SubthemeRule(
         r"(?:amount|balance)\s*due",
         r"payment\s*(?:due|required)",
         r"insurance\s*claim",
-        r"billing\s*statement",
         r"invoice\s*(?:number|#)",
         r"cpt\s*code\s*\d{5}",  # Billing codes
         # EOB patterns (Financial)
@@ -269,17 +267,12 @@ MEDICAL_HISTORY = SubthemeRule(
         r"patient\s*responsibility",
     },
     exclude_phrases={
-        "discharge summary",
         "discharge instructions",
-        "immunization record",
         "vaccination record",
         "vaccine schedule",
-        "lab results",
         "test results",
         "imaging report",
-        "prescription label",
         "amount due",
-        "billing statement",
     },
 )
 
@@ -287,8 +280,8 @@ MEDICAL_HISTORY = SubthemeRule(
 DISCHARGE_SUMMARY = SubthemeRule(
     name="discharge_summary",
     display_name="Discharge Summary",
-    parent_theme="Healthcare",
-    subtheme_category="Medical Records",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=MEDICAL_RECORDS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core discharge patterns
@@ -371,7 +364,6 @@ DISCHARGE_SUMMARY = SubthemeRule(
         (r"chief\s*complaint", 0.48),
         (r"history\s*of\s*present\s*illness", 0.46),
         (r"past\s*medical\s*history", 0.44),
-        (r"hospital\s*course", 0.52),
         (r"discharge\s*physical\s*exam", 0.48),
         # Clinical information
         (r"laboratory\s*(?:data|results)", 0.44),
@@ -479,7 +471,6 @@ DISCHARGE_SUMMARY = SubthemeRule(
         r"billing\s*statement",
     },
     exclude_phrases={
-        "medical history",
         "consultation note",
         "progress note",
         "immunization record",
@@ -494,8 +485,8 @@ DISCHARGE_SUMMARY = SubthemeRule(
 IMMUNIZATION_RECORD = SubthemeRule(
     name="immunization_record",
     display_name="Immunization Record",
-    parent_theme="Healthcare",
-    subtheme_category="Medical Records",
+    parent_theme=HEALTHCARE_LABEL,
+    subtheme_category=MEDICAL_RECORDS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core immunization patterns

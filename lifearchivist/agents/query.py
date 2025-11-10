@@ -182,14 +182,14 @@ class QueryAgent:
         ollama_tool = self.tool_registry.get_tool("llm.ollama")
 
         if not ollama_tool:
-            return await self._fallback_answer(question, context_info["citations"])
+            return self._fallback_answer(context_info["citations"])
 
         # Step 4: Call LLM with structured RAG prompt
         rag_response = await self._generate_rag_answer(
             ollama_tool, question, context_info
         )
         if not rag_response.get("answer"):
-            return await self._fallback_answer(question, context_info["citations"])
+            return self._fallback_answer(context_info["citations"])
 
         return {
             "answer": rag_response["answer"],
@@ -397,9 +397,7 @@ Please answer the question based on the provided context."""
 
         return answer, confidence
 
-    async def _fallback_answer(
-        self, question: str, citations: List[Dict]
-    ) -> Dict[str, Any]:
+    def _fallback_answer(self, citations: List[Dict]) -> Dict[str, Any]:
         """Provide a fallback answer when LLM is not available."""
         if not citations:
             return {

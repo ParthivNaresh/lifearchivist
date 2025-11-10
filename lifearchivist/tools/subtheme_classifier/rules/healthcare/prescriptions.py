@@ -13,12 +13,14 @@ from typing import Dict, List
 
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
 
+from .constants import PRESCRIPTIONS_AND_MEDICATIONS_LABEL
+
 # Prescription Label - Actual prescription documents from pharmacy
 PRESCRIPTION_LABEL = SubthemeRule(
     name="prescription_label",
     display_name="Prescription Label",
     parent_theme="Healthcare",
-    subtheme_category="Prescriptions and Medications",
+    subtheme_category=PRESCRIPTIONS_AND_MEDICATIONS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core prescription label patterns
@@ -207,15 +209,11 @@ PRESCRIPTION_LABEL = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Medication list patterns
-        r"(?:current|active)\s*medications?\s*list",
-        r"medication\s*reconciliation",
         r"home\s*medications",
         r"discharge\s*medications",
         # Prior authorization patterns
-        r"prior\s*authorization\s*(?:request|form)",
         r"formulary\s*(?:exception|review)",
         r"step\s*therapy",
-        r"coverage\s*determination",
         # Test result patterns
         r"lab(?:oratory)?\s*results?\s*report",
         r"test\s*results?\s*summary",
@@ -224,7 +222,6 @@ PRESCRIPTION_LABEL = SubthemeRule(
         r"imaging\s*(?:report|study)",
         r"radiology\s*report",
         # Medical record patterns
-        r"chief\s*complaint",
         r"history\s*of\s*present\s*illness",
         r"review\s*of\s*systems",
         r"physical\s*exam(?:ination)?",
@@ -244,16 +241,8 @@ PRESCRIPTION_LABEL = SubthemeRule(
         r"plan\s*pays",
     },
     exclude_phrases={
-        "medication list",
-        "medication reconciliation",
-        "prior authorization",
-        "formulary exception",
-        "lab results",
-        "test report",
         "clinical notes",
         "office visit",
-        "amount due",
-        "billing statement",
     },
 )
 
@@ -262,7 +251,7 @@ MEDICATION_LIST = SubthemeRule(
     name="medication_list",
     display_name="Medication List",
     parent_theme="Healthcare",
-    subtheme_category="Prescriptions and Medications",
+    subtheme_category=PRESCRIPTIONS_AND_MEDICATIONS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core medication list patterns
@@ -416,7 +405,6 @@ MEDICATION_LIST = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Prescription label patterns
-        r"rx\s*(?:number|#):?\s*[0-9\-]{5,}",
         r"pharmacy\s*label",
         r"date\s*filled",
         r"refills?\s*remaining",
@@ -436,7 +424,6 @@ MEDICATION_LIST = SubthemeRule(
         r"payment\s*required",
     },
     exclude_phrases={
-        "prescription label",
         "pharmacy label",
         "prior authorization",
         "formulary exception",
@@ -452,7 +439,7 @@ PRIOR_AUTHORIZATION = SubthemeRule(
     name="prior_authorization",
     display_name="Prior Authorization",
     parent_theme="Healthcare",
-    subtheme_category="Prescriptions and Medications",
+    subtheme_category=PRESCRIPTIONS_AND_MEDICATIONS_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core prior authorization patterns

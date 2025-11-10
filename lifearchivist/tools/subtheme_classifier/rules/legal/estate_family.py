@@ -15,12 +15,14 @@ from typing import Dict, List
 
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
 
+from .constants import ESTATE_AND_FAMILY_LABEL, LEGAL_LABEL
+
 # Will - Last will and testament, codicils, estate plans
 WILL = SubthemeRule(
     name="will",
     display_name="Will",
-    parent_theme="Legal",
-    subtheme_category="Estate and Family",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=ESTATE_AND_FAMILY_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core will patterns (highly distinctive)
@@ -108,7 +110,6 @@ WILL = SubthemeRule(
         (r"descendants:?\s*", 0.40),
         (r"heirs:?\s*", 0.40),
         # Legal formalities
-        (r"witnesses:?\s*", 0.42),
         (r"notary:?\s*", 0.38),
         (r"attestation\s*clause:?\s*", 0.40),
         (r"self-proving\s*affidavit:?\s*", 0.38),
@@ -172,7 +173,6 @@ WILL = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Power of Attorney patterns
-        r"attorney[\s-]in[\s-]fact",
         r"principal\s*grants",
         r"healthcare\s*decisions",
         r"financial\s*decisions",
@@ -180,22 +180,11 @@ WILL = SubthemeRule(
         r"trustee\s*shall",
         r"trust\s*estate",
         r"revocable\s*trust",
-        r"trust\s*agreement",
         # Divorce patterns
-        r"dissolution\s*of\s*marriage",
-        r"custody\s*arrangement",
         r"spousal\s*support",
-        # Marriage patterns
-        r"marriage\s*certificate",
-        r"prenuptial\s*agreement",
-        r"marriage\s*license",
     },
     exclude_phrases={
-        "power of attorney",
         "living will",
-        "trust agreement",
-        "divorce decree",
-        "marriage certificate",
     },
 )
 
@@ -203,8 +192,8 @@ WILL = SubthemeRule(
 POWER_OF_ATTORNEY = SubthemeRule(
     name="power_of_attorney",
     display_name="Power of Attorney",
-    parent_theme="Legal",
-    subtheme_category="Estate and Family",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=ESTATE_AND_FAMILY_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core POA patterns (highly distinctive)
@@ -366,38 +355,25 @@ POWER_OF_ATTORNEY = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Will patterns
-        r"last\s*will\s*and\s*testament",
         r"bequeath",
         r"residuary\s*estate",
         r"testator",
         # Trust patterns
-        r"trust\s*agreement",
         r"trustee\s*powers",
         r"trust\s*corpus",
         r"beneficiaries\s*of\s*(?:the\s*)?trust",
         # Divorce patterns
-        r"dissolution\s*of\s*marriage",
-        r"custody\s*arrangement",
         r"child\s*support",
-        # Marriage patterns
-        r"marriage\s*certificate",
-        r"prenuptial\s*agreement",
     },
-    exclude_phrases={
-        "last will",
-        "trust agreement",
-        "divorce decree",
-        "marriage certificate",
-        "prenuptial agreement",
-    },
+    exclude_phrases={"divorce decree"},
 )
 
 # Trust Document - Living trusts, revocable trusts, trust amendments
 TRUST_DOCUMENT = SubthemeRule(
     name="trust_document",
     display_name="Trust Document",
-    parent_theme="Legal",
-    subtheme_category="Estate and Family",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=ESTATE_AND_FAMILY_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core trust patterns (highly distinctive)
@@ -551,28 +527,18 @@ TRUST_DOCUMENT = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Will patterns
-        r"last\s*will\s*and\s*testament",
         r"i\s*.*being\s*of\s*sound\s*mind",
         r"testator",
         r"executor\s*of\s*(?:my\s*)?estate",
         # POA patterns
-        r"power\s*of\s*attorney",
-        r"attorney[\s-]in[\s-]fact",
         r"act\s*on\s*(?:my\s*)?behalf",
         # Divorce patterns
-        r"dissolution\s*of\s*marriage",
         r"custody\s*arrangement",
         r"spousal\s*support",
         # Marriage patterns
-        r"marriage\s*certificate",
-        r"prenuptial\s*agreement",
     },
     exclude_phrases={
         "last will",
-        "power of attorney",
-        "divorce decree",
-        "marriage certificate",
-        "prenuptial agreement",
     },
 )
 
@@ -580,8 +546,8 @@ TRUST_DOCUMENT = SubthemeRule(
 DIVORCE_DOCUMENT = SubthemeRule(
     name="divorce_document",
     display_name="Divorce Document",
-    parent_theme="Legal",
-    subtheme_category="Estate and Family",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=ESTATE_AND_FAMILY_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core divorce patterns (highly distinctive)
@@ -728,14 +694,12 @@ DIVORCE_DOCUMENT = SubthemeRule(
     # Exclusion patterns to prevent misclassification
     exclude_patterns={
         # Will patterns
-        r"last\s*will\s*and\s*testament",
         r"testator",
         r"bequeath",
         # POA patterns
         r"power\s*of\s*attorney",
         r"attorney[\s-]in[\s-]fact",
         # Trust patterns
-        r"trust\s*agreement",
         r"trustee",
         r"trust\s*corpus",
         # Marriage patterns
@@ -745,9 +709,6 @@ DIVORCE_DOCUMENT = SubthemeRule(
         r"solemnized",
     },
     exclude_phrases={
-        "last will",
-        "power of attorney",
-        "trust agreement",
         "marriage certificate",
         "prenuptial agreement",
     },
@@ -757,8 +718,8 @@ DIVORCE_DOCUMENT = SubthemeRule(
 MARRIAGE_CERTIFICATE = SubthemeRule(
     name="marriage_certificate",
     display_name="Marriage Certificate",
-    parent_theme="Legal",
-    subtheme_category="Estate and Family",
+    parent_theme=LEGAL_LABEL,
+    subtheme_category=ESTATE_AND_FAMILY_LABEL,
     # Primary identifiers (high confidence 0.85-0.95)
     unique_patterns=[
         # Core marriage document patterns
@@ -902,7 +863,6 @@ MARRIAGE_CERTIFICATE = SubthemeRule(
         r"power\s*of\s*attorney",
         r"attorney[\s-]in[\s-]fact",
         # Trust patterns
-        r"trust\s*agreement",
         r"trustee",
         # Divorce patterns
         r"dissolution\s*of\s*marriage",
@@ -911,10 +871,6 @@ MARRIAGE_CERTIFICATE = SubthemeRule(
         r"irreconcilable\s*differences",
     },
     exclude_phrases={
-        "last will",
-        "power of attorney",
-        "trust agreement",
-        "divorce decree",
         "separation agreement",
     },
 )

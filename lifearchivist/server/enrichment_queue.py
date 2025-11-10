@@ -116,7 +116,7 @@ class EnrichmentQueue:
         track_performance=True,
         frequency="high_frequency",
     )
-    async def get_next_task(self, timeout: int = 1) -> Optional[Dict[str, Any]]:
+    async def get_next_task(self) -> Optional[Dict[str, Any]]:
         """Get the next task from the queue."""
         if not self.redis_client:
             return None
@@ -125,7 +125,7 @@ class EnrichmentQueue:
             client = self._client()
             task_json = await cast(
                 Awaitable[Optional[str]],
-                client.brpoplpush(self.queue_key, self.processing_key, timeout),
+                client.brpoplpush(self.queue_key, self.processing_key, 0),
             )
 
             if task_json:

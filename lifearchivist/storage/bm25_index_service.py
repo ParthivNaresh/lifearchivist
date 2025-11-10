@@ -20,6 +20,8 @@ from rank_bm25 import BM25Okapi
 
 from lifearchivist.utils.logging import log_event, track
 
+from .constants import NOT_INITIALIZED_BM25_INDEX_SERVICE
+
 
 class BM25Tokenizer:
     """
@@ -247,7 +249,7 @@ class BM25IndexService:
     def _client(self) -> "redis.Redis":
         """Return a non-optional Redis client or raise if not initialized."""
         if self.redis_client is None:
-            raise RuntimeError("BM25IndexService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_BM25_INDEX_SERVICE)
         return self.redis_client
 
     async def close(self) -> None:
@@ -289,7 +291,7 @@ class BM25IndexService:
             RuntimeError: If service not initialized
         """
         if not self._initialized:
-            raise RuntimeError("BM25IndexService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_BM25_INDEX_SERVICE)
 
         if not document_id:
             raise ValueError("document_id is required")
@@ -355,7 +357,7 @@ class BM25IndexService:
             RuntimeError: If service not initialized
         """
         if not self._initialized:
-            raise RuntimeError("BM25IndexService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_BM25_INDEX_SERVICE)
 
         try:
             # Find document index
@@ -419,7 +421,7 @@ class BM25IndexService:
             RuntimeError: If service not initialized
         """
         if not self._initialized:
-            raise RuntimeError("BM25IndexService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_BM25_INDEX_SERVICE)
 
         if not self.bm25 or not self.document_ids:
             log_event(
@@ -469,7 +471,7 @@ class BM25IndexService:
 
         return top_results
 
-    async def get_document_count(self) -> int:
+    def get_document_count(self) -> int:
         """
         Get number of documents in index.
 
@@ -478,7 +480,7 @@ class BM25IndexService:
         """
         return len(self.document_ids)
 
-    async def document_exists(self, document_id: str) -> bool:
+    def document_exists(self, document_id: str) -> bool:
         """
         Check if a document exists in the index.
 
@@ -512,7 +514,7 @@ class BM25IndexService:
             RuntimeError: If service not initialized
         """
         if not self._initialized:
-            raise RuntimeError("BM25IndexService not initialized")
+            raise RuntimeError(NOT_INITIALIZED_BM25_INDEX_SERVICE)
 
         doc_count = len(self.document_ids)
 

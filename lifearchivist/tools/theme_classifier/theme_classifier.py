@@ -158,10 +158,18 @@ class ThemeClassifier:
 
         return None
 
-    def _check_tertiary_identifiers(
-        self, filename: str, text_lower: str
+    def _check_filename_keywords(
+        self, filename: str
     ) -> Optional[Tuple[str, float, str]]:
-        """Quick filename-based classification."""
+        """
+        Check filename for theme keywords.
+
+        Args:
+            filename: Lowercase filename
+
+        Returns:
+            Tuple of (theme, confidence, keyword) if match found, None otherwise
+        """
         filename_patterns: dict[str, dict] = TERTIARY_FILENAME_KEYWORD_DEFINITIONS
 
         for theme, config in filename_patterns.items():
@@ -169,12 +177,20 @@ class ThemeClassifier:
                 if keyword in filename:
                     return theme, config["confidence"], keyword
 
-        words = set(re.findall(r"\b[a-z]{3,}\b", text_lower))
+        return None
 
-        if not words:
-            return None
+    def _calculate_theme_scores(self, words: set[str]) -> dict[str, float]:
+        """
+        Calculate theme scores based on keyword matches.
 
+        Args:
+            words: Set of words extracted from text
+
+        Returns:
+            Dictionary mapping themes to scores
+        """
         theme_scores: dict[str, float] = {}
+
         for theme, theme_words in self.tertiary_statistical_keywords.items():
             matches = words & theme_words
             if matches:
@@ -182,22 +198,49 @@ class ThemeClassifier:
                 proportion: float = len(matches) / len(theme_words)
                 theme_scores[theme] = raw_score * (1 + proportion)
 
+        return theme_scores
+
+    def _score_to_confidence(self, score: float) -> float:
+        """
+        Convert theme score to confidence level.
+
+        Args:
+            score: Theme score
+
+        Returns:
+            Confidence value between 0.3 and 0.7
+        """
+        if score >= 10:
+            return 0.7
+        elif score >= 7:
+            return 0.6
+        elif score >= 5:
+            return 0.5
+        elif score >= 3:
+            return 0.4
+        else:
+            return 0.3
+
+    def _check_tertiary_identifiers(
+        self, filename: str, text_lower: str
+    ) -> Optional[Tuple[str, float, str]]:
+        """Quick filename-based classification."""
+        filename_result = self._check_filename_keywords(filename)
+        if filename_result:
+            return filename_result
+
+        words = set(re.findall(r"\b[a-z]{3,}\b", text_lower))
+
+        if not words:
+            return None
+
+        theme_scores = self._calculate_theme_scores(words)
+
         if not theme_scores:
             return "Unclassified", 0.0, ""
 
         best_theme: str = max(theme_scores, key=lambda k: theme_scores[k])
         best_score: float = theme_scores[best_theme]
-
-        confidence: float
-        if best_score >= 10:
-            confidence = 0.7
-        elif best_score >= 7:
-            confidence = 0.6
-        elif best_score >= 5:
-            confidence = 0.5
-        elif best_score >= 3:
-            confidence = 0.4
-        else:
-            confidence = 0.3
+        confidence: float = self._score_to_confidence(best_score)
 
         return best_theme, confidence, str(theme_scores)
