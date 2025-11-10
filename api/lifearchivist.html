@@ -381,6 +381,11 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="lifearchivist.server.html#lifearchivist-server-mcp-server-module">lifearchivist.server.mcp_server module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lifearchivist.server.html#module-lifearchivist.server.progress_manager">lifearchivist.server.progress_manager module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.SessionManagerProtocol"><code class="docutils literal notranslate"><span class="pre">SessionManagerProtocol</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.SessionManagerProtocol.send_to_session"><code class="docutils literal notranslate"><span class="pre">SessionManagerProtocol.send_to_session()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.SessionManagerProtocol.__init__"><code class="docutils literal notranslate"><span class="pre">SessionManagerProtocol.__init__()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage"><code class="docutils literal notranslate"><span class="pre">ProcessingStage</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.UPLOAD"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.UPLOAD</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.EXTRACT"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.EXTRACT</span></code></a></li>
@@ -389,6 +394,7 @@
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.INDEX"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.INDEX</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.COMPLETE"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.COMPLETE</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.__init__"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.from_stage_id"><code class="docutils literal notranslate"><span class="pre">ProcessingStage.from_stage_id()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate</span></code></a><ul>
@@ -404,8 +410,11 @@
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressUpdate.__init__"><code class="docutils literal notranslate"><span class="pre">ProgressUpdate.__init__()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManagerError"><code class="docutils literal notranslate"><span class="pre">ProgressManagerError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager"><code class="docutils literal notranslate"><span class="pre">ProgressManager</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.__init__"><code class="docutils literal notranslate"><span class="pre">ProgressManager.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.initialize"><code class="docutils literal notranslate"><span class="pre">ProgressManager.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.close"><code class="docutils literal notranslate"><span class="pre">ProgressManager.close()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.start_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.start_progress()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.update_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.update_progress()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.complete_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.complete_progress()</span></code></a></li>
@@ -453,9 +462,11 @@
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.__init__"><code class="docutils literal notranslate"><span class="pre">ProgressManager.__init__()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.cleanup_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.cleanup_progress()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.clear_all_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.clear_all_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.close"><code class="docutils literal notranslate"><span class="pre">ProgressManager.close()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.complete_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.complete_progress()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.error_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.error_progress()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.get_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.get_progress()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.initialize"><code class="docutils literal notranslate"><span class="pre">ProgressManager.initialize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.start_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.start_progress()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.server.html#lifearchivist.server.ProgressManager.update_progress"><code class="docutils literal notranslate"><span class="pre">ProgressManager.update_progress()</span></code></a></li>
 </ul>
@@ -492,7 +503,6 @@
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.delete_file_by_hash"><code class="docutils literal notranslate"><span class="pre">Vault.delete_file_by_hash()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.file_exists"><code class="docutils literal notranslate"><span class="pre">Vault.file_exists()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.get_file_path"><code class="docutils literal notranslate"><span class="pre">Vault.get_file_path()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.get_thumbnail_path"><code class="docutils literal notranslate"><span class="pre">Vault.get_thumbnail_path()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.get_vault_statistics"><code class="docutils literal notranslate"><span class="pre">Vault.get_vault_statistics()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.initialize"><code class="docutils literal notranslate"><span class="pre">Vault.initialize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="lifearchivist.storage.html#lifearchivist.storage.Vault.store_file"><code class="docutils literal notranslate"><span class="pre">Vault.store_file()</span></code></a></li>

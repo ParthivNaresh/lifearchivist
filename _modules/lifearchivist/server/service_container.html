@@ -627,7 +627,7 @@
             <span class="p">)</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
 
-            <span class="n">doc_count</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="o">.</span><span class="n">get_document_count</span><span class="p">()</span>
+            <span class="n">doc_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bm25_service</span><span class="o">.</span><span class="n">get_document_count</span><span class="p">()</span>
 
             <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;bm25_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;document_count&quot;</span><span class="p">:</span> <span class="n">doc_count</span><span class="p">})</span>
 

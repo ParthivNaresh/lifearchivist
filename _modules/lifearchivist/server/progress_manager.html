@@ -166,12 +166,30 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">asdict</span><span class="p">,</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">redis</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">redis.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">redis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">redis.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="ne">ConnectionError</span><span class="p">,</span> <span class="n">RedisError</span><span class="p">,</span> <span class="ne">TimeoutError</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span>
+
+
+<div class="viewcode-block" id="SessionManagerProtocol">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.SessionManagerProtocol">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SessionManagerProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Protocol for session manager dependency.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SessionManagerProtocol.send_to_session">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.SessionManagerProtocol.send_to_session">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_to_session</span><span class="p">(</span></div>
+
+        <span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span></div>
+
 
 
 <div class="viewcode-block" id="ProcessingStage">
@@ -192,6 +210,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">stage_id</span> <span class="o">=</span> <span class="n">stage_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span></div>
+
+
+<div class="viewcode-block" id="ProcessingStage.from_stage_id">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProcessingStage.from_stage_id">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_stage_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">stage_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ProcessingStage&quot;</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Safely get stage from stage_id.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="bp">cls</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stage</span><span class="o">.</span><span class="n">stage_id</span> <span class="o">==</span> <span class="n">stage_id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">stage</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
 </div>
 
 
@@ -204,7 +233,7 @@
 
     <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">stage</span><span class="p">:</span> <span class="n">ProcessingStage</span>
-    <span class="n">progress</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># 0.0 to 100.0</span>
+    <span class="n">progress</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">eta_seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -222,33 +251,113 @@
 
 
 
+<div class="viewcode-block" id="ProgressManagerError">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManagerError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProgressManagerError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base exception for ProgressManager errors.&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
 <div class="viewcode-block" id="ProgressManager">
 <a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ProgressManager</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages progress tracking for upload operations using Redis.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages progress tracking for upload operations using async Redis.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="ProgressManager.__init__">
 <a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">,</span> <span class="n">session_manager</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="n">redis_url</span><span class="p">,</span> <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">redis_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">,</span>
+        <span class="n">session_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SessionManagerProtocol</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_connections</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">socket_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+        <span class="n">socket_connect_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis_url</span> <span class="o">=</span> <span class="n">redis_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">session_manager</span> <span class="o">=</span> <span class="n">session_manager</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">progress_ttl</span> <span class="o">=</span> <span class="mi">3600</span>  <span class="c1"># 1 hour TTL for progress records</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_ttl</span> <span class="o">=</span> <span class="mi">3600</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span> <span class="o">=</span> <span class="s2">&quot;lifearchivist&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_connections</span> <span class="o">=</span> <span class="n">max_connections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket_timeout</span> <span class="o">=</span> <span class="n">socket_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">socket_connect_timeout</span> <span class="o">=</span> <span class="n">socket_connect_timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span></div>
 
-        <span class="c1"># Test Redis connection</span>
+
+<div class="viewcode-block" id="ProgressManager.initialize">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.initialize">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize async Redis connection with connection pooling.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span><span class="p">:</span>
+            <span class="k">return</span>
+
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="k">raise</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span> <span class="o">=</span> <span class="k">await</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+                <span class="n">decode_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">max_connections</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_connections</span><span class="p">,</span>
+                <span class="n">socket_timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">socket_timeout</span><span class="p">,</span>
+                <span class="n">socket_connect_timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">socket_connect_timeout</span><span class="p">,</span>
+                <span class="n">health_check_interval</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+            <span class="p">)</span>
 
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_manager_redis_connected&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;redis_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_url</span><span class="p">,</span>
+                    <span class="s2">&quot;max_connections&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_connections</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_manager_redis_connection_failed&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="s2">&quot;redis_url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_url</span><span class="p">},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ProgressManagerError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to connect to Redis: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+
+
+<div class="viewcode-block" id="ProgressManager.close">
+<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.close">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close Redis connection and cleanup resources.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
+                <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;progress_manager_redis_closed&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;progress_manager_close_error&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_ensure_initialized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure Redis client is initialized.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ProgressManagerError</span><span class="p">(</span>
+                <span class="s2">&quot;ProgressManager not initialized. Call initialize() first.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_progress_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate Redis key for file progress.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;progress:</span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span><span class="si">}</span><span class="s2">:progress:</span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_session_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate Redis key for file-to-session mapping.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;session:</span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span><span class="si">}</span><span class="s2">:session:</span><span class="si">{</span><span class="n">file_id</span><span class="si">}</span><span class="s2">&quot;</span>
 
 <div class="viewcode-block" id="ProgressManager.start_progress">
 <a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.start_progress">[docs]</a>
@@ -256,14 +365,14 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize progress tracking for a file upload.&quot;&quot;&quot;</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_initialized</span><span class="p">()</span>
+
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Store session mapping if provided</span>
             <span class="k">if</span> <span class="n">session_id</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">setex</span><span class="p">(</span>
+                <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">setex</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_get_session_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_ttl</span><span class="p">,</span> <span class="n">session_id</span>
                 <span class="p">)</span>
 
-            <span class="c1"># Initialize progress with upload stage</span>
             <span class="n">initial_update</span> <span class="o">=</span> <span class="n">ProgressUpdate</span><span class="p">(</span>
                 <span class="n">file_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
                 <span class="n">stage</span><span class="o">=</span><span class="n">ProcessingStage</span><span class="o">.</span><span class="n">UPLOAD</span><span class="p">,</span>
@@ -274,8 +383,14 @@
 
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store_progress</span><span class="p">(</span><span class="n">initial_update</span><span class="p">)</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_progress</span><span class="p">(</span><span class="n">initial_update</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">e</span></div>
+
+        <span class="k">except</span> <span class="n">RedisError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_start_redis_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ProgressManagerError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to start progress: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 
 
 <div class="viewcode-block" id="ProgressManager.update_progress">
@@ -291,7 +406,6 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update progress for a file upload.&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Calculate cumulative progress based on stage weights</span>
             <span class="n">cumulative_progress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_cumulative_progress</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">progress</span><span class="p">)</span>
 
             <span class="n">update</span> <span class="o">=</span> <span class="n">ProgressUpdate</span><span class="p">(</span>
@@ -306,8 +420,14 @@
 
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store_progress</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_progress</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">e</span></div>
+
+        <span class="k">except</span> <span class="n">RedisError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_update_redis_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;stage&quot;</span><span class="p">:</span> <span class="n">stage</span><span class="o">.</span><span class="n">stage_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ProgressManagerError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to update progress: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 
 
 <div class="viewcode-block" id="ProgressManager.complete_progress">
@@ -328,8 +448,14 @@
 
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store_progress</span><span class="p">(</span><span class="n">completion_update</span><span class="p">)</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_progress</span><span class="p">(</span><span class="n">completion_update</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">e</span></div>
+
+        <span class="k">except</span> <span class="n">RedisError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_complete_redis_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ProgressManagerError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to complete progress: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 
 
 <div class="viewcode-block" id="ProgressManager.error_progress">
@@ -350,28 +476,62 @@
 
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store_progress</span><span class="p">(</span><span class="n">error_update</span><span class="p">)</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_broadcast_progress</span><span class="p">(</span><span class="n">error_update</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">e</span></div>
+
+        <span class="k">except</span> <span class="n">RedisError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_error_redis_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ProgressManager.get_progress">
 <a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.get_progress">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ProgressUpdate</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current progress for a file.&quot;&quot;&quot;</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_initialized</span><span class="p">()</span>
+
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">progress_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_progress_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">))</span>
+            <span class="n">progress_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_progress_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">))</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">progress_data</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">None</span>
 
             <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">progress_data</span><span class="p">)</span>
-            <span class="c1"># Convert stage back to enum by finding matching stage_id</span>
-            <span class="n">stage_id</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;stage&quot;</span><span class="p">]</span>
-            <span class="n">stage</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">ProcessingStage</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">stage_id</span> <span class="o">==</span> <span class="n">stage_id</span><span class="p">)</span>
-            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;stage&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stage</span>
+            <span class="n">stage_id</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stage&quot;</span><span class="p">)</span>
 
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">stage_id</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;progress_data_missing_stage&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+            <span class="n">stage</span> <span class="o">=</span> <span class="n">ProcessingStage</span><span class="o">.</span><span class="n">from_stage_id</span><span class="p">(</span><span class="n">stage_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">stage</span><span class="p">:</span>
+                <span class="n">log_event</span><span class="p">(</span>
+                    <span class="s2">&quot;progress_data_invalid_stage&quot;</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;stage_id&quot;</span><span class="p">:</span> <span class="n">stage_id</span><span class="p">},</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;stage&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stage</span>
             <span class="k">return</span> <span class="n">ProgressUpdate</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span>
 
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_data_json_decode_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">RedisError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_get_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span></div>
 
 
@@ -379,18 +539,26 @@
 <a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.cleanup_progress">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Clean up progress data for a file.&quot;&quot;&quot;</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_initialized</span><span class="p">()</span>
+
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+            <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_get_progress_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_session_key</span><span class="p">(</span><span class="n">file_id</span><span class="p">)</span>
             <span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">e</span></div>
+        <span class="k">except</span> <span class="n">RedisError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_cleanup_redis_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="ProgressManager.clear_all_progress">
 <a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.progress_manager.ProgressManager.clear_all_progress">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">clear_all_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all progress tracking data from Redis.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear all progress tracking data from Redis using batched deletion.&quot;&quot;&quot;</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_initialized</span><span class="p">()</span>
+
         <span class="n">cleared_metrics</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;progress_keys_deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">&quot;session_keys_deleted&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
@@ -399,57 +567,90 @@
         <span class="p">}</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Get all progress and session keys</span>
             <span class="n">progress_pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span><span class="si">}</span><span class="s2">:progress:*&quot;</span>
             <span class="n">session_pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key_prefix</span><span class="si">}</span><span class="s2">:session:*&quot;</span>
 
-            <span class="n">progress_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">progress_pattern</span><span class="p">)</span>
-            <span class="n">session_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">session_pattern</span><span class="p">)</span>
-
-            <span class="c1"># Delete progress keys</span>
-            <span class="k">if</span> <span class="n">progress_keys</span><span class="p">:</span>
-                <span class="n">deleted_progress</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">progress_keys</span><span class="p">)</span>
-                <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;progress_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deleted_progress</span>
-            <span class="c1"># Delete session keys</span>
-            <span class="k">if</span> <span class="n">session_keys</span><span class="p">:</span>
-                <span class="n">deleted_sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">session_keys</span><span class="p">)</span>
-                <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;session_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deleted_sessions</span>
-
-            <span class="n">progress_deleted</span> <span class="o">=</span> <span class="n">cleared_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;progress_keys_deleted&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="n">session_deleted</span> <span class="o">=</span> <span class="n">cleared_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_keys_deleted&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="n">progress_count</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">progress_deleted</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">progress_deleted</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">progress_deleted</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delete_keys_by_pattern</span><span class="p">(</span>
+                <span class="n">client</span><span class="p">,</span> <span class="n">progress_pattern</span>
             <span class="p">)</span>
-            <span class="n">session_count</span> <span class="o">=</span> <span class="n">session_deleted</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_deleted</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
-            <span class="n">total_deleted</span> <span class="o">=</span> <span class="n">progress_count</span> <span class="o">+</span> <span class="n">session_count</span>
-            <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;total_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">total_deleted</span>
+            <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;progress_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">progress_deleted</span>
+
+            <span class="n">session_deleted</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delete_keys_by_pattern</span><span class="p">(</span>
+                <span class="n">client</span><span class="p">,</span> <span class="n">session_pattern</span>
+            <span class="p">)</span>
+            <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;session_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_deleted</span>
+
+            <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;total_keys_deleted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">progress_deleted</span> <span class="o">+</span> <span class="n">session_deleted</span>
+
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_cleared_all&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;progress_keys&quot;</span><span class="p">:</span> <span class="n">progress_deleted</span><span class="p">,</span>
+                    <span class="s2">&quot;session_keys&quot;</span><span class="p">:</span> <span class="n">session_deleted</span><span class="p">,</span>
+                    <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;total_keys_deleted&quot;</span><span class="p">],</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+
             <span class="k">return</span> <span class="n">cleared_metrics</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Failed to clear progress data: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_clear_all_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">errors</span> <span class="o">=</span> <span class="n">cleared_metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">errors</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">cleared_metrics</span></div>
 
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_delete_keys_by_pattern</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete keys matching pattern in batches to avoid memory issues.&quot;&quot;&quot;</span>
+        <span class="n">deleted_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">batch</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">scan_iter</span><span class="p">(</span><span class="n">match</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">batch_size</span><span class="p">):</span>
+                <span class="n">batch</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">batch_size</span><span class="p">:</span>
+                    <span class="n">deleted</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+                    <span class="n">deleted_count</span> <span class="o">+=</span> <span class="n">deleted</span>
+                    <span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="n">batch</span><span class="p">:</span>
+                <span class="n">deleted</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+                <span class="n">deleted_count</span> <span class="o">+=</span> <span class="n">deleted</span>
+
+        <span class="k">except</span> <span class="n">RedisError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_delete_keys_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;pattern&quot;</span><span class="p">:</span> <span class="n">pattern</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">return</span> <span class="n">deleted_count</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_cumulative_progress</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">current_stage</span><span class="p">:</span> <span class="n">ProcessingStage</span><span class="p">,</span> <span class="n">stage_progress</span><span class="p">:</span> <span class="nb">float</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate cumulative progress across all stages.&quot;&quot;&quot;</span>
         <span class="n">stages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ProcessingStage</span><span class="p">)</span>
-        <span class="n">total_weight</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">weight</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">stages</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>  <span class="c1"># Exclude COMPLETE</span>
+        <span class="n">total_weight</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">weight</span> <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">stages</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
-        <span class="c1"># Calculate weight of completed stages</span>
         <span class="n">completed_weight</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">stages</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">stage</span> <span class="o">==</span> <span class="n">current_stage</span><span class="p">:</span>
                 <span class="k">break</span>
             <span class="n">completed_weight</span> <span class="o">+=</span> <span class="n">stage</span><span class="o">.</span><span class="n">weight</span>
 
-        <span class="c1"># Add progress within current stage</span>
         <span class="n">current_stage_contribution</span> <span class="o">=</span> <span class="p">(</span><span class="n">stage_progress</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">current_stage</span><span class="o">.</span><span class="n">weight</span>
 
-        <span class="c1"># Calculate final percentage</span>
         <span class="n">total_progress</span> <span class="o">=</span> <span class="p">(</span>
             <span class="p">(</span><span class="n">completed_weight</span> <span class="o">+</span> <span class="n">current_stage_contribution</span><span class="p">)</span> <span class="o">/</span> <span class="n">total_weight</span> <span class="o">*</span> <span class="mi">100</span>
         <span class="p">)</span>
@@ -458,9 +659,11 @@
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_store_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="n">ProgressUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Store progress update in Redis.&quot;&quot;&quot;</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_initialized</span><span class="p">()</span>
+
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_progress_key</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">file_id</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">setex</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_ttl</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">setex</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_ttl</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_broadcast_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="n">ProgressUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Broadcast progress update via WebSocket.&quot;&quot;&quot;</span>
@@ -468,14 +671,19 @@
             <span class="k">return</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Get session ID for this file</span>
-            <span class="n">session_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_session_key</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">file_id</span><span class="p">))</span>
+            <span class="n">client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_initialized</span><span class="p">()</span>
+            <span class="n">session_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_session_key</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">file_id</span><span class="p">))</span>
 
             <span class="k">if</span> <span class="n">session_id</span><span class="p">:</span>
                 <span class="n">message</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;upload_progress&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">update</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()}</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_manager</span><span class="o">.</span><span class="n">send_to_session</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">e</span></div>
+            <span class="n">log_event</span><span class="p">(</span>
+                <span class="s2">&quot;progress_broadcast_error&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">update</span><span class="o">.</span><span class="n">file_id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span></div>
 
 
 
@@ -504,12 +712,10 @@
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__aexit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">exc_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Error occurred</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">error_progress</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">file_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc_val</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">stage</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Success</span>
             <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_manager</span><span class="o">.</span><span class="n">update_progress</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">file_id</span><span class="p">,</span>

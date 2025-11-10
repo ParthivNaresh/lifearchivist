@@ -359,14 +359,14 @@
         <span class="n">ollama_tool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="o">.</span><span class="n">get_tool</span><span class="p">(</span><span class="s2">&quot;llm.ollama&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ollama_tool</span><span class="p">:</span>
-            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_answer</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;citations&quot;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_answer</span><span class="p">(</span><span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;citations&quot;</span><span class="p">])</span>
 
         <span class="c1"># Step 4: Call LLM with structured RAG prompt</span>
         <span class="n">rag_response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_rag_answer</span><span class="p">(</span>
             <span class="n">ollama_tool</span><span class="p">,</span> <span class="n">question</span><span class="p">,</span> <span class="n">context_info</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">rag_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;answer&quot;</span><span class="p">):</span>
-            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_answer</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;citations&quot;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_answer</span><span class="p">(</span><span class="n">context_info</span><span class="p">[</span><span class="s2">&quot;citations&quot;</span><span class="p">])</span>
 
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">rag_response</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>
@@ -574,9 +574,7 @@
 
         <span class="k">return</span> <span class="n">answer</span><span class="p">,</span> <span class="n">confidence</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_fallback_answer</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">citations</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fallback_answer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">citations</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Provide a fallback answer when LLM is not available.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">citations</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{</span>

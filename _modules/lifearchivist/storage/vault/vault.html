@@ -342,7 +342,7 @@
         <span class="c1"># Clear files by specific hashes</span>
         <span class="k">for</span> <span class="n">file_hash</span> <span class="ow">in</span> <span class="n">file_hashes</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delete_file_by_hash</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">cleared_metrics</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_delete_file_by_hash</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">cleared_metrics</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Failed to delete files for hash </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cleared_metrics</span><span class="p">[</span><span class="s2">&quot;errors&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
@@ -358,7 +358,7 @@
 
         <span class="c1"># If no file hashes provided or we need comprehensive cleanup, clear all files</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">file_hashes</span><span class="p">:</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clear_all_vault_files</span><span class="p">(</span><span class="n">cleared_metrics</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_clear_all_vault_files</span><span class="p">(</span><span class="n">cleared_metrics</span><span class="p">)</span>
 
         <span class="c1"># Clean up empty directories</span>
         <span class="n">dirs_cleaned</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_empty_directories</span><span class="p">()</span>
@@ -380,7 +380,7 @@
         <span class="k">return</span> <span class="n">cleared_metrics</span></div>
 
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_clear_all_vault_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_all_vault_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Remove all files from vault storage directories (comprehensive cleanup).</span>
 
@@ -391,11 +391,11 @@
 
         <span class="k">for</span> <span class="n">directory</span> <span class="ow">in</span> <span class="n">directories_to_clear</span><span class="p">:</span>
             <span class="c1"># Use empty prefix for main vault clearing (not &quot;orphaned_&quot;)</span>
-            <span class="k">await</span> <span class="n">clear_directory_files</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">clear_directory_files</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Vault.delete_file_by_hash">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.delete_file_by_hash">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_file_by_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_file_by_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Delete all files (content and thumbnails) associated with a specific hash.</span>
 
@@ -405,10 +405,10 @@
 <span class="sd">            file_hash: SHA256 hash of the file to delete</span>
 <span class="sd">            metrics: Dictionary to update with deletion statistics</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delete_file_by_hash</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_delete_file_by_hash</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span></div>
 
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_delete_file_by_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_delete_file_by_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Delete all files (content and thumbnails) associated with a specific hash.</span>
 
@@ -423,11 +423,11 @@
         <span class="n">matching_files</span> <span class="o">=</span> <span class="n">find_files_by_hash_pattern</span><span class="p">(</span><span class="n">content_directory</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">matching_files</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">delete_file_safely</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+            <span class="n">delete_file_safely</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
 
         <span class="c1"># Thumbnail files</span>
         <span class="n">thumbnail_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_thumbnail_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
-        <span class="k">await</span> <span class="n">delete_file_safely</span><span class="p">(</span><span class="n">thumbnail_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+        <span class="n">delete_file_safely</span><span class="p">(</span><span class="n">thumbnail_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_content_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -514,7 +514,7 @@
                 <span class="s2">&quot;exports&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">exports_dir</span><span class="p">,</span>
             <span class="p">}</span>
 
-            <span class="n">flat_stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_comprehensive_directory_stats</span><span class="p">(</span><span class="n">directories</span><span class="p">)</span>
+            <span class="n">flat_stats</span> <span class="o">=</span> <span class="n">get_comprehensive_directory_stats</span><span class="p">(</span><span class="n">directories</span><span class="p">)</span>
 
             <span class="c1"># Transform flat structure to nested structure expected by UI</span>
             <span class="n">nested_directories</span> <span class="o">=</span> <span class="p">{}</span>
@@ -767,7 +767,7 @@
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to copy file to vault: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
 
         <span class="c1"># Generate thumbnail for images</span>
-        <span class="n">thumbnail_generated</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_thumbnail</span><span class="p">(</span><span class="n">target_path</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
+        <span class="n">thumbnail_generated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_thumbnail</span><span class="p">(</span><span class="n">target_path</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">)</span>
 
         <span class="c1"># Get file size</span>
         <span class="n">size_bytes</span> <span class="o">=</span> <span class="n">safe_get_file_size</span><span class="p">(</span><span class="n">target_path</span><span class="p">)</span>
@@ -792,7 +792,7 @@
 
 <div class="viewcode-block" id="Vault.file_exists">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.file_exists">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check if a file with the given hash exists in the vault.</span>
 
@@ -826,7 +826,7 @@
 
 <div class="viewcode-block" id="Vault.get_file_path">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.get_file_path">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">extension</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the path to a stored file if it exists in the vault.</span>
 
@@ -841,23 +841,7 @@
         <span class="k">return</span> <span class="n">file_path</span> <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="Vault.get_thumbnail_path">
-<a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.get_thumbnail_path">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_thumbnail_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the path to a file&#39;s thumbnail image if it exists.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            file_hash: SHA256 hash of the original file</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Path to the thumbnail file if it exists, None otherwise</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">thumbnail_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_thumbnail_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">thumbnail_path</span> <span class="k">if</span> <span class="n">thumbnail_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span></div>
-
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_generate_thumbnail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_thumbnail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generate a thumbnail for an image file (internal method).</span>
 
@@ -872,7 +856,7 @@
 <span class="sd">            True if thumbnail was generated, False otherwise</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">thumbnail_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_thumbnail_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span>
-        <span class="n">generated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_image_thumbnail</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">thumbnail_path</span><span class="p">)</span>
+        <span class="n">generated</span> <span class="o">=</span> <span class="n">generate_image_thumbnail</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">thumbnail_path</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">generated</span><span class="p">:</span>
             <span class="n">log_event</span><span class="p">(</span>
@@ -1017,7 +1001,7 @@
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">cleanup_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cleanup_old_temp_files</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">)</span>
+        <span class="n">cleanup_result</span> <span class="o">=</span> <span class="n">cleanup_old_temp_files</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_dir</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">cleanup_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cleaned_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">log_event</span><span class="p">(</span>

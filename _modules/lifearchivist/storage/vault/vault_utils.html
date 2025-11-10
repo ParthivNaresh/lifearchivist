@@ -272,7 +272,7 @@
 
 <div class="viewcode-block" id="count_directory_files">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.count_directory_files">[docs]</a>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">count_directory_files</span><span class="p">(</span><span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">count_directory_files</span><span class="p">(</span><span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Count files and calculate total size in a directory.&quot;&quot;&quot;</span>
     <span class="n">stats</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;bytes&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
 
@@ -290,7 +290,7 @@
 
 <div class="viewcode-block" id="delete_file_safely">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.delete_file_safely">[docs]</a>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_file_safely</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">delete_file_safely</span><span class="p">(</span>
     <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">metric_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Safely delete a file and update metrics.&quot;&quot;&quot;</span>
@@ -319,7 +319,7 @@
 
 <div class="viewcode-block" id="clear_directory_files">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.clear_directory_files">[docs]</a>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">clear_directory_files</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">clear_directory_files</span><span class="p">(</span>
     <span class="n">directory</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">exclude_files</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -333,7 +333,7 @@
 
     <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">directory</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span> <span class="ow">and</span> <span class="n">file_path</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude_files</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">delete_file_safely</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">metric_prefix</span><span class="p">)</span></div>
+            <span class="n">delete_file_safely</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">metric_prefix</span><span class="p">)</span></div>
 
 
 
@@ -366,7 +366,7 @@
 
 <div class="viewcode-block" id="generate_image_thumbnail">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.generate_image_thumbnail">[docs]</a>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_image_thumbnail</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_image_thumbnail</span><span class="p">(</span>
     <span class="n">source_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">thumbnail_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">size</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">256</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span>
@@ -416,7 +416,7 @@
 
 <div class="viewcode-block" id="cleanup_old_temp_files">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.cleanup_old_temp_files">[docs]</a>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_old_temp_files</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">hours_old</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cleanup_old_temp_files</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">hours_old</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Clean up temporary files older than specified hours.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">temp_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;cleaned_files&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;cleaned_bytes&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[]}</span>
@@ -471,7 +471,7 @@
 
 <div class="viewcode-block" id="get_comprehensive_directory_stats">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.vault.vault_utils.get_comprehensive_directory_stats">[docs]</a>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_comprehensive_directory_stats</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_comprehensive_directory_stats</span><span class="p">(</span>
     <span class="n">directories</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get comprehensive statistics for multiple directories.&quot;&quot;&quot;</span>
@@ -483,7 +483,7 @@
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">dir_name</span><span class="p">,</span> <span class="n">directory</span> <span class="ow">in</span> <span class="n">directories</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">dir_stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">count_directory_files</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+            <span class="n">dir_stats</span> <span class="o">=</span> <span class="n">count_directory_files</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
 
             <span class="c1"># Add individual directory stats</span>
             <span class="n">stats</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dir_name</span><span class="si">}</span><span class="s2">_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dir_stats</span><span class="p">[</span><span class="s2">&quot;files&quot;</span><span class="p">]</span>

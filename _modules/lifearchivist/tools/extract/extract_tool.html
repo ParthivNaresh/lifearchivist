@@ -277,7 +277,7 @@
             <span class="k">if</span> <span class="n">extension</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">):</span>
                 <span class="n">extension</span> <span class="o">=</span> <span class="n">extension</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
 
-            <span class="n">actual_file_path</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">get_file_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">extension</span><span class="p">)</span>
+            <span class="n">actual_file_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">get_file_path</span><span class="p">(</span><span class="n">file_hash</span><span class="p">,</span> <span class="n">extension</span><span class="p">)</span>
 
         <span class="c1"># Verify file exists</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">actual_file_path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">actual_file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
