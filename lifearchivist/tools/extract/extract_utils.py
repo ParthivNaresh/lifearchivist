@@ -5,7 +5,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import aiofiles
 import chardet
@@ -88,51 +88,106 @@ def extract_paragraph_text(paragraph: Paragraph) -> str:
     return paragraph_text
 
 
-async def _extract_docx_text(file_path: Path) -> str:
+def _process_docx_body_elements(doc: Any) -> List[str]:
+    """
+    Process document body elements (paragraphs and tables).
+
+    Args:
+        doc: Document object
+
+    Returns:
+        List of extracted text content
+    """
+    extracted_content = []
+
+    for element in doc.element.body:
+        if isinstance(element, CT_P):
+            paragraph = Paragraph(element, doc)
+            paragraph_text = extract_paragraph_text(paragraph)
+            if paragraph_text:
+                extracted_content.append(paragraph_text)
+
+        elif isinstance(element, CT_Tbl):
+            table = Table(element, doc)
+            table_text = extract_table_text(table)
+            if table_text:
+                extracted_content.append(f"[TABLE]\n{table_text}")
+
+    return extracted_content
+
+
+def _process_docx_headers(doc: Any) -> List[str]:
+    """
+    Process document headers from all sections.
+
+    Args:
+        doc: Document object
+
+    Returns:
+        List of extracted header text
+    """
+    headers = []
+
+    for section in doc.sections:
+        if section.header:
+            for paragraph in section.header.paragraphs:
+                header_text = extract_paragraph_text(paragraph)
+                if header_text:
+                    headers.append(f"[HEADER] {header_text}")
+
+    return headers
+
+
+def _process_docx_footers(doc: Any) -> List[str]:
+    """
+    Process document footers from all sections.
+
+    Args:
+        doc: Document object
+
+    Returns:
+        List of extracted footer text
+    """
+    footers = []
+
+    for section in doc.sections:
+        if section.footer:
+            for paragraph in section.footer.paragraphs:
+                footer_text = extract_paragraph_text(paragraph)
+                if footer_text:
+                    footers.append(f"[FOOTER] {footer_text}")
+
+    return footers
+
+
+def _clean_docx_text(text: str) -> str:
+    """
+    Clean up extracted DOCX text.
+
+    Args:
+        text: Raw extracted text
+
+    Returns:
+        Cleaned text
+    """
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    return text.strip()
+
+
+def _extract_docx_text(file_path: Path) -> str:
     """Extract text from Word documents using python-docx with comprehensive content extraction."""
     try:
         doc = Document(str(file_path))
-        extracted_content = []
 
-        # Process document body elements in order to preserve structure
-        for element in doc.element.body:
-            if isinstance(element, CT_P):
-                # Paragraph element
-                paragraph = Paragraph(element, doc)
-                paragraph_text = extract_paragraph_text(paragraph)
-                if paragraph_text:
-                    extracted_content.append(paragraph_text)
+        headers = _process_docx_headers(doc)
+        body_content = _process_docx_body_elements(doc)
+        footers = _process_docx_footers(doc)
 
-            elif isinstance(element, CT_Tbl):
-                # Table element
-                table = Table(element, doc)
-                table_text = extract_table_text(table)
-                if table_text:
-                    extracted_content.append(f"[TABLE]\n{table_text}")
-
-        # Process headers and footers for comprehensive extraction
-        for section in doc.sections:
-            if section.header:
-                for paragraph in section.header.paragraphs:
-                    header_text = extract_paragraph_text(paragraph)
-                    if header_text:
-                        extracted_content.insert(0, f"[HEADER] {header_text}")
-
-            if section.footer:
-                for paragraph in section.footer.paragraphs:
-                    footer_text = extract_paragraph_text(paragraph)
-                    if footer_text:
-                        extracted_content.append(f"[FOOTER] {footer_text}")
-
-        # Join all content with proper spacing
+        extracted_content = headers + body_content + footers
         full_text = "\n\n".join(extracted_content)
 
-        # Clean up excessive whitespace while preserving structure
-        import re
-
-        full_text = re.sub(r"\n{3,}", "\n\n", full_text)
-        full_text = re.sub(r"[ \t]+", " ", full_text)
-        return full_text.strip()
+        return _clean_docx_text(full_text)
 
     except Exception as e:
         raise ValueError(
@@ -708,7 +763,7 @@ async def _extract_text_by_type(file_path: Path, mime_type: str) -> str:
             mime_type
             == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         ):
-            return await _extract_docx_text(file_path)
+            return _extract_docx_text(file_path)
         # Excel files
         elif mime_type in [
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
