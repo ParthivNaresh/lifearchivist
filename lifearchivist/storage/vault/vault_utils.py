@@ -124,7 +124,7 @@ def delete_file_safely(
         metrics.setdefault("errors", []).append(error_msg)
 
 
-async def clear_directory_files(
+def clear_directory_files(
     directory: Path,
     metrics: Dict[str, Any],
     exclude_files: Optional[List[str]] = None,

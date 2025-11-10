@@ -169,7 +169,7 @@ class Vault:
         # Clear files by specific hashes
         for file_hash in file_hashes:
             try:
-                await self._delete_file_by_hash(file_hash, cleared_metrics)
+                self._delete_file_by_hash(file_hash, cleared_metrics)
             except Exception as e:
                 error_msg = f"Failed to delete files for hash {file_hash}: {e}"
                 if isinstance(cleared_metrics["errors"], list):
@@ -217,7 +217,7 @@ class Vault:
 
         for directory in directories_to_clear:
             # Use empty prefix for main vault clearing (not "orphaned_")
-            await clear_directory_files(directory, metrics, None, "")
+            clear_directory_files(directory, metrics, None, "")
 
     async def delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
         """
@@ -229,9 +229,9 @@ class Vault:
             file_hash: SHA256 hash of the file to delete
             metrics: Dictionary to update with deletion statistics
         """
-        await self._delete_file_by_hash(file_hash, metrics)
+        self._delete_file_by_hash(file_hash, metrics)
 
-    async def _delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
+    def _delete_file_by_hash(self, file_hash: str, metrics: Dict[str, Any]):
         """
         Delete all files (content and thumbnails) associated with a specific hash.
 
