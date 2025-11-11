@@ -11,9 +11,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from llama_index.core import VectorStoreIndex
-from llama_index.core.retrievers import VectorIndexRetriever
-
 from lifearchivist.storage.utils import MetadataFilterUtils
 from lifearchivist.utils.logging import log_event, track
 from lifearchivist.utils.result import (
@@ -122,31 +119,21 @@ class LlamaIndexSearchService(SearchService):
 
     def __init__(
         self,
-        index: Optional[VectorStoreIndex] = None,
         bm25_service=None,
         doc_tracker=None,
+        qdrant_client=None,
     ):
         """
         Initialize the search service.
 
         Args:
-            index: LlamaIndex VectorStoreIndex instance
             bm25_service: BM25IndexService for keyword search
             doc_tracker: Document tracker for metadata enrichment
+            qdrant_client: QdrantClient for direct vector operations
         """
-        self.index = index
         self.bm25_service = bm25_service
         self.doc_tracker = doc_tracker
-        self._setup_retrievers()
-
-    def _setup_retrievers(self):
-        """Setup various retrievers for different search modes."""
-        if self.index:
-            # Default semantic retriever
-            self.semantic_retriever = VectorIndexRetriever(
-                index=self.index,
-                similarity_top_k=10,
-            )
+        self.qdrant_client = qdrant_client
 
     @track(
         operation="semantic_search",
@@ -170,16 +157,16 @@ class LlamaIndexSearchService(SearchService):
         Returns:
             Success with list of search results, or Failure with error
         """
-        from lifearchivist.storage.utils import SearchResultProcessor
+        from llama_index.core import Settings
 
-        if not self.index:
+        if not self.qdrant_client:
             log_event(
                 "semantic_search_skipped",
-                {"reason": "no_index"},
+                {"reason": "no_qdrant_client"},
                 level=logging.DEBUG,
             )
             return service_unavailable(
-                "Search index not available", context={"service": "semantic_search"}
+                "Qdrant client not available", context={"service": "semantic_search"}
             )
 
         try:
@@ -191,45 +178,69 @@ class LlamaIndexSearchService(SearchService):
                     "top_k": top_k,
                     "similarity_threshold": similarity_threshold,
                     "has_filters": bool(filters),
+                    "method": "direct_qdrant",
                 },
             )
 
-            self.semantic_retriever.similarity_top_k = top_k
-            nodes = self.semantic_retriever.retrieve(query)
+            query_embedding = Settings.embed_model.get_query_embedding(query)
 
-            filtered_nodes, nodes_below_threshold = (
-                SearchResultProcessor.filter_by_threshold(nodes, similarity_threshold)
+            search_results = self.qdrant_client.search(
+                collection_name="lifearchivist",
+                query_vector=query_embedding,
+                limit=top_k * 2,
+                with_payload=True,
+                with_vectors=False,
             )
 
             results = []
-            for node in filtered_nodes:
-                score, metadata, text, node_id = (
-                    SearchResultProcessor.extract_node_data(node)
-                )
+            nodes_below_threshold = 0
+
+            for point in search_results:
+                score = float(point.score)
+
+                if score < similarity_threshold:
+                    nodes_below_threshold += 1
+                    continue
+
+                payload = point.payload or {}
+
+                from lifearchivist.storage.utils import QdrantNodeUtils
+
+                text = QdrantNodeUtils.extract_text_from_node(payload)
+                document_id = payload.get("document_id", "unknown")
+                node_id = point.id
 
                 if filters and not MetadataFilterUtils.matches_filters(
-                    metadata, filters
+                    payload, filters
                 ):
                     continue
 
-                result = SearchResultProcessor.create_search_result(
-                    metadata.get("document_id", "unknown"),
-                    text,
-                    score,
-                    metadata,
-                    node_id,
-                    "semantic",
-                )
+                result = {
+                    "document_id": document_id,
+                    "text": text,
+                    "score": score,
+                    "metadata": payload,
+                    "node_id": str(node_id),
+                    "search_type": "semantic",
+                }
                 results.append(result)
+
+                if len(results) >= top_k:
+                    break
+
+            avg_score = (
+                sum(r["score"] for r in results) / len(results) if results else 0
+            )
 
             log_event(
                 "semantic_search_completed",
                 {
-                    "nodes_retrieved": len(nodes),
-                    "nodes_above_threshold": len(results),
-                    "nodes_below_threshold": nodes_below_threshold,
+                    "points_retrieved": len(search_results),
+                    "points_above_threshold": len(results),
+                    "points_below_threshold": nodes_below_threshold,
                     "threshold": similarity_threshold,
-                    "avg_score": SearchResultProcessor.calculate_avg_score(results),
+                    "avg_score": avg_score,
+                    "method": "direct_qdrant",
                 },
             )
 
@@ -378,7 +389,7 @@ class LlamaIndexSearchService(SearchService):
                     continue
 
                 text_preview = await BM25ResultEnricher.get_text_preview(
-                    self.doc_tracker, self.index, document_id, self._get_text_from_node
+                    self.doc_tracker, None, document_id, self._get_text_from_node
                 )
 
                 node_ids = (
@@ -415,14 +426,10 @@ class LlamaIndexSearchService(SearchService):
         """
         try:
             # Access Qdrant client through index
-            if not self.index or not hasattr(self.index, "_vector_store"):
+            if not self.qdrant_client:
                 return ""
 
-            vector_store = self.index._vector_store
-            if not hasattr(vector_store, "_client"):
-                return ""
-
-            qdrant_client = vector_store._client
+            qdrant_client = self.qdrant_client
 
             # Retrieve node from Qdrant
             from lifearchivist.storage.utils import QdrantNodeUtils
@@ -557,13 +564,6 @@ class LlamaIndexSearchService(SearchService):
                 },
             )
 
-    @track(
-        operation="retrieve_similar",
-        include_args=["top_k", "similarity_threshold"],
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
     async def retrieve_similar(
         self,
         query: str,

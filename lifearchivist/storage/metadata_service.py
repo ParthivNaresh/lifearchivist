@@ -107,16 +107,14 @@ class LlamaIndexMetadataService(MetadataService):
     updates, queries, and retrieval of document metadata.
     """
 
-    def __init__(self, index=None, doc_tracker=None, qdrant_client=None):
+    def __init__(self, doc_tracker=None, qdrant_client=None):
         """
         Initialize the metadata service.
 
         Args:
-            index: LlamaIndex VectorStoreIndex instance
             doc_tracker: Document tracker for metadata storage
-            qdrant_client: Qdrant client for direct queries (optional)
+            qdrant_client: Qdrant client for direct queries
         """
-        self.index = index
         self.doc_tracker = doc_tracker
         self.qdrant_client = qdrant_client
 
@@ -331,7 +329,7 @@ class LlamaIndexMetadataService(MetadataService):
         Uses Redis indexed queries for efficient O(k) filtering where k = matching documents.
         """
         try:
-            if not self.index or not self.doc_tracker:
+            if not self.doc_tracker:
                 return Success([])
 
             log_event(
@@ -602,9 +600,10 @@ class LlamaIndexMetadataService(MetadataService):
         including metadata, processing information, and storage details.
         """
         try:
-            if not self.index:
+            if not self.qdrant_client:
                 return internal_error(
-                    "Index not initialized", context={"document_id": document_id}
+                    "Qdrant client not initialized",
+                    context={"document_id": document_id},
                 )
 
             # Check if document exists
@@ -612,7 +611,7 @@ class LlamaIndexMetadataService(MetadataService):
                 document_id
             ):
                 return not_found_error(
-                    f"Document '{document_id}' not found in index",
+                    f"Document '{document_id}' not found",
                     context={"document_id": document_id},
                 )
 

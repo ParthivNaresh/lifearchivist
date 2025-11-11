@@ -11,16 +11,10 @@ consistent response formats across the API and UI layers.
 import logging
 from typing import Any, Dict, List, Optional
 
-from llama_index.core import (
-    Settings,
-    StorageContext,
-    VectorStoreIndex,
-)
+from llama_index.core import Settings
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.query_engine import BaseQueryEngine
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.ollama import Ollama
-from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
@@ -28,7 +22,6 @@ from lifearchivist.config import get_settings
 from lifearchivist.storage.bm25_index_service import BM25IndexService
 from lifearchivist.storage.document_service import LlamaIndexDocumentService
 from lifearchivist.storage.metadata_service import LlamaIndexMetadataService
-from lifearchivist.storage.query_service import LlamaIndexQueryService
 from lifearchivist.storage.redis_document_tracker import RedisDocumentTracker
 from lifearchivist.storage.search_service import LlamaIndexSearchService
 from lifearchivist.storage.utils import StorageConstants
@@ -62,14 +55,11 @@ class LlamaIndexQdrantService:
         self.settings = get_settings()
         self.database = database
         self.vault = vault
-        self.index: Optional[VectorStoreIndex] = None
-        self.query_engine: Optional[BaseQueryEngine] = None
 
         # Initialize services to None first
         self.search_service: Optional[LlamaIndexSearchService] = None
         self.metadata_service: Optional[LlamaIndexMetadataService] = None
         self.document_service: Optional[LlamaIndexDocumentService] = None
-        self.query_service: Optional[LlamaIndexQueryService] = None
         self.qdrant_client: Optional[QdrantClient] = None
 
         # Initialize Redis document tracker for production-grade scalability
@@ -149,23 +139,18 @@ class LlamaIndexQdrantService:
         try:
             self._setup_embeddings_and_llm()
             self._setup_qdrant()
-            self._setup_index()
-            self._setup_query_engine()
             self._setup_search_service()
             self._setup_metadata_service()
             self._setup_document_service()
-            self._setup_query_service()
 
             # Log final setup status
             log_event(
                 "llamaindex_setup_complete",
                 {
-                    "has_index": self.index is not None,
                     "has_doc_tracker": self.doc_tracker is not None,
                     "has_document_service": self.document_service is not None,
                     "has_metadata_service": self.metadata_service is not None,
                     "has_search_service": self.search_service is not None,
-                    "has_query_service": self.query_service is not None,
                     "tracker_initialized": self._initialized,
                     "tracker_init_deferred": "Call ensure_initialized() or use context manager",
                 },
@@ -179,43 +164,45 @@ class LlamaIndexQdrantService:
             # Don't raise, let individual operations fail gracefully
 
     def _setup_search_service(self):
-        """Initialize the search service with the index, BM25, and doc tracker."""
-        if self.index:
+        """Initialize the search service with Qdrant, BM25, and doc tracker."""
+        if self.qdrant_client and self.doc_tracker:
             self.search_service = LlamaIndexSearchService(
-                index=self.index,
                 bm25_service=self.bm25_service,
                 doc_tracker=self.doc_tracker,
+                qdrant_client=self.qdrant_client,
             )
             log_event(
                 "search_service_initialized",
                 {
-                    "has_index": True,
+                    "has_qdrant_client": True,
                     "has_bm25": self.bm25_service is not None,
-                    "has_doc_tracker": self.doc_tracker is not None,
+                    "has_doc_tracker": True,
                 },
             )
         else:
             self.search_service = None
             log_event(
                 "search_service_not_initialized",
-                {"reason": "no_index"},
+                {
+                    "reason": "missing_dependencies",
+                    "has_qdrant_client": self.qdrant_client is not None,
+                    "has_doc_tracker": self.doc_tracker is not None,
+                },
                 level=logging.WARNING,
             )
 
     def _setup_metadata_service(self):
-        """Initialize the metadata service with the index and tracker."""
-        if self.index is not None and self.doc_tracker is not None:
+        """Initialize the metadata service with Qdrant and tracker."""
+        if self.qdrant_client is not None and self.doc_tracker is not None:
             self.metadata_service = LlamaIndexMetadataService(
-                index=self.index,
                 doc_tracker=self.doc_tracker,
                 qdrant_client=self.qdrant_client,
             )
             log_event(
                 "metadata_service_initialized",
                 {
-                    "has_index": True,
+                    "has_qdrant_client": True,
                     "has_tracker": True,
-                    "has_qdrant_client": self.qdrant_client is not None,
                 },
             )
         else:
@@ -224,32 +211,17 @@ class LlamaIndexQdrantService:
                 "metadata_service_not_initialized",
                 {
                     "reason": "missing_dependencies",
-                    "has_index": self.index is not None,
+                    "has_qdrant_client": self.qdrant_client is not None,
                     "has_tracker": self.doc_tracker is not None,
                 },
                 level=logging.WARNING,
             )
 
     def _setup_document_service(self):
-        """Initialize the document service with all dependencies."""
+        """Initialize the document service with Qdrant, tracker, and metadata service."""
         try:
-            # Log current state for debugging
-            log_event(
-                "document_service_setup_attempt",
-                {
-                    "has_index": self.index is not None,
-                    "has_doc_tracker": self.doc_tracker is not None,
-                    "has_metadata_service": self.metadata_service is not None,
-                    "has_qdrant_client": hasattr(self, "qdrant_client")
-                    and self.qdrant_client is not None,
-                    "tracker_needs_init": getattr(self, "_tracker_needs_init", False),
-                },
-                level=logging.INFO,
-            )
-
-            if self.index is not None and self.doc_tracker is not None:
+            if self.qdrant_client is not None and self.doc_tracker is not None:
                 self.document_service = LlamaIndexDocumentService(
-                    index=self.index,
                     doc_tracker=self.doc_tracker,
                     metadata_service=self.metadata_service,
                     qdrant_client=self.qdrant_client,
@@ -259,10 +231,9 @@ class LlamaIndexQdrantService:
                 log_event(
                     "document_service_initialized",
                     {
-                        "has_index": True,
+                        "has_qdrant_client": True,
                         "has_tracker": True,
                         "has_metadata_service": self.metadata_service is not None,
-                        "has_qdrant_client": self.qdrant_client is not None,
                         "has_bm25_service": self.bm25_service is not None,
                     },
                 )
@@ -272,8 +243,8 @@ class LlamaIndexQdrantService:
                     "document_service_not_initialized",
                     {
                         "reason": "missing_dependencies",
-                        "index_exists": self.index is not None,
-                        "tracker_exists": self.doc_tracker is not None,
+                        "has_qdrant_client": self.qdrant_client is not None,
+                        "has_tracker": self.doc_tracker is not None,
                     },
                     level=logging.WARNING,
                 )
@@ -283,32 +254,6 @@ class LlamaIndexQdrantService:
                 "document_service_setup_error",
                 {"error": str(e), "error_type": type(e).__name__},
                 level=logging.ERROR,
-            )
-
-    def _setup_query_service(self):
-        """Initialize the query service with all dependencies."""
-        if self.index and self.query_engine:
-            self.query_service = LlamaIndexQueryService(
-                index=self.index,
-                query_engine=self.query_engine,
-                search_service=self.search_service,
-                metadata_service=self.metadata_service,
-            )
-            log_event(
-                "query_service_initialized",
-                {
-                    "has_index": True,
-                    "has_query_engine": True,
-                    "has_search_service": self.search_service is not None,
-                    "has_metadata_service": self.metadata_service is not None,
-                },
-            )
-        else:
-            self.query_service = None
-            log_event(
-                "query_service_not_initialized",
-                {"reason": "missing_dependencies"},
-                level=logging.WARNING,
             )
 
     @track(
@@ -407,68 +352,6 @@ class LlamaIndexQdrantService:
             )
             raise
 
-    @track(
-        operation="index_setup",
-        track_performance=True,
-        frequency="low_frequency",
-    )
-    def _setup_index(self):
-        """
-        Setup the vector store index with Qdrant.
-
-        Note: We only use Qdrant for storage. LlamaIndex internally creates
-        docstore/index_store but we don't rely on them for any operations.
-        All text retrieval is done directly from Qdrant.
-        """
-        try:
-            # Create Qdrant vector store
-            vector_store = QdrantVectorStore(
-                client=self.qdrant_client,
-                collection_name="lifearchivist",
-            )
-
-            # Create storage context with only vector store
-            # LlamaIndex will create in-memory docstore/index_store internally
-            storage_context = StorageContext.from_defaults(
-                vector_store=vector_store,
-            )
-
-            # Create index
-            self.index = VectorStoreIndex(
-                [],
-                storage_context=storage_context,
-                store_nodes_override=True,
-            )
-
-            log_event(
-                "index_initialized",
-                {
-                    "vector_store": "QdrantVectorStore",
-                    "storage_mode": "qdrant_only",
-                    "note": "Text retrieval uses Qdrant directly",
-                },
-            )
-
-        except Exception as e:
-            log_event(
-                "index_setup_failed",
-                {"error": str(e)},
-                level=logging.ERROR,
-            )
-            raise
-
-    def _setup_query_engine(self):
-        """Setup basic query engine with streaming support."""
-        if self.index:
-            self.query_engine = self.index.as_query_engine(
-                similarity_top_k=5,
-                streaming=True,  # Enable streaming for token-by-token responses
-            )
-            log_event(
-                "query_engine_created",
-                {"similarity_top_k": 5, "streaming": True},
-            )
-
     async def add_document(
         self,
         document_id: str,
@@ -499,7 +382,6 @@ class LlamaIndexQdrantService:
                 {
                     "document_id": document_id,
                     "reason": "no_document_service",
-                    "has_index": self.index is not None,
                     "has_tracker": self.doc_tracker is not None,
                 },
                 level=logging.ERROR,
@@ -508,7 +390,6 @@ class LlamaIndexQdrantService:
                 NOT_INITIALIZED_DOCUMENT_SERVICE,
                 context={
                     "document_id": document_id,
-                    "has_index": self.index is not None,
                     "has_tracker": self.doc_tracker is not None,
                 },
             )
@@ -553,91 +434,6 @@ class LlamaIndexQdrantService:
 
         # Fallback if metadata service not available
         return {}
-
-    async def query(
-        self,
-        question: str,
-        similarity_top_k: int = 5,
-        response_mode: str = "tree_summarize",
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Query the index using RAG.
-
-        Delegates to the query service for centralized Q&A operations.
-        """
-        if self.query_service:
-            res = await self.query_service.query(
-                question=question,
-                similarity_top_k=similarity_top_k,
-                response_mode=response_mode,
-                filters=filters,
-            )
-            if res.is_failure():
-                return {
-                    "answer": "",
-                    "sources": [],
-                    "method": "error",
-                    "error": True,
-                    "error_message": str(res.error),
-                }
-            return dict(res.value)
-
-        # Fallback if query service not available
-        log_event(
-            "query_skipped",
-            {"reason": "no_query_service"},
-            level=logging.ERROR,
-        )
-        return {
-            "answer": "Query service not available",
-            "sources": [],
-            "method": "error",
-            "error": True,
-        }
-
-    async def query_streaming(
-        self,
-        question: str,
-        similarity_top_k: int = 5,
-        response_mode: str = "tree_summarize",
-        filters: Optional[Dict[str, Any]] = None,
-    ):
-        """
-        Query the index using RAG with streaming response.
-
-        Delegates to the query service for centralized streaming Q&A operations.
-
-        Yields:
-            Dict events with type and data fields:
-            - intent_check: Query classification
-            - sources: Retrieved document chunks
-            - chunk: Individual tokens
-            - metadata: Final statistics
-            - error: Any errors
-        """
-        if self.query_service:
-            async for event in self.query_service.query_streaming(
-                question=question,
-                similarity_top_k=similarity_top_k,
-                response_mode=response_mode,
-                filters=filters,
-            ):
-                yield event
-        else:
-            # Fallback if query service not available
-            log_event(
-                "query_streaming_skipped",
-                {"reason": "no_query_service"},
-                level=logging.ERROR,
-            )
-            yield {
-                "type": "error",
-                "data": {
-                    "error": "Query service not available",
-                    "error_type": "ServiceUnavailable",
-                },
-            }
 
     async def get_document_count(self) -> Result[int, str]:
         """
@@ -708,14 +504,6 @@ class LlamaIndexQdrantService:
 
             if clear_result.is_failure():
                 return clear_result  # Propagate the failure
-
-            # Re-initialize all components
-            self._setup_index()
-            self._setup_query_engine()
-            self._setup_search_service()
-            self._setup_metadata_service()
-            self._setup_document_service()
-            self._setup_query_service()
 
             return clear_result
 
@@ -969,7 +757,7 @@ class LlamaIndexQdrantService:
         )
         if res.is_failure():
             return []
-        return list(res.value)
+        return list(res.unwrap())
 
     # Additional search methods that delegate to the search service
     async def semantic_search(
@@ -990,7 +778,7 @@ class LlamaIndexQdrantService:
         )
         if res.is_failure():
             return []
-        return list(res.value)
+        return list(res.unwrap())
 
     async def keyword_search(
         self,
@@ -1008,7 +796,7 @@ class LlamaIndexQdrantService:
         )
         if res.is_failure():
             return []
-        return list(res.value)
+        return list(res.unwrap())
 
     async def hybrid_search(
         self,
@@ -1028,7 +816,7 @@ class LlamaIndexQdrantService:
         )
         if res.is_failure():
             return []
-        return list(res.value)
+        return list(res.unwrap())
 
     async def cleanup(self) -> None:
         """

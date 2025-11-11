@@ -7,12 +7,11 @@ Bridges document retrieval with LLM generation for context-aware responses.
 import asyncio
 import logging
 import time
-from typing import TYPE_CHECKING, AsyncGenerator, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional, Tuple, cast
 
 from ..llm import LLMProviderManager
 from ..llm.base_provider import LLMMessage
 from ..storage.database import ConversationService, MessageService
-from ..storage.query_service import QueryService
 from ..utils.logging import log_event, track
 from ..utils.result import Failure, Result, Success
 from .prompts import PromptBuilder
@@ -41,7 +40,7 @@ class ConversationRAGService:
 
     def __init__(
         self,
-        query_service: QueryService,
+        search_service: Any,
         provider_manager: LLMProviderManager,
         conversation_service: ConversationService,
         message_service: MessageService,
@@ -51,13 +50,13 @@ class ConversationRAGService:
         Initialize RAG service with dependencies.
 
         Args:
-            query_service: Service for document retrieval
+            search_service: Service for document retrieval (SearchService)
             provider_manager: Manager for LLM providers
             conversation_service: Service for conversation management
             message_service: Service for message persistence
             activity_manager: Optional activity tracking
         """
-        self.query_service = query_service
+        self.search_service = search_service
         self.provider_manager = provider_manager
         self.conversation_service = conversation_service
         self.message_service = message_service
@@ -699,16 +698,21 @@ class ConversationRAGService:
             Result with (context_text, citations) or error
         """
         try:
-            context_result = await self.query_service.build_context(
-                question=query,
+            search_result = await self.search_service.semantic_search(
+                query=query,
                 top_k=config.similarity_top_k,
+                similarity_threshold=config.similarity_threshold,
                 filters=config.filters,
             )
 
-            if context_result.is_failure():
-                return cast(Result[Tuple[str, List[Citation]], str], context_result)
+            if search_result.is_failure():
+                return cast(Result[Tuple[str, List[Citation]], str], search_result)
 
-            context_text, source_chunks = context_result.unwrap()
+            source_chunks = search_result.unwrap()
+
+            context_text = "\n\n".join(
+                chunk.get("text", "") for chunk in source_chunks if chunk.get("text")
+            )
 
             log_event(
                 "rag_creating_citations",

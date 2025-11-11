@@ -19,7 +19,6 @@ from lifearchivist.tools.file_import.file_import_utils import (
     create_provenance_entry,
     create_success_response,
     is_text_extraction_supported,
-    should_extract_dates,
 )
 from lifearchivist.utils.logging import log_event, track
 
@@ -270,10 +269,6 @@ class FileImportTool(BaseTool):
             )
 
             await self._create_document(file_id, extracted_text, doc_metadata)
-
-            # Queue enrichment tasks instead of processing synchronously
-            if extracted_text and self.enrichment_queue:
-                await self._queue_enrichment_tasks(file_id, extracted_text)
 
             # Finalize document
             await self._finalize_document(file_id, file_path, vault_result)
@@ -780,50 +775,3 @@ class FileImportTool(BaseTool):
                 level=logging.WARNING,
             )
             return {}
-
-    @track(
-        operation="queue_enrichment_tasks",
-        include_args=["file_id"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
-    async def _queue_enrichment_tasks(self, file_id: str, text: str):
-        """Queue background enrichment tasks for the document."""
-        tasks_queued = []
-
-        # TODO: ENABLE OR REMOVE DATE EXTRACTION
-        enable_date_extraction = False
-
-        if enable_date_extraction and should_extract_dates(text):
-            success = await self.enrichment_queue.enqueue_task(
-                task_type="date_extraction",
-                document_id=file_id,
-                data={"text": text},
-                priority=0,
-            )
-
-            if success:
-                tasks_queued.append("date_extraction")
-
-                await self.llamaindex_service.update_document_metadata(
-                    file_id, {"enrichment_status": "queued"}, merge_mode="update"
-                )
-
-        if tasks_queued:
-            log_event(
-                "enrichment_tasks_queued",
-                {
-                    "file_id": file_id,
-                    "tasks": tasks_queued,
-                    "text_length": len(text),
-                },
-            )
-        else:
-            log_event(
-                "enrichment_tasks_skipped",
-                {
-                    "file_id": file_id,
-                    "reason": "no_suitable_content",
-                },
-                level=logging.DEBUG,
-            )

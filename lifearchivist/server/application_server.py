@@ -103,10 +103,6 @@ class ApplicationServer:
         self.tool_registry: Optional[ToolRegistry] = None
         self.folder_watcher = None  # Folder watching service
 
-        # Optional agents (only if enabled)
-        self.ingestion_agent = None
-        self.query_agent = None
-
         self._initialized = False
 
     async def initialize(self):
@@ -151,16 +147,11 @@ class ApplicationServer:
             # Phase 6: Initialize folder watcher
             await self._init_folder_watcher()
 
-            # Phase 7: Initialize agents (if enabled)
-            if self.settings.enable_agents:
-                self._init_agents()
-
             self._initialized = True
 
             log_event(
                 "application_server_initialized",
                 {
-                    "agents_enabled": self.settings.enable_agents,
                     "websockets_enabled": self.settings.enable_websockets,
                     "background_tasks_enabled": self.background_tasks is not None,
                 },
@@ -488,36 +479,6 @@ class ApplicationServer:
             )
             self.folder_watcher = None
 
-    def _init_agents(self):
-        """Initialize agents (if enabled)."""
-        try:
-            from ..agents.ingestion import IngestionAgent
-            from ..agents.query import QueryAgent
-
-            if not self.service_container or not self.tool_registry:
-                return
-
-            self.ingestion_agent = IngestionAgent(
-                database=None,
-                vault=self.service_container.vault,
-                tool_registry=self.tool_registry,
-            )
-
-            self.query_agent = QueryAgent(
-                llamaindex_service=self.service_container.llamaindex_service,
-                tool_registry=self.tool_registry,
-            )
-
-            log_event("agents_initialized", {"ingestion": True, "query": True})
-        except Exception as e:
-            log_event(
-                "agents_init_failed",
-                {"error": str(e)},
-                level=logging.WARNING,
-            )
-
-    # Tool execution
-
     async def execute_tool(
         self, tool_name: str, params: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -570,53 +531,6 @@ class ApplicationServer:
                 level=logging.ERROR,
             )
             return {"success": False, "error": f"Internal server error: {str(e)}"}
-
-    # Agent execution
-
-    async def query_agent_async(self, agent_name: str, query: str) -> Dict[str, Any]:
-        """
-        Query an agent asynchronously.
-
-        Args:
-            agent_name: Name of the agent ("query" or "ingestion")
-            query: Query string
-
-        Returns:
-            Dict with success status and result or error
-        """
-        try:
-            if not self.settings.enable_agents:
-                return {
-                    "success": False,
-                    "error": "Agents are disabled in current mode",
-                }
-
-            if agent_name == "query" and self.query_agent:
-                result = await self.query_agent.process(query)
-            elif agent_name == "ingestion" and self.ingestion_agent:
-                result = await self.ingestion_agent.process(query)
-            else:
-                available_agents = []
-                if self.query_agent:
-                    available_agents.append("query")
-                if self.ingestion_agent:
-                    available_agents.append("ingestion")
-                return {
-                    "success": False,
-                    "error": f"Agent '{agent_name}' not found. Available: {available_agents}",
-                }
-
-            return {"success": True, "result": result}
-
-        except Exception as e:
-            log_event(
-                "agent_query_error",
-                {"agent": agent_name, "error": str(e)},
-                level=logging.ERROR,
-            )
-            return {"success": False, "error": str(e)}
-
-    # Convenience properties for backward compatibility
 
     @property
     def vault(self):

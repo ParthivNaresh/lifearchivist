@@ -85,8 +85,8 @@ class VaultReconciliationService:
                     )
 
             result = {
-                "checked": len(all_doc_ids),
-                "cleaned": len(cleaned_documents),
+                "documents_checked": len(all_doc_ids),
+                "orphaned_removed": len(cleaned_documents),
                 "errors": len(errors),
                 "cleaned_documents": cleaned_documents,
                 "error_details": errors if errors else None,
@@ -122,8 +122,8 @@ class VaultReconciliationService:
                 level=logging.ERROR,
             )
             return {
-                "checked": 0,
-                "cleaned": 0,
+                "documents_checked": 0,
+                "orphaned_removed": 0,
                 "errors": 1,
                 "error": str(e),
                 "error_type": type(e).__name__,

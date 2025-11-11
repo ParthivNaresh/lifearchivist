@@ -88,9 +88,6 @@ class Settings(BaseSettings):
 
     # Feature Flags
     enable_ui: bool = Field(default=True, description="Enable UI and desktop app")
-    enable_agents: bool = Field(
-        default=False, description="Enable MCP agents and complex processing"
-    )
     enable_websockets: bool = Field(
         default=True, description="Enable WebSocket support"
     )

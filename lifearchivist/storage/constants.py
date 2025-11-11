@@ -1,5 +1,4 @@
 NOT_AVAILABLE_QDRANT_CLIENT = "Qdrant Client not available"
-NOT_AVAILABLE_BASE_QUERY_ENGINE = "Base Query Engine not available"
 
 NOT_INITIALIZED_BM25_INDEX_SERVICE = "BM25IndexService not initialized"
 NOT_INITIALIZED_TRACKER = "Document tracker not initialized"

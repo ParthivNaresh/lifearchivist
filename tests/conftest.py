@@ -50,13 +50,6 @@ def mock_server_no_search() -> MockApplicationServer:
 
 
 @pytest.fixture
-def mock_server_no_query() -> MockApplicationServer:
-    server = MockApplicationServer()
-    server.llamaindex_service.query_service = None
-    return server
-
-
-@pytest.fixture
 def mock_server_no_conversation_service() -> MockApplicationServer:
     server = MockApplicationServer()
     server.service_container.conversation_service = None
@@ -145,11 +138,6 @@ def client_no_services(mock_server_no_services: MockApplicationServer) -> TestCl
 @pytest.fixture
 def client_no_search(mock_server_no_search: MockApplicationServer) -> TestClient:
     return _create_test_client(mock_server_no_search)
-
-
-@pytest.fixture
-def client_no_query(mock_server_no_query: MockApplicationServer) -> TestClient:
-    return _create_test_client(mock_server_no_query)
 
 
 @pytest.fixture

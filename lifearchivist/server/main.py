@@ -97,7 +97,6 @@ def create_app() -> FastAPI:
             "mode": "api-only" if settings.api_only_mode else "full",
             "vault": server.vault is not None,
             "llamaindex": server.llamaindex_service is not None,
-            "agents_enabled": settings.enable_agents,
             "websockets_enabled": settings.enable_websockets,
             "ui_enabled": settings.enable_ui,
         }

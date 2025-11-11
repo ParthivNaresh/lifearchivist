@@ -74,8 +74,8 @@ async def ingest_document(request: IngestRequest) -> IngestResponse:
         result_data = result.get("result", {})
         return IngestResponse(
             success=True,
-            document_id=result_data.get("document_id"),
-            file_hash=result_data.get("file_hash"),
+            document_id=result_data.get("file_id") or result_data.get("document_id"),
+            file_hash=result_data.get("hash") or result_data.get("file_hash"),
             status=result_data.get("status"),
             metadata=result_data.get("metadata", {}),
             error=None,
