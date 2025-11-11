@@ -2,7 +2,11 @@
 Ask question endpoint.
 """
 
+from typing import List, Tuple
+
 from fastapi import APIRouter, status
+
+from lifearchivist.llm import LLMMessage
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -10,11 +14,52 @@ from ..shared.exceptions import (
     ServiceUnavailableError,
     ValidationError,
 )
-from .misc_models import Citation
 from .request_models import AskQuestionRequest
 from .response_models import AskQuestionResponse
+from .utils import (
+    build_context_from_sources,
+    calculate_average_score,
+    create_citations_from_sources,
+    create_rag_messages,
+)
 
 router = APIRouter()
+
+
+def _create_no_sources_response() -> AskQuestionResponse:
+    """Create response when no sources are found."""
+    return AskQuestionResponse(
+        answer="I couldn't find any relevant information in your documents to answer this question.",
+        confidence=0.0,
+        citations=[],
+        method="search_only",
+        context_length=0,
+        statistics={
+            "sources_found": 0,
+            "avg_score": 0.0,
+        },
+    )
+
+
+async def _generate_answer(
+    llm_provider_manager, messages: List[LLMMessage]
+) -> Tuple[str, int]:
+    """Generate answer using LLM and return accumulated text and tokens used."""
+    accumulated_text = ""
+    tokens_used = 0
+
+    async for chunk in llm_provider_manager.generate_stream(
+        messages=messages,
+        model=None,
+        provider_id=None,
+        temperature=0.7,
+        max_tokens=2000,
+    ):
+        accumulated_text += chunk.content
+        if chunk.is_final and chunk.tokens_used:
+            tokens_used = chunk.tokens_used
+
+    return accumulated_text, tokens_used
 
 
 @router.post(
@@ -185,34 +230,10 @@ async def ask_question(request: AskQuestionRequest) -> AskQuestionResponse:
         sources = search_result.value
 
         if not sources:
-            return AskQuestionResponse(
-                answer="I couldn't find any relevant information in your documents to answer this question.",
-                confidence=0.0,
-                citations=[],
-                method="search_only",
-                context_length=0,
-                statistics={
-                    "sources_found": 0,
-                    "avg_score": 0.0,
-                },
-            )
+            return _create_no_sources_response()
 
-        context = "\n\n".join(
-            f"[Source {i+1}]\n{source.get('text', '')}"
-            for i, source in enumerate(sources[: request.context_limit])
-        )
-
-        from lifearchivist.llm import LLMMessage
-
-        system_prompt = f"""You are a helpful AI assistant. Use the following context from the user's documents to answer their question. If the context doesn't contain relevant information, say so clearly.
-
-Context:
-{context}"""
-
-        messages = [
-            LLMMessage(role="system", content=system_prompt),
-            LLMMessage(role="user", content=request.question),
-        ]
+        context = build_context_from_sources(sources, request.context_limit)
+        messages = create_rag_messages(context, request.question)
 
         if (
             not server.service_container
@@ -220,21 +241,9 @@ Context:
         ):
             raise ServiceUnavailableError("LLM provider manager")
 
-        accumulated_text = ""
-        tokens_used = 0
-
-        async for (
-            chunk
-        ) in server.service_container.llm_provider_manager.generate_stream(
-            messages=messages,
-            model=None,
-            provider_id=None,
-            temperature=0.7,
-            max_tokens=2000,
-        ):
-            accumulated_text += chunk.content
-            if chunk.is_final and chunk.tokens_used:
-                tokens_used = chunk.tokens_used
+        accumulated_text, tokens_used = await _generate_answer(
+            server.service_container.llm_provider_manager, messages
+        )
 
         from lifearchivist.storage.utils import ConfidenceCalculator
 
@@ -244,17 +253,7 @@ Context:
             context=context,
         )
 
-        citations = []
-        for source in sources:
-            snippet = source.get("text", "")[:200] if source.get("text") else ""
-            citations.append(
-                Citation(
-                    doc_id=source.get("document_id", ""),
-                    title=source.get("metadata", {}).get("title", "Unknown Document"),
-                    snippet=snippet,
-                    score=source.get("score", 0.0),
-                )
-            )
+        citations = create_citations_from_sources(sources)
 
         return AskQuestionResponse(
             answer=accumulated_text,
@@ -265,11 +264,7 @@ Context:
             statistics={
                 "sources_found": len(sources),
                 "tokens_used": tokens_used,
-                "avg_score": (
-                    sum(s.get("score", 0) for s in sources) / len(sources)
-                    if sources
-                    else 0.0
-                ),
+                "avg_score": calculate_average_score(sources),
             },
         )
 

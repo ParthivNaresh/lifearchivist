@@ -50,7 +50,7 @@ def record_to_dict(record: asyncpg.Record) -> Dict[str, Any]:
         if isinstance(value, str) and value.startswith("{") and value.endswith("}"):
             try:
                 result[key] = json.loads(value)
-            except (json.JSONDecodeError, ValueError):
+            except ValueError:
                 pass
 
     return result
