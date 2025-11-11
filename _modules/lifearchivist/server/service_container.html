@@ -868,13 +868,13 @@
                     <span class="s2">&quot;Message service must be initialized before RAG service&quot;</span>
                 <span class="p">)</span>
 
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_service</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">search_service</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">ServiceInitializationError</span><span class="p">(</span>
-                    <span class="s2">&quot;LlamaIndex query service must be initialized before RAG service&quot;</span>
+                    <span class="s2">&quot;LlamaIndex search service must be initialized before RAG service&quot;</span>
                 <span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">rag_service</span> <span class="o">=</span> <span class="n">ConversationRAGService</span><span class="p">(</span>
-                <span class="n">query_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">query_service</span><span class="p">,</span>
+                <span class="n">search_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">search_service</span><span class="p">,</span>
                 <span class="n">provider_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">llm_provider_manager</span><span class="p">,</span>
                 <span class="n">conversation_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conversation_service</span><span class="p">,</span>
                 <span class="n">message_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">message_service</span><span class="p">,</span>

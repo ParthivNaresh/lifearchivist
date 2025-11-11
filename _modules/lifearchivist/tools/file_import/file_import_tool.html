@@ -182,7 +182,6 @@
     <span class="n">create_provenance_entry</span><span class="p">,</span>
     <span class="n">create_success_response</span><span class="p">,</span>
     <span class="n">is_text_extraction_supported</span><span class="p">,</span>
-    <span class="n">should_extract_dates</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
 
@@ -440,10 +439,6 @@
             <span class="p">)</span>
 
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_document</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">,</span> <span class="n">doc_metadata</span><span class="p">)</span>
-
-            <span class="c1"># Queue enrichment tasks instead of processing synchronously</span>
-            <span class="k">if</span> <span class="n">extracted_text</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue_enrichment_tasks</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">)</span>
 
             <span class="c1"># Finalize document</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finalize_document</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">vault_result</span><span class="p">)</span>
@@ -950,54 +945,7 @@
                 <span class="p">},</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="p">{}</span>
-
-    <span class="nd">@track</span><span class="p">(</span>
-        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;queue_enrichment_tasks&quot;</span><span class="p">,</span>
-        <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">],</span>
-        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_queue_enrichment_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Queue background enrichment tasks for the document.&quot;&quot;&quot;</span>
-        <span class="n">tasks_queued</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="c1"># TODO: ENABLE OR REMOVE DATE EXTRACTION</span>
-        <span class="n">enable_date_extraction</span> <span class="o">=</span> <span class="kc">False</span>
-
-        <span class="k">if</span> <span class="n">enable_date_extraction</span> <span class="ow">and</span> <span class="n">should_extract_dates</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
-            <span class="n">success</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">enrichment_queue</span><span class="o">.</span><span class="n">enqueue_task</span><span class="p">(</span>
-                <span class="n">task_type</span><span class="o">=</span><span class="s2">&quot;date_extraction&quot;</span><span class="p">,</span>
-                <span class="n">document_id</span><span class="o">=</span><span class="n">file_id</span><span class="p">,</span>
-                <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">},</span>
-                <span class="n">priority</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
-                <span class="n">tasks_queued</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;date_extraction&quot;</span><span class="p">)</span>
-
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="o">.</span><span class="n">update_document_metadata</span><span class="p">(</span>
-                    <span class="n">file_id</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;enrichment_status&quot;</span><span class="p">:</span> <span class="s2">&quot;queued&quot;</span><span class="p">},</span> <span class="n">merge_mode</span><span class="o">=</span><span class="s2">&quot;update&quot;</span>
-                <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">tasks_queued</span><span class="p">:</span>
-            <span class="n">log_event</span><span class="p">(</span>
-                <span class="s2">&quot;enrichment_tasks_queued&quot;</span><span class="p">,</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
-                    <span class="s2">&quot;tasks&quot;</span><span class="p">:</span> <span class="n">tasks_queued</span><span class="p">,</span>
-                    <span class="s2">&quot;text_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">),</span>
-                <span class="p">},</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">log_event</span><span class="p">(</span>
-                <span class="s2">&quot;enrichment_tasks_skipped&quot;</span><span class="p">,</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;file_id&quot;</span><span class="p">:</span> <span class="n">file_id</span><span class="p">,</span>
-                    <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="s2">&quot;no_suitable_content&quot;</span><span class="p">,</span>
-                <span class="p">},</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span></div>
+            <span class="k">return</span> <span class="p">{}</span></div>
 
 </pre></div>
 

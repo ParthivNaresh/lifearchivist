@@ -270,10 +270,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ToolRegistry</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">folder_watcher</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Folder watching service</span>
 
-        <span class="c1"># Optional agents (only if enabled)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span> <span class="o">=</span> <span class="kc">None</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
@@ -321,16 +317,11 @@
             <span class="c1"># Phase 6: Initialize folder watcher</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_folder_watcher</span><span class="p">()</span>
 
-            <span class="c1"># Phase 7: Initialize agents (if enabled)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_agents</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_init_agents</span><span class="p">()</span>
-
             <span class="bp">self</span><span class="o">.</span><span class="n">_initialized</span> <span class="o">=</span> <span class="kc">True</span>
 
             <span class="n">log_event</span><span class="p">(</span>
                 <span class="s2">&quot;application_server_initialized&quot;</span><span class="p">,</span>
                 <span class="p">{</span>
-                    <span class="s2">&quot;agents_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_agents</span><span class="p">,</span>
                     <span class="s2">&quot;websockets_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_websockets</span><span class="p">,</span>
                     <span class="s2">&quot;background_tasks_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_tasks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="p">},</span>
@@ -662,36 +653,6 @@
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">folder_watcher</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_init_agents</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize agents (if enabled).&quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">..agents.ingestion</span><span class="w"> </span><span class="kn">import</span> <span class="n">IngestionAgent</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">..agents.query</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueryAgent</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_container</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">:</span>
-                <span class="k">return</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span> <span class="o">=</span> <span class="n">IngestionAgent</span><span class="p">(</span>
-                <span class="n">database</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="n">vault</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span>
-                <span class="n">tool_registry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span> <span class="o">=</span> <span class="n">QueryAgent</span><span class="p">(</span>
-                <span class="n">llamaindex_service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service_container</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">,</span>
-                <span class="n">tool_registry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tool_registry</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;agents_initialized&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;ingestion&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">log_event</span><span class="p">(</span>
-                <span class="s2">&quot;agents_init_failed&quot;</span><span class="p">,</span>
-                <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-            <span class="p">)</span>
-
-    <span class="c1"># Tool execution</span>
-
 <div class="viewcode-block" id="ApplicationServer.execute_tool">
 <a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.execute_tool">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_tool</span><span class="p">(</span>
@@ -747,56 +708,6 @@
             <span class="p">)</span>
             <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Internal server error: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span></div>
 
-
-    <span class="c1"># Agent execution</span>
-
-<div class="viewcode-block" id="ApplicationServer.query_agent_async">
-<a class="viewcode-back" href="../../../api/lifearchivist.server.html#lifearchivist.server.ApplicationServer.query_agent_async">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_agent_async</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Query an agent asynchronously.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            agent_name: Name of the agent (&quot;query&quot; or &quot;ingestion&quot;)</span>
-<span class="sd">            query: Query string</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Dict with success status and result or error</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">enable_agents</span><span class="p">:</span>
-                <span class="k">return</span> <span class="p">{</span>
-                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Agents are disabled in current mode&quot;</span><span class="p">,</span>
-                <span class="p">}</span>
-
-            <span class="k">if</span> <span class="n">agent_name</span> <span class="o">==</span> <span class="s2">&quot;query&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span><span class="p">:</span>
-                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">agent_name</span> <span class="o">==</span> <span class="s2">&quot;ingestion&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span><span class="p">:</span>
-                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">available_agents</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">query_agent</span><span class="p">:</span>
-                    <span class="n">available_agents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ingestion_agent</span><span class="p">:</span>
-                    <span class="n">available_agents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;ingestion&quot;</span><span class="p">)</span>
-                <span class="k">return</span> <span class="p">{</span>
-                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Agent &#39;</span><span class="si">{</span><span class="n">agent_name</span><span class="si">}</span><span class="s2">&#39; not found. Available: </span><span class="si">{</span><span class="n">available_agents</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="p">}</span>
-
-            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">}</span>
-
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">log_event</span><span class="p">(</span>
-                <span class="s2">&quot;agent_query_error&quot;</span><span class="p">,</span>
-                <span class="p">{</span><span class="s2">&quot;agent&quot;</span><span class="p">:</span> <span class="n">agent_name</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)},</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}</span></div>
-
-
-    <span class="c1"># Convenience properties for backward compatibility</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">vault</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

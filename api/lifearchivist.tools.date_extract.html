@@ -171,122 +171,14 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
 </section>
-<section id="module-lifearchivist.tools.date_extract.date_extraction_tool">
-<span id="lifearchivist-tools-date-extract-date-extraction-tool-module"></span><h2>lifearchivist.tools.date_extract.date_extraction_tool module<a class="headerlink" href="#module-lifearchivist.tools.date_extract.date_extraction_tool" title="Link to this heading"></a></h2>
-<p>Content date extraction tool for extracting dates from document text using LLM.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.date_extract.date_extraction_tool.</span></span><span class="sig-name descname"><span class="pre">ContentDateExtractionTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LlamaIndexQdrantService</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTool</span></code></a></p>
-<p>Tool for extracting content dates from document text using LLM.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LlamaIndexQdrantService</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.__init__" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.extract_date_from_text">
-<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extract_date_from_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">document_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.extract_date_from_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.extract_date_from_text" title="Link to this definition"></a></dt>
-<dd><p>Extract dates from text using LLM analysis.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.store_extracted_date">
-<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">store_extracted_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">extracted_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.store_extracted_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.store_extracted_date" title="Link to this definition"></a></dt>
-<dd><p>Store extracted dates in LlamaIndex metadata.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.execute">
-<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.date_extraction_tool.ContentDateExtractionTool.execute" title="Link to this definition"></a></dt>
-<dd><p>Execute the content date extraction tool.</p>
-</dd></dl>
-
-</dd></dl>
-
+<section id="lifearchivist-tools-date-extract-date-extraction-tool-module">
+<h2>lifearchivist.tools.date_extract.date_extraction_tool module<a class="headerlink" href="#lifearchivist-tools-date-extract-date-extraction-tool-module" title="Link to this heading"></a></h2>
 </section>
-<section id="module-lifearchivist.tools.date_extract.date_extraction_utils">
-<span id="lifearchivist-tools-date-extract-date-extraction-utils-module"></span><h2>lifearchivist.tools.date_extract.date_extraction_utils module<a class="headerlink" href="#module-lifearchivist.tools.date_extract.date_extraction_utils" title="Link to this heading"></a></h2>
-<p>Date extraction utilities and constants for document date parsing.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.date_extraction_utils.create_date_extraction_prompt">
-<span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.date_extract.date_extraction_utils.</span></span><span class="sig-name descname"><span class="pre">create_date_extraction_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_utils.html#create_date_extraction_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.date_extraction_utils.create_date_extraction_prompt" title="Link to this definition"></a></dt>
-<dd><p>Create a comprehensive prompt for LLM-based date extraction.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>text</strong> – Document text content to analyze</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Formatted prompt for LLM date extraction</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.date_extraction_utils.parse_date_string">
-<span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.date_extract.date_extraction_utils.</span></span><span class="sig-name descname"><span class="pre">parse_date_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date_str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.14)"><span class="pre">datetime</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_utils.html#parse_date_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.date_extraction_utils.parse_date_string" title="Link to this definition"></a></dt>
-<dd><p>Parse various date string formats into datetime objects.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>date_str</strong> – Date string to parse</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Parsed datetime object or None if parsing fails</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.date_extraction_utils.truncate_text_for_llm">
-<span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.date_extract.date_extraction_utils.</span></span><span class="sig-name descname"><span class="pre">truncate_text_for_llm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_chars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">document_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_utils.html#truncate_text_for_llm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.date_extraction_utils.truncate_text_for_llm" title="Link to this definition"></a></dt>
-<dd><p>Truncate text to avoid LLM token limits while preserving beginning content.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>text</strong> – Text content to potentially truncate</p></li>
-<li><p><strong>max_chars</strong> – Maximum character limit</p></li>
-<li><p><strong>document_id</strong> – Optional document ID for logging</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Truncated text with ellipsis if needed</p>
-</dd>
-</dl>
-</dd></dl>
-
+<section id="lifearchivist-tools-date-extract-date-extraction-utils-module">
+<h2>lifearchivist.tools.date_extract.date_extraction_utils module<a class="headerlink" href="#lifearchivist-tools-date-extract-date-extraction-utils-module" title="Link to this heading"></a></h2>
 </section>
-<section id="module-lifearchivist.tools.date_extract">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lifearchivist.tools.date_extract" title="Link to this heading"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.ContentDateExtractionTool">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.date_extract.</span></span><span class="sig-name descname"><span class="pre">ContentDateExtractionTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LlamaIndexQdrantService</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.ContentDateExtractionTool" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTool</span></code></a></p>
-<p>Tool for extracting content dates from document text using LLM.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.ContentDateExtractionTool.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LlamaIndexQdrantService</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.ContentDateExtractionTool.__init__" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.ContentDateExtractionTool.execute">
-<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.ContentDateExtractionTool.execute" title="Link to this definition"></a></dt>
-<dd><p>Execute the content date extraction tool.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.ContentDateExtractionTool.extract_date_from_text">
-<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extract_date_from_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">document_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.extract_date_from_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.ContentDateExtractionTool.extract_date_from_text" title="Link to this definition"></a></dt>
-<dd><p>Extract dates from text using LLM analysis.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.date_extract.ContentDateExtractionTool.store_extracted_date">
-<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">store_extracted_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">extracted_date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/date_extract/date_extraction_tool.html#ContentDateExtractionTool.store_extracted_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.date_extract.ContentDateExtractionTool.store_extracted_date" title="Link to this definition"></a></dt>
-<dd><p>Store extracted dates in LlamaIndex metadata.</p>
-</dd></dl>
-
-</dd></dl>
-
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
 </section>
 </section>
 

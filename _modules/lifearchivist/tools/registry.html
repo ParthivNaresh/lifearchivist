@@ -167,14 +167,8 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.date_extract.date_extraction_tool</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">ContentDateExtractionTool</span><span class="p">,</span>
-<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.extract.extract_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractTextTool</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.file_import.file_import_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileImportTool</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.llamaindex.llamaindex_query_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">LlamaIndexQueryTool</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.ollama.ollama_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">OllamaTool</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.search.search_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">IndexSearchTool</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">track</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTool</span>
@@ -231,30 +225,6 @@
                 <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">ExtractTextTool</span><span class="p">,</span>
                 <span class="s2">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;vault&quot;</span><span class="p">],</span>
                 <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;vault&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">},</span>
-            <span class="p">},</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;ContentDateExtractionTool&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">ContentDateExtractionTool</span><span class="p">,</span>
-                <span class="s2">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;llamaindex_service&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;llamaindex_service&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">},</span>
-            <span class="p">},</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;OllamaTool&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">OllamaTool</span><span class="p">,</span>
-                <span class="s2">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">[],</span>
-                <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="p">{},</span>
-            <span class="p">},</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;IndexSearchTool&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">IndexSearchTool</span><span class="p">,</span>
-                <span class="s2">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;llamaindex_service&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;llamaindex_service&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">},</span>
-            <span class="p">},</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;LlamaIndexQueryTool&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="n">LlamaIndexQueryTool</span><span class="p">,</span>
-                <span class="s2">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;llamaindex_service&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;llamaindex_service&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">llamaindex_service</span><span class="p">},</span>
             <span class="p">},</span>
         <span class="p">]</span>
 

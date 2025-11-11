@@ -171,72 +171,11 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
 </section>
-<section id="module-lifearchivist.tools.search.search_tool">
-<span id="lifearchivist-tools-search-search-tool-module"></span><h2>lifearchivist.tools.search.search_tool module<a class="headerlink" href="#module-lifearchivist.tools.search.search_tool" title="Link to this heading"></a></h2>
-<p>Search tool for document retrieval using SearchService.</p>
-<p>This tool provides a high-level interface for document search operations,
-delegating the actual search logic to the SearchService for better
-separation of concerns and maintainability.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="lifearchivist.tools.search.search_tool.IndexSearchTool">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.search.search_tool.</span></span><span class="sig-name descname"><span class="pre">IndexSearchTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/search/search_tool.html#IndexSearchTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.search.search_tool.IndexSearchTool" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTool</span></code></a></p>
-<p>Tool for searching documents in the index.</p>
-<p>This tool acts as a bridge between the MCP server and the search service,
-providing a standardized interface for search operations while delegating
-the actual search logic to the appropriate service.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.search.search_tool.IndexSearchTool.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/search/search_tool.html#IndexSearchTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.search.search_tool.IndexSearchTool.__init__" title="Link to this definition"></a></dt>
-<dd><p>Initialize the search tool.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>llamaindex_service</strong> – The LlamaIndex service instance that contains
-the search service for performing searches.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.search.search_tool.IndexSearchTool.execute">
-<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/search/search_tool.html#IndexSearchTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.search.search_tool.IndexSearchTool.execute" title="Link to this definition"></a></dt>
-<dd><p>Execute document search.</p>
-</dd></dl>
-
-</dd></dl>
-
+<section id="lifearchivist-tools-search-search-tool-module">
+<h2>lifearchivist.tools.search.search_tool module<a class="headerlink" href="#lifearchivist-tools-search-search-tool-module" title="Link to this heading"></a></h2>
 </section>
-<section id="module-lifearchivist.tools.search">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-lifearchivist.tools.search" title="Link to this heading"></a></h2>
-<p>Search tools for document retrieval.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="lifearchivist.tools.search.IndexSearchTool">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lifearchivist.tools.search.</span></span><span class="sig-name descname"><span class="pre">IndexSearchTool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/search/search_tool.html#IndexSearchTool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.search.IndexSearchTool" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="lifearchivist.tools.html#lifearchivist.tools.base.BaseTool" title="lifearchivist.tools.base.BaseTool"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTool</span></code></a></p>
-<p>Tool for searching documents in the index.</p>
-<p>This tool acts as a bridge between the MCP server and the search service,
-providing a standardized interface for search operations while delegating
-the actual search logic to the appropriate service.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.search.IndexSearchTool.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llamaindex_service</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/lifearchivist/tools/search/search_tool.html#IndexSearchTool.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.search.IndexSearchTool.__init__" title="Link to this definition"></a></dt>
-<dd><p>Initialize the search tool.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>llamaindex_service</strong> – The LlamaIndex service instance that contains
-the search service for performing searches.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="lifearchivist.tools.search.IndexSearchTool.execute">
-<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/lifearchivist/tools/search/search_tool.html#IndexSearchTool.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.tools.search.IndexSearchTool.execute" title="Link to this definition"></a></dt>
-<dd><p>Execute document search.</p>
-</dd></dl>
-
-</dd></dl>
-
+<section id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
 </section>
 </section>
 

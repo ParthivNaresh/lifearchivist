@@ -228,22 +228,6 @@
 
 
 
-<div class="viewcode-block" id="should_extract_dates">
-<a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.should_extract_dates">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">should_extract_dates</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Determine if text is long enough for date extraction.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        text: Text content to evaluate</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        True if text should be processed for date extraction</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="n">MIN_TEXT_LENGTH_FOR_DATE_EXTRACTION</span></div>
-
-
-
 <div class="viewcode-block" id="get_platform_creation_date">
 <a class="viewcode-back" href="../../../../api/lifearchivist.tools.file_import.html#lifearchivist.tools.file_import.file_import_utils.get_platform_creation_date">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_platform_creation_date</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -382,7 +366,7 @@
         <span class="s2">&quot;word_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">if</span> <span class="n">text</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s2">&quot;text_length&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="k">if</span> <span class="n">text</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s2">&quot;has_content&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">text</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span>
-        <span class="s2">&quot;content_dates&quot;</span><span class="p">:</span> <span class="p">[],</span>  <span class="c1"># Will be populated by ContentDateExtractionTool</span>
+        <span class="s2">&quot;content_dates&quot;</span><span class="p">:</span> <span class="p">[],</span>
         <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[],</span>  <span class="c1"># Will be populated by TagTool</span>
         <span class="s2">&quot;provenance&quot;</span><span class="p">:</span> <span class="p">[</span>
             <span class="n">create_provenance_entry</span><span class="p">(</span>
