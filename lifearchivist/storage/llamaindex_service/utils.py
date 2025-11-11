@@ -143,17 +143,30 @@ class DocumentNeighborUtils:
         metadata_service: Any,
     ) -> Dict[str, Any]:
         """
-        Enrich neighbor with full metadata from Redis.
+        Enrich neighbor with full metadata from Redis and add required API fields.
 
         Args:
             neighbor: Neighbor dictionary to enrich
             metadata_service: Metadata service instance
 
         Returns:
-            Enriched neighbor dictionary
+            Enriched neighbor dictionary with title and similarity_score
         """
         neighbor_doc_id = neighbor.get("document_id")
-        if not neighbor_doc_id or not metadata_service:
+
+        if "score" in neighbor and "similarity_score" not in neighbor:
+            neighbor["similarity_score"] = neighbor["score"]
+
+        if not neighbor_doc_id or neighbor_doc_id == "unknown":
+            neighbor["title"] = "Unknown Document"
+            if "similarity_score" not in neighbor:
+                neighbor["similarity_score"] = 0.0
+            return neighbor
+
+        if not metadata_service:
+            neighbor["title"] = neighbor_doc_id
+            if "similarity_score" not in neighbor:
+                neighbor["similarity_score"] = neighbor.get("score", 0.0)
             return neighbor
 
         full_metadata_result = await metadata_service.get_full_document_metadata(
@@ -162,6 +175,8 @@ class DocumentNeighborUtils:
 
         if full_metadata_result.is_success():
             full_metadata = full_metadata_result.unwrap()
+
+            neighbor["title"] = full_metadata.get("title", neighbor_doc_id)
 
             if "metadata" not in neighbor:
                 neighbor["metadata"] = {}
@@ -176,6 +191,11 @@ class DocumentNeighborUtils:
             neighbor["metadata"]["primary_subtheme"] = classifications.get(
                 "primary_subtheme"
             )
+        else:
+            neighbor["title"] = neighbor_doc_id
+
+        if "similarity_score" not in neighbor:
+            neighbor["similarity_score"] = neighbor.get("score", 0.0)
 
         return neighbor
 

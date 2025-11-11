@@ -34,15 +34,26 @@ class DuplicateRecordError(DatabaseError):
 
 def record_to_dict(record: asyncpg.Record) -> Dict[str, Any]:
     """
-    Convert asyncpg Record to dictionary.
+    Convert asyncpg Record to dictionary with proper JSONB parsing.
 
     Args:
         record: Database record
 
     Returns:
-        Dictionary with column names as keys
+        Dictionary with column names as keys and JSONB fields parsed
     """
-    return dict(record)
+    import json
+
+    result = dict(record)
+
+    for key, value in result.items():
+        if isinstance(value, str) and value.startswith("{") and value.endswith("}"):
+            try:
+                result[key] = json.loads(value)
+            except ValueError:
+                pass
+
+    return result
 
 
 def records_to_list(records: List[asyncpg.Record]) -> List[Dict[str, Any]]:

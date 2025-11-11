@@ -234,8 +234,8 @@ class TestAskEndpoint:
         data = response.json()
         assert "detail" in data
 
-    def test_ask_no_query_service(self, client_no_query: TestClient):
-        response = client_no_query.post("/api/search/ask", json={"question": "test question"})
+    def test_ask_no_search_service(self, client_no_search: TestClient):
+        response = client_no_search.post("/api/search/ask", json={"question": "test question"})
         assert response.status_code == 503
 
     @pytest.mark.parametrize(

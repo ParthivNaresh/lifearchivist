@@ -59,19 +59,6 @@ def should_extract_embeddings(text: str) -> bool:
     return len(text.strip()) >= MIN_TEXT_LENGTH_FOR_EMBEDDINGS
 
 
-def should_extract_dates(text: str) -> bool:
-    """
-    Determine if text is long enough for date extraction.
-
-    Args:
-        text: Text content to evaluate
-
-    Returns:
-        True if text should be processed for date extraction
-    """
-    return len(text.strip()) >= MIN_TEXT_LENGTH_FOR_DATE_EXTRACTION
-
-
 def get_platform_creation_date(file_path: Path) -> Optional[str]:
     """
     Get file creation date using platform-specific methods.
@@ -202,7 +189,7 @@ def create_document_metadata(
         "word_count": len(text.split()) if text else 0,
         "text_length": len(text) if text else 0,
         "has_content": bool(text and len(text.strip()) > 0),
-        "content_dates": [],  # Will be populated by ContentDateExtractionTool
+        "content_dates": [],
         "tags": [],  # Will be populated by TagTool
         "provenance": [
             create_provenance_entry(

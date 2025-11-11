@@ -12,12 +12,9 @@ from fastapi import WebSocket
 from pydantic import ValidationError as PydanticValidationError
 
 from .websocket.constants import (
-    MESSAGE_TYPE_AGENT_QUERY,
     MESSAGE_TYPE_TOOL_EXECUTE,
 )
 from .websocket.message_models import (
-    AgentQueryMessage,
-    AgentResultMessage,
     ErrorMessage,
     ToolExecuteMessage,
     ToolResultMessage,
@@ -94,36 +91,6 @@ async def handle_tool_execute(
         )
 
 
-async def handle_agent_query(
-    websocket: WebSocket,
-    message: AgentQueryMessage,
-    server: Any,
-) -> None:
-    """
-    Handle agent query request.
-
-    Args:
-        websocket: WebSocket connection
-        message: Validated agent query message
-        server: Server instance with query_agent_async method
-    """
-    try:
-        result = await server.query_agent_async(message.agent, message.query)
-        response = AgentResultMessage(
-            id=message.id,
-            result=result,
-        )
-        await websocket.send_json(response.model_dump(exclude_none=True))
-    except Exception as e:
-        logger.error(f"Agent query error: {e}", exc_info=True)
-        await send_error(
-            websocket,
-            f"Agent query failed: {str(e)}",
-            type(e).__name__,
-            message.id,
-        )
-
-
 async def handle_unknown_message_type(
     websocket: WebSocket,
     message_type: Optional[str],
@@ -170,9 +137,6 @@ async def process_websocket_message(
         if message_type == MESSAGE_TYPE_TOOL_EXECUTE:
             tool_message = ToolExecuteMessage(**data)
             await handle_tool_execute(websocket, tool_message, server)
-        elif message_type == MESSAGE_TYPE_AGENT_QUERY:
-            agent_message = AgentQueryMessage(**data)
-            await handle_agent_query(websocket, agent_message, server)
         else:
             await handle_unknown_message_type(websocket, message_type, message_id)
     except PydanticValidationError as e:

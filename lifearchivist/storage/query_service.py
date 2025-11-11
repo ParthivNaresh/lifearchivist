@@ -9,9 +9,8 @@ All methods return Result types for explicit error handling.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from llama_index.core.base.response.schema import Response
 from llama_index.core.indices.base import BaseIndex
 from llama_index.core.query_engine import BaseQueryEngine
 
@@ -26,8 +25,6 @@ from lifearchivist.utils.result import (
     internal_error,
     service_unavailable,
 )
-
-from .constants import NOT_AVAILABLE_BASE_QUERY_ENGINE
 
 
 class QueryService(ABC):
@@ -117,46 +114,11 @@ class LlamaIndexQueryService(QueryService):
         Initialize the query service.
 
         Args:
-            index: LlamaIndex index instance
-            query_engine: Pre-configured query engine
             search_service: Search service for retrieval operations
             metadata_service: Metadata service for enrichment
         """
-        self.index = index
-        self.query_engine = query_engine
         self.search_service = search_service
         self.metadata_service = metadata_service
-
-        # Setup or validate query engine
-        self._setup_query_engine()
-
-    def _setup_query_engine(self):
-        """Setup or validate the query engine."""
-        if not self.query_engine and self.index:
-            # Create default query engine if not provided
-            self.query_engine = self.index.as_query_engine(
-                similarity_top_k=5,
-                response_mode="tree_summarize",
-            )
-            log_event(
-                "query_engine_created",
-                {
-                    "source": "query_service",
-                    "similarity_top_k": 5,
-                    "response_mode": "tree_summarize",
-                },
-            )
-        elif self.query_engine:
-            log_event(
-                "query_engine_provided",
-                {"source": "external"},
-            )
-        else:
-            log_event(
-                "query_engine_unavailable",
-                {"reason": "no_index_or_engine"},
-                level=logging.WARNING,
-            )
 
     def _is_document_query(self, question: str) -> bool:
         """
@@ -250,11 +212,6 @@ class LlamaIndexQueryService(QueryService):
         Returns:
             Success with response dict (answer, sources, metadata), or Failure with error
         """
-        if not self.query_engine:
-            return service_unavailable(
-                NOT_AVAILABLE_BASE_QUERY_ENGINE, context={"service": "query"}
-            )
-
         try:
             log_event(
                 "query_started",
@@ -293,10 +250,6 @@ class LlamaIndexQueryService(QueryService):
                     }
                 )
 
-            # Update query engine parameters
-            if hasattr(self.query_engine, "retriever"):
-                self.query_engine.retriever.similarity_top_k = similarity_top_k
-
             # Build context (retrieve relevant chunks) - returns Result now
             context_result = await self.build_context(
                 question=question,
@@ -313,15 +266,11 @@ class LlamaIndexQueryService(QueryService):
             context_tuple: Tuple[str, List[Dict[str, Any]]] = context_result.value
             context, source_chunks = context_tuple
 
-            # Generate response using query engine
-            response = self._generate_response(
+            # Generate response using direct LLM
+            answer = await self._generate_with_llm(
                 question=question,
                 context=context,
-                response_mode=response_mode,
             )
-
-            # Extract answer text
-            answer = self._extract_answer(response)
 
             # Format sources for API response
             formatted_sources = self._format_sources(source_chunks)
@@ -403,32 +352,27 @@ class LlamaIndexQueryService(QueryService):
         try:
             source_chunks: List[Dict[str, Any]] = []
 
-            if self.search_service:
-                retrieval_result = await ContextBuilder.retrieve_from_search_service(
-                    self.search_service, question, top_k, filters
-                )
-                retrieved_chunks, error_result = retrieval_result
-
-                if error_result:
-                    return error_result
-
-                if retrieved_chunks is not None:
-                    source_chunks = retrieved_chunks
-
-            elif self.query_engine and hasattr(self.query_engine, "retriever"):
-                source_chunks = ContextBuilder.retrieve_from_query_engine(
-                    self.query_engine, question, filters
-                )
-            else:
+            if not self.search_service:
                 log_event(
                     "context_retrieval_failed",
-                    {"reason": "no_retrieval_method"},
+                    {"reason": "no_search_service"},
                     level=logging.WARNING,
                 )
                 return service_unavailable(
-                    "No retrieval method available",
+                    "Search service not available",
                     context={"service": "context_building"},
                 )
+
+            retrieval_result = await ContextBuilder.retrieve_from_search_service(
+                self.search_service, question, top_k, filters
+            )
+            retrieved_chunks, error_result = retrieval_result
+
+            if error_result:
+                return error_result
+
+            if retrieved_chunks is not None:
+                source_chunks = retrieved_chunks
 
             enriched_chunks = await ContextBuilder.enrich_chunks_metadata(
                 source_chunks, self.metadata_service
@@ -507,41 +451,61 @@ class LlamaIndexQueryService(QueryService):
 
         return response
 
-    def _generate_response(
+    async def _generate_with_llm(
         self,
         question: str,
         context: str,
-        response_mode: str,
-    ) -> Any:
+    ) -> str:
         """
-        Generate a response using the query engine.
+        Generate a response using direct LLM calls.
 
-        This method handles the actual LLM call through LlamaIndex.
+        This method bypasses the query engine and uses Settings.llm directly,
+        providing the retrieved context explicitly in the prompt.
+
+        Args:
+            question: The user's question
+            context: Retrieved context from documents
+
+        Returns:
+            Generated answer text
         """
+        from llama_index.core import Settings
+
         try:
-            # If we have context, we could potentially inject it
-            # For now, let the query engine handle its own retrieval
-            engine = self.query_engine
-            if engine is None:
-                raise RuntimeError(NOT_AVAILABLE_BASE_QUERY_ENGINE)
-            response = engine.query(question)
+            if not context or not context.strip():
+                prompt = f"""You are a helpful AI assistant. Answer the following question:
 
-            # Log the generation details
+Question: {question}
+
+Answer: I don't have any relevant documents to answer this question. Please provide more context or ask about documents in your archive."""
+            else:
+                prompt = f"""You are a helpful AI assistant. Use the following context from the user's documents to answer their question. If the context doesn't contain relevant information, say so.
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""
+
+            response = await Settings.llm.acomplete(prompt)
+            answer = str(response.text) if hasattr(response, "text") else str(response)
+
             log_event(
-                "response_generated",
+                "llm_response_generated",
                 {
-                    "response_mode": response_mode,
-                    "has_response": bool(response),
-                    "response_length": len(str(getattr(response, "response", ""))),
+                    "answer_length": len(answer),
+                    "context_length": len(context),
+                    "method": "direct_llm",
                 },
                 level=logging.DEBUG,
             )
 
-            return response
+            return answer
 
         except Exception as e:
             log_event(
-                "response_generation_failed",
+                "llm_generation_failed",
                 {
                     "error_type": type(e).__name__,
                     "error_message": str(e),
@@ -549,11 +513,6 @@ class LlamaIndexQueryService(QueryService):
                 level=logging.ERROR,
             )
             raise
-
-    def _extract_answer(self, response: Response) -> str:
-        """Extract the answer text from a LlamaIndex response."""
-        content = getattr(response, "response", "")
-        return str(content) if content is not None else ""
 
     def _format_sources(
         self, source_chunks: List[Dict[str, Any]]
@@ -581,317 +540,3 @@ class LlamaIndexQueryService(QueryService):
 
     # Confidence calculation and context building now use shared utilities
     # Removed _combine_chunks_to_context and _calculate_confidence methods
-
-    async def _enrich_source_metadata(
-        self, source_chunks: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
-        """
-        Enrich source chunks with full metadata from metadata service.
-
-        Adds additional metadata like themes, dates, etc.
-        """
-        if not self.metadata_service:
-            return source_chunks
-
-        enriched_chunks = []
-        for chunk in source_chunks:
-            enriched_chunk = chunk.copy()
-            document_id = chunk.get("document_id")
-
-            if document_id and document_id != "unknown":
-                try:
-                    # Get full metadata for the document
-                    meta_result = (
-                        await self.metadata_service.get_full_document_metadata(
-                            document_id
-                        )
-                    )
-
-                    if not meta_result.is_failure():
-                        full_metadata = meta_result.unwrap()
-                        # Merge with existing metadata (chunk metadata takes precedence)
-                        enriched_metadata = {
-                            **full_metadata,
-                            **chunk.get("metadata", {}),
-                        }
-                        enriched_chunk["metadata"] = enriched_metadata
-
-                        # Add theme info to top level for easier access
-                        if "theme" in enriched_metadata:
-                            enriched_chunk["theme"] = enriched_metadata["theme"]
-
-                except Exception as e:
-                    log_event(
-                        "metadata_enrichment_failed",
-                        {
-                            "document_id": document_id,
-                            "error": str(e),
-                        },
-                        level=logging.DEBUG,
-                    )
-
-            enriched_chunks.append(enriched_chunk)
-
-        return enriched_chunks
-
-    # Filter matching now uses shared utility
-    # Removed _matches_filters method - using MetadataFilterUtils.matches_filters instead
-
-    async def query_streaming(
-        self,
-        question: str,
-        similarity_top_k: int = 5,
-        response_mode: str = "tree_summarize",
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> AsyncGenerator[Dict[str, Any], None]:
-        """
-        Execute a query with streaming response.
-
-        Yields events as they occur:
-        1. intent_check: Query classification result
-        2. sources: Retrieved document chunks
-        3. chunk: Individual tokens from LLM
-        4. metadata: Final statistics and confidence
-        5. error: Any errors that occur
-
-        Args:
-            question: The user's question
-            similarity_top_k: Number of similar chunks to retrieve
-            response_mode: Response synthesis mode
-            filters: Optional metadata filters
-
-        Yields:
-            Dict events with type and data fields
-        """
-        if not self.query_engine:
-            yield {
-                "type": "error",
-                "data": {
-                    "error": NOT_AVAILABLE_BASE_QUERY_ENGINE,
-                    "error_type": "ServiceUnavailable",
-                },
-            }
-            return
-
-        try:
-            log_event(
-                "streaming_query_started",
-                {
-                    "question_length": len(question),
-                    "question_preview": question[:100],
-                    "similarity_top_k": similarity_top_k,
-                    "response_mode": response_mode,
-                    "has_filters": bool(filters),
-                },
-            )
-
-            # Check if this is a document query
-            if not self._is_document_query(question):
-                log_event(
-                    "streaming_query_classified_as_chitchat",
-                    {"question": question[:100]},
-                )
-
-                # Yield intent classification
-                yield {
-                    "type": "intent_check",
-                    "data": {"is_document_query": False},
-                }
-
-                # Stream friendly response character by character for UX
-                friendly_response = "Hello! I'm here to help you find information in your documents. Ask me questions about your files, and I'll search through them to find answers."
-
-                for char in friendly_response:
-                    yield {"type": "chunk", "data": char}
-
-                # Yield completion metadata
-                yield {
-                    "type": "metadata",
-                    "data": {
-                        "confidence_score": 1.0,
-                        "method": "direct_response",
-                        "num_sources": 0,
-                        "answer_length": len(friendly_response),
-                    },
-                }
-                return
-
-            # Yield intent classification
-            yield {
-                "type": "intent_check",
-                "data": {"is_document_query": True},
-            }
-
-            # Build context (retrieve relevant chunks)
-            context_result = await self.build_context(
-                question=question,
-                top_k=similarity_top_k,
-                filters=filters,
-            )
-
-            if context_result.is_failure():
-                yield {
-                    "type": "error",
-                    "data": {
-                        "error": str(context_result.error),
-                        "error_type": "ContextBuildingError",
-                    },
-                }
-                return
-
-            context_tuple: Tuple[str, List[Dict[str, Any]]] = context_result.value
-            context, source_chunks = context_tuple
-
-            # Yield sources immediately
-            formatted_sources = self._format_sources(source_chunks)
-            yield {
-                "type": "sources",
-                "data": formatted_sources,
-            }
-
-            # Stream LLM response
-            accumulated_text = ""
-            async for chunk in self._generate_response_streaming(
-                question=question,
-                context=context,
-                response_mode=response_mode,
-            ):
-                accumulated_text += chunk
-                yield {"type": "chunk", "data": chunk}
-
-            # Calculate final metadata
-            confidence_score = ConfidenceCalculator.calculate_confidence(
-                answer=accumulated_text,
-                sources=formatted_sources,
-                context=context,
-            )
-
-            # Yield final metadata
-            yield {
-                "type": "metadata",
-                "data": {
-                    "confidence_score": confidence_score,
-                    "response_mode": response_mode,
-                    "num_sources": len(formatted_sources),
-                    "context_length": len(context),
-                    "answer_length": len(accumulated_text),
-                    "unique_documents": len(
-                        {s.get("document_id", "") for s in formatted_sources}
-                    ),
-                    "avg_relevance_score": (
-                        sum(s.get("score", 0) for s in formatted_sources)
-                        / len(formatted_sources)
-                        if formatted_sources
-                        else 0
-                    ),
-                },
-            }
-
-            log_event(
-                "streaming_query_completed",
-                {
-                    "answer_length": len(accumulated_text),
-                    "num_sources": len(formatted_sources),
-                    "confidence_score": confidence_score,
-                },
-            )
-
-        except Exception as e:
-            log_event(
-                "streaming_query_failed",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                    "question_preview": question[:100],
-                },
-                level=logging.ERROR,
-            )
-            yield {
-                "type": "error",
-                "data": {
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                },
-            }
-
-    async def _generate_response_streaming(
-        self,
-        question: str,
-        context: str,
-        response_mode: str,
-    ) -> AsyncGenerator[str, None]:
-        """
-        Generate a streaming response using the query engine.
-
-        This method handles streaming LLM calls through LlamaIndex.
-        LlamaIndex supports streaming via the streaming_response property.
-
-        Args:
-            question: The user's question
-            context: Retrieved context
-            response_mode: Response synthesis mode
-
-        Yields:
-            Individual text chunks/tokens from the LLM
-        """
-        try:
-            engine = self.query_engine
-            if engine is None:
-                raise RuntimeError(NOT_AVAILABLE_BASE_QUERY_ENGINE)
-
-            # Execute query (LlamaIndex handles streaming internally)
-            response = engine.query(question)
-
-            # Check if response supports streaming
-            if hasattr(response, "response_gen"):
-                # Stream tokens as they arrive
-                log_event(
-                    "streaming_response_started",
-                    {"response_mode": response_mode},
-                    level=logging.DEBUG,
-                )
-
-                token_count = 0
-                # Check if it's an async generator
-                import inspect
-                from typing import AsyncGenerator, Generator, cast
-
-                response_gen = response.response_gen
-                if inspect.isasyncgen(response_gen):
-                    # Type narrow to AsyncGenerator
-                    async_gen = cast(AsyncGenerator[str, None], response_gen)
-                    async for token in async_gen:
-                        yield str(token)
-                        token_count += 1
-                else:
-                    # Type narrow to sync Generator
-                    sync_gen = cast(Generator[str, None, None], response_gen)
-                    for token in sync_gen:
-                        yield str(token)
-                        token_count += 1
-
-                log_event(
-                    "streaming_response_completed",
-                    {"token_count": token_count},
-                    level=logging.DEBUG,
-                )
-
-            else:
-                # Fallback: yield entire response at once
-                log_event(
-                    "streaming_fallback_to_complete",
-                    {"reason": "no_response_gen"},
-                    level=logging.WARNING,
-                )
-                yield str(getattr(response, "response", ""))
-
-        except Exception as e:
-            log_event(
-                "streaming_response_generation_failed",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
-                level=logging.ERROR,
-            )
-            raise

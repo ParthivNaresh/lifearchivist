@@ -26,7 +26,7 @@ from lifearchivist.utils.result import (
     validation_error,
 )
 
-from .constants import NOT_INITIALIZED_INDEX, NOT_INITIALIZED_TRACKER
+from .constants import NOT_INITIALIZED_TRACKER
 
 
 class DocumentService(ABC):
@@ -124,7 +124,6 @@ class LlamaIndexDocumentService(DocumentService):
 
     def __init__(
         self,
-        index=None,
         doc_tracker=None,
         metadata_service=None,
         qdrant_client=None,
@@ -135,14 +134,12 @@ class LlamaIndexDocumentService(DocumentService):
         Initialize the document service.
 
         Args:
-            index: LlamaIndex VectorStoreIndex instance
             doc_tracker: Document tracker for node management
             metadata_service: Metadata service for metadata operations
             qdrant_client: Qdrant client for vector operations
             settings: Application settings
             bm25_service: BM25 index service for keyword search
         """
-        self.index = index
         self.doc_tracker = doc_tracker
         self.metadata_service = metadata_service
         self.qdrant_client = qdrant_client
@@ -162,14 +159,14 @@ class LlamaIndexDocumentService(DocumentService):
         Returns:
             Error Result if validation fails, None if valid
         """
-        if not self.index:
+        if not self.qdrant_client:
             log_event(
                 "document_add_failed",
-                {"document_id": document_id, "reason": "no_index"},
+                {"document_id": document_id, "reason": "no_qdrant_client"},
                 level=logging.ERROR,
             )
             return internal_error(
-                NOT_INITIALIZED_INDEX,
+                "Qdrant client not initialized",
                 context={"document_id": document_id, "service": "document_service"},
             )
 
@@ -380,11 +377,17 @@ class LlamaIndexDocumentService(DocumentService):
         """
         Insert document into index and track created nodes.
 
+        This method bypasses LlamaIndex's VectorStoreIndex to avoid creating
+        in-memory SimpleDocumentStore and SimpleIndexStore. Instead, it:
+        1. Chunks text using LlamaIndex's SentenceSplitter
+        2. Generates embeddings using LlamaIndex's HuggingFaceEmbedding
+        3. Stores directly in Qdrant with proper payload structure
+        4. Tracks node IDs in Redis
+
         Returns:
             Success with list of created node IDs, or Failure with error details
         """
         try:
-            # Log before insert for debugging
             log_event(
                 "document_insert_attempt",
                 {
@@ -396,64 +399,78 @@ class LlamaIndexDocumentService(DocumentService):
                 level=logging.DEBUG,
             )
 
-            # Check if content is empty
             if not content or not content.strip():
                 return validation_error(
                     "Document content is empty or whitespace only",
                     context={"document_id": document_id},
                 )
 
-            # Insert document into index
-            self.index.insert(document)
+            from llama_index.core import Settings
+            from qdrant_client.models import PointStruct
 
-            # Log successful insert
+            chunks = Settings.node_parser.get_nodes_from_documents([document])
+
+            if not chunks:
+                return internal_error(
+                    "No chunks created from document",
+                    context={"document_id": document_id},
+                )
+
+            texts_to_embed = [chunk.get_content() for chunk in chunks]
+            embeddings = Settings.embed_model.get_text_embedding_batch(texts_to_embed)
+
+            for chunk, embedding in zip(chunks, embeddings, strict=False):
+                chunk.embedding = embedding
+
+            points = []
+            for chunk in chunks:
+                payload = {
+                    "document_id": document_id,
+                    **document.metadata,
+                    "_node_content": chunk.json(),
+                    "_node_type": chunk.class_name(),
+                    "doc_id": document_id,
+                    "ref_doc_id": document_id,
+                }
+
+                embedding = chunk.embedding if chunk.embedding is not None else []
+
+                point = PointStruct(
+                    id=chunk.node_id,
+                    vector=embedding,
+                    payload=payload,
+                )
+                points.append(point)
+
+            BATCH_SIZE = 100
+            for i in range(0, len(points), BATCH_SIZE):
+                batch = points[i : i + BATCH_SIZE]
+                self.qdrant_client.upsert(
+                    collection_name="lifearchivist",
+                    points=batch,
+                    wait=True,
+                )
+
+            node_ids = [chunk.node_id for chunk in chunks]
+
             log_event(
                 "document_insert_success",
                 {
                     "document_id": document_id,
                     "content_length": len(content),
-                },
-                level=logging.DEBUG,
-            )
-
-            # Track which nodes belong to this document
-            doc_nodes: List[str] = self._find_document_nodes(document_id)
-
-            if not doc_nodes:
-                log_event(
-                    "node_tracking_warning",
-                    {
-                        "document_id": document_id,
-                        "reason": "no_nodes_found_after_insert",
-                    },
-                    level=logging.WARNING,
-                )
-                return internal_error(
-                    "Document insert succeeded but no nodes were created",
-                    context={
-                        "document_id": document_id,
-                        "reason": "no_nodes_found_after_insert",
-                    },
-                )
-
-            # Update tracker with the node IDs
-            log_event(
-                "tracker_update_attempt",
-                {
-                    "document_id": document_id,
-                    "node_count": len(doc_nodes),
-                    "has_tracker": self.doc_tracker is not None,
+                    "chunks_created": len(node_ids),
+                    "method": "direct_qdrant",
                 },
                 level=logging.DEBUG,
             )
 
             if self.doc_tracker is not None:
-                await self.doc_tracker.add_document(document_id, doc_nodes)
+                await self.doc_tracker.add_document(document_id, node_ids)
                 log_event(
                     "tracker_updated",
                     {
                         "document_id": document_id,
-                        "node_count": len(doc_nodes),
+                        "node_count": len(node_ids),
                     },
                     level=logging.DEBUG,
                 )
@@ -464,7 +481,7 @@ class LlamaIndexDocumentService(DocumentService):
                     level=logging.WARNING,
                 )
 
-            return Success(doc_nodes)
+            return Success(node_ids)
 
         except Exception as e:
             log_event(
@@ -944,15 +961,15 @@ class LlamaIndexDocumentService(DocumentService):
                 - has_more: Whether more chunks are available
             Or Failure with error details
         """
-        # Validate index availability
-        if not self.index:
+        # Validate qdrant_client availability
+        if not self.qdrant_client:
             log_event(
                 "chunks_retrieval_skipped",
-                {"document_id": document_id, "reason": "no_index"},
+                {"document_id": document_id, "reason": "no_qdrant_client"},
                 level=logging.DEBUG,
             )
             return internal_error(
-                NOT_INITIALIZED_INDEX,
+                "Qdrant client not initialized",
                 context={"document_id": document_id, "service": "document_service"},
             )
 

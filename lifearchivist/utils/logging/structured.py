@@ -303,21 +303,6 @@ def create_development_formatter() -> logging.Formatter:
                 mime_type = data.get("mime_type", "unknown")
                 return f"{mime_type} supported"
 
-            # Date extraction events
-            elif event == "date_extraction_completed":
-                dates_found = data.get("dates_found", 0)
-                if dates_found > 0:
-                    extracted_date = data.get("extracted_date", "unknown")
-                    return f"{dates_found} dates found: {extracted_date}"
-                else:
-                    return "No dates found"
-            elif event == "date_extraction_skipped":
-                reason = data.get("reason", "unknown")
-                return f"skipped ({reason})"
-            elif event == "date_extraction_started":
-                word_count = data.get("word_count", 0)
-                return f"{word_count} words to analyze"
-
             # LLM debugging events
             elif event == "llm_prompt_created":
                 text_length = data.get("text_length", 0)

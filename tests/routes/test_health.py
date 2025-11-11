@@ -15,7 +15,6 @@ class TestHealthEndpoint:
         assert "mode" in data
         assert "vault" in data
         assert "llamaindex" in data
-        assert "agents_enabled" in data
         assert "websockets_enabled" in data
         assert "ui_enabled" in data
 
@@ -32,7 +31,6 @@ class TestHealthEndpoint:
 
         assert isinstance(data["vault"], bool)
         assert isinstance(data["llamaindex"], bool)
-        assert isinstance(data["agents_enabled"], bool)
         assert isinstance(data["websockets_enabled"], bool)
         assert isinstance(data["ui_enabled"], bool)
 

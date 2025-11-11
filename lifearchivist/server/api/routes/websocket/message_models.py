@@ -30,25 +30,6 @@ class ToolExecuteMessage(BaseModel):
         }
 
 
-class AgentQueryMessage(BaseModel):
-    """Agent query request message."""
-
-    type: Literal["agent_query"] = Field(..., description=MESSAGE_TYPE_DESCRIPTION)
-    id: Optional[str] = Field(None, description=MESSAGE_TYPE_CORRELATION)
-    agent: str = Field(..., description="Agent name")
-    query: str = Field(..., description="Query text")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "type": "agent_query",
-                "id": "msg_124",
-                "agent": "query_agent",
-                "query": "What documents do I have about AI?",
-            }
-        }
-
-
 class ToolResultMessage(BaseModel):
     """Tool execution result message."""
 
@@ -64,25 +45,6 @@ class ToolResultMessage(BaseModel):
                 "type": "tool_result",
                 "id": "msg_123",
                 "result": {"success": True, "document_id": "doc_123"},
-            }
-        }
-
-
-class AgentResultMessage(BaseModel):
-    """Agent query result message."""
-
-    type: Literal["agent_result"] = Field(
-        default="agent_result", description=MESSAGE_TYPE_DESCRIPTION
-    )
-    id: Optional[str] = Field(None, description=MESSAGE_TYPE_CORRELATION)
-    result: Dict[str, Any] = Field(..., description="Agent query result")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "type": "agent_result",
-                "id": "msg_124",
-                "result": {"answer": "You have 5 documents about AI"},
             }
         }
 
@@ -108,5 +70,5 @@ class ErrorMessage(BaseModel):
         }
 
 
-IncomingMessage = Union[ToolExecuteMessage, AgentQueryMessage]
-OutgoingMessage = Union[ToolResultMessage, AgentResultMessage, ErrorMessage]
+IncomingMessage = Union[ToolExecuteMessage]
+OutgoingMessage = Union[ToolResultMessage, ErrorMessage]

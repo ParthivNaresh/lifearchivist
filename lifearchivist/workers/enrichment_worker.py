@@ -6,17 +6,12 @@ import asyncio
 import logging
 import signal
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from lifearchivist.config import get_settings
 from lifearchivist.server.enrichment_queue import EnrichmentQueue
 from lifearchivist.storage.llamaindex_service import LlamaIndexService
 from lifearchivist.storage.vault.vault import Vault
-from lifearchivist.tools.date_extract.date_extraction_utils import (
-    create_date_extraction_prompt,
-    truncate_text_for_llm,
-)
-from lifearchivist.tools.ollama.ollama_tool import OllamaTool
 from lifearchivist.utils.logging import log_event, track
 
 
@@ -28,7 +23,6 @@ class EnrichmentWorker:
         self.queue = EnrichmentQueue(redis_url=self.settings.redis_url)
         self.vault = vault
         self.llamaindex_service = llamaindex_service
-        self.ollama_tool: Optional[OllamaTool] = None
         self.running = False
         self.shutdown_event = asyncio.Event()
         self.tasks_processed = 0
@@ -50,8 +44,6 @@ class EnrichmentWorker:
         if not self.llamaindex_service:
             self.llamaindex_service = LlamaIndexService(vault=self.vault)
             await self.llamaindex_service.ensure_initialized()
-
-        self.ollama_tool = OllamaTool()
 
         self._setup_signal_handlers()
 
@@ -146,9 +138,7 @@ class EnrichmentWorker:
         )
 
         try:
-            if task_type == "date_extraction":
-                await self._process_date_extraction(task)
-            elif task_type == "auto_tagging":
+            if task_type == "auto_tagging":
                 await self._process_auto_tagging(task)
             else:
                 log_event(
@@ -190,95 +180,6 @@ class EnrichmentWorker:
             )
             await self.queue.requeue_with_retry(task)
             self.tasks_failed += 1
-
-    @track(
-        operation="process_date_extraction",
-        include_args=["document_id"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
-    async def _process_date_extraction(self, task: Dict[str, Any]):
-        """Process date extraction for a document."""
-        document_id = task.get("document_id")
-        data = task.get("data", {})
-        text = data.get("text", "")
-
-        if not text:
-            log_event(
-                "date_extraction_no_text",
-                {
-                    "document_id": document_id,
-                },
-                level=logging.WARNING,
-            )
-            return
-
-        truncated_text = truncate_text_for_llm(
-            text, max_chars=10000, document_id=document_id
-        )
-        prompt = create_date_extraction_prompt(truncated_text)
-
-        log_event(
-            "background_date_extraction_started",
-            {
-                "document_id": document_id,
-                "text_length": len(text),
-                "truncated_length": len(truncated_text),
-            },
-        )
-
-        try:
-            if not self.ollama_tool:
-                raise RuntimeError("Ollama tool not initialized")
-            response = await asyncio.wait_for(
-                self.ollama_tool.generate(
-                    prompt=prompt,
-                    temperature=0.1,
-                    max_tokens=1000,
-                ),
-                timeout=120.0,
-            )
-
-            extracted_date = response.strip() if response else ""
-
-            has_valid_date = extracted_date and not extracted_date.lower().startswith(
-                ("no date", "none", "not found", "unable")
-            )
-
-            metadata_updates = {
-                "enrichment_status": (
-                    "dates_extracted" if has_valid_date else "no_dates_found"
-                ),
-                "enriched_at": datetime.now().isoformat(),
-            }
-
-            if has_valid_date:
-                metadata_updates["content_date"] = extracted_date
-
-            success = await self.llamaindex_service.update_document_metadata(
-                document_id, metadata_updates, merge_mode="update"
-            )
-
-            log_event(
-                "background_date_extraction_completed",
-                {
-                    "document_id": document_id,
-                    "dates_found": has_valid_date,
-                    "extracted_date": extracted_date if has_valid_date else None,
-                    "metadata_updated": success,
-                },
-            )
-
-        except asyncio.TimeoutError:
-            log_event(
-                "background_date_extraction_timeout",
-                {
-                    "document_id": document_id,
-                    "timeout_seconds": 120,
-                },
-                level=logging.WARNING,
-            )
-            raise
 
     @track(
         operation="process_auto_tagging",

@@ -2,7 +2,11 @@
 Ask question endpoint.
 """
 
+from typing import List, Tuple
+
 from fastapi import APIRouter, status
+
+from lifearchivist.llm import LLMMessage
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import (
@@ -10,11 +14,52 @@ from ..shared.exceptions import (
     ServiceUnavailableError,
     ValidationError,
 )
-from .misc_models import Citation
 from .request_models import AskQuestionRequest
 from .response_models import AskQuestionResponse
+from .utils import (
+    build_context_from_sources,
+    calculate_average_score,
+    create_citations_from_sources,
+    create_rag_messages,
+)
 
 router = APIRouter()
+
+
+def _create_no_sources_response() -> AskQuestionResponse:
+    """Create response when no sources are found."""
+    return AskQuestionResponse(
+        answer="I couldn't find any relevant information in your documents to answer this question.",
+        confidence=0.0,
+        citations=[],
+        method="search_only",
+        context_length=0,
+        statistics={
+            "sources_found": 0,
+            "avg_score": 0.0,
+        },
+    )
+
+
+async def _generate_answer(
+    llm_provider_manager, messages: List[LLMMessage]
+) -> Tuple[str, int]:
+    """Generate answer using LLM and return accumulated text and tokens used."""
+    accumulated_text = ""
+    tokens_used = 0
+
+    async for chunk in llm_provider_manager.generate_stream(
+        messages=messages,
+        model=None,
+        provider_id=None,
+        temperature=0.7,
+        max_tokens=2000,
+    ):
+        accumulated_text += chunk.content
+        if chunk.is_final and chunk.tokens_used:
+            tokens_used = chunk.tokens_used
+
+    return accumulated_text, tokens_used
 
 
 @router.post(
@@ -168,44 +213,59 @@ async def ask_question(request: AskQuestionRequest) -> AskQuestionResponse:
     if not server.llamaindex_service:
         raise ServiceUnavailableError("LlamaIndex service")
 
-    if not server.llamaindex_service.query_service:
-        raise ServiceUnavailableError("Query service")
+    if not server.llamaindex_service.search_service:
+        raise ServiceUnavailableError("Search service")
 
     try:
-        result = await server.llamaindex_service.query_service.query(
-            question=request.question,
-            similarity_top_k=request.context_limit,
-            response_mode="tree_summarize",
+        search_result = await server.llamaindex_service.search_service.semantic_search(
+            query=request.question,
+            top_k=request.context_limit,
+            similarity_threshold=0.45,
             filters=request.filters,
         )
 
-        if result.is_failure():
-            raise InternalServerError("Q&A", Exception(result.error))
+        if search_result.is_failure():
+            raise InternalServerError("Search", Exception(search_result.error))
 
-        query_response = result.value
-        answer = query_response.get("answer", "")
-        sources = query_response.get("sources", [])
-        confidence = query_response.get("confidence_score", 0.0)
+        sources = search_result.value
 
-        citations = []
-        for source in sources:
-            snippet = source.get("text", "")[:200] if source.get("text") else ""
-            citations.append(
-                Citation(
-                    doc_id=source.get("document_id", ""),
-                    title=source.get("metadata", {}).get("title", "Unknown Document"),
-                    snippet=snippet,
-                    score=source.get("score", 0.0),
-                )
-            )
+        if not sources:
+            return _create_no_sources_response()
+
+        context = build_context_from_sources(sources, request.context_limit)
+        messages = create_rag_messages(context, request.question)
+
+        if (
+            not server.service_container
+            or not server.service_container.llm_provider_manager
+        ):
+            raise ServiceUnavailableError("LLM provider manager")
+
+        accumulated_text, tokens_used = await _generate_answer(
+            server.service_container.llm_provider_manager, messages
+        )
+
+        from lifearchivist.storage.utils import ConfidenceCalculator
+
+        confidence = ConfidenceCalculator.calculate_confidence(
+            answer=accumulated_text,
+            sources=sources,
+            context=context,
+        )
+
+        citations = create_citations_from_sources(sources)
 
         return AskQuestionResponse(
-            answer=answer,
+            answer=accumulated_text,
             confidence=confidence,
             citations=citations,
-            method=query_response.get("method", "llamaindex_rag"),
+            method="rag_direct",
             context_length=len(citations),
-            statistics=query_response.get("statistics", {}),
+            statistics={
+                "sources_found": len(sources),
+                "tokens_used": tokens_used,
+                "avg_score": calculate_average_score(sources),
+            },
         )
 
     except (ServiceUnavailableError, ValidationError):

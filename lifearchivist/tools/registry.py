@@ -4,14 +4,8 @@ Tool registry for managing MCP tools.
 
 from typing import Dict, Optional
 
-from lifearchivist.tools.date_extract.date_extraction_tool import (
-    ContentDateExtractionTool,
-)
 from lifearchivist.tools.extract.extract_tool import ExtractTextTool
 from lifearchivist.tools.file_import.file_import_tool import FileImportTool
-from lifearchivist.tools.llamaindex.llamaindex_query_tool import LlamaIndexQueryTool
-from lifearchivist.tools.ollama.ollama_tool import OllamaTool
-from lifearchivist.tools.search.search_tool import IndexSearchTool
 
 from ..utils.logging import track
 from .base import BaseTool
@@ -61,30 +55,6 @@ class ToolRegistry:
                 "class": ExtractTextTool,
                 "dependencies": ["vault"],
                 "kwargs": {"vault": self.vault},
-            },
-            {
-                "name": "ContentDateExtractionTool",
-                "class": ContentDateExtractionTool,
-                "dependencies": ["llamaindex_service"],
-                "kwargs": {"llamaindex_service": self.llamaindex_service},
-            },
-            {
-                "name": "OllamaTool",
-                "class": OllamaTool,
-                "dependencies": [],
-                "kwargs": {},
-            },
-            {
-                "name": "IndexSearchTool",
-                "class": IndexSearchTool,
-                "dependencies": ["llamaindex_service"],
-                "kwargs": {"llamaindex_service": self.llamaindex_service},
-            },
-            {
-                "name": "LlamaIndexQueryTool",
-                "class": LlamaIndexQueryTool,
-                "dependencies": ["llamaindex_service"],
-                "kwargs": {"llamaindex_service": self.llamaindex_service},
             },
         ]
 

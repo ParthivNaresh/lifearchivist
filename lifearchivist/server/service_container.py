@@ -683,13 +683,13 @@ class ServiceContainer:
                     "Message service must be initialized before RAG service"
                 )
 
-            if not self.llamaindex_service.query_service:
+            if not self.llamaindex_service.search_service:
                 raise ServiceInitializationError(
-                    "LlamaIndex query service must be initialized before RAG service"
+                    "LlamaIndex search service must be initialized before RAG service"
                 )
 
             self.rag_service = ConversationRAGService(
-                query_service=self.llamaindex_service.query_service,
+                search_service=self.llamaindex_service.search_service,
                 provider_manager=self.llm_provider_manager,
                 conversation_service=self.conversation_service,
                 message_service=self.message_service,

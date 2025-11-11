@@ -172,7 +172,6 @@ api-only: services
     echo "📱 Starting MCP server (API-only)..."
     export LIFEARCH_API_ONLY_MODE=true
     export LIFEARCH_ENABLE_UI=false
-    export LIFEARCH_ENABLE_AGENTS=false  
     export LIFEARCH_ENABLE_WEBSOCKETS=false
     poetry run uvicorn lifearchivist.server.main:create_app --host localhost --port 8000 --reload --factory &
     SERVER_PID=$!
