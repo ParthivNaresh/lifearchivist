@@ -1,7 +1,4 @@
-/**
- * API functions for conversations
- */
-
+import apiClient from '../../utils/api-client';
 import type {
   Conversation,
   ConversationListResponse,
@@ -22,113 +19,58 @@ import type {
   SSEErrorEvent,
 } from './types';
 
-const API_BASE = 'http://localhost:8000/api';
-
 export const conversationsApi = {
-  /**
-   * Create a new conversation
-   */
   async create(data: CreateConversationRequest): Promise<Conversation> {
-    const response = await fetch(`${API_BASE}/conversations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create conversation: ${response.statusText}`);
-    }
-
-    const result = (await response.json()) as ConversationResponse;
+    const result = await apiClient.post<ConversationResponse>('/api/conversations', data);
     return result.conversation;
   },
 
-  /**
-   * List conversations
-   */
   async list(params?: {
     limit?: number;
     offset?: number;
     include_archived?: boolean;
   }): Promise<ConversationListResponse> {
-    const searchParams = new URLSearchParams();
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.offset) searchParams.set('offset', params.offset.toString());
-    if (params?.include_archived) searchParams.set('include_archived', 'true');
-
-    const response = await fetch(`${API_BASE}/conversations?${searchParams.toString()}`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to list conversations: ${response.statusText}`);
-    }
-
-    return response.json() as Promise<ConversationListResponse>;
+    return await apiClient.get<ConversationListResponse>('/api/conversations', { params });
   },
 
-  /**
-   * Get a single conversation
-   */
   async get(
     conversationId: string,
     params?: { include_messages?: boolean; message_limit?: number }
   ): Promise<Conversation> {
-    const searchParams = new URLSearchParams();
-    if (params?.include_messages !== undefined) {
-      searchParams.set('include_messages', params.include_messages.toString());
-    }
-    if (params?.message_limit) {
-      searchParams.set('message_limit', params.message_limit.toString());
-    }
-
-    const response = await fetch(
-      `${API_BASE}/conversations/${conversationId}?${searchParams.toString()}`
+    const result = await apiClient.get<ConversationResponse>(
+      `/api/conversations/${conversationId}`,
+      { params }
     );
-
-    if (!response.ok) {
-      throw new Error(`Failed to get conversation: ${response.statusText}`);
-    }
-
-    const result = (await response.json()) as ConversationResponse;
     return result.conversation;
   },
 
-  /**
-   * Send a message in a conversation
-   */
   async sendMessage(
     conversationId: string,
     data: SendMessageRequest
   ): Promise<SendMessageResponse> {
-    const response = await fetch(`${API_BASE}/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to send message: ${response.statusText}`);
-    }
-
-    return response.json() as Promise<SendMessageResponse>;
+    return await apiClient.post<SendMessageResponse>(
+      `/api/conversations/${conversationId}/messages`,
+      data
+    );
   },
 
-  /**
-   * Send a message with streaming response using Server-Sent Events
-   */
   async sendMessageStreaming(
     conversationId: string,
     data: SendMessageRequest,
     callbacks: SSECallbacks,
     signal?: AbortSignal
   ): Promise<void> {
-    const response = await fetch(`${API_BASE}/conversations/${conversationId}/messages/stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-      signal,
-    });
+    const response = await fetch(
+      `${apiClient.getBaseURL()}/api/conversations/${conversationId}/messages/stream`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        signal,
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -229,9 +171,6 @@ export const conversationsApi = {
     }
   },
 
-  /**
-   * Get messages for a conversation
-   */
   async getMessages(
     conversationId: string,
     params?: {
@@ -240,55 +179,24 @@ export const conversationsApi = {
       include_citations?: boolean;
     }
   ): Promise<MessageListResponse> {
-    const searchParams = new URLSearchParams();
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.offset) searchParams.set('offset', params.offset.toString());
-    if (params?.include_citations !== undefined) {
-      searchParams.set('include_citations', params.include_citations.toString());
-    }
-
-    const response = await fetch(
-      `${API_BASE}/conversations/${conversationId}/messages?${searchParams.toString()}`
+    return await apiClient.get<MessageListResponse>(
+      `/api/conversations/${conversationId}/messages`,
+      { params }
     );
-
-    if (!response.ok) {
-      throw new Error(`Failed to get messages: ${response.statusText}`);
-    }
-
-    return response.json() as Promise<MessageListResponse>;
   },
 
-  /**
-   * Update a conversation
-   */
   async update(conversationId: string, data: UpdateConversationRequest): Promise<Conversation> {
-    const response = await fetch(`${API_BASE}/conversations/${conversationId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to update conversation: ${response.statusText}`);
-    }
-
-    const result = (await response.json()) as ConversationResponse;
+    const result = await apiClient.patch<ConversationResponse>(
+      `/api/conversations/${conversationId}`,
+      data
+    );
     return result.conversation;
   },
 
-  /**
-   * Archive a conversation
-   */
   async archive(conversationId: string): Promise<Conversation> {
-    const response = await fetch(`${API_BASE}/conversations/${conversationId}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to archive conversation: ${response.statusText}`);
-    }
-
-    const result = (await response.json()) as ConversationResponse;
+    const result = await apiClient.delete<ConversationResponse>(
+      `/api/conversations/${conversationId}`
+    );
     return result.conversation;
   },
 };

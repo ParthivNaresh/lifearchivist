@@ -140,7 +140,10 @@ export const useSearch = (options: UseSearchOptions = {}): UseSearchReturn => {
         }
 
         filteredResults = response.results.filter((result) => {
-          const resultDate = new Date(result.ingested_at ?? result.created_at ?? '');
+          const metadata = result.metadata as { ingested_at?: string; created_at?: string };
+          const dateString = metadata.ingested_at ?? metadata.created_at ?? '';
+          if (!dateString) return false;
+          const resultDate = new Date(dateString);
           return resultDate >= cutoffDate;
         });
       }

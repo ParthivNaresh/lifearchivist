@@ -11,7 +11,13 @@ import {
   EmptyState,
 } from './SearchPage/index';
 import { searchDocuments, fetchTags } from './SearchPage/api';
-import { type SearchMode, type SearchResult, type Tag } from './SearchPage/types';
+import { parseTagsFromUrl } from './SearchPage/utils';
+import {
+  type SearchMode,
+  type SearchResult,
+  type Tag,
+  type SearchDocumentsResponse,
+} from './SearchPage/types';
 
 const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,15 +31,9 @@ const SearchPage: React.FC = () => {
   const [searchMode, setSearchMode] = useState<SearchMode>(
     () => (searchParams.get('mode') as SearchMode) || 'keyword'
   );
-  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
-    const urlTags = searchParams.get('tags');
-    return urlTags
-      ? urlTags
-          .split(',')
-          .map((tag) => decodeURIComponent(tag.trim()))
-          .filter(Boolean)
-      : [];
-  });
+  const [selectedTags, setSelectedTags] = useState<string[]>(() =>
+    parseTagsFromUrl(searchParams.get('tags'))
+  );
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [tagsLoading, setTagsLoading] = useState(false);
@@ -73,7 +73,7 @@ const SearchPage: React.FC = () => {
 
       try {
         const startTime = performance.now();
-        const response = await searchDocuments({
+        const response: SearchDocumentsResponse = await searchDocuments({
           q: query,
           mode: searchMode,
           limit: 20,

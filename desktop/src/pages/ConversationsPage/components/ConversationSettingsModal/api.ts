@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '../../../../utils/api-client';
 import type {
   AvailableModels,
   SettingsResponse,
@@ -6,15 +6,13 @@ import type {
   SettingsUpdateResponse,
 } from './types';
 
-const API_BASE = 'http://localhost:8000/api';
-
 export const settingsApi = {
-  getModels: () => axios.get<AvailableModels>(`${API_BASE}/settings/models`),
+  getModels: () => apiClient.get<AvailableModels>('/api/settings/models'),
 
-  getSettings: () => axios.get<SettingsResponse>(`${API_BASE}/settings`),
+  getSettings: () => apiClient.get<SettingsResponse>('/api/settings'),
 
-  updateModel: (model: string) => axios.put(`${API_BASE}/settings`, { llm_model: model }),
+  updateModel: (model: string) => apiClient.put('/api/settings', { llm_model: model }),
 
   updateSettings: (settings: SettingsUpdateRequest) =>
-    axios.put<SettingsUpdateResponse>(`${API_BASE}/settings`, settings),
+    apiClient.put<SettingsUpdateResponse>('/api/settings', settings),
 };

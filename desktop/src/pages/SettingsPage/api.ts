@@ -1,32 +1,23 @@
-/**
- * API service layer for SettingsPage
- */
-
-import axios from 'axios';
+import apiClient from '../../utils/api-client';
 import { type Settings } from './types';
-import { API_BASE_URL, API_ENDPOINTS } from './constants';
+import { API_ENDPOINTS } from './constants';
 
-/**
- * Fetch current settings
- */
 export const fetchSettings = async (): Promise<Settings> => {
-  const response = await axios.get<Settings>(`${API_BASE_URL}${API_ENDPOINTS.SETTINGS}`);
-  return response.data;
+  return await apiClient.get<Settings>(API_ENDPOINTS.SETTINGS);
 };
 
-/**
- * Save settings to the server
- */
-export const saveSettingsToServer = async (settings: Settings): Promise<{ success: boolean }> => {
+interface UpdateSettingsResponse {
+  message: string;
+  updated_fields: string[];
+  current_llm_model: string;
+  note: string;
+}
+
+export const saveSettingsToServer = async (settings: Settings): Promise<UpdateSettingsResponse> => {
   const updateData = {
     theme: settings.theme,
     interface_density: settings.interface_density,
   };
 
-  const response = await axios.put<{ success: boolean }>(
-    `${API_BASE_URL}${API_ENDPOINTS.SETTINGS}`,
-    updateData
-  );
-
-  return response.data;
+  return await apiClient.put<UpdateSettingsResponse>(API_ENDPOINTS.SETTINGS, updateData);
 };

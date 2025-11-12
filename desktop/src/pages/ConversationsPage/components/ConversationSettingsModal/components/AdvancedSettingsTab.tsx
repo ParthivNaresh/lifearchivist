@@ -35,8 +35,7 @@ export const AdvancedSettingsTab: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await settingsApi.getSettings();
-      const data: SettingsResponse = response.data;
+      const data: SettingsResponse = await settingsApi.getSettings();
 
       const newSettings: AdvancedSettings = {
         temperature: data.temperature,

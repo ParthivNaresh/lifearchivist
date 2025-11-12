@@ -6,16 +6,10 @@
  * Vault information from the backend
  */
 export interface VaultInfo {
-  success: boolean;
+  vault_path: string;
   total_files: number;
   total_size_bytes: number;
   total_size_mb: number;
-  directories: {
-    content: {
-      file_count: number;
-      total_size_bytes: number;
-    };
-  };
 }
 
 /**

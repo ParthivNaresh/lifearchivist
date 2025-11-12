@@ -283,53 +283,80 @@ export const useFolderWatchStatus = () => {
     return () => clearInterval(interval);
   }, [fetchStatus]);
 
-  // WebSocket for real-time updates - separate effect
   useEffect(() => {
     let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let mounted = true;
 
-    const connect = () => {
-      try {
-        ws = new WebSocket(WS_ENDPOINTS.FOLDER_WATCHER);
+    const connect = (): void => {
+      if (!mounted) return;
 
-        ws.onopen = () => {
-          console.log('Folder watcher WebSocket connected');
-        };
+      void import('../../utils/api-client').then((m) => {
+        const apiClient = m.default;
+        if (!apiClient.isReady()) {
+          reconnectTimeout = setTimeout(() => {
+            connect();
+          }, 2000);
+          return;
+        }
 
-        ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data as string) as {
-              type: string;
-              data?: WatchStatus;
-            };
+        try {
+          ws = new WebSocket(WS_ENDPOINTS.FOLDER_WATCHER);
 
-            if (message.type === 'folder_watch_status' && message.data) {
-              setWatchStatus(message.data);
+          ws.onopen = () => {
+            if (!mounted) return;
+          };
+
+          ws.onmessage = (event) => {
+            if (!mounted) return;
+            try {
+              const message = JSON.parse(event.data as string) as {
+                type: string;
+                data?: WatchStatus;
+              };
+
+              if (message.type === 'folder_watch_status' && message.data) {
+                setWatchStatus(message.data);
+              }
+            } catch (_err) {
+              console.error('Failed to parse folder watch WebSocket message:', _err);
             }
-          } catch (err) {
-            console.error('Failed to parse folder watch WebSocket message:', err);
+          };
+
+          ws.onerror = () => {
+            if (!mounted) return;
+          };
+
+          ws.onclose = () => {
+            if (!mounted) return;
+            if (apiClient.isReady()) {
+              reconnectTimeout = setTimeout(() => {
+                connect();
+              }, 5000);
+            }
+          };
+        } catch (_err) {
+          if (mounted) {
+            reconnectTimeout = setTimeout(() => {
+              connect();
+            }, 5000);
           }
-        };
-
-        ws.onerror = () => {
-          // Don't log error - it's expected when server is down
-        };
-
-        ws.onclose = () => {
-          console.log('Folder watcher WebSocket disconnected');
-        };
-      } catch (err) {
-        console.error('Failed to create WebSocket:', err);
-      }
+        }
+      });
     };
 
     connect();
 
     return () => {
+      mounted = false;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
       if (ws) {
         ws.close();
       }
     };
-  }, []); // No dependencies - connect once
+  }, []);
 
   return {
     watchStatus,

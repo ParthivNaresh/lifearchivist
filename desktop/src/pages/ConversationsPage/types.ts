@@ -89,7 +89,6 @@ export interface SendMessageRequest {
 }
 
 export interface ConversationListResponse {
-  success: boolean;
   conversations: Conversation[];
   total: number;
   limit: number;
@@ -98,12 +97,10 @@ export interface ConversationListResponse {
 }
 
 export interface ConversationResponse {
-  success: boolean;
   conversation: Conversation;
 }
 
 export interface MessageListResponse {
-  success: boolean;
   messages: Message[];
   total: number;
   limit: number;

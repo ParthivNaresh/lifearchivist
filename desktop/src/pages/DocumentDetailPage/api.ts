@@ -1,50 +1,26 @@
-/**
- * API service layer for document operations
- */
-
-import axios from 'axios';
+import apiClient from '../../utils/api-client';
 import { type DocumentAnalysis, type DocumentNeighborsResponse } from './types';
 
-// TODO: Move to environment config
-const API_BASE_URL = 'http://localhost:8000/api';
-
-/**
- * Fetch document analysis data
- */
 export const fetchDocumentAnalysis = async (documentId: string): Promise<DocumentAnalysis> => {
-  const response = await axios.get<DocumentAnalysis>(
-    `${API_BASE_URL}/documents/${documentId}/llamaindex-analysis`
-  );
-  return response.data;
+  return await apiClient.get<DocumentAnalysis>(`/api/documents/${documentId}/llamaindex-analysis`);
 };
 
-/**
- * Fetch related/neighbor documents
- */
 export const fetchDocumentNeighbors = async (
   documentId: string,
   topK = 10
 ): Promise<DocumentNeighborsResponse> => {
-  const response = await axios.get<DocumentNeighborsResponse>(
-    `${API_BASE_URL}/documents/${documentId}/llamaindex-neighbors`,
+  return await apiClient.get<DocumentNeighborsResponse>(
+    `/api/documents/${documentId}/llamaindex-neighbors`,
     { params: { top_k: topK } }
   );
-  return response.data;
 };
 
-/**
- * Delete a document
- */
 export const deleteDocument = async (documentId: string): Promise<void> => {
-  await axios.delete(`${API_BASE_URL}/documents/${documentId}`);
+  await apiClient.delete<void>(`/api/documents/${documentId}`);
 };
 
-/**
- * Download document file
- */
 export const downloadDocumentFile = async (fileHash: string): Promise<Blob> => {
-  const response = await axios.get<Blob>(`${API_BASE_URL}/vault/file/${fileHash}`, {
+  return await apiClient.get<Blob>(`/api/vault/file/${fileHash}`, {
     responseType: 'blob',
   });
-  return response.data;
 };

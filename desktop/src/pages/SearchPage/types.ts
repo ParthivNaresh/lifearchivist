@@ -5,16 +5,9 @@
 export interface SearchResult {
   document_id: string;
   title: string;
-  snippet: string;
   score: number;
-  created_at: string | null;
-  ingested_at: string | null;
-  mime_type: string;
-  size_bytes: number;
-  word_count: number | null;
-  match_type: string;
-  tags?: string[];
-  matched_tags?: string[];
+  snippet: string | null;
+  metadata: Record<string, unknown>;
 }
 
 export interface Tag {
@@ -24,10 +17,33 @@ export interface Tag {
   document_count: number;
 }
 
-export interface SearchResponse {
+export interface SearchDocumentsResponse {
   results: SearchResult[];
-  total: number;
-  query_time_ms: number;
+  count: number;
+  mode: string;
+  query: string;
+}
+
+export interface Citation {
+  doc_id: string;
+  title: string;
+  snippet: string;
+  score: number;
+}
+
+export interface AskQuestionRequest {
+  question: string;
+  context_limit?: number;
+  filters?: Record<string, unknown>;
+}
+
+export interface AskQuestionResponse {
+  answer: string;
+  confidence: number;
+  citations: Citation[];
+  method: string;
+  context_length: number;
+  statistics: Record<string, unknown>;
 }
 
 export type SearchMode = 'keyword' | 'semantic' | 'hybrid';

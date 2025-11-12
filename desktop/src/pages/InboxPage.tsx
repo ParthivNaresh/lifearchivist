@@ -68,7 +68,7 @@ const InboxPage: React.FC = () => {
         {/* Quick Stats */}
         <div className="mb-8">
           <QuickStats
-            totalDocuments={vaultInfo?.directories?.content?.file_count ?? 0}
+            totalDocuments={vaultInfo?.total_files ?? 0}
             weekCount={weekCount}
             storageBytes={vaultInfo?.total_size_bytes ?? 0}
             isLoading={vaultLoading}
