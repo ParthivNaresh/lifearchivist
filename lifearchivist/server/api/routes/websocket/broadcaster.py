@@ -14,7 +14,7 @@ class WebSocketBroadcaster:
         self._conversation_subscriptions: Dict[str, Set[WebSocket]] = defaultdict(set)
         self._websocket_to_conversations: Dict[WebSocket, Set[str]] = defaultdict(set)
 
-    async def subscribe(self, conversation_id: str, websocket: WebSocket) -> None:
+    def subscribe(self, conversation_id: str, websocket: WebSocket) -> None:
         self._conversation_subscriptions[conversation_id].add(websocket)
         self._websocket_to_conversations[websocket].add(conversation_id)
         logger.info(
@@ -22,7 +22,7 @@ class WebSocketBroadcaster:
             f"Total subscribers: {len(self._conversation_subscriptions[conversation_id])}"
         )
 
-    async def unsubscribe(self, conversation_id: str, websocket: WebSocket) -> None:
+    def unsubscribe(self, conversation_id: str, websocket: WebSocket) -> None:
         self._conversation_subscriptions[conversation_id].discard(websocket)
         self._websocket_to_conversations[websocket].discard(conversation_id)
 
@@ -34,10 +34,10 @@ class WebSocketBroadcaster:
 
         logger.info(f"WebSocket unsubscribed from conversation {conversation_id}")
 
-    async def unsubscribe_all(self, websocket: WebSocket) -> None:
+    def unsubscribe_all(self, websocket: WebSocket) -> None:
         conversation_ids = list(self._websocket_to_conversations.get(websocket, set()))
         for conversation_id in conversation_ids:
-            await self.unsubscribe(conversation_id, websocket)
+            self.unsubscribe(conversation_id, websocket)
 
     async def broadcast_message_status(
         self,
@@ -79,7 +79,7 @@ class WebSocketBroadcaster:
                 dead_connections.add(websocket)
 
         for websocket in dead_connections:
-            await self.unsubscribe(conversation_id, websocket)
+            self.unsubscribe(conversation_id, websocket)
 
         stage_info = f" (stage: {stage})" if stage else ""
         logger.info(

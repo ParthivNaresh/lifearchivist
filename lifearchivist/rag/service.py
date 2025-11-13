@@ -530,7 +530,6 @@ class ConversationRAGService:
 
     async def _finalize_response(
         self,
-        conversation_id: str,
         message_content: str,
         accumulated_response: str,
         citations: List[Citation],
@@ -544,7 +543,6 @@ class ConversationRAGService:
         Finalize response with metadata and persistence.
 
         Args:
-            conversation_id: Conversation identifier
             message_content: User's message
             accumulated_response: Generated response
             citations: Source citations
@@ -589,6 +587,227 @@ class ConversationRAGService:
 
         yield StreamEvent.done(sequence=self._next_sequence())
 
+    async def _initialize_processing(
+        self,
+        conversation_id: str,
+        message_content: str,
+    ) -> Tuple[Optional[Dict], Optional[str], Optional[StreamEvent]]:
+        """
+        Initialize message processing: validate, save user message, create processing message.
+
+        Returns:
+            Tuple of (conversation, processing_message_id, user_message_event_or_error)
+        """
+        validation_result = await self._validate_and_save_user_message(
+            conversation_id, message_content
+        )
+
+        if validation_result.is_failure():
+            failure_result = cast(Failure[StreamEvent], validation_result)
+            return None, None, failure_result.error
+
+        conversation, user_message_event = validation_result.unwrap()
+        processing_message_id = await self._create_processing_message(conversation_id)
+
+        return conversation, processing_message_id, user_message_event
+
+    async def _broadcast_initial_status(
+        self,
+        conversation_id: str,
+        processing_message_id: str,
+        message_content: str,
+        config: ContextConfig,
+    ) -> None:
+        """Broadcast initial processing status based on query type."""
+        is_document_query = self._classify_intent(message_content)
+
+        if is_document_query and config.enable_rag:
+            await self._broadcast_message_status(
+                conversation_id,
+                processing_message_id,
+                "processing",
+                stage="searching",
+            )
+        else:
+            await self._broadcast_message_status(
+                conversation_id, processing_message_id, "processing"
+            )
+
+    async def _process_and_yield_context(
+        self,
+        conversation_id: str,
+        processing_message_id: str,
+        message_content: str,
+        config: ContextConfig,
+    ) -> AsyncGenerator[Tuple[str, List[Citation], StreamEvent], None]:
+        """
+        Process context retrieval and yield events.
+
+        Yields:
+            Tuple of (context, citations, event)
+        """
+        context, citations, context_events = await self._process_context_retrieval(
+            message_content, config
+        )
+
+        if citations:
+            await self._broadcast_message_status(
+                conversation_id,
+                processing_message_id,
+                "processing",
+                stage="found_sources",
+                metadata={"sources_found": len(citations)},
+            )
+
+        for event in context_events:
+            yield context, citations, event
+
+    async def _prepare_llm_generation(
+        self,
+        conversation_id: str,
+        message_content: str,
+        context: str,
+        conversation: Dict,
+        config: ContextConfig,
+        user_id: str,
+    ) -> Tuple[List[LLMMessage], int]:
+        """
+        Prepare messages and get preferences for LLM generation.
+
+        Returns:
+            Tuple of (messages, response_timeout)
+        """
+        log_event(
+            "rag_getting_conversation_history",
+            {
+                "conversation_id": conversation_id,
+                "limit": config.conversation_history_limit,
+            },
+        )
+
+        conversation_history = await self._get_conversation_history(
+            conversation_id, config.conversation_history_limit
+        )
+
+        response_format, response_timeout = await self._get_user_preferences(user_id)
+
+        log_event(
+            "rag_building_messages",
+            {
+                "has_context": bool(context),
+                "history_count": len(conversation_history),
+                "has_system_prompt": bool(conversation.get("system_prompt")),
+            },
+        )
+
+        messages = self._build_messages_for_llm(
+            message_content,
+            context,
+            conversation_history,
+            conversation,
+            response_format,
+            config,
+        )
+
+        return messages, response_timeout
+
+    async def _stream_llm_response(
+        self,
+        messages: List[LLMMessage],
+        conversation: Dict,
+        response_timeout: int,
+    ) -> AsyncGenerator[Tuple[str, Optional[int], Optional[float], StreamEvent], None]:
+        """
+        Stream LLM response and yield tokens.
+
+        Yields:
+            Tuple of (accumulated_response, tokens_used, cost_usd, event)
+        """
+        log_event(
+            "rag_llm_generation_starting",
+            {
+                "model": conversation["model"],
+                "provider_id": conversation.get("provider_id"),
+                "num_messages": len(messages),
+                "timeout_seconds": response_timeout,
+            },
+        )
+
+        accumulated_response = ""
+        tokens_used = None
+        cost_usd = None
+
+        async with asyncio.timeout(response_timeout):
+            async for chunk in self.provider_manager.generate_stream(
+                messages=messages,
+                model=conversation["model"],
+                provider_id=conversation["provider_id"],
+                temperature=conversation.get("temperature", 0.7),
+                max_tokens=conversation.get("max_tokens", 2000),
+            ):
+                if chunk.content:
+                    accumulated_response += chunk.content
+                    yield accumulated_response, tokens_used, cost_usd, StreamEvent.token(
+                        chunk.content,
+                        sequence=self._next_sequence(),
+                    )
+
+                if chunk.is_final and chunk.metadata:
+                    tokens_used = chunk.metadata.get("tokens_used")
+                    cost_usd = chunk.metadata.get("cost_usd")
+
+    async def _complete_processing(
+        self,
+        conversation_id: str,
+        processing_message_id: str,
+        accumulated_response: str,
+        citations: List[Citation],
+    ) -> None:
+        """Complete message processing: finalize message and add citations."""
+        await self._finalize_processing_message(
+            processing_message_id, accumulated_response
+        )
+
+        if citations:
+            await self._add_citations_to_message(processing_message_id, citations)
+
+        await self._broadcast_message_status(
+            conversation_id=conversation_id,
+            message_id=processing_message_id,
+            status="completed",
+            content=accumulated_response,
+        )
+
+    async def _handle_processing_error(
+        self,
+        error: Exception,
+        conversation_id: str,
+        processing_message_id: Optional[str],
+        conversation: Optional[Dict],
+        response_timeout: int,
+        start_time: float,
+    ) -> AsyncGenerator[StreamEvent, None]:
+        """Handle processing errors and yield error events."""
+        if processing_message_id:
+            await self._mark_message_failed(processing_message_id)
+            await self._broadcast_message_status(
+                conversation_id, processing_message_id, "failed"
+            )
+
+        if isinstance(error, asyncio.TimeoutError):
+            async for event in self._handle_timeout_error(
+                conversation_id,
+                conversation or {},
+                response_timeout,
+                start_time,
+            ):
+                yield event
+        else:
+            async for event in self._handle_general_error(
+                conversation_id, error, conversation, start_time
+            ):
+                yield event
+
     @track(
         operation="rag_process_message",
         include_args=["conversation_id"],
@@ -627,134 +846,69 @@ class ConversationRAGService:
         response_timeout = 30
         processing_message_id = None
         accumulated_response = ""
+        citations: List[Citation] = []
+        context = ""
 
         try:
-            validation_result = await self._validate_and_save_user_message(
-                conversation_id, message_content
+            conversation, processing_message_id, init_event = (
+                await self._initialize_processing(conversation_id, message_content)
             )
 
-            if validation_result.is_failure():
-                failure_result = cast(Failure[StreamEvent], validation_result)
-                yield failure_result.error
+            if (
+                conversation is None
+                or processing_message_id is None
+                or init_event is None
+            ):
+                if init_event is not None:
+                    yield init_event
                 return
 
-            conversation, user_message_event = validation_result.unwrap()
-            yield user_message_event
-
-            processing_message_id = await self._create_processing_message(
-                conversation_id
-            )
+            yield init_event
 
             yield StreamEvent.assistant_message_created(
                 processing_message_id,
                 sequence=self._next_sequence(),
             )
 
-            is_document_query = self._classify_intent(message_content)
-            if is_document_query and config.enable_rag:
-                await self._broadcast_message_status(
-                    conversation_id,
-                    processing_message_id,
-                    "processing",
-                    stage="searching",
-                )
-            else:
-                await self._broadcast_message_status(
-                    conversation_id, processing_message_id, "processing"
-                )
-
-            context, citations, context_events = await self._process_context_retrieval(
-                message_content, config
+            await self._broadcast_initial_status(
+                conversation_id, processing_message_id, message_content, config
             )
 
-            if citations:
-                await self._broadcast_message_status(
-                    conversation_id,
-                    processing_message_id,
-                    "processing",
-                    stage="found_sources",
-                    metadata={"sources_found": len(citations)},
-                )
-
-            for event in context_events:
+            async for ctx, cit, event in self._process_and_yield_context(
+                conversation_id, processing_message_id, message_content, config
+            ):
+                context = ctx
+                citations = cit
                 yield event
 
-            log_event(
-                "rag_getting_conversation_history",
-                {
-                    "conversation_id": conversation_id,
-                    "limit": config.conversation_history_limit,
-                },
-            )
-
-            conversation_history = await self._get_conversation_history(
-                conversation_id, config.conversation_history_limit
-            )
-
-            response_format, response_timeout = await self._get_user_preferences(
-                user_id
-            )
-
-            log_event(
-                "rag_building_messages",
-                {
-                    "has_context": bool(context),
-                    "history_count": len(conversation_history),
-                    "has_system_prompt": bool(conversation.get("system_prompt")),
-                },
-            )
-
-            messages = self._build_messages_for_llm(
+            messages, response_timeout = await self._prepare_llm_generation(
+                conversation_id,
                 message_content,
                 context,
-                conversation_history,
                 conversation,
-                response_format,
                 config,
+                user_id,
             )
 
-            if processing_message_id:
-                await self._broadcast_message_status(
-                    conversation_id,
-                    processing_message_id,
-                    "processing",
-                    stage="generating",
-                )
-
-            log_event(
-                "rag_llm_generation_starting",
-                {
-                    "model": conversation["model"],
-                    "provider_id": conversation.get("provider_id"),
-                    "num_messages": len(messages),
-                    "timeout_seconds": response_timeout,
-                },
+            await self._broadcast_message_status(
+                conversation_id,
+                processing_message_id,
+                "processing",
+                stage="generating",
             )
 
             tokens_used = None
             cost_usd = None
 
-            async with asyncio.timeout(response_timeout):
-                async for chunk in self.provider_manager.generate_stream(
-                    messages=messages,
-                    model=conversation["model"],
-                    provider_id=conversation["provider_id"],
-                    temperature=conversation.get("temperature", 0.7),
-                    max_tokens=conversation.get("max_tokens", 2000),
-                ):
-                    if chunk.content:
-                        accumulated_response += chunk.content
-                        yield StreamEvent.token(
-                            chunk.content,
-                            sequence=self._next_sequence(),
-                        )
-
-                    if chunk.is_final and chunk.metadata:
-                        tokens_used = chunk.metadata.get("tokens_used")
-                        cost_usd = chunk.metadata.get("cost_usd")
+            async for acc_resp, tok_used, cost, event in self._stream_llm_response(
+                messages, conversation, response_timeout
+            ):
+                accumulated_response = acc_resp
+                tokens_used = tok_used
+                cost_usd = cost
+                yield event
 
             async for event in self._finalize_response(
-                conversation_id,
                 message_content,
                 accumulated_response,
                 citations,
@@ -766,47 +920,21 @@ class ConversationRAGService:
             ):
                 yield event
 
-            if processing_message_id:
-                await self._finalize_processing_message(
-                    processing_message_id, accumulated_response
-                )
-
-                if citations:
-                    await self._add_citations_to_message(
-                        processing_message_id, citations
-                    )
-
-                await self._broadcast_message_status(
-                    conversation_id=conversation_id,
-                    message_id=processing_message_id,
-                    status="completed",
-                    content=accumulated_response,
-                )
-
-        except asyncio.TimeoutError:
-            if processing_message_id:
-                await self._mark_message_failed(processing_message_id)
-                await self._broadcast_message_status(
-                    conversation_id, processing_message_id, "failed"
-                )
-
-            async for event in self._handle_timeout_error(
+            await self._complete_processing(
                 conversation_id,
-                conversation or {},
+                processing_message_id,
+                accumulated_response,
+                citations,
+            )
+
+        except (asyncio.TimeoutError, Exception) as e:
+            async for event in self._handle_processing_error(
+                e,
+                conversation_id,
+                processing_message_id,
+                conversation,
                 response_timeout,
                 start_time,
-            ):
-                yield event
-
-        except Exception as e:
-            if processing_message_id:
-                await self._mark_message_failed(processing_message_id)
-                await self._broadcast_message_status(
-                    conversation_id, processing_message_id, "failed"
-                )
-
-            async for event in self._handle_general_error(
-                conversation_id, e, conversation, start_time
             ):
                 yield event
 
