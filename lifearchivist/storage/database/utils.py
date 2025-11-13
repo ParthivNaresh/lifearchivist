@@ -368,6 +368,21 @@ def validate_confidence(confidence: float) -> Optional[str]:
     return None
 
 
+def validate_message_status(status: str) -> Optional[str]:
+    """
+    Validate message status.
+
+    Args:
+        status: Status to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if status not in ("processing", "completed", "failed", "cancelled"):
+        return f"Invalid status: {status}. Must be 'processing', 'completed', 'failed', or 'cancelled'"
+    return None
+
+
 def build_message_data(
     conv_uuid: Any,
     role: str,
@@ -380,6 +395,7 @@ def build_message_data(
     latency_ms: Optional[int],
     parent_uuid: Optional[Any],
     metadata: Optional[Any],
+    status: str = "completed",
 ) -> Dict[str, Any]:
     """
     Build message data dictionary for insertion.
@@ -396,6 +412,7 @@ def build_message_data(
         latency_ms: Latency in milliseconds
         parent_uuid: Parent message UUID
         metadata: Additional metadata
+        status: Message status (default: 'completed')
 
     Returns:
         Dictionary of message data
@@ -407,6 +424,7 @@ def build_message_data(
         "role": role,
         "content": content.strip(),
         "sequence_number": sequence_number,
+        "status": status,
     }
 
     if model:

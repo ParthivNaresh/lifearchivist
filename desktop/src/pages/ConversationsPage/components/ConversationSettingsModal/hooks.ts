@@ -12,11 +12,11 @@ export const useModelSettings = (open: boolean) => {
     if (open) {
       Promise.all([settingsApi.getModels(), settingsApi.getSettings()])
         .then(([modelsRes, settingsRes]) => {
-          setAvailableModels(modelsRes.data);
-          setCurrentModel(settingsRes.data.llm_model || 'llama3.2:1b');
+          setAvailableModels(modelsRes);
+          setCurrentModel(settingsRes.llm_model ?? 'llama3.2:1b');
         })
-        .catch((err) => {
-          console.error('Failed to fetch models:', err);
+        .catch((_err) => {
+          console.error('Failed to fetch models:', _err);
           setModelError('Failed to load models');
         });
     }

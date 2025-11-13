@@ -49,7 +49,6 @@ export interface SettingsUpdateRequest {
 }
 
 export interface SettingsUpdateResponse {
-  success: boolean;
   message: string;
   updated_fields: string[];
   current_llm_model: string;

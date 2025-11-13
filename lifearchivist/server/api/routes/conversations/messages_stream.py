@@ -19,6 +19,7 @@ from fastapi.responses import StreamingResponse
 from lifearchivist.config import get_settings
 from lifearchivist.llm import LLMMessage
 
+from .....utils.logging import log_event
 from ...error_formatting import create_error_metadata, format_llm_error
 from ...prompt_utils import PromptFormatter
 from ..shared.dependencies import get_server
@@ -34,6 +35,7 @@ class EventType(Enum):
     """SSE event types."""
 
     USER_MESSAGE = "user_message"
+    ASSISTANT_MESSAGE_CREATED = "assistant_message_created"
     INTENT = "intent"
     CONTEXT = "context"
     SOURCES = "sources"
@@ -55,6 +57,7 @@ class StreamContext:
     model: Optional[str] = None
     user_message: Optional[Dict[str, Any]] = None
     sources: Optional[List[Dict[str, Any]]] = None
+    accumulated_text: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.sources is None:
@@ -181,6 +184,7 @@ class RAGStreamProcessor(StreamProcessor):
 
         mapping = {
             StreamEventType.USER_MESSAGE: EventType.USER_MESSAGE,
+            StreamEventType.ASSISTANT_MESSAGE_CREATED: EventType.ASSISTANT_MESSAGE_CREATED,
             StreamEventType.INTENT: EventType.INTENT,
             StreamEventType.CONTEXT: EventType.CONTEXT,
             StreamEventType.SOURCES: EventType.SOURCES,
@@ -226,9 +230,15 @@ class DirectStreamProcessor(StreamProcessor):
 
     async def process(self, context: StreamContext) -> AsyncGenerator[str, None]:
         """Process without RAG service."""
+        processing_message_id = None
         try:
             await self._initialize_context(context)
             yield await self._save_user_message(context)
+
+            processing_message_id = await self._create_processing_message(context)
+            await self._broadcast_message_status(
+                context.conversation_id, processing_message_id, "processing"
+            )
 
             await self._perform_search(context)
             yield SSEFormatter.format_event(EventType.SOURCES, context.sources)
@@ -239,8 +249,24 @@ class DirectStreamProcessor(StreamProcessor):
             async for event in self._stream_response(context, messages, config):
                 yield event
 
+            if processing_message_id:
+                await self._finalize_processing_message(
+                    processing_message_id, context.accumulated_text or ""
+                )
+                await self._broadcast_message_status(
+                    conversation_id=context.conversation_id,
+                    message_id=processing_message_id,
+                    status="completed",
+                    content=context.accumulated_text,
+                )
+
         except Exception as e:
             logger.error(f"Streaming error: {e}", exc_info=True)
+            if processing_message_id:
+                await self._mark_message_failed(processing_message_id)
+                await self._broadcast_message_status(
+                    context.conversation_id, processing_message_id, "failed"
+                )
             async for event in self._handle_error(e, context):
                 yield event
 
@@ -270,6 +296,102 @@ class DirectStreamProcessor(StreamProcessor):
 
         context.user_message = user_msg_result.unwrap()
         return SSEFormatter.format_event(EventType.USER_MESSAGE, context.user_message)
+
+    async def _create_processing_message(self, context: StreamContext) -> str:
+        """Create placeholder message with processing status."""
+        msg_service = self.server.service_container.message_service
+        result = await msg_service.add_message(
+            conversation_id=context.conversation_id,
+            role="assistant",
+            content="",
+            status="processing",
+        )
+
+        if result.is_failure():
+            raise ValueError("Failed to create processing message")
+
+        message = result.unwrap()
+        message_id = str(message["id"])
+
+        log_event(
+            "message_processing_started",
+            {
+                "message_id": message_id,
+                "conversation_id": context.conversation_id,
+            },
+        )
+
+        return message_id
+
+    async def _broadcast_message_status(
+        self,
+        conversation_id: str,
+        message_id: str,
+        status: str,
+        content: Optional[str] = None,
+    ) -> None:
+        """Broadcast message status update via WebSocket."""
+        if (
+            not hasattr(self.server, "websocket_broadcaster")
+            or not self.server.websocket_broadcaster
+        ):
+            return
+
+        await self.server.websocket_broadcaster.broadcast_message_status(
+            conversation_id=conversation_id,
+            message_id=message_id,
+            status=status,
+            content=content,
+        )
+
+        log_event(
+            "message_status_broadcasted",
+            {
+                "message_id": message_id,
+                "conversation_id": conversation_id,
+                "status": status,
+            },
+        )
+
+    async def _finalize_processing_message(self, message_id: str, content: str) -> None:
+        """Update processing message with final content and completed status."""
+        msg_service = self.server.service_container.message_service
+        result = await msg_service.update_message_status(
+            message_id=message_id,
+            status="completed",
+            content=content,
+        )
+
+        if result.is_failure():
+            logger.warning(f"Failed to finalize processing message: {result.error}")
+            return
+
+        log_event(
+            "message_processing_completed",
+            {
+                "message_id": message_id,
+                "content_length": len(content),
+            },
+        )
+
+    async def _mark_message_failed(self, message_id: str) -> None:
+        """Mark message as failed."""
+        msg_service = self.server.service_container.message_service
+        result = await msg_service.update_message_status(
+            message_id=message_id,
+            status="failed",
+        )
+
+        if result.is_failure():
+            logger.warning(f"Failed to mark message as failed: {result.error}")
+            return
+
+        log_event(
+            "message_processing_failed",
+            {
+                "message_id": message_id,
+            },
+        )
 
     async def _perform_search(self, context: StreamContext) -> None:
         """Perform semantic search."""
@@ -417,14 +539,17 @@ class DirectStreamProcessor(StreamProcessor):
                         finish_reason = chunk.finish_reason
 
         except asyncio.TimeoutError:
+            context.accumulated_text = accumulated_text
             async for event in self._handle_timeout(context, config):
                 yield event
             return
         except Exception as e:
+            context.accumulated_text = accumulated_text
             async for event in self._handle_generation_error(e, context):
                 yield event
             return
 
+        context.accumulated_text = accumulated_text
         async for event in self._finalize_response(
             context, accumulated_text, tokens_used, finish_reason
         ):

@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import apiClient from '../utils/api-client';
 
 export type ActivityEventData = Record<string, string | number | boolean | null | undefined>;
 
@@ -17,9 +18,8 @@ export interface ActivityEvent {
 }
 
 interface ApiResponse {
-  success: boolean;
-  events?: ActivityEvent[];
-  error?: string;
+  events: ActivityEvent[];
+  count: number;
 }
 
 interface WebSocketMessage {
@@ -40,7 +40,6 @@ interface UseActivityFeedReturn {
   isConnected: boolean;
 }
 
-const API_BASE_URL = 'http://localhost:8000';
 const WS_ACTIVITY_FEED = 'ws://localhost:8000/ws/activity_feed';
 
 /**
@@ -69,18 +68,21 @@ export const useActivityFeed = (options: UseActivityFeedOptions = {}): UseActivi
   const fetchEvents = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/activity/events?limit=${limit}`);
-      const data = (await response.json()) as ApiResponse;
+      const data = await apiClient.get<ApiResponse>(`/api/activity/events?limit=${limit}`);
 
-      if (data.success && data.events && Array.isArray(data.events)) {
+      if (data.events && Array.isArray(data.events)) {
         setEvents(data.events);
         setError(null);
       } else {
-        setError(data.error ?? 'Failed to load activity events');
+        setError('Invalid response format');
       }
     } catch (err) {
-      console.error('Failed to fetch activity events:', err);
-      setError('Failed to connect to server');
+      if (err instanceof Error && !err.message.includes('Backend is not available')) {
+        console.error('Failed to fetch activity events:', err);
+        setError(err.message);
+      } else {
+        setError(null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -93,51 +95,74 @@ export const useActivityFeed = (options: UseActivityFeedOptions = {}): UseActivi
     }
   }, [autoFetch, fetchEvents]);
 
-  // WebSocket connection for real-time updates
   useEffect(() => {
     let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    let mounted = true;
 
-    const connect = () => {
+    const connect = (): void => {
+      if (!mounted) return;
+
+      if (!apiClient.isReady()) {
+        reconnectTimeout = setTimeout(() => {
+          connect();
+        }, 2000);
+        return;
+      }
+
       try {
         ws = new WebSocket(WS_ACTIVITY_FEED);
 
         ws.onopen = () => {
-          console.log('Activity feed WebSocket connected');
+          if (!mounted) return;
           setIsConnected(true);
         };
 
         ws.onmessage = (event) => {
+          if (!mounted) return;
           try {
             const message = JSON.parse(event.data as string) as WebSocketMessage;
 
             if (message.type === 'activity_event' && message.event) {
-              // Add new event to the top of the list, maintain limit
               const newEvent = message.event;
               setEvents((prev) => [newEvent, ...prev].slice(0, limit));
             }
-          } catch (err) {
-            console.error('Failed to parse WebSocket message:', err);
+          } catch (_err) {
+            console.error('Failed to parse WebSocket message:', _err);
           }
         };
 
         ws.onerror = () => {
-          // Don't log error - it's expected when server is down
+          if (!mounted) return;
           setIsConnected(false);
         };
 
         ws.onclose = () => {
-          console.log('Activity feed WebSocket disconnected');
+          if (!mounted) return;
           setIsConnected(false);
+          if (apiClient.isReady()) {
+            reconnectTimeout = setTimeout(() => {
+              connect();
+            }, 5000);
+          }
         };
-      } catch (err) {
-        console.error('Failed to create WebSocket:', err);
-        setIsConnected(false);
+      } catch (_err) {
+        if (mounted) {
+          setIsConnected(false);
+          reconnectTimeout = setTimeout(() => {
+            connect();
+          }, 5000);
+        }
       }
     };
 
     connect();
 
     return () => {
+      mounted = false;
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
       if (ws) {
         ws.close();
       }

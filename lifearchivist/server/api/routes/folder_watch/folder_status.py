@@ -133,7 +133,7 @@ async def get_folder_status(
         raise ServiceUnavailableError("Folder watcher")
 
     try:
-        folder = await server.folder_watcher.get_folder(folder_id)
+        folder = server.folder_watcher.get_folder(folder_id)
 
         if not folder:
             raise ResourceNotFoundError("Folder", folder_id)

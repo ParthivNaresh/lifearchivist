@@ -24,7 +24,8 @@ import {
   Tag,
 } from 'lucide-react';
 import { useSearch } from '@/hooks/useSearch.ts';
-import { formatFileSize, formatRelativeTime } from '../utils';
+import { formatRelativeTime } from '../utils';
+import { getIngestedAt, getSizeBytes, formatFileSize } from '../../SearchPage/utils';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -309,12 +310,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     <div className="flex items-center gap-3 text-xs text-muted-foreground/80">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>{formatRelativeTime(result.ingested_at)}</span>
+                        <span>{formatRelativeTime(getIngestedAt(result))}</span>
                       </span>
-                      {result.size_bytes > 0 && (
+                      {getSizeBytes(result) > 0 && (
                         <span className="flex items-center gap-1">
                           <span>•</span>
-                          <span>{formatFileSize(result.size_bytes)}</span>
+                          <span>{formatFileSize(getSizeBytes(result))}</span>
                         </span>
                       )}
                     </div>

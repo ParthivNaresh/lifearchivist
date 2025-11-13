@@ -188,7 +188,7 @@ async def update_folder(
         raise ServiceUnavailableError("Folder watcher")
 
     try:
-        folder = await server.folder_watcher.get_folder(folder_id)
+        folder = server.folder_watcher.get_folder(folder_id)
         if not folder:
             raise ResourceNotFoundError("Folder", folder_id)
 
@@ -198,7 +198,7 @@ async def update_folder(
             else:
                 await server.folder_watcher.disable_folder(folder_id)
 
-        updated_folder = await server.folder_watcher.get_folder(folder_id)
+        updated_folder = server.folder_watcher.get_folder(folder_id)
         if not updated_folder:
             raise InternalServerError(
                 "Update folder",

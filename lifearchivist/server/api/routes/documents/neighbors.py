@@ -176,7 +176,7 @@ async def get_llamaindex_document_neighbors(
             return DocumentNeighborsResponse(
                 document_id=result["document_id"],
                 neighbors=neighbors,
-                top_k=result["top_k"],
+                top_k=top_k,
             )
 
         if hasattr(result, "value"):
@@ -188,7 +188,7 @@ async def get_llamaindex_document_neighbors(
             return DocumentNeighborsResponse(
                 document_id=data["document_id"],
                 neighbors=neighbors,
-                top_k=data["top_k"],
+                top_k=top_k,
             )
 
         neighbors = [DocumentNeighbor(**neighbor) for neighbor in result]

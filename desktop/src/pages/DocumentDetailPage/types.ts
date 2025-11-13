@@ -38,54 +38,65 @@ export interface DocumentTheme {
 }
 
 export interface DocumentAnalysis {
-  document_id: string;
-  status: string;
-  metadata: DocumentMetadata;
-  theme?: DocumentTheme;
-  processing_info: {
-    total_chars: number;
-    total_words: number;
-    num_chunks: number;
-    avg_chunk_size: number;
-    min_chunk_size: number;
-    max_chunk_size: number;
-    avg_word_count: number;
-    embedding_model: string;
-    embedding_dimension: number;
-  };
-  storage_info: {
-    docstore_type: string;
-    vector_store_type: string;
-    text_splitter: string;
-  };
-  chunks_preview: {
-    node_id: string;
-    text: string;
+  analysis: {
+    document_id: string;
+    status: string;
     metadata: DocumentMetadata;
-  }[];
+    theme?: DocumentTheme;
+    processing_info: {
+      total_chars: number;
+      total_words: number;
+      num_chunks: number;
+      avg_chunk_size: number;
+      min_chunk_size: number;
+      max_chunk_size: number;
+      avg_word_count: number;
+      embedding_model?: string;
+      embedding_dimension?: number;
+    };
+    storage_info: {
+      metadata_store?: string;
+      vector_store?: string;
+      file_store?: string;
+      text_splitter?: string;
+      chunk_size?: number;
+      chunk_overlap?: number;
+    };
+    chunks_preview: {
+      node_id: string;
+      text: string;
+      text_length?: number;
+      word_count?: number;
+    }[];
+  };
 }
 
 export interface DocumentNeighborMetadata {
-  mime_type?: string;
+  document_id?: string;
   title?: string;
+  mime_type?: string;
+  status?: string;
+  uploaded_date?: string;
+  file_hash_short?: string;
   size_bytes?: number;
   document_created_at?: string;
   theme?: string;
+  primary_subtheme?: string | null;
   tags?: string[];
   [key: string]: unknown;
 }
 
 export interface DocumentNeighbor {
   document_id: string;
-  score: number;
-  text_preview: string;
+  title: string;
+  similarity_score: number;
   metadata: DocumentNeighborMetadata;
 }
 
 export interface DocumentNeighborsResponse {
   document_id: string;
   neighbors: DocumentNeighbor[];
-  total: number;
+  top_k: number;
 }
 
 export interface DocumentTextResponse {

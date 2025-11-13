@@ -34,6 +34,10 @@ export interface ErrorMessageMetadata extends MessageMetadata {
   raw_error?: string;
 }
 
+export type MessageStatus = 'processing' | 'completed' | 'failed' | 'cancelled';
+
+export type MessageStage = 'searching' | 'found_sources' | 'generating';
+
 export interface Message {
   id: string;
   conversation_id: string;
@@ -41,6 +45,8 @@ export interface Message {
   sequence_number: number;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  status: MessageStatus;
+  stage?: MessageStage;
   model: string | null;
   confidence: number | null;
   method: string | null;
@@ -89,7 +95,6 @@ export interface SendMessageRequest {
 }
 
 export interface ConversationListResponse {
-  success: boolean;
   conversations: Conversation[];
   total: number;
   limit: number;
@@ -98,12 +103,10 @@ export interface ConversationListResponse {
 }
 
 export interface ConversationResponse {
-  success: boolean;
   conversation: Conversation;
 }
 
 export interface MessageListResponse {
-  success: boolean;
   messages: Message[];
   total: number;
   limit: number;
@@ -124,6 +127,10 @@ export interface SSEUserMessageEvent {
   content: string;
   role: 'user';
   created_at: string;
+}
+
+export interface SSEAssistantMessageCreatedEvent {
+  id: string;
 }
 
 export interface SSEIntentEvent {
@@ -189,6 +196,7 @@ export interface SSEErrorEvent {
 
 export interface SSECallbacks {
   onUserMessage?: (message: SSEUserMessageEvent) => void;
+  onAssistantMessageCreated?: (data: SSEAssistantMessageCreatedEvent) => void;
   onIntent?: (data: SSEIntentEvent) => void;
   onContext?: (data: SSEContextEvent) => void;
   onSources?: (sources: SSESourceEvent[]) => void;
@@ -197,3 +205,40 @@ export interface SSECallbacks {
   onComplete?: (data: SSECompleteEvent) => void;
   onError?: (error: string) => void;
 }
+
+export interface WSConversationSubscribeMessage {
+  type: 'conversation_subscribe';
+  id?: string;
+  conversation_id: string;
+}
+
+export interface WSSubscriptionConfirmedMessage {
+  type: 'subscription_confirmed';
+  id?: string;
+  conversation_id: string;
+}
+
+export interface WSMessageStatusUpdate {
+  type: 'message_status';
+  id?: string;
+  conversation_id: string;
+  message_id: string;
+  status: MessageStatus;
+  stage?: MessageStage;
+  content?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface WSErrorMessage {
+  type: 'error';
+  id?: string;
+  error: string;
+  error_type: string;
+}
+
+export type WSIncomingMessage =
+  | WSSubscriptionConfirmedMessage
+  | WSMessageStatusUpdate
+  | WSErrorMessage;
+
+export type WSOutgoingMessage = WSConversationSubscribeMessage;

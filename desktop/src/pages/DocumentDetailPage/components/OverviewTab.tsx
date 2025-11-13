@@ -61,7 +61,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     );
   }
 
-  const metadata = analysis?.metadata ?? {};
+  const metadata = analysis?.analysis?.metadata ?? {};
   const classifications = metadata?.classifications ?? {};
   const fileHash = metadata?.file_hash;
   const mimeType = metadata?.mime_type ?? '';

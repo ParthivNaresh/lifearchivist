@@ -13,6 +13,7 @@ import type {
   SetDefaultProviderResponse,
   TestProviderResponse,
   UpdateProviderRequest,
+  UsageCheckResponse,
   ApiErrorResponse,
   ProviderMetadata,
 } from './providers-types';
@@ -97,32 +98,14 @@ export const providersApi = {
   /**
    * Check provider usage in conversations
    */
-  async checkUsage(providerId: string): Promise<{
-    success: boolean;
-    provider_id: string;
-    conversation_count: number;
-    sample_conversations: {
-      id: string;
-      title: string;
-      model: string;
-    }[];
-  }> {
+  async checkUsage(providerId: string): Promise<UsageCheckResponse> {
     const response = await fetch(`${API_BASE}/${providerId}/usage-check`);
 
     if (!response.ok) {
       await handleErrorResponse(response, 'Failed to check provider usage');
     }
 
-    return response.json() as Promise<{
-      success: boolean;
-      provider_id: string;
-      conversation_count: number;
-      sample_conversations: {
-        id: string;
-        title: string;
-        model: string;
-      }[];
-    }>;
+    return response.json() as Promise<UsageCheckResponse>;
   },
 
   /**

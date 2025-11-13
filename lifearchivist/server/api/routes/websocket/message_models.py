@@ -70,5 +70,53 @@ class ErrorMessage(BaseModel):
         }
 
 
-IncomingMessage = Union[ToolExecuteMessage]
-OutgoingMessage = Union[ToolResultMessage, ErrorMessage]
+class ConversationSubscribeMessage(BaseModel):
+    type: Literal["conversation_subscribe"] = Field(
+        ..., description=MESSAGE_TYPE_DESCRIPTION
+    )
+    id: Optional[str] = Field(None, description=MESSAGE_TYPE_CORRELATION)
+    conversation_id: str = Field(..., description="Conversation ID to subscribe to")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "type": "conversation_subscribe",
+                "id": "msg_456",
+                "conversation_id": "conv_123",
+            }
+        }
+
+
+class MessageStatusUpdate(BaseModel):
+    type: Literal["message_status"] = Field(
+        default="message_status", description=MESSAGE_TYPE_DESCRIPTION
+    )
+    id: Optional[str] = Field(None, description=MESSAGE_TYPE_CORRELATION)
+    conversation_id: str = Field(..., description="Conversation ID")
+    message_id: str = Field(..., description="Message ID")
+    status: Literal["processing", "completed", "failed", "cancelled"] = Field(
+        ..., description="Message status"
+    )
+    stage: Optional[Literal["searching", "found_sources", "generating"]] = Field(
+        None, description="Processing stage (for status=processing)"
+    )
+    content: Optional[str] = Field(
+        None, description="Message content (for completed/failed)"
+    )
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "type": "message_status",
+                "conversation_id": "conv_123",
+                "message_id": "msg_789",
+                "status": "processing",
+                "stage": "generating",
+                "metadata": {"sources_found": 3},
+            }
+        }
+
+
+IncomingMessage = Union[ToolExecuteMessage, ConversationSubscribeMessage]
+OutgoingMessage = Union[ToolResultMessage, ErrorMessage, MessageStatusUpdate]

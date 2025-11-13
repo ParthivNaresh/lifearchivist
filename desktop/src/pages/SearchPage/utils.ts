@@ -1,33 +1,59 @@
-/**
- * Utility functions for SearchPage
- */
-
+import { type SearchResult } from './types';
 import { FILE_SIZE_UNITS, MIME_TYPE_ICONS } from './constants';
 
-/**
- * Format bytes into human-readable file size
- */
-export const formatFileSize = (bytes: number): string => {
+export interface SearchResultMetadata {
+  mime_type?: string;
+  size_bytes?: number;
+  word_count?: number | null;
+  ingested_at?: string | null;
+  created_at?: string | null;
+  tags?: string[];
+  status?: string;
+  [key: string]: unknown;
+}
+
+export function getMetadata(result: SearchResult): SearchResultMetadata {
+  return (result.metadata as SearchResultMetadata) ?? {};
+}
+
+export function getMimeType(result: SearchResult): string {
+  return getMetadata(result).mime_type ?? 'application/octet-stream';
+}
+
+export function getSizeBytes(result: SearchResult): number {
+  return getMetadata(result).size_bytes ?? 0;
+}
+
+export function getWordCount(result: SearchResult): number | null {
+  return getMetadata(result).word_count ?? null;
+}
+
+export function getIngestedAt(result: SearchResult): string | null {
+  return getMetadata(result).ingested_at ?? null;
+}
+
+export function getTags(result: SearchResult): string[] {
+  return getMetadata(result).tags ?? [];
+}
+
+export function getStatus(result: SearchResult): string {
+  return getMetadata(result).status ?? 'unknown';
+}
+
+export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
   const k = 1024;
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + FILE_SIZE_UNITS[i];
-};
+}
 
-/**
- * Format date string into locale date
- */
-export const formatDate = (dateString: string | null): string => {
+export function formatDate(dateString: string | null): string {
   if (!dateString) return 'Unknown';
   return new Date(dateString).toLocaleDateString();
-};
+}
 
-/**
- * Get emoji icon for MIME type
- */
-export const getMimeTypeIcon = (mimeType: string | null | undefined): string => {
+export function getMimeTypeIcon(mimeType: string): string {
   const defaultIcon = MIME_TYPE_ICONS.default ?? '📄';
-  if (!mimeType) return defaultIcon;
 
   if (mimeType.startsWith('text/')) {
     return MIME_TYPE_ICONS['text/'] ?? defaultIcon;
@@ -40,31 +66,21 @@ export const getMimeTypeIcon = (mimeType: string | null | undefined): string => 
   }
 
   return defaultIcon;
-};
+}
 
-/**
- * Parse tags from URL parameter string
- */
-export const parseTagsFromUrl = (urlTags: string | null): string[] => {
+export function parseTagsFromUrl(urlTags: string | null): string[] {
   if (!urlTags) return [];
   return urlTags
     .split(',')
     .map((tag) => decodeURIComponent(tag.trim()))
     .filter((tag) => tag);
-};
+}
 
-/**
- * Format score as percentage
- */
-export const formatScore = (score: number): string => {
+export function formatScore(score: number): string {
   return `${(score * 100).toFixed(0)}%`;
-};
+}
 
-/**
- * Get file type from MIME type
- */
-export const getFileType = (mimeType: string | null | undefined): string => {
-  if (!mimeType) return 'unknown';
+export function getFileType(mimeType: string): string {
   const parts = mimeType.split('/');
   return parts[1] ?? 'unknown';
-};
+}

@@ -52,8 +52,8 @@ const ConversationsPage: React.FC = () => {
 
         try {
           const settings = await settingsApi.getSettings();
-          model = settings.data?.llm_model;
-        } catch {
+          model = settings.llm_model;
+        } catch (_err) {
           model = undefined;
         }
       }

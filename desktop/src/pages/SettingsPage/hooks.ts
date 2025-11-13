@@ -77,7 +77,7 @@ export const useSettingsManager = (
     try {
       const response = await saveSettingsToServer(settings);
 
-      if (response.success) {
+      if (response.message) {
         setSaveMessage(UI_TEXT.SAVE_SUCCESS);
         setOriginalSettings(settings);
         setTimeout(() => setSaveMessage(null), 3000);

@@ -56,10 +56,10 @@ export const DefaultProviderModelSelector: React.FC<DefaultProviderModelSelector
 
     let modelToSet: string | null = null;
 
-    if (currentSettings?.data?.llm_model) {
-      const modelExists = modelsData.models.some((m) => m.id === currentSettings.data.llm_model);
+    if (currentSettings?.llm_model) {
+      const modelExists = modelsData.models.some((m) => m.id === currentSettings.llm_model);
       if (modelExists) {
-        modelToSet = currentSettings.data.llm_model;
+        modelToSet = currentSettings.llm_model;
       }
     }
 

@@ -27,7 +27,7 @@ export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
   const location = useLocation();
   const locationState = location.state as LocationState | null;
 
-  const metadata = analysis?.metadata ?? {};
+  const metadata = analysis?.analysis?.metadata ?? {};
   const originalPath = metadata.original_path;
   const pathParts = typeof originalPath === 'string' ? originalPath.split('/') : [];
   const lastPathPart = pathParts.length > 0 ? pathParts[pathParts.length - 1] : undefined;

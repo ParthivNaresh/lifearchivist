@@ -1,15 +1,7 @@
-/**
- * API service layer for QAPage
- */
-
-import axios from 'axios';
+import apiClient from '../../utils/api-client';
 import { type QAResponse, type QARequest } from './types';
-import { API_BASE_URL, API_ENDPOINTS } from './constants';
+import { API_ENDPOINTS } from './constants';
 
-/**
- * Submit a question to the Q&A API
- */
 export const askQuestion = async (request: QARequest): Promise<QAResponse> => {
-  const response = await axios.post<QAResponse>(`${API_BASE_URL}${API_ENDPOINTS.ASK}`, request);
-  return response.data;
+  return await apiClient.post<QAResponse>(API_ENDPOINTS.ASK, request);
 };

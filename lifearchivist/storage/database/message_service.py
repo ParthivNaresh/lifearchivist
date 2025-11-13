@@ -25,12 +25,14 @@ from .utils import (
     build_citation_data,
     build_insert_query,
     build_message_data,
+    build_update_query,
     parse_uuid,
     record_to_dict,
     records_to_list,
     validate_confidence,
     validate_message_content,
     validate_message_role,
+    validate_message_status,
     validate_single_citation,
 )
 
@@ -76,6 +78,7 @@ class MessageService:
         latency_ms: Optional[int] = None,
         parent_message_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        status: str = "completed",
     ) -> Result[Dict[str, Any], str]:
         """
         Add a message to a conversation.
@@ -91,6 +94,7 @@ class MessageService:
             latency_ms: Response time in milliseconds
             parent_message_id: Parent message for branching
             metadata: Additional metadata
+            status: Message status (default: 'completed')
 
         Returns:
             Success with message dict, or Failure with error
@@ -100,11 +104,16 @@ class MessageService:
             if error_msg:
                 return validation_error(error_msg, context={"role": role})
 
-            error_msg = validate_message_content(content)
+            if status != "processing":
+                error_msg = validate_message_content(content)
+                if error_msg:
+                    return validation_error(
+                        error_msg, context={"conversation_id": conversation_id}
+                    )
+
+            error_msg = validate_message_status(status)
             if error_msg:
-                return validation_error(
-                    error_msg, context={"conversation_id": conversation_id}
-                )
+                return validation_error(error_msg, context={"status": status})
 
             if confidence is not None:
                 error_msg = validate_confidence(confidence)
@@ -139,6 +148,7 @@ class MessageService:
                         latency_ms,
                         parent_uuid,
                         metadata,
+                        status,
                     )
 
                     query, values = build_insert_query("messages", data)
@@ -158,6 +168,7 @@ class MessageService:
                     "message_id": str(message["id"]),
                     "conversation_id": conversation_id,
                     "role": role,
+                    "status": status,
                     "sequence": sequence_number,
                 },
             )
@@ -182,6 +193,80 @@ class MessageService:
             return internal_error(
                 f"Failed to add message: {str(e)}",
                 context={"conversation_id": conversation_id},
+            )
+
+    @track(
+        operation="message_status_update",
+        include_args=["message_id", "status"],
+        track_performance=True,
+        frequency="high_frequency",
+    )
+    async def update_message_status(
+        self,
+        message_id: str,
+        status: str,
+        content: Optional[str] = None,
+    ) -> Result[Dict[str, Any], str]:
+        """
+        Update message status and optionally content.
+
+        Args:
+            message_id: Message UUID
+            status: New status ('processing', 'completed', 'failed', 'cancelled')
+            content: Optional new content (for updating during completion)
+
+        Returns:
+            Success with updated message dict, or Failure with error
+        """
+        try:
+            error_msg = validate_message_status(status)
+            if error_msg:
+                return validation_error(error_msg, context={"status": status})
+
+            msg_uuid = parse_uuid(message_id)
+
+            updates: Dict[str, Any] = {"status": status}
+            if content is not None:
+                updates["content"] = content.strip()
+
+            query, values = build_update_query(
+                "messages", updates, f"id = ${len(updates) + 1}"
+            )
+            values.append(msg_uuid)
+
+            async with self.db_pool.acquire() as conn:
+                record = await conn.fetchrow(query, *values)
+
+            if not record:
+                return not_found_error(
+                    f"Message '{message_id}' not found",
+                    context={"message_id": message_id},
+                )
+
+            message = record_to_dict(record)
+
+            log_event(
+                "message_status_updated",
+                {
+                    "message_id": message_id,
+                    "status": status,
+                    "content_updated": content is not None,
+                },
+            )
+
+            return Success(message)
+
+        except ValueError as e:
+            return validation_error(str(e), context={"message_id": message_id})
+        except Exception as e:
+            log_event(
+                "message_status_update_error",
+                {"message_id": message_id, "error": str(e)},
+                level=logging.ERROR,
+            )
+            return internal_error(
+                f"Failed to update message status: {str(e)}",
+                context={"message_id": message_id},
             )
 
     @track(

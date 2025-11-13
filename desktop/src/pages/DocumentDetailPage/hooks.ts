@@ -81,7 +81,7 @@ export const useDocumentDownload = (
     if (!analysis) return;
 
     try {
-      const fileHash = analysis.metadata?.file_hash;
+      const fileHash = analysis.analysis?.metadata?.file_hash;
       if (!fileHash || typeof fileHash !== 'string') {
         onError?.('File hash not found. Cannot download.');
         return;
@@ -89,13 +89,12 @@ export const useDocumentDownload = (
 
       const blob = await downloadDocumentFile(fileHash);
 
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       const fileName =
-        analysis.metadata.title && typeof analysis.metadata.title === 'string'
-          ? analysis.metadata.title
+        analysis.analysis.metadata.title && typeof analysis.analysis.metadata.title === 'string'
+          ? analysis.analysis.metadata.title
           : 'document';
       link.setAttribute('download', fileName);
       document.body.appendChild(link);
@@ -125,7 +124,7 @@ export const useDocumentShare = (
   const handleShare = useCallback(async () => {
     if (!analysis) return;
 
-    const metadata = analysis.metadata || {};
+    const metadata = analysis.analysis?.metadata || {};
     const title = typeof metadata.title === 'string' ? metadata.title : 'Document';
     const shareData = {
       title,
@@ -189,8 +188,8 @@ export const useSyncTags = (
   setTags: (tags: string[]) => void
 ) => {
   useEffect(() => {
-    if (analysis?.metadata?.tags) {
-      setTags(analysis.metadata.tags);
+    if (analysis?.analysis?.metadata?.tags) {
+      setTags(analysis.analysis.metadata.tags);
     }
   }, [analysis, setTags]);
 };

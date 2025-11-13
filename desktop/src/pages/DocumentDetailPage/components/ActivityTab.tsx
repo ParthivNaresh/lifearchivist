@@ -18,7 +18,7 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({ analysis, loading }) =
     );
   }
 
-  const metadata = analysis?.metadata ?? {};
+  const metadata = analysis?.analysis?.metadata ?? {};
   const provenance: { action: string; timestamp?: string; tool?: string }[] =
     (metadata.provenance as { action: string; timestamp?: string; tool?: string }[]) ?? [];
 
@@ -104,24 +104,26 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({ analysis, loading }) =
       </div>
 
       {/* Processing Details */}
-      {analysis?.processing_info && (
+      {analysis?.analysis?.processing_info && (
         <div className="glass-card p-6 rounded-lg">
           <h3 className="text-lg font-semibold mb-4">Processing Details</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Index Status:</span>
-              <span className="font-medium">{analysis.status}</span>
+              <span className="font-medium">{analysis.analysis.status}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Processing Chunks:</span>
-              <span className="font-medium">{analysis.processing_info.num_chunks}</span>
+              <span className="font-medium">{analysis.analysis.processing_info.num_chunks}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Embedding Model:</span>
-              <span className="font-medium text-xs">
-                {analysis.processing_info.embedding_model}
-              </span>
-            </div>
+            {analysis.analysis.processing_info.embedding_model && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Embedding Model:</span>
+                <span className="font-medium text-xs">
+                  {analysis.analysis.processing_info.embedding_model}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

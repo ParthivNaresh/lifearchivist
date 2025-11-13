@@ -24,51 +24,20 @@ import {
   Trash2,
 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import { API_ENDPOINTS, WS_ENDPOINTS } from '../constants';
+import { WS_ENDPOINTS } from '../constants';
+import {
+  fetchAggregateStatus,
+  addWatchedFolder,
+  updateWatchedFolder,
+  removeWatchedFolder,
+  scanWatchedFolder,
+} from '../api';
+import type { AggregateStatus, WatchedFolder } from '../types';
 
 interface FolderWatchManagerProps {
   isOpen: boolean;
   onClose: () => void;
   onStatusChange?: () => void;
-}
-
-interface FolderStats {
-  files_detected: number;
-  files_ingested: number;
-  files_skipped: number;
-  files_failed: number;
-  bytes_processed: number;
-  last_activity: string | null;
-  last_success: string | null;
-  last_failure: string | null;
-  error_count: number;
-  last_error: string;
-}
-
-interface WatchedFolder {
-  id: string;
-  path: string;
-  enabled: boolean;
-  created_at: string;
-  status: 'active' | 'stopped' | 'paused' | 'error';
-  health: 'healthy' | 'degraded' | 'unhealthy' | 'unreachable';
-  is_active: boolean;
-  success_rate: number;
-  stats: FolderStats;
-}
-
-interface AggregateStatus {
-  success: boolean;
-  total_folders: number;
-  active_folders: number;
-  total_pending: number;
-  total_detected: number;
-  total_ingested: number;
-  total_failed: number;
-  total_bytes_processed: number;
-  folders: WatchedFolder[];
-  supported_extensions: string[];
-  ingestion_concurrency: number;
 }
 
 interface WebSocketMessage {
@@ -79,16 +48,6 @@ interface WebSocketMessage {
 interface ElectronDirectoryResult {
   canceled: boolean;
   filePaths?: string[];
-}
-
-interface ErrorResponse {
-  detail?: string;
-}
-
-interface ScanResponse {
-  files_found: number;
-  files_queued: number;
-  files_failed: number;
 }
 
 export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
@@ -146,11 +105,7 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
 
   const fetchStatus = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.FOLDER_WATCH_STATUS);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = (await response.json()) as AggregateStatus;
+      const data = await fetchAggregateStatus();
       setStatus(data);
       setError(null);
     } catch (err) {
@@ -179,7 +134,11 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
 
       const folderPath = result.filePaths[0];
 
-      // Check if folder is already being watched
+      if (!folderPath) {
+        setLoading(false);
+        return;
+      }
+
       const existingFolder = status?.folders.find((folder) => folder.path === folderPath);
 
       if (existingFolder) {
@@ -204,24 +163,17 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
         return;
       }
 
-      const response = await fetch(API_ENDPOINTS.FOLDER_WATCH_FOLDERS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      try {
+        await addWatchedFolder({
           folder_path: folderPath,
           enabled: true,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json()) as ErrorResponse;
-        // Check if it's a "already watched" error from backend
-        const errorMsg = data.detail ?? 'Failed to add folder';
+        });
+      } catch (addError) {
+        const errorMsg = addError instanceof Error ? addError.message : 'Failed to add folder';
         if (
           errorMsg.toLowerCase().includes('already') &&
           errorMsg.toLowerCase().includes('watch')
         ) {
-          // Try to find and highlight the folder
           const existingFolder = status?.folders.find((folder) => folder.path === folderPath);
           if (existingFolder) {
             setHighlightedFolderId(existingFolder.id);
@@ -236,7 +188,7 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
             }, 2500);
           }
         } else {
-          throw new Error(errorMsg);
+          throw addError;
         }
         setLoading(false);
         return;
@@ -258,15 +210,7 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
     setError(null);
 
     try {
-      const response = await fetch(API_ENDPOINTS.FOLDER_WATCH_FOLDER(folderId), {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const data = (await response.json()) as ErrorResponse;
-        throw new Error(data.detail ?? 'Failed to remove folder');
-      }
-
+      await removeWatchedFolder(folderId);
       await fetchStatus();
       onStatusChange?.();
     } catch (err) {
@@ -283,17 +227,7 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
     setError(null);
 
     try {
-      const response = await fetch(API_ENDPOINTS.FOLDER_WATCH_FOLDER(folderId), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: !currentlyEnabled }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json()) as ErrorResponse;
-        throw new Error(data.detail ?? 'Failed to update folder');
-      }
-
+      await updateWatchedFolder(folderId, { enabled: !currentlyEnabled });
       await fetchStatus();
       onStatusChange?.();
     } catch (err) {
@@ -311,24 +245,13 @@ export const FolderWatchManager: React.FC<FolderWatchManagerProps> = ({
     setSuccessMessage(null);
 
     try {
-      const response = await fetch(API_ENDPOINTS.FOLDER_WATCH_SCAN_FOLDER(folderId), {
-        method: 'POST',
-      });
+      const data = await scanWatchedFolder(folderId);
 
-      if (!response.ok) {
-        const data = (await response.json()) as ErrorResponse;
-        throw new Error(data.detail ?? 'Failed to scan folder');
-      }
-
-      const data = (await response.json()) as ScanResponse;
-
-      // Show success message with scan results
       setSuccessMessage(
         `Scan complete: ${data.files_found} file${data.files_found !== 1 ? 's' : ''} found, ` +
           `${data.files_queued} queued for ingestion`
       );
 
-      // Auto-dismiss after 5 seconds
       setTimeout(() => setSuccessMessage(null), 5000);
 
       await fetchStatus();

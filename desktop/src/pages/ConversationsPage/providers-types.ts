@@ -42,13 +42,11 @@ export interface UpdateProviderRequest {
 }
 
 export interface ListProvidersResponse {
-  success: boolean;
   providers: Provider[];
   total: number;
 }
 
 export interface GetProviderResponse {
-  success: boolean;
   provider_id: string;
   provider_type: ProviderType;
   is_default: boolean;
@@ -58,7 +56,6 @@ export interface GetProviderResponse {
 }
 
 export interface AddProviderResponse {
-  success: boolean;
   provider_id: string;
   provider_type: ProviderType;
   is_default: boolean;
@@ -66,20 +63,19 @@ export interface AddProviderResponse {
 }
 
 export interface DeleteProviderResponse {
-  success: boolean;
   provider_id: string;
   message: string;
+  affected_conversations: number;
+  conversations_updated: boolean;
 }
 
 export interface TestProviderResponse {
-  success: boolean;
   provider_id: string;
   is_valid: boolean;
   message: string;
 }
 
 export interface ListModelsResponse {
-  success: boolean;
   provider_id: string;
   models: ProviderModel[];
   total: number;
@@ -91,10 +87,21 @@ export interface SetDefaultProviderRequest {
 }
 
 export interface SetDefaultProviderResponse {
-  success: boolean;
   provider_id: string;
   default_model?: string;
   message: string;
+}
+
+export interface ConversationSample {
+  id: string;
+  title: string;
+  model: string;
+}
+
+export interface UsageCheckResponse {
+  provider_id: string;
+  conversation_count: number;
+  sample_conversations: ConversationSample[];
 }
 
 export interface Workspace {
