@@ -58,7 +58,7 @@ class MockFolderWatcher:
     async def list_folders(self, enabled_only: bool = False) -> list:
         return []
 
-    async def get_folder(self, folder_id: str):
+    def get_folder(self, folder_id: str):
         if folder_id == "nonexistent-id":
             return None
         if folder_id == "test-folder-id":

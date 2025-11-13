@@ -133,6 +133,9 @@ async def add_folder(request: AddFolderRequest) -> FolderResponse:
     if not server.folder_watcher:
         raise ServiceUnavailableError("Folder watcher")
 
+    if not request.folder_path or not request.folder_path.strip():
+        raise ValidationError("Folder path cannot be empty")
+
     try:
         folder_path = Path(request.folder_path).expanduser().resolve()
     except Exception as e:
