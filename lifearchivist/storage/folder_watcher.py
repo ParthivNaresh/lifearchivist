@@ -21,14 +21,14 @@ from typing import Dict, Optional, Tuple
 from uuid import uuid4
 
 import aiofiles
-from server.api.routes.folder_watch.misc_models import (
+from watchdog.events import FileSystemEvent, FileSystemEventHandler
+from watchdog.observers import Observer
+
+from lifearchivist.server.api.routes.folder_watch.misc_models import (
     FolderStats,
     FolderWatchStatus,
     WatchedFolder,
 )
-from watchdog.events import FileSystemEvent, FileSystemEventHandler
-from watchdog.observers import Observer
-
 from lifearchivist.storage.redis_folder_watch_store import RedisFolderWatchStore
 from lifearchivist.utils.logging import log_event
 

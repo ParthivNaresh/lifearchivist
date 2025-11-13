@@ -5,11 +5,18 @@
  */
 
 import { FileText, Download, ExternalLink } from 'lucide-react';
+import apiClient from '../../../utils/api-client';
 
 interface DocumentViewerProps {
   fileHash: string;
   mimeType: string;
 }
+
+const getFileUrl = (fileHash: string, timestamp?: number): string => {
+  const baseUrl = apiClient.getBaseURL();
+  const url = `${baseUrl}/api/vault/file/${fileHash}`;
+  return timestamp ? `${url}?t=${timestamp}` : url;
+};
 
 /**
  * Get human-readable document type name from MIME type
@@ -27,6 +34,7 @@ const getDocumentTypeName = (mimeType: string): string => {
  */
 export const DownloadOnlyViewer: React.FC<DocumentViewerProps> = ({ fileHash, mimeType }) => {
   const documentType = getDocumentTypeName(mimeType);
+  const fileUrl = getFileUrl(fileHash);
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
@@ -34,7 +42,7 @@ export const DownloadOnlyViewer: React.FC<DocumentViewerProps> = ({ fileHash, mi
       <p className="text-lg font-medium mb-2">{documentType}</p>
       <p className="text-sm mb-4">This file type cannot be displayed in the browser</p>
       <a
-        href={`http://localhost:8000/api/vault/file/${fileHash}`}
+        href={fileUrl}
         download
         className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 flex items-center"
       >
@@ -52,7 +60,7 @@ export const PDFViewer: React.FC<DocumentViewerProps & { timestamp: number }> = 
   fileHash,
   timestamp,
 }) => {
-  const fileUrl = `http://localhost:8000/api/vault/file/${fileHash}?t=${timestamp}`;
+  const fileUrl = getFileUrl(fileHash, timestamp);
 
   return (
     <object
@@ -61,7 +69,6 @@ export const PDFViewer: React.FC<DocumentViewerProps & { timestamp: number }> = 
       className="w-full h-full"
       aria-label="PDF Document"
     >
-      {/* Fallback content if PDF cannot be displayed */}
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
         <FileText className="h-12 w-12 mb-4 opacity-50" />
         <p className="text-lg font-medium mb-2">PDF Preview Not Available</p>
@@ -84,13 +91,9 @@ export const PDFViewer: React.FC<DocumentViewerProps & { timestamp: number }> = 
  * Generic iframe viewer for images and text files
  */
 export const IFrameViewer: React.FC<DocumentViewerProps> = ({ fileHash }) => {
-  return (
-    <iframe
-      src={`http://localhost:8000/api/vault/file/${fileHash}`}
-      className="w-full h-full border-0"
-      title="Original Document"
-    />
-  );
+  const fileUrl = getFileUrl(fileHash);
+
+  return <iframe src={fileUrl} className="w-full h-full border-0" title="Original Document" />;
 };
 
 /**

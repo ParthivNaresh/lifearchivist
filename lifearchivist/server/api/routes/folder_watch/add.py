@@ -144,7 +144,7 @@ async def add_folder(request: AddFolderRequest) -> FolderResponse:
             enabled=request.enabled,
         )
 
-        folder = await server.folder_watcher.get_folder(folder_id)
+        folder = server.folder_watcher.get_folder(folder_id)
         if not folder:
             raise InternalServerError(
                 "Add folder",

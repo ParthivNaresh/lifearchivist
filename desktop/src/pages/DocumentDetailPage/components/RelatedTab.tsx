@@ -70,16 +70,12 @@ export const RelatedTab: React.FC<RelatedTabProps> = ({
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
                       <h4 className="font-medium text-sm">
-                        {neighbor.metadata.title ?? 'Untitled Document'}
+                        {neighbor.title ?? neighbor.metadata.title ?? 'Untitled Document'}
                       </h4>
                       <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-                        {(neighbor.score * 100).toFixed(0)}% match
+                        {(neighbor.similarity_score * 100).toFixed(0)}% match
                       </span>
                     </div>
-
-                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                      {neighbor.text_preview}
-                    </p>
 
                     <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                       <span>{formatFileSize(neighbor.metadata.size_bytes ?? 0)}</span>
