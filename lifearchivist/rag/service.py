@@ -927,7 +927,7 @@ class ConversationRAGService:
                 citations,
             )
 
-        except (asyncio.TimeoutError, Exception) as e:
+        except Exception as e:
             async for event in self._handle_processing_error(
                 e,
                 conversation_id,
