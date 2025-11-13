@@ -12,9 +12,11 @@ from fastapi import WebSocket
 from pydantic import ValidationError as PydanticValidationError
 
 from .websocket.constants import (
+    MESSAGE_TYPE_CONVERSATION_SUBSCRIBE,
     MESSAGE_TYPE_TOOL_EXECUTE,
 )
 from .websocket.message_models import (
+    ConversationSubscribeMessage,
     ErrorMessage,
     ToolExecuteMessage,
     ToolResultMessage,
@@ -91,6 +93,48 @@ async def handle_tool_execute(
         )
 
 
+async def handle_conversation_subscribe(
+    websocket: WebSocket,
+    message: ConversationSubscribeMessage,
+    server: Any,
+) -> None:
+    """
+    Handle conversation subscription request.
+
+    Args:
+        websocket: WebSocket connection
+        message: Validated conversation subscribe message
+        server: Server instance with websocket_broadcaster
+    """
+    try:
+        if not hasattr(server, "websocket_broadcaster"):
+            await send_error(
+                websocket,
+                "WebSocket broadcaster not available",
+                "ServiceUnavailable",
+                message.id,
+            )
+            return
+
+        await server.websocket_broadcaster.subscribe(message.conversation_id, websocket)
+
+        response = {
+            "type": "subscription_confirmed",
+            "id": message.id,
+            "conversation_id": message.conversation_id,
+        }
+        await websocket.send_json(response)
+
+    except Exception as e:
+        logger.error(f"Conversation subscription error: {e}", exc_info=True)
+        await send_error(
+            websocket,
+            f"Subscription failed: {str(e)}",
+            type(e).__name__,
+            message.id,
+        )
+
+
 async def handle_unknown_message_type(
     websocket: WebSocket,
     message_type: Optional[str],
@@ -137,6 +181,9 @@ async def process_websocket_message(
         if message_type == MESSAGE_TYPE_TOOL_EXECUTE:
             tool_message = ToolExecuteMessage(**data)
             await handle_tool_execute(websocket, tool_message, server)
+        elif message_type == MESSAGE_TYPE_CONVERSATION_SUBSCRIBE:
+            subscribe_message = ConversationSubscribeMessage(**data)
+            await handle_conversation_subscribe(websocket, subscribe_message, server)
         else:
             await handle_unknown_message_type(websocket, message_type, message_id)
     except PydanticValidationError as e:

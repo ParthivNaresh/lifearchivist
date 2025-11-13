@@ -10,6 +10,7 @@ import type {
   SendMessageResponse,
   SSECallbacks,
   SSEUserMessageEvent,
+  SSEAssistantMessageCreatedEvent,
   SSEIntentEvent,
   SSEContextEvent,
   SSESourceEvent,
@@ -114,6 +115,11 @@ export const conversationsApi = {
                   case 'user_message': {
                     const data = JSON.parse(currentData) as SSEUserMessageEvent;
                     callbacks.onUserMessage?.(data);
+                    break;
+                  }
+                  case 'assistant_message_created': {
+                    const data = JSON.parse(currentData) as SSEAssistantMessageCreatedEvent;
+                    callbacks.onAssistantMessageCreated?.(data);
                     break;
                   }
                   case 'intent': {

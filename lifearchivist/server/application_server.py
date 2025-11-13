@@ -96,12 +96,13 @@ class ApplicationServer:
 
         # Application services (will be initialized)
         self.session_manager: Optional[SessionManager] = SessionManager()
+        self.websocket_broadcaster = None
         self.activity_manager: Optional[ActivityManager] = None
         self.progress_manager: Optional[ProgressManager] = None
         self.enrichment_queue: Optional[EnrichmentQueue] = None
         self.background_tasks: Optional[BackgroundTaskManager] = None
         self.tool_registry: Optional[ToolRegistry] = None
-        self.folder_watcher = None  # Folder watching service
+        self.folder_watcher = None
 
         self._initialized = False
 
@@ -133,6 +134,7 @@ class ApplicationServer:
             await self._run_startup_reconciliation()
 
             # Phase 3: Initialize application services
+            self._init_websocket_broadcaster()
             await self._init_activity_manager()
             await self._init_progress_manager()
             await self._init_enrichment_queue()
@@ -324,6 +326,21 @@ class ApplicationServer:
                 level=logging.ERROR,
             )
             # Don't fail startup if reconciliation fails
+
+    def _init_websocket_broadcaster(self):
+        """Initialize WebSocket broadcaster for conversation updates."""
+        try:
+            from .api.routes.websocket.broadcaster import WebSocketBroadcaster
+
+            self.websocket_broadcaster = WebSocketBroadcaster()
+            log_event("websocket_broadcaster_initialized")
+        except Exception as e:
+            log_event(
+                "websocket_broadcaster_init_failed",
+                {"error": str(e)},
+                level=logging.WARNING,
+            )
+            self.websocket_broadcaster = None
 
     async def _init_activity_manager(self):
         """Initialize activity event manager."""

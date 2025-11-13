@@ -88,6 +88,7 @@ CREATE TABLE messages (
     -- Message content
     role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
     content TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'completed' CHECK (status IN ('processing', 'completed', 'failed', 'cancelled')),
     
     -- AI-specific metadata (for assistant messages)
     model VARCHAR(100),  -- Can switch models mid-conversation
@@ -115,6 +116,7 @@ CREATE INDEX idx_messages_conversation_id ON messages(conversation_id, sequence_
 CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
 CREATE INDEX idx_messages_parent_id ON messages(parent_message_id) WHERE parent_message_id IS NOT NULL;
 CREATE INDEX idx_messages_role ON messages(role);
+CREATE INDEX idx_messages_status ON messages(status) WHERE status != 'completed';
 CREATE INDEX idx_messages_content_trgm ON messages USING gin(content gin_trgm_ops);  -- Full-text search
 
 -- Trigger to update conversation's last_message_at

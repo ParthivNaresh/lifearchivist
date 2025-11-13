@@ -14,6 +14,7 @@ class StreamEventType(Enum):
     """Types of events emitted during RAG processing."""
 
     USER_MESSAGE = "user_message"
+    ASSISTANT_MESSAGE_CREATED = "assistant_message_created"
     CONTEXT = "context"
     TOKEN = "token"
     METADATA = "metadata"
@@ -220,6 +221,17 @@ class IntentData:
 
 
 @dataclass
+class AssistantMessageCreatedData:
+    """Data for assistant message created event."""
+
+    id: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {"id": self.id}
+
+
+@dataclass
 class StreamEvent:
     """
     Event emitted during RAG streaming processing.
@@ -232,7 +244,15 @@ class StreamEvent:
     """
 
     type: StreamEventType
-    data: ContextData | str | MetadataInfo | ErrorInfo | IntentData | List[Citation]
+    data: (
+        ContextData
+        | str
+        | MetadataInfo
+        | ErrorInfo
+        | IntentData
+        | AssistantMessageCreatedData
+        | List[Citation]
+    )
     timestamp: datetime = field(default_factory=datetime.utcnow)
     sequence_number: int = 0
 
@@ -345,5 +365,16 @@ class StreamEvent:
         return cls(
             type=StreamEventType.SOURCES,
             data=citations,
+            sequence_number=sequence,
+        )
+
+    @classmethod
+    def assistant_message_created(
+        cls, message_id: str, sequence: int = 0
+    ) -> "StreamEvent":
+        """Create an assistant message created event."""
+        return cls(
+            type=StreamEventType.ASSISTANT_MESSAGE_CREATED,
+            data=AssistantMessageCreatedData(id=message_id),
             sequence_number=sequence,
         )

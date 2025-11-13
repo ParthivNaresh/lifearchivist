@@ -90,13 +90,22 @@ async def handle_message_loop(
             )
 
 
-def cleanup_connection(session_id: str, server: Any) -> None:
+async def cleanup_connection(
+    session_id: str, server: Any, websocket: WebSocket
+) -> None:
     """
     Clean up WebSocket connection resources.
 
     Args:
         session_id: Session identifier
         server: Server instance
+        websocket: WebSocket connection
     """
     if server.session_manager is not None:
         server.session_manager.disconnect(session_id)
+
+    if (
+        hasattr(server, "websocket_broadcaster")
+        and server.websocket_broadcaster is not None
+    ):
+        await server.websocket_broadcaster.unsubscribe_all(websocket)

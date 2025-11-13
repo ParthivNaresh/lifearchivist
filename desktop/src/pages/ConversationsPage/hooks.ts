@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { conversationsApi } from './api';
+import { useConversationWebSocket } from '../../hooks/useConversationWebSocket';
 import type { Conversation, Message, SendMessageRequest, Citation } from './types';
 
 /**
@@ -82,6 +83,56 @@ export function useConversation(conversationId: string | null) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const handleMessageStatusUpdate = useCallback(
+    (update: {
+      message_id: string;
+      status: 'processing' | 'completed' | 'failed' | 'cancelled';
+      stage?: 'searching' | 'found_sources' | 'generating';
+      content?: string;
+      metadata?: Record<string, unknown>;
+    }) => {
+      setMessages((prev) =>
+        prev.map((m): Message => {
+          if (m.id === update.message_id) {
+            const updates: Partial<Message> = {
+              status: update.status,
+            };
+
+            if (update.stage !== undefined) {
+              updates.stage = update.stage;
+            }
+
+            if (update.content !== undefined) {
+              updates.content = update.content;
+            }
+
+            if (update.metadata !== undefined) {
+              const currentMetadata = typeof m.metadata === 'string' ? {} : m.metadata || {};
+
+              updates.metadata = { ...currentMetadata, ...update.metadata } as typeof m.metadata;
+            }
+
+            return {
+              ...m,
+              ...updates,
+            };
+          }
+          return m;
+        })
+      );
+    },
+    []
+  );
+
+  useConversationWebSocket({
+    conversationId,
+    onMessageStatusUpdate: handleMessageStatusUpdate,
+    onError: (err) => {
+      console.error('WebSocket error:', err);
+    },
+    enabled: conversationId !== null,
+  });
+
   const loadConversation = useCallback(async () => {
     if (!conversationId) return;
 
@@ -117,6 +168,7 @@ export function useConversation(conversationId: string | null) {
         sequence_number: messages.length,
         role: 'user',
         content,
+        status: 'completed',
         model: null,
         confidence: null,
         method: null,
@@ -188,10 +240,8 @@ export function useConversation(conversationId: string | null) {
     async (content: string, contextLimit = 5) => {
       if (!conversationId) return;
 
-      // Create AbortController for cancellation
       const abortController = new AbortController();
 
-      // Create optimistic user message
       const optimisticUserMessage: Message = {
         id: `temp-user-${Date.now()}`,
         conversation_id: conversationId,
@@ -199,6 +249,7 @@ export function useConversation(conversationId: string | null) {
         sequence_number: messages.length,
         role: 'user',
         content,
+        status: 'completed',
         model: null,
         confidence: null,
         method: null,
@@ -209,7 +260,6 @@ export function useConversation(conversationId: string | null) {
         metadata: {},
       };
 
-      // Create placeholder for streaming assistant message
       const streamingAssistantMessage: Message = {
         id: `temp-assistant-${Date.now()}`,
         conversation_id: conversationId,
@@ -217,6 +267,7 @@ export function useConversation(conversationId: string | null) {
         sequence_number: messages.length + 1,
         role: 'assistant',
         content: '',
+        status: 'processing',
         model: null,
         confidence: null,
         method: null,
@@ -227,8 +278,9 @@ export function useConversation(conversationId: string | null) {
         metadata: {},
       };
 
-      // Add both messages immediately
       setMessages((prev) => [...prev, optimisticUserMessage, streamingAssistantMessage]);
+
+      let currentAssistantId = streamingAssistantMessage.id;
 
       try {
         setSending(true);
@@ -243,23 +295,49 @@ export function useConversation(conversationId: string | null) {
           conversationId,
           request,
           {
-            onUserMessage: (_userMsg) => {
-              // Don't update - user message is already correct
-              // We'll replace with real IDs in onComplete
-            },
-            onChunk: (text) => {
-              // Update state immediately - API handles event loop yielding
+            onUserMessage: (userMsg) => {
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === streamingAssistantMessage.id ? { ...m, content: m.content + text } : m
+                  m.id === optimisticUserMessage.id
+                    ? { ...m, id: userMsg.id, created_at: userMsg.created_at }
+                    : m
+                )
+              );
+            },
+            onAssistantMessageCreated: (data) => {
+              console.log(
+                '[onAssistantMessageCreated] Received real ID:',
+                data.id,
+                'Old temp ID:',
+                streamingAssistantMessage.id
+              );
+              currentAssistantId = data.id;
+              setMessages((prev) =>
+                prev.map((m) => {
+                  if (m.id === streamingAssistantMessage.id) {
+                    return { ...m, id: data.id };
+                  }
+                  return m;
+                })
+              );
+            },
+            onChunk: (text) => {
+              console.log(
+                '[onChunk] Received text:',
+                text,
+                'currentAssistantId:',
+                currentAssistantId
+              );
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === currentAssistantId ? { ...m, content: m.content + text } : m
                 )
               );
             },
             onSources: (sources) => {
-              // Transform SSESourceEvent[] to Citation[] format
               const citations: Citation[] = sources.map((source, index) => ({
                 id: `temp-citation-${index}`,
-                message_id: streamingAssistantMessage.id,
+                message_id: currentAssistantId,
                 document_id: source.document_id,
                 chunk_id: source.chunk_id,
                 score: source.relevance_score,
@@ -268,28 +346,24 @@ export function useConversation(conversationId: string | null) {
                 created_at: new Date().toISOString(),
               }));
 
-              // Update streaming message with citations
               setMessages((prev) =>
-                prev.map((m) => (m.id === streamingAssistantMessage.id ? { ...m, citations } : m))
+                prev.map((m) => (m.id === currentAssistantId ? { ...m, citations } : m))
               );
             },
             onComplete: (data) => {
-              // If we have the full messages, replace temporary ones
               if (data.user_message && data.assistant_message) {
                 setMessages((prev) =>
                   prev.map((m): Message => {
                     if (m.id === optimisticUserMessage.id && data.user_message) {
                       return data.user_message;
                     }
-                    if (m.id === streamingAssistantMessage.id && data.assistant_message) {
+                    if (m.id === currentAssistantId && data.assistant_message) {
                       return data.assistant_message;
                     }
                     return m;
                   })
                 );
-              }
-              // Otherwise just reload to get the persisted messages
-              else {
+              } else {
                 void loadConversation();
               }
 
