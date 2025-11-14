@@ -220,9 +220,9 @@ async def search_documents_get(
         search_results = [
             SearchResult(
                 document_id=r.get("document_id", ""),
-                title=r.get("title", "Unknown Document"),
+                title=r.get("metadata", {}).get("title", r.get("title", "Unknown Document")),
                 score=r.get("score", 0.0),
-                snippet=r.get("snippet"),
+                snippet=r.get("snippet") or r.get("text", "")[:200] if r.get("text") else None,
                 metadata=r.get("metadata", {}),
             )
             for r in search_results_raw
