@@ -9,13 +9,16 @@ to the ServiceContainer.
 import logging
 from typing import Any, Dict, Optional
 
+from agent import AgentToolRegistry
 from fastapi import WebSocket
 
 from ..config import get_settings
+from ..storage.vault_reconciliation import VaultReconciliationService
 from ..tools.exceptions import ToolExecutionError, ToolNotFoundError, ValidationError
 from ..tools.registry import ToolRegistry
 from ..utils.logging import log_event
 from .activity_manager import ActivityManager
+from .api.routes.websocket.broadcaster import WebSocketBroadcaster
 from .background_tasks import BackgroundTaskManager
 from .enrichment_queue import EnrichmentQueue
 from .progress_manager import ProgressManager
@@ -102,6 +105,7 @@ class ApplicationServer:
         self.enrichment_queue: Optional[EnrichmentQueue] = None
         self.background_tasks: Optional[BackgroundTaskManager] = None
         self.tool_registry: Optional[ToolRegistry] = None
+        self.agent_tool_registry = None
         self.folder_watcher = None
 
         self._initialized = False
@@ -143,7 +147,10 @@ class ApplicationServer:
             # Phase 4: Initialize tool registry
             await self._init_tool_registry()
 
-            # Phase 5: Initialize RAG service with activity manager
+            # Phase 5: Initialize agent orchestrator with tool registry
+            await self._init_agent_orchestrator()
+
+            # Phase 6: Initialize RAG service with activity manager
             self._init_rag_service()
 
             # Phase 6: Initialize folder watcher
@@ -277,8 +284,6 @@ class ApplicationServer:
         ensuring Redis/Qdrant metadata stays in sync with actual files.
         """
         try:
-            from ..storage.vault_reconciliation import VaultReconciliationService
-
             if not self.service_container:
                 return
 
@@ -330,8 +335,6 @@ class ApplicationServer:
     def _init_websocket_broadcaster(self):
         """Initialize WebSocket broadcaster for conversation updates."""
         try:
-            from .api.routes.websocket.broadcaster import WebSocketBroadcaster
-
             self.websocket_broadcaster = WebSocketBroadcaster()
             log_event("websocket_broadcaster_initialized")
         except Exception as e:
@@ -436,6 +439,45 @@ class ApplicationServer:
 
         tool_count = len(self.tool_registry.tools)
         log_event("tool_registry_initialized", {"tools_registered": tool_count})
+
+    async def _init_agent_orchestrator(self):
+        """Initialize agent tool registry and orchestrator."""
+        if not self.service_container:
+            log_event(
+                "agent_orchestrator_init_skipped",
+                {"reason": "service_container_not_available"},
+                level=logging.WARNING,
+            )
+            return
+
+        try:
+            document_service = None
+            if self.service_container.llamaindex_service:
+                document_service = (
+                    self.service_container.llamaindex_service.document_service
+                )
+
+            self.agent_tool_registry = AgentToolRegistry(
+                document_service=document_service,
+            )
+
+            self.agent_tool_registry.register_all()
+            self.agent_tool_registry.finalize()
+
+            self.service_container.init_agent_orchestrator(
+                tool_registry=self.agent_tool_registry
+            )
+
+            log_event(
+                "agent_orchestrator_initialized",
+                {"agent_tools_registered": self.agent_tool_registry.count()},
+            )
+        except Exception as e:
+            log_event(
+                "agent_orchestrator_init_failed",
+                {"error": str(e)},
+                level=logging.WARNING,
+            )
 
     def _init_rag_service(self):
         """Initialize RAG service with activity manager."""

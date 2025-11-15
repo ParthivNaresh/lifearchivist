@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Optional
 
 import asyncpg
 import redis.asyncio as redis
+from agent.tools.extraction_tool import DataExtractionTool
 from qdrant_client import QdrantClient
 
 from ..config.settings import Settings
@@ -24,7 +25,15 @@ from ..storage.vault.vault import Vault
 from ..utils.logging import log_event
 
 if TYPE_CHECKING:
-    # Import for type checking only to avoid runtime circular import
+    from ..agent import (
+        AgentOrchestrator,
+        AgentSpawner,
+        AgentToolRegistry,
+        ComplexityClassifier,
+        TaskExecutor,
+    )
+    from ..agent.plan_validator import PlanValidator
+    from ..agent.utils import PromptBuilder
     from ..rag import ConversationRAGService
     from ..storage.llamaindex_service import LlamaIndexService
     from .activity_manager import ActivityManager
@@ -166,7 +175,7 @@ class ServiceContainer:
             self._init_conversation_service()
             self._init_message_service()
 
-            # Note: RAG service will be initialized later with activity_manager from ApplicationServer
+            # Note: Agent orchestrator and RAG service will be initialized later from ApplicationServer
 
             self._initialized = True
 
@@ -642,6 +651,73 @@ class ServiceContainer:
             return url
         except Exception:
             return "postgresql://****:****@****:****/****"
+
+    def init_agent_orchestrator(self, tool_registry: "AgentToolRegistry") -> None:
+        """
+        Initialize agent orchestrator.
+
+        This is called separately after ServiceContainer is initialized.
+        """
+        try:
+            if not self._initialized:
+                raise ServiceInitializationError(
+                    "ServiceContainer must be initialized before agent orchestrator"
+                )
+
+            if not self.llm_provider_manager:
+                raise ServiceInitializationError(
+                    "LLM provider manager must be initialized before agent orchestrator"
+                )
+
+            if self.llamaindex_service and self.llamaindex_service.document_service:
+                tool_registry.register(
+                    DataExtractionTool(
+                        document_service=self.llamaindex_service.document_service
+                    )
+                )
+
+            tool_registry.finalize()
+
+            prompt_builder = PromptBuilder()
+
+            complexity_classifier = ComplexityClassifier(
+                llm_provider_manager=self.llm_provider_manager,
+                prompt_builder=prompt_builder,
+            )
+
+            agent_spawner = AgentSpawner(
+                llm_provider_manager=self.llm_provider_manager,
+                tool_registry=tool_registry,
+                prompt_builder=prompt_builder,
+            )
+
+            executor = TaskExecutor(agent_spawner=agent_spawner)
+
+            plan_validator = PlanValidator(
+                tool_registry=tool_registry,
+                max_tasks=20,
+                max_cost_usd=1.0,
+                max_time_seconds=300,
+            )
+
+            self.agent_orchestrator = AgentOrchestrator(
+                llm_provider_manager=self.llm_provider_manager,
+                tool_registry=tool_registry,
+                complexity_classifier=complexity_classifier,
+                executor=executor,
+                prompt_builder=prompt_builder,
+                plan_validator=plan_validator,
+            )
+
+            log_event(
+                "agent_orchestrator_initialized",
+                {"tools_registered": tool_registry.count()},
+            )
+
+        except Exception as e:
+            raise ServiceInitializationError(
+                f"Failed to initialize agent orchestrator: {str(e)}"
+            ) from e
 
     def init_rag_service(
         self, activity_manager: Optional["ActivityManager"] = None
