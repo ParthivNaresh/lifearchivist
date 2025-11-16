@@ -12,7 +12,7 @@ import logging
 from enum import Enum
 from typing import List, Optional
 
-from ..utils.logging import log_event
+from ..utils.logx import log_event
 from ..utils.result import Failure, Result, Success
 from .base_provider import BaseLLMProvider, ProviderType
 from .provider_registry import ProviderRegistry

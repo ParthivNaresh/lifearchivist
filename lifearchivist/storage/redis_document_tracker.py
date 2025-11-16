@@ -15,8 +15,7 @@ from typing import Any, Awaitable, Dict, List, Optional, Set, Tuple, cast
 
 import redis.asyncio as redis
 
-from lifearchivist.utils.logging import log_event, track
-
+from ..utils.logx import log_event, track
 from .constants import NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE
 
 

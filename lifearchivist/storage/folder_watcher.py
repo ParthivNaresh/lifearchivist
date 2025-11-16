@@ -30,7 +30,7 @@ from lifearchivist.server.api.routes.folder_watch.misc_models import (
     WatchedFolder,
 )
 from lifearchivist.storage.redis_folder_watch_store import RedisFolderWatchStore
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 
 from .constants import NOT_INITIALIZED_FOLDER_WATCHER_SERVICE
 

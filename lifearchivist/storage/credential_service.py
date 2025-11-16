@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from redis.asyncio import Redis
 
-from ..utils.logging import log_event, track
+from ..utils.logx import log_event, track
 from ..utils.result import Failure, Result, Success
 
 if TYPE_CHECKING:

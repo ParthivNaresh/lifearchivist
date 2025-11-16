@@ -12,7 +12,7 @@ from llm.processors.base import StreamProcessor
 from llm.processors.direct import DirectStreamProcessor
 from server.api.routes.conversations.misc_models import EventType, StreamContext
 from server.api.routes.shared.exceptions import ServiceUnavailableError
-from utils.logging import log_event
+from utils.logx import log_event
 from utils.sse import SSEFormatter
 
 

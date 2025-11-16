@@ -16,7 +16,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional, cast
 
-from ..utils.logging import log_event, track
+from ..utils.logx import log_event, track
 from .base_provider import BaseLLMProvider
 from .provider_registry import ProviderRegistry
 

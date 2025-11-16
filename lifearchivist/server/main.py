@@ -10,10 +10,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from ..config.settings import configure_logging, get_settings
+from ..config.settings import get_settings
+from ..utils.logx import configure_logging
+from ..utils.logx.middleware import RequestContextMiddleware
 from .api.dependencies import set_server_instance
 from .api.router import get_api_router, get_websocket_router
 from .application_server import ApplicationServer
+
+configure_logging()
 
 # Set tokenizer parallelism to false to avoid warnings when forking processes
 # This must be done before any HuggingFace tokenizers are loaded
@@ -44,7 +48,7 @@ server = ApplicationServer()
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     # Startup
-    configure_logging(level="INFO")
+    # configure_logging(level="INFO")
     await server.initialize()
     set_server_instance(server)
     yield
@@ -72,6 +76,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+    app.add_middleware(RequestContextMiddleware)
 
     # Add CORS middleware only if UI is enabled or API-only mode
     if settings.enable_ui or settings.api_only_mode:

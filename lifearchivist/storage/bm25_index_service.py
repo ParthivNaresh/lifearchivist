@@ -18,8 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import redis.asyncio as redis
 from rank_bm25 import BM25Okapi
 
-from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.logx import log_event
 
+from ..utils.logx import track
 from .constants import NOT_INITIALIZED_BM25_INDEX_SERVICE
 
 

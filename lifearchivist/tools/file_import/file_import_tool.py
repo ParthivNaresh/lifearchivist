@@ -20,7 +20,8 @@ from lifearchivist.tools.file_import.file_import_utils import (
     create_success_response,
     is_text_extraction_supported,
 )
-from lifearchivist.utils.logging import log_event, track
+
+from ...utils.logx import log_event, track
 
 
 class FileImportTool(BaseTool):

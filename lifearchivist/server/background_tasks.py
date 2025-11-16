@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Optional
 
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 from lifearchivist.workers.enrichment_worker import EnrichmentWorker
 
 

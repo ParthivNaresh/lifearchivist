@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 from lifearchivist.utils.result import Failure
 
 
@@ -112,7 +112,7 @@ class MetadataFilterUtils:
         """
         import logging
 
-        from lifearchivist.utils.logging import log_event
+        from lifearchivist.utils.logx import log_event
 
         log_event(
             "unknown_filter_operator",
@@ -688,7 +688,7 @@ class ContextBuilder:
         Returns:
             Tuple of (source_chunks, error_result) where error_result is a Failure if retrieval failed
         """
-        from lifearchivist.utils.logging import log_event
+        from lifearchivist.utils.logx import log_event
 
         log_event(
             "context_retrieval_method",
@@ -746,7 +746,7 @@ class ContextBuilder:
         """
         from llama_index.core import QueryBundle
 
-        from lifearchivist.utils.logging import log_event
+        from lifearchivist.utils.logx import log_event
 
         log_event(
             "context_retrieval_method",
@@ -795,7 +795,7 @@ class ContextBuilder:
         Returns:
             Enriched source chunks
         """
-        from lifearchivist.utils.logging import log_event
+        from lifearchivist.utils.logx import log_event
 
         if not metadata_service:
             return source_chunks

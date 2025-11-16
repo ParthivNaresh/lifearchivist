@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 import asyncpg
 
-from ...utils.logging import log_event, track
+from ...utils.logx import log_event, track
 from ...utils.result import (
     Result,
     Success,

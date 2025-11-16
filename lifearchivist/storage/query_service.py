@@ -18,7 +18,7 @@ from lifearchivist.storage.utils import (
     ChunkUtils,
     ConfidenceCalculator,
 )
-from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.logx import log_event, track
 from lifearchivist.utils.result import (
     Result,
     Success,

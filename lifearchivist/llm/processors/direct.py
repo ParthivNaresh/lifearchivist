@@ -16,7 +16,7 @@ from lifearchivist.server.api.routes.conversations.misc_models import (
     StreamMetadata,
 )
 from lifearchivist.server.api.routes.shared.exceptions import ServiceUnavailableError
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 from lifearchivist.utils.sse import SSEFormatter
 
 from ...config import get_settings

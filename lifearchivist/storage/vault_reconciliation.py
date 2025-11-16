@@ -8,7 +8,7 @@ The policy is simple: if a vault file is missing, remove the orphaned metadata.
 import logging
 from typing import Any, Dict, List, Optional
 
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 
 
 class VaultReconciliationService:

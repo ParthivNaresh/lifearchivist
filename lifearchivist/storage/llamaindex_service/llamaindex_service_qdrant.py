@@ -25,12 +25,12 @@ from lifearchivist.storage.metadata_service import LlamaIndexMetadataService
 from lifearchivist.storage.redis_document_tracker import RedisDocumentTracker
 from lifearchivist.storage.search_service import LlamaIndexSearchService
 from lifearchivist.storage.utils import StorageConstants
-from lifearchivist.utils.logging import log_event, track
 from lifearchivist.utils.result import (
     Result,
     internal_error,
 )
 
+from ...utils.logx import log_event, track
 from ..constants import (
     NOT_AVAILABLE_QDRANT_CLIENT,
     NOT_INITIALIZED_DOCUMENT_SERVICE,

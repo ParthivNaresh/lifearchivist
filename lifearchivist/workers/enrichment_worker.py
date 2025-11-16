@@ -12,7 +12,8 @@ from lifearchivist.config import get_settings
 from lifearchivist.server.enrichment_queue import EnrichmentQueue
 from lifearchivist.storage.llamaindex_service import LlamaIndexService
 from lifearchivist.storage.vault.vault import Vault
-from lifearchivist.utils.logging import log_event, track
+
+from ..utils.logx import log_event, track
 
 
 class EnrichmentWorker:
@@ -83,8 +84,7 @@ class EnrichmentWorker:
         try:
             while self.running and not self.shutdown_event.is_set():
                 try:
-                    async with asyncio.timeout(1):
-                        task = await self.queue.get_next_task()
+                    task = await self.queue.get_next_task()
 
                     if not task:
                         await asyncio.sleep(0.1)
@@ -92,9 +92,6 @@ class EnrichmentWorker:
 
                     await self._process_task(task)
 
-                except asyncio.TimeoutError:
-                    await asyncio.sleep(0.1)
-                    continue
                 except asyncio.CancelledError:
                     log_event(
                         "enrichment_worker_cancelled",

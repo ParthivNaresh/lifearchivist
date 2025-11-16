@@ -34,7 +34,7 @@ from ..storage.database import ConversationService, MessageService
 from ..storage.llamaindex_service import LlamaIndexService
 from ..storage.redis_document_tracker import RedisDocumentTracker
 from ..storage.vault.vault import Vault
-from ..utils.logging import log_event
+from ..utils.logx import log_event
 from .activity_manager import ActivityManager
 
 

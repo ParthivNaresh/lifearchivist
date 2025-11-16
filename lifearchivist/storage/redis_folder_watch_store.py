@@ -18,7 +18,7 @@ from uuid import uuid4
 
 import redis.asyncio as redis
 
-from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.logx import log_event, track
 
 from .constants import NOT_INITIALIZED_REDIS_FOLDER_WATCH_STORE_SERVICE
 

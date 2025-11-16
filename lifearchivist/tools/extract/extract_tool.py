@@ -11,7 +11,9 @@ from lifearchivist.tools.extract.extract_utils import (
     _extract_text_by_type,
     _get_extraction_method,
 )
-from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.logx import log_event
+
+from ...utils.logx import track
 
 
 class ExtractTextTool(BaseTool):
@@ -59,7 +61,6 @@ class ExtractTextTool(BaseTool):
         operation="mime_type_detection",
         include_args=["file_id"],
         track_performance=True,
-        emit_events=False,  # Silent operation - will log specific events manually
     )
     async def _resolve_file_info(
         self, file_id: str, file_path: str, mime_type: str, file_hash: str

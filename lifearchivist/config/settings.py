@@ -122,7 +122,7 @@ def configure_logging(level: str = "INFO") -> None:
 
     # Import development formatter
     try:
-        from ..utils.logging.structured import create_development_formatter
+        from ..utils.logx.structured import create_development_formatter
 
         formatter = create_development_formatter()
     except ImportError:

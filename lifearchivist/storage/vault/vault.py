@@ -21,7 +21,9 @@ from lifearchivist.storage.vault.vault_utils import (
     get_comprehensive_directory_stats,
     safe_get_file_size,
 )
-from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.logx import log_event
+
+from ...utils.logx import track
 
 
 class Vault:

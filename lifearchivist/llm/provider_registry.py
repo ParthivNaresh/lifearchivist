@@ -10,7 +10,7 @@ Responsible for:
 import logging
 from typing import Dict, List, Optional
 
-from ..utils.logging import log_event
+from ..utils.logx import log_event
 from ..utils.result import Failure, Result, Success
 from .base_provider import BaseLLMProvider, ProviderType
 

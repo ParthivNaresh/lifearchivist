@@ -281,7 +281,7 @@ class BaseHTTPProvider:
         Raises:
             RuntimeError: Always raises with formatted error message
         """
-        from ..utils.logging import log_event
+        from ..utils.logx import log_event
 
         log_event(
             error_log_event,
@@ -341,7 +341,7 @@ class BaseHTTPProvider:
             data = json.loads(data_str)
             return chunk_parser(data)
         except json.JSONDecodeError as e:
-            from ..utils.logging import log_event
+            from ..utils.logx import log_event
 
             log_event(
                 f"{error_log_event}_parse_error",
@@ -414,7 +414,7 @@ class BaseHTTPProvider:
                             break
 
         except aiohttp.ClientError as e:
-            from ..utils.logging import log_event
+            from ..utils.logx import log_event
 
             log_event(
                 f"{error_log_event}_connection_error",
@@ -656,7 +656,7 @@ class BaseHTTPProvider:
                 return result
             return None
         except json.JSONDecodeError as e:
-            from ..utils.logging import log_event
+            from ..utils.logx import log_event
 
             log_event(
                 f"{error_log_event}_parse_error",
@@ -790,7 +790,7 @@ class BaseHTTPProvider:
                         yield chunk_obj
 
         except aiohttp.ClientError as e:
-            from ..utils.logging import log_event
+            from ..utils.logx import log_event
 
             log_event(
                 f"{error_log_event}_connection_error",

@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional
 from llama_index.core import Document
 from qdrant_client.models import Distance, VectorParams
 
-from lifearchivist.utils.logging import log_event, track
 from lifearchivist.utils.result import (
     Result,
     Success,
@@ -26,6 +25,7 @@ from lifearchivist.utils.result import (
     validation_error,
 )
 
+from ..utils.logx import log_event, track
 from .constants import NOT_INITIALIZED_TRACKER
 
 

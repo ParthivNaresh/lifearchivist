@@ -1,29 +1,29 @@
-lifearchivist.utils.logging package
+lifearchivist.utils.logx package
 ===================================
 
 Submodules
 ----------
 
-lifearchivist.utils.logging.context module
+lifearchivist.utils.logx.context module
 ------------------------------------------
 
-.. automodule:: lifearchivist.utils.logging.context
+.. automodule:: lifearchivist.utils.logx.context
    :members:
    :show-inheritance:
    :undoc-members:
 
-lifearchivist.utils.logging.smart\_logger module
+lifearchivist.utils.logx.smart\_logger module
 ------------------------------------------------
 
-.. automodule:: lifearchivist.utils.logging.smart_logger
+.. automodule:: lifearchivist.utils.logx.smart_logger
    :members:
    :show-inheritance:
    :undoc-members:
 
-lifearchivist.utils.logging.structured module
+lifearchivist.utils.logx.structured module
 ---------------------------------------------
 
-.. automodule:: lifearchivist.utils.logging.structured
+.. automodule:: lifearchivist.utils.logx.structured
    :members:
    :show-inheritance:
    :undoc-members:
@@ -31,7 +31,7 @@ lifearchivist.utils.logging.structured module
 Module contents
 ---------------
 
-.. automodule:: lifearchivist.utils.logging
+.. automodule:: lifearchivist.utils.logx
    :members:
    :show-inheritance:
    :undoc-members:

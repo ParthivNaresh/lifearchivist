@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
-from ..utils.logging import log_event, track
+from ..utils.logx import log_event, track
 from ..utils.result import Failure, Result, Success
 from .base_provider import (
     BaseLLMProvider,

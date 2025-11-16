@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional, Tup
 from ..llm import LLMMessage, LLMProviderManager
 from ..server.api.dependencies import get_server
 from ..storage.database import ConversationService, MessageService
-from ..utils.logging import log_event, track
+from ..utils.logx import log_event, track
 from ..utils.result import Failure, Result, Success
 from .prompts import PromptBuilder
 from .types import (

@@ -7,7 +7,7 @@ Provides reusable helpers for document neighbor operations and metadata enrichme
 import logging
 from typing import Any, Dict, List, Optional
 
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 from lifearchivist.utils.result import Result
 
 

@@ -12,13 +12,14 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from lifearchivist.storage.utils import MetadataFilterUtils
-from lifearchivist.utils.logging import log_event, track
 from lifearchivist.utils.result import (
     Result,
     Success,
     internal_error,
     service_unavailable,
 )
+
+from ..utils.logx import log_event, track
 
 
 class SearchService(ABC):

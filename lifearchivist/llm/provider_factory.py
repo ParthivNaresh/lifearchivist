@@ -11,7 +11,7 @@ from typing import Optional
 from redis.asyncio import Redis
 
 from ..storage.credential_service import CredentialService
-from ..utils.logging import log_event
+from ..utils.logx import log_event
 from .constants import (
     ErrorMessages,
     HealthMonitorDefaults,

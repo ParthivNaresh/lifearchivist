@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, status
 
-from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.logx import log_event, track
 
 from ..shared.dependencies import get_server
 from ..shared.exceptions import InternalServerError, ServiceUnavailableError

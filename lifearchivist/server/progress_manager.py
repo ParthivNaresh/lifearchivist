@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Protocol
 import redis.asyncio as redis
 from redis.exceptions import ConnectionError, RedisError, TimeoutError
 
-from ..utils.logging import log_event
+from ..utils.logx import log_event
 
 
 class SessionManagerProtocol(Protocol):

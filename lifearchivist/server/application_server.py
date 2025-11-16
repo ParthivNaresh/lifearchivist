@@ -16,7 +16,7 @@ from ..llm.agent import AgentToolRegistry
 from ..storage.vault_reconciliation import VaultReconciliationService
 from ..tools.exceptions import ToolExecutionError, ToolNotFoundError, ValidationError
 from ..tools.registry import ToolRegistry
-from ..utils.logging import log_event
+from ..utils.logx import log_event
 from .activity_manager import ActivityManager
 from .api.routes.websocket.broadcaster import WebSocketBroadcaster
 from .background_tasks import BackgroundTaskManager

@@ -9,7 +9,7 @@ from typing import Any, Awaitable, Dict, Optional, cast
 
 import redis.asyncio as redis
 
-from lifearchivist.utils.logging import log_event, track
+from ..utils.logx import log_event, track
 
 
 class EnrichmentQueue:
@@ -125,7 +125,7 @@ class EnrichmentQueue:
             client = self._client()
             task_json = await cast(
                 Awaitable[Optional[str]],
-                client.brpoplpush(self.queue_key, self.processing_key, 0),
+                client.brpoplpush(self.queue_key, self.processing_key, 1),
             )
 
             if task_json:
