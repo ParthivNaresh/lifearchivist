@@ -8,35 +8,34 @@ ensuring all services are properly initialized before use and cleaned up on shut
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 import asyncpg
 import redis.asyncio as redis
-from agent.tools.extraction_tool import DataExtractionTool
 from qdrant_client import QdrantClient
 
 from ..config.settings import Settings
 from ..llm import LLMProviderManager
+
+# if TYPE_CHECKING:
+from ..llm.agent import (
+    AgentOrchestrator,
+    AgentSpawner,
+    AgentToolRegistry,
+    ComplexityClassifier,
+    PlanValidator,
+    PromptBuilder,
+    TaskExecutor,
+)
+from ..rag import ConversationRAGService
 from ..storage.bm25_index_service import BM25IndexService
 from ..storage.credential_service import CredentialService
 from ..storage.database import ConversationService, MessageService
+from ..storage.llamaindex_service import LlamaIndexService
 from ..storage.redis_document_tracker import RedisDocumentTracker
 from ..storage.vault.vault import Vault
 from ..utils.logging import log_event
-
-if TYPE_CHECKING:
-    from ..agent import (
-        AgentOrchestrator,
-        AgentSpawner,
-        AgentToolRegistry,
-        ComplexityClassifier,
-        TaskExecutor,
-    )
-    from ..agent.plan_validator import PlanValidator
-    from ..agent.utils import PromptBuilder
-    from ..rag import ConversationRAGService
-    from ..storage.llamaindex_service import LlamaIndexService
-    from .activity_manager import ActivityManager
+from .activity_manager import ActivityManager
 
 
 @dataclass
@@ -670,12 +669,10 @@ class ServiceContainer:
                 )
 
             if self.llamaindex_service and self.llamaindex_service.document_service:
-                tool_registry.register(
-                    DataExtractionTool(
-                        document_service=self.llamaindex_service.document_service
-                    )
+                tool_registry.document_service = (
+                    self.llamaindex_service.document_service
                 )
-
+            tool_registry.register_all()
             tool_registry.finalize()
 
             prompt_builder = PromptBuilder()
@@ -689,9 +686,30 @@ class ServiceContainer:
                 llm_provider_manager=self.llm_provider_manager,
                 tool_registry=tool_registry,
                 prompt_builder=prompt_builder,
+                task_timeout_s=60.0,
+                max_retries=2,
+                max_history_messages=50,
+                max_dependent_bytes=256 * 1024,
             )
 
-            executor = TaskExecutor(agent_spawner=agent_spawner)
+            per_tool_limits = {
+                "data_extraction": 8,
+            }
+
+            def _observer(event: str, fields: dict) -> None:
+                # bridge to your telemetry/logging
+                try:
+                    log_event(event, fields)
+                except Exception:
+                    pass
+
+            executor = TaskExecutor(
+                agent_spawner,
+                max_concurrency=32,
+                per_tool_limits=per_tool_limits,
+                fail_fast=True,
+                on_observe=_observer,
+            )
 
             plan_validator = PlanValidator(
                 tool_registry=tool_registry,
@@ -707,6 +725,11 @@ class ServiceContainer:
                 executor=executor,
                 prompt_builder=prompt_builder,
                 plan_validator=plan_validator,
+                on_observe=_observer,
+                planning_model="gpt-4o",
+                planning_temperature=0.2,
+                synthesis_model="gpt-4o",
+                synthesis_temperature=0.7,
             )
 
             log_event(

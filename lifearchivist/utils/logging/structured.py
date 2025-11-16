@@ -328,13 +328,11 @@ def create_development_formatter() -> logging.Formatter:
                 question = data.get("question", "")[:50]
                 context_preview = data.get("context_preview", "")
 
-                # Format the context preview nicely
                 if total_chars > 1000:
                     size_str = f"{total_chars/1000:.1f}k chars"
                 else:
                     size_str = f"{total_chars} chars"
 
-                # Show a snippet of the context
                 if context_preview and len(context_preview) > 100:
                     context_snippet = context_preview[:100] + "..."
                 else:

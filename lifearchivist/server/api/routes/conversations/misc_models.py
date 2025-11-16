@@ -4,12 +4,14 @@ Miscellaneous models for conversation endpoints.
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from ..shared.constants import CREATION_TIMESTAMP_LABEL
+from .request_models import SendMessageRequest
 
 
 class Citation(BaseModel):
@@ -162,3 +164,63 @@ class LLMConfig:
     max_tokens: int
     system_prompt: str
     response_format: Optional[str]
+
+
+class EventType(Enum):
+    """SSE event types."""
+
+    USER_MESSAGE = "user_message"
+    ASSISTANT_MESSAGE_CREATED = "assistant_message_created"
+    INTENT = "intent"
+    CONTEXT = "context"
+    SOURCES = "sources"
+    CHUNK = "chunk"
+    METADATA = "metadata"
+    COMPLETE = "complete"
+    ERROR = "error"
+
+
+@dataclass
+class StreamContext:
+    """Context for streaming operations."""
+
+    conversation_id: str
+    request: SendMessageRequest
+    start_time: float
+    conversation: Optional[Dict[str, Any]] = None
+    provider_id: Optional[str] = None
+    model: Optional[str] = None
+    user_message: Optional[Dict[str, Any]] = None
+    sources: Optional[List[Dict[str, Any]]] = None
+    accumulated_text: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.sources is None:
+            self.sources = []
+
+
+@dataclass
+class StreamConfig:
+    """Configuration for streaming."""
+
+    temperature: float = 0.7
+    max_tokens: int = 2000
+    response_timeout: int = 30
+    context_window_size: int = 10
+    response_format: Optional[str] = None
+    system_prompt: str = (
+        "You are a helpful assistant that answers questions based on the provided context."
+    )
+
+
+@dataclass
+class StreamMetadata:
+    """Metadata for streaming response."""
+
+    confidence_score: float
+    method: str
+    model: str
+    provider_id: Optional[str]
+    tokens_used: int
+    finish_reason: Optional[str]
+    latency_ms: int

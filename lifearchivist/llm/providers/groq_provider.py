@@ -143,6 +143,8 @@ class GroqProvider(BaseHTTPProvider, BaseLLMProvider):
             "max_tokens": max_tokens,
         }
 
+        if "response_format" in kwargs:
+            payload["response_format"] = kwargs["response_format"]
         if "top_p" in kwargs:
             payload["top_p"] = kwargs["top_p"]
         if "stop" in kwargs:

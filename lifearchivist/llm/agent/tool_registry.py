@@ -5,7 +5,7 @@ from .tools.base import BaseAgentTool
 from .tools.extraction_tool import DataExtractionTool
 
 if TYPE_CHECKING:
-    from ..storage.document_service import LlamaIndexDocumentService
+    from storage.document_service import LlamaIndexDocumentService
 
 
 class AgentToolRegistry:
@@ -19,6 +19,10 @@ class AgentToolRegistry:
         self.document_service = document_service
 
     def register(self, tool: BaseAgentTool) -> None:
+        if tool.input_model is None:
+            raise ValueError(
+                f"Tool '{tool.name}' must declare input_model (Pydantic BaseModel subclass)"
+            )
         if self._finalized:
             raise ToolExecutionError(
                 "Cannot register tools after registry has been finalized"

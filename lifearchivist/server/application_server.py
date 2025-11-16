@@ -9,10 +9,10 @@ to the ServiceContainer.
 import logging
 from typing import Any, Dict, Optional
 
-from agent import AgentToolRegistry
 from fastapi import WebSocket
 
 from ..config import get_settings
+from ..llm.agent import AgentToolRegistry
 from ..storage.vault_reconciliation import VaultReconciliationService
 from ..tools.exceptions import ToolExecutionError, ToolNotFoundError, ValidationError
 from ..tools.registry import ToolRegistry
@@ -461,9 +461,6 @@ class ApplicationServer:
                 document_service=document_service,
             )
 
-            self.agent_tool_registry.register_all()
-            self.agent_tool_registry.finalize()
-
             self.service_container.init_agent_orchestrator(
                 tool_registry=self.agent_tool_registry
             )
@@ -478,6 +475,7 @@ class ApplicationServer:
                 {"error": str(e)},
                 level=logging.WARNING,
             )
+            raise
 
     def _init_rag_service(self):
         """Initialize RAG service with activity manager."""

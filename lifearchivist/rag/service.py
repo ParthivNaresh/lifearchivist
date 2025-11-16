@@ -9,8 +9,7 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional, Tuple, cast
 
-from ..llm import LLMProviderManager
-from ..llm.base_provider import LLMMessage
+from ..llm import LLMMessage, LLMProviderManager
 from ..server.api.dependencies import get_server
 from ..storage.database import ConversationService, MessageService
 from ..utils.logging import log_event, track

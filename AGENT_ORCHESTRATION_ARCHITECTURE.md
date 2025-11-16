@@ -246,7 +246,7 @@ class AgentOrchestrator:
         plan_data = json.loads(response.content)
         
         return ExecutionPlan(
-            tasks=[AgentTask(**task) for task in plan_data["tasks"]],
+            tasks=[AgentTask(task_id=task["task_id"], tool_name=task["tool_name"], description=task["description"], requires_llm=bool(task.get("requires_llm", False)), parameters=dict(task.get("parameters", {})), depends_on=list(task.get("depends_on", []))) for task in plan_data["tasks"]],
             estimated_time_seconds=plan_data["estimated_time_seconds"],
             estimated_cost_usd=plan_data["estimated_cost_usd"],
             reasoning=plan_data["reasoning"]
