@@ -92,7 +92,8 @@ class JsonFormatter(logging.Formatter):
                 }
             )
         if record.exc_info:
-            base["error_type"] = record.exc_info[0].__name__
+            etype = record.exc_info[0]
+            base["error_type"] = etype.__name__ if etype is not None else None
             base["stack"] = self.formatException(record.exc_info)
         return json.dumps(base, ensure_ascii=False)
 

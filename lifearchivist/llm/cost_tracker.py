@@ -309,7 +309,7 @@ class CostTracker:
                     error=f"Budget exceeded: ${projected_spending:.4f} > ${budget.limit_usd:.2f}",
                     error_type="BudgetExceeded",
                     status_code=429,
-                    context={
+                    details={
                         "budget_limit": budget.limit_usd,
                         "current_spending": current_spending,
                         "estimated_cost": estimated_cost,

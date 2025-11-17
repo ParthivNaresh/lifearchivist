@@ -15,11 +15,10 @@ import asyncpg
 
 from ...utils.logx import log_event, track
 from ...utils.result import (
+    FailurePayload,
     Result,
     Success,
-    internal_error,
-    not_found_error,
-    validation_error,
+    fail,
 )
 from .utils import (
     build_citation_data,
@@ -59,13 +58,7 @@ class MessageService:
         """
         self.db_pool = db_pool
 
-    @track(
-        operation="message_add",
-        include_args=["conversation_id", "role"],
-        include_result=True,
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="message_create")
     async def add_message(
         self,
         conversation_id: str,
@@ -79,7 +72,7 @@ class MessageService:
         parent_message_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         status: str = "completed",
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Add a message to a conversation.
 
@@ -102,24 +95,52 @@ class MessageService:
         try:
             error_msg = validate_message_role(role)
             if error_msg:
-                return validation_error(error_msg, context={"role": role})
+                return fail(
+                    FailurePayload(
+                        message=error_msg,
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"role": role},
+                    )
+                )
 
             if status != "processing":
                 error_msg = validate_message_content(content)
                 if error_msg:
-                    return validation_error(
-                        error_msg, context={"conversation_id": conversation_id}
+                    return fail(
+                        FailurePayload(
+                            message=error_msg,
+                            error_type="ValidationError",
+                            status_code=400,
+                            recoverable=True,
+                            details={"conversation_id": conversation_id},
+                        )
                     )
 
             error_msg = validate_message_status(status)
             if error_msg:
-                return validation_error(error_msg, context={"status": status})
+                return fail(
+                    FailurePayload(
+                        message=error_msg,
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"status": status},
+                    )
+                )
 
             if confidence is not None:
                 error_msg = validate_confidence(confidence)
                 if error_msg:
-                    return validation_error(
-                        error_msg, context={"confidence": confidence}
+                    return fail(
+                        FailurePayload(
+                            message=error_msg,
+                            error_type="ValidationError",
+                            status_code=400,
+                            recoverable=True,
+                            details={"confidence": confidence},
+                        )
                     )
 
             conv_uuid = parse_uuid(conversation_id)
@@ -155,9 +176,14 @@ class MessageService:
                     record = await conn.fetchrow(query, *values)
 
                     if not record:
-                        return internal_error(
-                            "Failed to create message",
-                            context={"conversation_id": conversation_id},
+                        return fail(
+                            FailurePayload(
+                                message="Failed to create message",
+                                error_type="InternalError",
+                                status_code=500,
+                                recoverable=False,
+                                details={"conversation_id": conversation_id},
+                            )
                         )
 
             message = record_to_dict(record)
@@ -176,13 +202,24 @@ class MessageService:
             return Success(message)
 
         except ValueError as e:
-            return validation_error(
-                str(e), context={"conversation_id": conversation_id}
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"conversation_id": conversation_id},
+                )
             )
         except asyncpg.ForeignKeyViolationError:
-            return not_found_error(
-                f"Conversation '{conversation_id}' not found",
-                context={"conversation_id": conversation_id},
+            return fail(
+                FailurePayload(
+                    message=f"Conversation '{conversation_id}' not found",
+                    error_type="NotFoundError",
+                    status_code=404,
+                    recoverable=False,
+                    details={"conversation_id": conversation_id},
+                )
             )
         except Exception as e:
             log_event(
@@ -190,23 +227,23 @@ class MessageService:
                 {"conversation_id": conversation_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to add message: {str(e)}",
-                context={"conversation_id": conversation_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to add message: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"conversation_id": conversation_id},
+                )
             )
 
-    @track(
-        operation="message_status_update",
-        include_args=["message_id", "status"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="message_status_update")
     async def update_message_status(
         self,
         message_id: str,
         status: str,
         content: Optional[str] = None,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Update message status and optionally content.
 
@@ -221,7 +258,15 @@ class MessageService:
         try:
             error_msg = validate_message_status(status)
             if error_msg:
-                return validation_error(error_msg, context={"status": status})
+                return fail(
+                    FailurePayload(
+                        message=error_msg,
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"status": status},
+                    )
+                )
 
             msg_uuid = parse_uuid(message_id)
 
@@ -238,9 +283,14 @@ class MessageService:
                 record = await conn.fetchrow(query, *values)
 
             if not record:
-                return not_found_error(
-                    f"Message '{message_id}' not found",
-                    context={"message_id": message_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Message '{message_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"message_id": message_id},
+                    )
                 )
 
             message = record_to_dict(record)
@@ -257,31 +307,39 @@ class MessageService:
             return Success(message)
 
         except ValueError as e:
-            return validation_error(str(e), context={"message_id": message_id})
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"message_id": message_id},
+                )
+            )
         except Exception as e:
             log_event(
                 "message_status_update_error",
                 {"message_id": message_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to update message status: {str(e)}",
-                context={"message_id": message_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to update message status: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"message_id": message_id},
+                )
             )
 
-    @track(
-        operation="messages_get",
-        include_args=["conversation_id", "limit"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="messages_get")
     async def get_messages(
         self,
         conversation_id: str,
         limit: int = 50,
         offset: int = 0,
         include_citations: bool = False,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get messages for a conversation.
 
@@ -297,15 +355,25 @@ class MessageService:
         try:
             # Validate pagination
             if limit < 1 or limit > 200:
-                return validation_error(
-                    "Limit must be between 1 and 200",
-                    context={"limit": limit},
+                return fail(
+                    FailurePayload(
+                        message="Limit must be between 1 and 200",
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"limit": limit},
+                    )
                 )
 
             if offset < 0:
-                return validation_error(
-                    "Offset must be non-negative",
-                    context={"offset": offset},
+                return fail(
+                    FailurePayload(
+                        message="Offset must be non-negative",
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"offset": offset},
+                    )
                 )
 
             # Parse UUID
@@ -361,8 +429,14 @@ class MessageService:
             )
 
         except ValueError as e:
-            return validation_error(
-                str(e), context={"conversation_id": conversation_id}
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"conversation_id": conversation_id},
+                )
             )
         except Exception as e:
             log_event(
@@ -370,22 +444,22 @@ class MessageService:
                 {"conversation_id": conversation_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to get messages: {str(e)}",
-                context={"conversation_id": conversation_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to get messages: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"conversation_id": conversation_id},
+                )
             )
 
-    @track(
-        operation="citation_add",
-        include_args=["message_id"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    @track(operation="citation_add")
     async def add_citations(
         self,
         message_id: str,
         citations: List[Dict[str, Any]],
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Add citations to a message.
 
@@ -403,9 +477,14 @@ class MessageService:
         """
         try:
             if not citations:
-                return validation_error(
-                    "No citations provided",
-                    context={"message_id": message_id},
+                return fail(
+                    FailurePayload(
+                        message="No citations provided",
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"message_id": message_id},
+                    )
                 )
 
             msg_uuid = parse_uuid(message_id)
@@ -413,8 +492,14 @@ class MessageService:
             for i, citation in enumerate(citations):
                 error_msg = validate_single_citation(citation, i)
                 if error_msg:
-                    return validation_error(
-                        error_msg, context={"message_id": message_id}
+                    return fail(
+                        FailurePayload(
+                            message=error_msg,
+                            error_type="ValidationError",
+                            status_code=400,
+                            recoverable=True,
+                            details={"message_id": message_id},
+                        )
                     )
 
             created_citations = []
@@ -437,11 +522,24 @@ class MessageService:
             return Success(created_citations)
 
         except ValueError as e:
-            return validation_error(str(e), context={"message_id": message_id})
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"message_id": message_id},
+                )
+            )
         except asyncpg.ForeignKeyViolationError:
-            return not_found_error(
-                f"Message '{message_id}' not found",
-                context={"message_id": message_id},
+            return fail(
+                FailurePayload(
+                    message=f"Message '{message_id}' not found",
+                    error_type="NotFoundError",
+                    status_code=404,
+                    recoverable=False,
+                    details={"message_id": message_id},
+                )
             )
         except Exception as e:
             log_event(
@@ -449,14 +547,19 @@ class MessageService:
                 {"message_id": message_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to add citations: {str(e)}",
-                context={"message_id": message_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to add citations: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"message_id": message_id},
+                )
             )
 
     async def get_message_with_citations(
         self, message_id: str
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get a single message with its citations.
 
@@ -477,9 +580,14 @@ class MessageService:
                 )
 
                 if not message_record:
-                    return not_found_error(
-                        f"Message '{message_id}' not found",
-                        context={"message_id": message_id},
+                    return fail(
+                        FailurePayload(
+                            message=f"Message '{message_id}' not found",
+                            error_type="NotFoundError",
+                            status_code=404,
+                            recoverable=False,
+                            details={"message_id": message_id},
+                        )
                     )
 
                 message = record_to_dict(message_record)
@@ -498,19 +606,35 @@ class MessageService:
             return Success(message)
 
         except ValueError as e:
-            return validation_error(str(e), context={"message_id": message_id})
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"message_id": message_id},
+                )
+            )
         except Exception as e:
             log_event(
                 "message_get_error",
                 {"message_id": message_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to get message: {str(e)}",
-                context={"message_id": message_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to get message: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"message_id": message_id},
+                )
             )
 
-    async def delete_message(self, message_id: str) -> Result[Dict[str, Any], str]:
+    @track(operation="message_delete")
+    async def delete_message(
+        self, message_id: str
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Delete a message and its citations.
 
@@ -536,9 +660,14 @@ class MessageService:
                 record = await conn.fetchrow(query, msg_uuid)
 
             if not record:
-                return not_found_error(
-                    f"Message '{message_id}' not found",
-                    context={"message_id": message_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Message '{message_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"message_id": message_id},
+                    )
                 )
 
             log_event(
@@ -559,14 +688,27 @@ class MessageService:
             )
 
         except ValueError as e:
-            return validation_error(str(e), context={"message_id": message_id})
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"message_id": message_id},
+                )
+            )
         except Exception as e:
             log_event(
                 "message_delete_error",
                 {"message_id": message_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to delete message: {str(e)}",
-                context={"message_id": message_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to delete message: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"message_id": message_id},
+                )
             )

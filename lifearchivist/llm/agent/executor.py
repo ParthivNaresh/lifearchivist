@@ -1,6 +1,16 @@
 import asyncio
 from dataclasses import dataclass, field
-from typing import Any, AsyncGenerator, Dict, List, Optional, Set
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    cast,
+)
 
 from .models import (
     AgentEvent,
@@ -51,7 +61,9 @@ class TaskExecutor:
         max_concurrency: int = 32,
         per_tool_limits: Optional[Dict[str, int]] = None,
         fail_fast: bool = True,
-        on_observe: Optional[callable] = None,  # callable(event: str, fields: dict)
+        on_observe: Optional[
+            Callable[[str, Mapping[str, Any]], None]
+        ] = None,  # callable(event: str, fields: dict)
     ):
         self.spawner = agent_spawner
         self.max_concurrency = max_concurrency
@@ -72,7 +84,9 @@ class TaskExecutor:
                 # 1) Mark tasks that became blocked by upstream failures/skips
                 for ev in self._skip_due_to_failed_or_skipped_deps(plan, state):
                     self._observe(
-                        "task_skipped", task_id=ev.task_id, reason=ev.data.get("reason")
+                        "task_skipped",
+                        task_id=ev.task_id,
+                        reason=ev.data.get("reason") if ev.data else None,
                     )
                     yield ev
 
@@ -99,15 +113,16 @@ class TaskExecutor:
                         self._observe(
                             "task_failed",
                             task_id=ev.task_id,
-                            error=ev.data.get("error"),
+                            error=ev.data.get("error") if ev.data else None,
                         )
                     elif ev.type == AgentEventType.PLAN_FAILED:
-                        self._observe("plan_failed", message=ev.data.get("error"))
+                        self._observe(
+                            "plan_failed",
+                            message=ev.data.get("error") if ev.data else None,
+                        )
                     yield ev
 
-                # If fail_fast triggered inside processing, terminate loop
-                if state.terminated:
-                    break
+                # Loop condition will handle termination on next iteration
 
             # 5) Final event
             if not state.terminated:
@@ -284,7 +299,8 @@ class TaskExecutor:
         """
         Delegates execution to the spawner. All timeout/retry policies are enforced by the spawner.
         """
-        return await self.spawner.spawn_and_execute(task, state.results, context)
+        res = await self.spawner.spawn_and_execute(task, state.results, context)
+        return cast(ResultEnvelope, res)
 
     async def _cancel_all(self, state: _PlanState) -> None:
         if not state.running:

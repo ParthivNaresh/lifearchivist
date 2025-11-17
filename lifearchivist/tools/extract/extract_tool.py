@@ -143,9 +143,13 @@ class ExtractTextTool(BaseTool):
         if not file_id:
             raise ValueError("File ID is required")
 
-        # Resolve file path and MIME type
+        # Resolve file path and MIME type (coerce Optionals to strings)
+        file_path_arg = str(file_path) if file_path is not None else ""
+        mime_type_arg = str(mime_type) if mime_type is not None else ""
+        file_hash_arg = str(file_hash) if file_hash is not None else ""
+
         actual_file_path, resolved_mime_type = await self._resolve_file_info(
-            file_id, file_path, mime_type, file_hash
+            str(file_id), file_path_arg, mime_type_arg, file_hash_arg
         )
 
         # Get file size for logging

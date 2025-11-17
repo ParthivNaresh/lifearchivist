@@ -17,12 +17,10 @@ from llama_index.core import Document
 from qdrant_client.models import Distance, VectorParams
 
 from lifearchivist.utils.result import (
+    FailurePayload,
     Result,
     Success,
-    internal_error,
-    not_found_error,
-    storage_error,
-    validation_error,
+    fail,
 )
 
 from ..utils.logx import log_event, track
@@ -43,7 +41,7 @@ class DocumentService(ABC):
         document_id: str,
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Add a document to the index.
 
@@ -61,7 +59,7 @@ class DocumentService(ABC):
     async def delete_document(
         self,
         document_id: str,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Delete a document from the index.
 
@@ -74,7 +72,7 @@ class DocumentService(ABC):
         pass
 
     @abstractmethod
-    async def get_document_count(self) -> Result[int, str]:
+    async def get_document_count(self) -> Result[int, FailurePayload]:
         """
         Get the total count of indexed documents.
 
@@ -84,7 +82,7 @@ class DocumentService(ABC):
         pass
 
     @abstractmethod
-    async def clear_all_data(self) -> Result[Dict[str, Any], str]:
+    async def clear_all_data(self) -> Result[Dict[str, Any], FailurePayload]:
         """
         Clear all documents and reset the index.
 
@@ -99,7 +97,7 @@ class DocumentService(ABC):
         document_id: str,
         limit: int = 100,
         offset: int = 0,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get chunks for a specific document.
 
@@ -148,7 +146,7 @@ class LlamaIndexDocumentService(DocumentService):
 
     def _validate_document_prerequisites(
         self, document_id: str, content: str
-    ) -> Optional[Result[Dict[str, Any], str]]:
+    ) -> Optional[Result[Dict[str, Any], FailurePayload]]:
         """
         Validate document prerequisites before adding.
 
@@ -165,9 +163,14 @@ class LlamaIndexDocumentService(DocumentService):
                 {"document_id": document_id, "reason": "no_qdrant_client"},
                 level=logging.ERROR,
             )
-            return internal_error(
-                "Qdrant client not initialized",
-                context={"document_id": document_id, "service": "document_service"},
+            return fail(
+                FailurePayload(
+                    message="Qdrant client not initialized",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"document_id": document_id, "service": "document_service"},
+                )
             )
 
         if not content or not content.strip():
@@ -176,9 +179,14 @@ class LlamaIndexDocumentService(DocumentService):
                 {"document_id": document_id, "reason": "empty_content"},
                 level=logging.WARNING,
             )
-            return validation_error(
-                "Document content cannot be empty",
-                context={"document_id": document_id},
+            return fail(
+                FailurePayload(
+                    message="Document content cannot be empty",
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"document_id": document_id},
+                )
             )
 
         return None
@@ -258,7 +266,7 @@ class LlamaIndexDocumentService(DocumentService):
         document_id: str,
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Add a document to the index.
 
@@ -311,12 +319,17 @@ class LlamaIndexDocumentService(DocumentService):
                     if hasattr(insert_result, "error")
                     else "Document insertion failed"
                 )
-                return internal_error(
-                    error_msg,
-                    context={
-                        "document_id": document_id,
-                        "operation": "insert_document",
-                    },
+                return fail(
+                    FailurePayload(
+                        message=error_msg,
+                        error_type="InternalError",
+                        status_code=500,
+                        recoverable=False,
+                        details={
+                            "document_id": document_id,
+                            "operation": "insert_document",
+                        },
+                    )
                 )
 
             nodes_created: List[str] = insert_result.unwrap()
@@ -359,13 +372,18 @@ class LlamaIndexDocumentService(DocumentService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to add document: {str(e)}",
-                context={
-                    "document_id": document_id,
-                    "error_type": type(e).__name__,
-                    "content_length": len(content) if content else 0,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Failed to add document: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "error_type": type(e).__name__,
+                        "content_length": len(content) if content else 0,
+                    },
+                )
             )
 
     async def _insert_document_into_index(
@@ -373,7 +391,7 @@ class LlamaIndexDocumentService(DocumentService):
         document: Document,
         document_id: str,
         content: str,
-    ) -> Result[List[str], str]:
+    ) -> Result[List[str], FailurePayload]:
         """
         Insert document into index and track created nodes.
 
@@ -400,9 +418,14 @@ class LlamaIndexDocumentService(DocumentService):
             )
 
             if not content or not content.strip():
-                return validation_error(
-                    "Document content is empty or whitespace only",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message="Document content is empty or whitespace only",
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"document_id": document_id},
+                    )
                 )
 
             from llama_index.core import Settings
@@ -411,9 +434,14 @@ class LlamaIndexDocumentService(DocumentService):
             chunks = Settings.node_parser.get_nodes_from_documents([document])
 
             if not chunks:
-                return internal_error(
-                    "No chunks created from document",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message="No chunks created from document",
+                        error_type="InternalError",
+                        status_code=500,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             texts_to_embed = [chunk.get_content() for chunk in chunks]
@@ -493,12 +521,17 @@ class LlamaIndexDocumentService(DocumentService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to insert document into index: {str(e)}",
-                context={
-                    "document_id": document_id,
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Failed to insert document into index: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
     def _find_document_nodes(self, document_id: str) -> List[str]:
@@ -596,14 +629,10 @@ class LlamaIndexDocumentService(DocumentService):
             "status": full_metadata.get("status", "ready"),
         }
 
-    @track(
-        operation="document_deletion",
-        include_args=["document_id"],
-        include_result=True,
-        track_performance=True,
-        frequency="low_frequency",
-    )
-    async def delete_document(self, document_id: str) -> Result[Dict[str, Any], str]:
+    @track(operation="document_deletion")
+    async def delete_document(
+        self, document_id: str
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Delete a document from the index.
 
@@ -630,9 +659,14 @@ class LlamaIndexDocumentService(DocumentService):
                 {"document_id": document_id, "reason": "no_tracker"},
                 level=logging.ERROR,
             )
-            return internal_error(
-                NOT_INITIALIZED_TRACKER,
-                context={"document_id": document_id, "service": "document_service"},
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_TRACKER,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"document_id": document_id, "service": "document_service"},
+                )
             )
 
         try:
@@ -643,9 +677,14 @@ class LlamaIndexDocumentService(DocumentService):
                     {"document_id": document_id, "reason": "not_found"},
                     level=logging.WARNING,
                 )
-                return not_found_error(
-                    f"Document '{document_id}' not found",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Document '{document_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             # Get nodes for this document
@@ -656,9 +695,14 @@ class LlamaIndexDocumentService(DocumentService):
                     {"document_id": document_id, "reason": "no_nodes"},
                     level=logging.WARNING,
                 )
-                return not_found_error(
-                    f"No chunks found for document '{document_id}'",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"No chunks found for document '{document_id}'",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             nodes_count = len(node_ids)
@@ -679,12 +723,17 @@ class LlamaIndexDocumentService(DocumentService):
             try:
                 await self.doc_tracker.remove_document(document_id)
             except Exception as e:
-                return storage_error(
-                    f"Failed to remove document from tracker: {str(e)}",
-                    context={
-                        "document_id": document_id,
-                        "error_type": type(e).__name__,
-                    },
+                return fail(
+                    FailurePayload(
+                        message=f"Failed to remove document from tracker: {str(e)}",
+                        error_type="StorageError",
+                        status_code=500,
+                        recoverable=False,
+                        details={
+                            "document_id": document_id,
+                            "error_type": type(e).__name__,
+                        },
+                    )
                 )
 
             # Remove from BM25 index
@@ -735,12 +784,17 @@ class LlamaIndexDocumentService(DocumentService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to delete document: {str(e)}",
-                context={
-                    "document_id": document_id,
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Failed to delete document: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
     def _delete_from_vector_store(self, document_id: str) -> None:
@@ -767,13 +821,8 @@ class LlamaIndexDocumentService(DocumentService):
             )
             # Continue with deletion even if vector store fails
 
-    @track(
-        operation="document_count",
-        include_result=True,
-        track_performance=True,
-        frequency="high_frequency",
-    )
-    async def get_document_count(self) -> Result[int, str]:
+    @track(operation="document_count")
+    async def get_document_count(self) -> Result[int, FailurePayload]:
         """
         Get count of indexed documents.
 
@@ -781,9 +830,14 @@ class LlamaIndexDocumentService(DocumentService):
             Success with document count, or Failure with error details
         """
         if not self.doc_tracker:
-            return internal_error(
-                NOT_INITIALIZED_TRACKER,
-                context={"service": "document_service"},
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_TRACKER,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"service": "document_service"},
+                )
             )
 
         try:
@@ -795,9 +849,14 @@ class LlamaIndexDocumentService(DocumentService):
                 {"error": str(e), "error_type": type(e).__name__},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to get document count: {str(e)}",
-                context={"error_type": type(e).__name__},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to get document count: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"error_type": type(e).__name__},
+                )
             )
 
     @track(
@@ -806,7 +865,7 @@ class LlamaIndexDocumentService(DocumentService):
         track_performance=True,
         frequency="low_frequency",
     )
-    async def clear_all_data(self) -> Result[Dict[str, Any], str]:
+    async def clear_all_data(self) -> Result[Dict[str, Any], FailurePayload]:
         """
         Clear all data and reset the system.
 
@@ -834,9 +893,14 @@ class LlamaIndexDocumentService(DocumentService):
                 try:
                     self._recreate_vector_collection()
                 except Exception as e:
-                    return storage_error(
-                        f"Failed to recreate vector collection: {str(e)}",
-                        context={"error_type": type(e).__name__},
+                    return fail(
+                        FailurePayload(
+                            message=f"Failed to recreate vector collection: {str(e)}",
+                            error_type="StorageError",
+                            status_code=500,
+                            recoverable=False,
+                            details={"error_type": type(e).__name__},
+                        )
                     )
 
             # Clear tracker
@@ -845,9 +909,14 @@ class LlamaIndexDocumentService(DocumentService):
                 try:
                     clear_stats = await self.doc_tracker.clear_all()
                 except Exception as e:
-                    return storage_error(
-                        f"Failed to clear document tracker: {str(e)}",
-                        context={"error_type": type(e).__name__},
+                    return fail(
+                        FailurePayload(
+                            message=f"Failed to clear document tracker: {str(e)}",
+                            error_type="StorageError",
+                            status_code=500,
+                            recoverable=False,
+                            details={"error_type": type(e).__name__},
+                        )
                     )
 
             # Clear BM25 index
@@ -892,9 +961,14 @@ class LlamaIndexDocumentService(DocumentService):
                 {"error": str(e), "error_type": type(e).__name__},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to clear all data: {str(e)}",
-                context={"error_type": type(e).__name__},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to clear all data: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"error_type": type(e).__name__},
+                )
             )
 
     def _recreate_vector_collection(self) -> None:
@@ -924,19 +998,13 @@ class LlamaIndexDocumentService(DocumentService):
             )
             raise
 
-    @track(
-        operation="document_chunks_retrieval",
-        include_args=["document_id", "limit", "offset"],
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    @track(operation="document_chunks_retrieval")
     async def get_document_chunks(
         self,
         document_id: str,
         limit: int = 100,
         offset: int = 0,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get all chunks for a specific document with pagination.
 
@@ -968,16 +1036,26 @@ class LlamaIndexDocumentService(DocumentService):
                 {"document_id": document_id, "reason": "no_qdrant_client"},
                 level=logging.DEBUG,
             )
-            return internal_error(
-                "Qdrant client not initialized",
-                context={"document_id": document_id, "service": "document_service"},
+            return fail(
+                FailurePayload(
+                    message="Qdrant client not initialized",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"document_id": document_id, "service": "document_service"},
+                )
             )
 
         # Validate tracker availability
         if not self.doc_tracker:
-            return internal_error(
-                NOT_INITIALIZED_TRACKER,
-                context={"document_id": document_id, "service": "document_service"},
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_TRACKER,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"document_id": document_id, "service": "document_service"},
+                )
             )
 
         try:
@@ -988,17 +1066,27 @@ class LlamaIndexDocumentService(DocumentService):
                     {"document_id": document_id},
                     level=logging.WARNING,
                 )
-                return not_found_error(
-                    f"Document '{document_id}' not found",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Document '{document_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             # Get node IDs for document
             node_ids = await self.doc_tracker.get_node_ids(document_id)
             if not node_ids:
-                return not_found_error(
-                    f"No chunks found for document '{document_id}'",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"No chunks found for document '{document_id}'",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             total = len(node_ids)
@@ -1045,12 +1133,17 @@ class LlamaIndexDocumentService(DocumentService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to retrieve chunks: {str(e)}",
-                context={
-                    "document_id": document_id,
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Failed to retrieve chunks: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
     def _retrieve_and_enrich_chunks(

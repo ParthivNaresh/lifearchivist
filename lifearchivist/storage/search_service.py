@@ -13,10 +13,10 @@ from typing import Any, Dict, List, Optional
 
 from lifearchivist.storage.utils import MetadataFilterUtils
 from lifearchivist.utils.result import (
+    FailurePayload,
     Result,
     Success,
-    internal_error,
-    service_unavailable,
+    fail,
 )
 
 from ..utils.logx import log_event, track
@@ -32,7 +32,7 @@ class SearchService(ABC):
         top_k: int = 10,
         similarity_threshold: float = 0.7,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Perform semantic search using vector similarity.
 
@@ -53,7 +53,7 @@ class SearchService(ABC):
         query: str,
         top_k: int = 10,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Perform keyword-based search.
 
@@ -74,7 +74,7 @@ class SearchService(ABC):
         top_k: int = 10,
         semantic_weight: float = 0.5,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Perform hybrid search combining semantic and keyword search.
 
@@ -95,7 +95,7 @@ class SearchService(ABC):
         query: str,
         top_k: int = 10,
         similarity_threshold: float = 0.7,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Retrieve similar documents using vector search.
 
@@ -136,20 +136,14 @@ class LlamaIndexSearchService(SearchService):
         self.doc_tracker = doc_tracker
         self.qdrant_client = qdrant_client
 
-    @track(
-        operation="semantic_search",
-        include_args=["top_k", "similarity_threshold"],
-        include_result=True,
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="semantic_search")
     async def semantic_search(
         self,
         query: str,
         top_k: int = 10,
         similarity_threshold: float = 0.7,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Perform semantic search using vector similarity.
 
@@ -166,8 +160,14 @@ class LlamaIndexSearchService(SearchService):
                 {"reason": "no_qdrant_client"},
                 level=logging.DEBUG,
             )
-            return service_unavailable(
-                "Qdrant client not available", context={"service": "semantic_search"}
+            return fail(
+                FailurePayload(
+                    message="Qdrant client not available",
+                    error_type="ServiceUnavailable",
+                    status_code=503,
+                    recoverable=True,
+                    details={"service": "semantic_search"},
+                )
             )
 
         try:
@@ -256,27 +256,26 @@ class LlamaIndexSearchService(SearchService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Semantic search failed: {str(e)}",
-                context={
-                    "query": query[:50],
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Semantic search failed: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "query": query[:50],
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
-    @track(
-        operation="keyword_search",
-        include_args=["top_k"],
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    @track(operation="keyword_search")
     async def keyword_search(
         self,
         query: str,
         top_k: int = 10,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Perform keyword-based search using BM25.
 
@@ -291,9 +290,14 @@ class LlamaIndexSearchService(SearchService):
                 {"reason": "BM25 service not available"},
                 level=logging.ERROR,
             )
-            return service_unavailable(
-                "BM25 search service not available",
-                context={"service": "keyword_search"},
+            return fail(
+                FailurePayload(
+                    message="BM25 search service not available",
+                    error_type="ServiceUnavailable",
+                    status_code=503,
+                    recoverable=True,
+                    details={"service": "keyword_search"},
+                )
             )
 
         log_event(
@@ -349,12 +353,17 @@ class LlamaIndexSearchService(SearchService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Keyword search failed: {str(e)}",
-                context={
-                    "query": query[:50],
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Keyword search failed: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "query": query[:50],
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
     async def _enrich_bm25_results(
@@ -455,20 +464,14 @@ class LlamaIndexSearchService(SearchService):
 
         return ""
 
-    @track(
-        operation="hybrid_search",
-        include_args=["top_k", "semantic_weight"],
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    @track(operation="hybrid_search")
     async def hybrid_search(
         self,
         query: str,
         top_k: int = 10,
         semantic_weight: float = 0.5,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Perform hybrid search combining semantic and keyword search.
 
@@ -478,9 +481,14 @@ class LlamaIndexSearchService(SearchService):
             Success with list of combined results, or Failure with error
         """
         if not 0 <= semantic_weight <= 1:
-            return internal_error(
-                "semantic_weight must be between 0 and 1",
-                context={"semantic_weight": semantic_weight},
+            return fail(
+                FailurePayload(
+                    message="semantic_weight must be between 0 and 1",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"semantic_weight": semantic_weight},
+                )
             )
 
         log_event(
@@ -499,40 +507,32 @@ class LlamaIndexSearchService(SearchService):
             semantic_result = await self.semantic_search(
                 query=query,
                 top_k=top_k * 2,
-                similarity_threshold=0.3,  # Lower threshold to get more candidates
+                similarity_threshold=0.3,
                 filters=filters,
             )
 
             # If semantic search failed, return the failure
             if semantic_result.is_failure():
-                failure_result: Result[List[Dict[str, Any]], str] = semantic_result
-                return failure_result
+                return semantic_result  # Failure[..., FailurePayload]
 
             keyword_result = await self.keyword_search(
                 query=query,
                 top_k=top_k * 2,
                 filters=filters,
             )
-
-            # If keyword search failed, return the failure
             if keyword_result.is_failure():
-                keyword_failure_result: Result[List[Dict[str, Any]], str] = (
-                    keyword_result
-                )
-                return keyword_failure_result
+                return keyword_result  # Failure[..., FailurePayload]
 
             # Unwrap successful results
-            semantic_results = semantic_result.value
-            keyword_results = keyword_result.value
+            semantic_results: List[Dict[str, Any]] = semantic_result.unwrap()
+            keyword_results: List[Dict[str, Any]] = keyword_result.unwrap()
 
-            # Combine and re-score results
             combined_results: List[Dict[str, Any]] = self._combine_search_results(
                 semantic_results,
                 keyword_results,
                 semantic_weight,
             )
 
-            # Sort by combined score and take top_k
             combined_results.sort(key=lambda x: x["score"], reverse=True)
             final_results: List[Dict[str, Any]] = combined_results[:top_k]
 
@@ -557,12 +557,17 @@ class LlamaIndexSearchService(SearchService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Hybrid search failed: {str(e)}",
-                context={
-                    "query": query[:50],
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Hybrid search failed: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "query": query[:50],
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
     async def retrieve_similar(
@@ -570,7 +575,7 @@ class LlamaIndexSearchService(SearchService):
         query: str,
         top_k: int = 10,
         similarity_threshold: float = 0.7,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Retrieve similar documents using vector search.
 
@@ -580,16 +585,12 @@ class LlamaIndexSearchService(SearchService):
         Returns:
             Success with list of similar documents, or Failure with error
         """
-        result: Result[List[Dict[str, Any]], str] = await self.semantic_search(
+        return await self.semantic_search(
             query=query,
             top_k=top_k,
             similarity_threshold=similarity_threshold,
             filters=None,
         )
-        return result
-
-    # Filter matching now uses shared utility
-    # Removed _matches_filters method - using MetadataFilterUtils.matches_filters instead
 
     def _combine_search_results(
         self,
@@ -645,7 +646,7 @@ class LlamaIndexSearchService(SearchService):
         document_text: str,
         document_id: str,
         top_k: int = 10,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Get semantically similar documents for a given document.
 
@@ -670,11 +671,10 @@ class LlamaIndexSearchService(SearchService):
 
             # If search failed, return the failure
             if similar_result.is_failure():
-                failure_result: Result[List[Dict[str, Any]], str] = similar_result
-                return failure_result
+                return similar_result  # already Result[..., FailurePayload]
 
             # Unwrap successful result
-            similar_docs: List[Dict[str, Any]] = similar_result.value
+            similar_docs: List[Dict[str, Any]] = similar_result.unwrap()
 
             # Filter out the document itself and format results
             neighbors: List[Dict[str, Any]] = []
@@ -704,10 +704,15 @@ class LlamaIndexSearchService(SearchService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to get document neighbors: {str(e)}",
-                context={
-                    "document_id": document_id,
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Failed to get document neighbors: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "error_type": type(e).__name__,
+                    },
+                )
             )

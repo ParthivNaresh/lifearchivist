@@ -1,7 +1,7 @@
 # logx/structured.py
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from .context import current_context
 
@@ -22,7 +22,7 @@ def _record(
     data.update({k: v for k, v in current_context().items() if v})
 
     rec = _LOG.makeRecord(_LOG.name, level, "(structured)", 0, event, (), None)
-    rec.structured_data = data
+    cast(Any, rec).structured_data = data
     return rec
 
 
@@ -46,7 +46,7 @@ def log_span(
     rec = _record("span", event, payload, level)
 
     # Promote key span fields to top-level for renderers/parsers
-    sd = rec.structured_data
+    sd: Dict[str, Any] = cast(Any, rec).structured_data
     sd["operation"] = operation
     for k in (
         "duration_ms",

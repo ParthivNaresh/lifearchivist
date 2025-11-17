@@ -119,7 +119,7 @@ class ProviderRouter:
                 error="No providers available in fallback chain",
                 error_type="NoProvidersAvailable",
                 status_code=503,
-                context={"requested_ids": provider_ids},
+                details={"requested_ids": provider_ids},
             )
 
         return Success(providers)
@@ -145,7 +145,7 @@ class ProviderRouter:
                     error=f"Provider '{provider_id}' not found and no default provider available",
                     error_type="ProviderNotFound",
                     status_code=404,
-                    context={
+                    details={
                         "provider_id": provider_id,
                         "available_providers": available,
                         "fallback_attempted": True,
@@ -182,7 +182,7 @@ class ProviderRouter:
                 error="No default provider configured",
                 error_type="NoDefaultProvider",
                 status_code=503,
-                context={
+                details={
                     "available_providers": [
                         p.provider_id for p in self.registry.list_all()
                     ]

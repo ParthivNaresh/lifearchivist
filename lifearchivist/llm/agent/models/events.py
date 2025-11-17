@@ -70,7 +70,7 @@ class AgentEvent:
 
     @classmethod
     def response_chunk(cls, chunk: str) -> "AgentEvent":
-        return cls(type=AgentEventType.RESPONSE_CHUNK, data=chunk)
+        return cls(type=AgentEventType.RESPONSE_CHUNK, data={"text": chunk})
 
     @classmethod
     def task_started(cls, task) -> "AgentEvent":

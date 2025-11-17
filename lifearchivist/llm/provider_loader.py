@@ -42,12 +42,7 @@ class ProviderLoader:
         """
         self.credential_service = credential_service
 
-    @track(
-        operation="provider_loader_load_provider",
-        include_args=["provider_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="provider_loader_load_provider")
     async def load_provider(
         self,
         provider_id: str,
@@ -94,7 +89,7 @@ class ProviderLoader:
                 error=f"Failed to retrieve provider metadata: {failure.error}",
                 error_type=failure.error_type,
                 status_code=failure.status_code,
-                context={"provider_id": provider_id},
+                details={"provider_id": provider_id},
             )
 
         provider_data = metadata_result.unwrap()
@@ -116,7 +111,7 @@ class ProviderLoader:
                 error=f"Invalid provider type: {provider_data.get('provider_type')}",
                 error_type="InvalidProviderType",
                 status_code=400,
-                context={"provider_id": provider_id},
+                details={"provider_id": provider_id},
             )
 
         # Get decrypted, typed config
@@ -158,11 +153,7 @@ class ProviderLoader:
 
         return Success(provider)
 
-    @track(
-        operation="provider_loader_load_all",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="provider_loader_load_all")
     async def load_all_providers(
         self,
         user_id: str = "default",
@@ -292,7 +283,7 @@ class ProviderLoader:
                 error=f"No provider class registered for type: {provider_type.value}",
                 error_type="ProviderClassNotFound",
                 status_code=500,
-                context={
+                details={
                     "provider_id": provider_id,
                     "provider_type": provider_type.value,
                 },
@@ -328,7 +319,7 @@ class ProviderLoader:
                 error=f"Failed to instantiate provider: {e}",
                 error_type="ProviderInstantiationError",
                 status_code=500,
-                context={
+                details={
                     "provider_id": provider_id,
                     "provider_type": provider_type.value,
                     "original_error": str(e),
@@ -417,7 +408,7 @@ class ProviderLoader:
                 error=f"Invalid configuration: {e}",
                 error_type="ConfigValidationError",
                 status_code=400,
-                context={
+                details={
                     "provider_type": provider_type.value,
                     "error": str(e),
                 },

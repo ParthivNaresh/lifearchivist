@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from redis.asyncio import Redis
 
 from ..utils.logx import log_event, track
-from ..utils.result import Failure, Result, Success
+from ..utils.result import FailurePayload, Result, Success, fail
 
 if TYPE_CHECKING:
     from ..llm.base_provider import ProviderType
@@ -65,7 +65,7 @@ class CredentialService:
         config: "BaseProviderConfig",
         is_default: bool = False,
         user_id: str = "default",
-    ) -> Result[Dict, str]:
+    ) -> Result[Dict, FailurePayload]:
         """
         Add or update a provider configuration.
 
@@ -84,10 +84,14 @@ class CredentialService:
             existing = await self.redis.get(redis_key)
 
             if existing:
-                return Failure(
-                    error=f"Provider ID '{provider_id}' already exists. Please choose a unique identifier.",
-                    error_type="DuplicateProvider",
-                    status_code=409,
+                return fail(
+                    FailurePayload(
+                        message=f"Provider ID '{provider_id}' already exists. Please choose a unique identifier.",
+                        error_type="DuplicateProvider",
+                        status_code=409,
+                        recoverable=False,
+                        details={"provider_id": provider_id},
+                    )
                 )
             # Serialize config to dict
             config_dict = config.to_dict()
@@ -129,19 +133,20 @@ class CredentialService:
                 },
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to add provider: {e}",
-                error_type=type(e).__name__,
-                status_code=500,
+            return fail(
+                FailurePayload(
+                    message=f"Failed to add provider: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                    details={"provider_id": provider_id},
+                )
             )
 
-    @track(
-        operation="credential_service_get_provider_metadata",
-        include_args=["provider_id"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
-    async def get_provider_metadata(self, provider_id: str) -> Result[Dict, str]:
+    @track(operation="credential_service_get_provider_metadata")
+    async def get_provider_metadata(
+        self, provider_id: str
+    ) -> Result[Dict, FailurePayload]:
         """
         Get provider metadata.
 
@@ -156,10 +161,14 @@ class CredentialService:
             data = await self.redis.get(redis_key)
 
             if not data:
-                return Failure(
-                    error=f"Provider not found: {provider_id}",
-                    error_type="ProviderNotFound",
-                    status_code=404,
+                return fail(
+                    FailurePayload(
+                        message=f"Provider not found: {provider_id}",
+                        error_type="ProviderNotFound",
+                        status_code=404,
+                        recoverable=False,
+                        details={"provider_id": provider_id},
+                    )
                 )
 
             provider_data = json.loads(data)
@@ -171,10 +180,14 @@ class CredentialService:
                 {"provider_id": provider_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to get provider metadata: {e}",
-                error_type=type(e).__name__,
-                status_code=500,
+            return fail(
+                FailurePayload(
+                    message=f"Failed to get provider metadata: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                    details={"provider_id": provider_id},
+                )
             )
 
     @track(
@@ -185,7 +198,7 @@ class CredentialService:
     )
     async def get_provider_config(
         self, provider_id: str
-    ) -> Result["BaseProviderConfig", str]:
+    ) -> Result["BaseProviderConfig", FailurePayload]:
         """
         Get typed provider configuration.
 
@@ -200,10 +213,14 @@ class CredentialService:
             data = await self.redis.get(redis_key)
 
             if not data:
-                return Failure(
-                    error=f"Provider not found: {provider_id}",
-                    error_type="ProviderNotFound",
-                    status_code=404,
+                return fail(
+                    FailurePayload(
+                        message=f"Provider not found: {provider_id}",
+                        error_type="ProviderNotFound",
+                        status_code=404,
+                        recoverable=False,
+                        details={"provider_id": provider_id},
+                    )
                 )
 
             provider_data = json.loads(data)
@@ -214,10 +231,14 @@ class CredentialService:
 
                 provider_type = ProviderType(provider_data["provider_type"])
             except (KeyError, ValueError):
-                return Failure(
-                    error=f"Invalid provider type: {provider_data.get('provider_type')}",
-                    error_type="InvalidProviderType",
-                    status_code=400,
+                return fail(
+                    FailurePayload(
+                        message=f"Invalid provider type: {provider_data.get('provider_type')}",
+                        error_type="InvalidProviderType",
+                        status_code=400,
+                        recoverable=True,
+                        details={"provider_id": provider_id},
+                    )
                 )
 
             # Deserialize into typed config
@@ -233,18 +254,20 @@ class CredentialService:
                 {"provider_id": provider_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to get provider config: {e}",
-                error_type=type(e).__name__,
-                status_code=500,
+            return fail(
+                FailurePayload(
+                    message=f"Failed to get provider config: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                    details={"provider_id": provider_id},
+                )
             )
 
-    @track(
-        operation="credential_service_list_providers",
-        track_performance=True,
-        frequency="medium_frequency",
-    )
-    async def list_providers(self, user_id: str = "default") -> Result[List[Dict], str]:
+    @track(operation="credential_service_list_providers")
+    async def list_providers(
+        self, user_id: str = "default"
+    ) -> Result[List[Dict], FailurePayload]:
         """
         List all providers for a user.
 
@@ -284,19 +307,18 @@ class CredentialService:
                 {"error": str(e), "user_id": user_id},
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to list providers: {e}",
-                error_type=type(e).__name__,
-                status_code=500,
+            return fail(
+                FailurePayload(
+                    message=f"Failed to list providers: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                    details={"user_id": user_id},
+                )
             )
 
-    @track(
-        operation="credential_service_delete_provider",
-        include_args=["provider_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
-    async def delete_provider(self, provider_id: str) -> Result[bool, str]:
+    @track(operation="credential_service_delete_provider")
+    async def delete_provider(self, provider_id: str) -> Result[bool, FailurePayload]:
         """
         Delete a provider configuration.
 
@@ -312,10 +334,14 @@ class CredentialService:
             # Check if exists
             exists = await self.redis.exists(redis_key)
             if not exists:
-                return Failure(
-                    error=f"Provider not found: {provider_id}",
-                    error_type="ProviderNotFound",
-                    status_code=404,
+                return fail(
+                    FailurePayload(
+                        message=f"Provider not found: {provider_id}",
+                        error_type="ProviderNotFound",
+                        status_code=404,
+                        recoverable=False,
+                        details={"provider_id": provider_id},
+                    )
                 )
 
             # Delete from Redis
@@ -337,24 +363,23 @@ class CredentialService:
                 {"provider_id": provider_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to delete provider: {e}",
-                error_type=type(e).__name__,
-                status_code=500,
+            return fail(
+                FailurePayload(
+                    message=f"Failed to delete provider: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                    details={"provider_id": provider_id},
+                )
             )
 
-    @track(
-        operation="credential_service_update_provider",
-        include_args=["provider_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="credential_service_update_provider")
     async def update_provider(
         self,
         provider_id: str,
         config: Optional["BaseProviderConfig"] = None,
         is_default: Optional[bool] = None,
-    ) -> Result[Dict, str]:
+    ) -> Result[Dict, FailurePayload]:
         """
         Update provider configuration.
 
@@ -370,7 +395,7 @@ class CredentialService:
             # Get existing provider metadata
             result = await self.get_provider_metadata(provider_id)
             if result.is_failure():
-                return cast(Result[Dict, str], result)
+                return result
 
             provider_data = result.unwrap()
 
@@ -398,13 +423,19 @@ class CredentialService:
                 {"provider_id": provider_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to update provider: {e}",
-                error_type=type(e).__name__,
-                status_code=500,
+            return fail(
+                FailurePayload(
+                    message=f"Failed to update provider: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                    details={"provider_id": provider_id},
+                )
             )
 
-    async def clear_all_providers(self, user_id: str = "default") -> Result[int, str]:
+    async def clear_all_providers(
+        self, user_id: str = "default"
+    ) -> Result[int, FailurePayload]:
         """
         Clear all providers for a user (DANGEROUS - use with caution).
 
@@ -417,10 +448,14 @@ class CredentialService:
         try:
             result = await self.list_providers(user_id)
             if result.is_failure():
-                return Failure(
-                    error="Failed to list providers for deletion",
-                    error_type="ListError",
-                    status_code=500,
+                return fail(
+                    FailurePayload(
+                        message="Failed to list providers for deletion",
+                        error_type="ListError",
+                        status_code=500,
+                        recoverable=False,
+                        details={"user_id": user_id},
+                    )
                 )
 
             providers = result.unwrap()
@@ -445,8 +480,12 @@ class CredentialService:
                 {"user_id": user_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to clear providers: {e}",
-                error_type=type(e).__name__,
-                status_code=500,
+            return fail(
+                FailurePayload(
+                    message=f"Failed to clear providers: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                    details={"user_id": user_id},
+                )
             )

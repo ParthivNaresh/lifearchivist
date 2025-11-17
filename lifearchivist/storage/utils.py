@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from lifearchivist.utils.logx import log_event
-from lifearchivist.utils.result import Failure
+
+from ..utils.result import Failure, FailurePayload
 
 
 class MetadataFilterUtils:
@@ -674,7 +675,7 @@ class ContextBuilder:
         filters: Optional[Dict[str, Any]],
     ) -> Tuple[
         Optional[List[Dict[str, Any]]],
-        Optional[Failure[str]],
+        Optional[Failure[List[Dict[str, Any]], FailurePayload]],
     ]:
         """
         Retrieve chunks using search service.
@@ -712,7 +713,7 @@ class ContextBuilder:
             return None, search_result
 
         search_results = search_result.value
-        source_chunks = []
+        source_chunks: List[Dict[str, Any]] = []
 
         for result in search_results:
             source_chunks.append(

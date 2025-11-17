@@ -34,7 +34,9 @@ def configure_logging() -> None:
     # Root logger → Queue
     root = logging.getLogger()
     root.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
-    q = queue.Queue(maxsize=int(os.getenv("LOG_QUEUE_SIZE", "10000")))
+    q: "queue.Queue[logging.LogRecord]" = queue.Queue(
+        maxsize=int(os.getenv("LOG_QUEUE_SIZE", "10000"))
+    )
     root.handlers[:] = [QueueHandler(q)]
     root.propagate = False
 
@@ -55,7 +57,6 @@ def configure_logging() -> None:
 
     # Start listener thread
     _listener = QueueListener(q, sink, respect_handler_level=True)
-    _listener.daemon = True
     _listener.start()
 
     # Make common noisy libs propagate into our root (single pipeline)

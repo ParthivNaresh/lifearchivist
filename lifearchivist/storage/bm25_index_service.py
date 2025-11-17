@@ -189,11 +189,7 @@ class BM25IndexService:
         # Connection state
         self._initialized = False
 
-    @track(
-        operation="bm25_initialize",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="bm25_initialize")
     async def initialize(self) -> None:
         """
         Initialize Redis connection and load existing index.

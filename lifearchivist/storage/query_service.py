@@ -20,10 +20,10 @@ from lifearchivist.storage.utils import (
 )
 from lifearchivist.utils.logx import log_event, track
 from lifearchivist.utils.result import (
+    FailurePayload,
     Result,
     Success,
-    internal_error,
-    service_unavailable,
+    fail,
 )
 
 
@@ -37,7 +37,7 @@ class QueryService(ABC):
         similarity_top_k: int = 5,
         response_mode: str = "tree_summarize",
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Execute a query and generate a response.
 
@@ -58,7 +58,7 @@ class QueryService(ABC):
         question: str,
         top_k: int = 5,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[Tuple[str, List[Dict[str, Any]]], str]:
+    ) -> Result[Tuple[str, List[Dict[str, Any]]], FailurePayload]:
         """
         Build context for a question by retrieving relevant documents.
 
@@ -186,20 +186,14 @@ class LlamaIndexQueryService(QueryService):
 
         return any(keyword in question_lower for keyword in document_keywords)
 
-    @track(
-        operation="query_execution",
-        include_args=["similarity_top_k", "response_mode"],
-        include_result=True,
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="query_execution")
     async def query(
         self,
         question: str,
         similarity_top_k: int = 5,
         response_mode: str = "tree_summarize",
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Execute a query and generate a response using RAG.
 
@@ -250,7 +244,6 @@ class LlamaIndexQueryService(QueryService):
                     }
                 )
 
-            # Build context (retrieve relevant chunks) - returns Result now
             context_result = await self.build_context(
                 question=question,
                 top_k=similarity_top_k,
@@ -259,11 +252,10 @@ class LlamaIndexQueryService(QueryService):
 
             # Handle Result type
             if context_result.is_failure():
-                failure_result: Result[Dict[str, Any], str] = context_result
-                return failure_result
+                return fail(context_result.unwrap_error())
 
             # Unwrap successful result
-            context_tuple: Tuple[str, List[Dict[str, Any]]] = context_result.value
+            context_tuple: Tuple[str, List[Dict[str, Any]]] = context_result.unwrap()
             context, source_chunks = context_tuple
 
             # Generate response using direct LLM
@@ -317,27 +309,26 @@ class LlamaIndexQueryService(QueryService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Query failed: {str(e)}",
-                context={
-                    "question": question[:100],
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Query failed: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "question": question[:100],
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
-    @track(
-        operation="context_building",
-        include_args=["top_k"],
-        include_result=False,
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="context_building")
     async def build_context(
         self,
         question: str,
         top_k: int = 5,
         filters: Optional[Dict[str, Any]] = None,
-    ) -> Result[Tuple[str, List[Dict[str, Any]]], str]:
+    ) -> Result[Tuple[str, List[Dict[str, Any]]], FailurePayload]:
         """
         Build context for a question by retrieving relevant documents.
 
@@ -358,9 +349,14 @@ class LlamaIndexQueryService(QueryService):
                     {"reason": "no_search_service"},
                     level=logging.WARNING,
                 )
-                return service_unavailable(
-                    "Search service not available",
-                    context={"service": "context_building"},
+                return fail(
+                    FailurePayload(
+                        message="Search service not available",
+                        error_type="ServiceUnavailable",
+                        status_code=503,
+                        recoverable=True,
+                        details={"service": "context_building"},
+                    )
                 )
 
             retrieval_result = await ContextBuilder.retrieve_from_search_service(
@@ -369,7 +365,7 @@ class LlamaIndexQueryService(QueryService):
             retrieved_chunks, error_result = retrieval_result
 
             if error_result:
-                return error_result
+                return fail(error_result.unwrap_error())
 
             if retrieved_chunks is not None:
                 source_chunks = retrieved_chunks
@@ -405,12 +401,17 @@ class LlamaIndexQueryService(QueryService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Context building failed: {str(e)}",
-                context={
-                    "question": question[:100],
-                    "error_type": type(e).__name__,
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Context building failed: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "question": question[:100],
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
     def format_response(

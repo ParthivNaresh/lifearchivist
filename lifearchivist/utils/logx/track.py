@@ -6,12 +6,12 @@ import os
 import random
 import time
 import tracemalloc
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union, cast
+from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar, Union, cast
 
 from .context import clear_span, current_context, set_span
 from .structured import log_span
 
-T = TypeVar("T")
+F = TypeVar("F", bound=Callable[..., Any])
 
 # Configurable performance sampling to limit cost of tracemalloc
 _PERF_SAMPLE_RATE = float(os.getenv("LOG_PERF_SAMPLE_RATE", "0.25"))
@@ -75,34 +75,25 @@ def _extract_args(kwargs: dict, include_args: Union[bool, List[str]]) -> Dict[st
 
 def track(
     operation: Optional[str] = None,
-    include_result: bool = False,
-    include_args: Union[bool, List[str]] = False,
+    include_result: bool = True,
+    include_args: Union[bool, List[str]] = True,
     track_performance: bool = True,
     frequency: str = "default",  # high_frequency|default|low_frequency|rare|always
     level: int = logging.INFO,
-) -> Callable[[Callable[..., T]], Callable[..., T]]:
+) -> Callable[[F], F]:
     """
-    Decorate sync/async functions to emit:
-      - span: operation_started
-      - span: operation_completed/operation_failed with duration/cpu/memory deltas
-
-    Args:
-      operation: friendly operation name (defaults to function name)
-      include_result: if True, log small primitives / presence-only for others
-      include_args: False | True (all kwargs) | ['subset','of','kwargs']
-      track_performance: if True, capture duration/cpu and (sampled) alloc_kib
-      frequency: sampling hint used by the SamplingFilter
+    Decorate sync/async functions to emit spans with duration/cpu/memory metrics.
+    Preserves the original callable type (sync or async) for typing.
     """
     frequency = "always"
 
-    def deco(func: Callable[..., T]) -> Callable[..., T]:
+    def deco(func: F) -> F:
         op = operation or func.__name__
 
         def enter(kwargs: dict) -> Dict[str, Any]:
             parent = current_context().get("span_id")
             span = f"{int(time.time()*1e6):x}"
             set_span(span, parent)
-            # emit started
             log_span("operation_started", op, {"frequency": frequency}, level)
             ctx: Dict[str, Any] = {
                 "t0": _now_ns(),
@@ -154,7 +145,7 @@ def track(
                 clear_span()
 
         @functools.wraps(func)
-        def sync_wrapper(*args, **kwargs):
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             ctx = enter(kwargs)
             try:
                 res = func(*args, **kwargs)
@@ -165,10 +156,11 @@ def track(
                 raise
 
         @functools.wraps(func)
-        async def async_wrapper(*args, **kwargs):
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             ctx = enter(kwargs)
             try:
-                res = await func(*args, **kwargs)
+                res_any = func(*args, **kwargs)
+                res = await cast(Awaitable[Any], res_any)
                 leave(ctx, True, None, res)
                 return res
             except BaseException as e:
@@ -176,7 +168,7 @@ def track(
                 raise
 
         return cast(
-            Callable[..., T],
+            F,
             async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper,
         )
 

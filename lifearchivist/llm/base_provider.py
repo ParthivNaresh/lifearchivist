@@ -11,7 +11,16 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    cast,
+)
 
 import aiohttp
 
@@ -932,7 +941,11 @@ class BaseLLMProvider(ABC):
             RuntimeError: If streaming fails
             ValueError: If parameters are invalid
         """
-        pass
+        from typing import TYPE_CHECKING
+
+        if TYPE_CHECKING:  # help type-checkers see this as a generator
+            yield cast(LLMStreamChunk, None)
+        raise NotImplementedError
 
     @abstractmethod
     async def list_models(self) -> List[ModelInfo]:

@@ -130,7 +130,7 @@ async def archive_conversation(
         )
 
         if result.is_failure():
-            error_msg = result.error
+            error_msg = result.unwrap_error().message
             if "not found" in error_msg.lower():
                 raise ResourceNotFoundError("Conversation", conversation_id)
             raise InternalServerError("Archive conversation", Exception(error_msg))

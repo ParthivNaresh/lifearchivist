@@ -41,7 +41,7 @@ class ExecutionPlan:
     _by_id: Dict[str, "AgentTask"] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self):
-        self._by_id: Dict[str, AgentTask] = {t.task_id: t for t in self.tasks}  # type: ignore[index]
+        self._by_id = {t.task_id: t for t in self.tasks}
 
     def task_by_id(self, task_id: str) -> AgentTask:
         return self._by_id[task_id]

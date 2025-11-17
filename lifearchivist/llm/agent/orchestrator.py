@@ -1,5 +1,15 @@
 import json
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    cast,
+)
 
 from ...llm import LLMMessage
 from .complexity_classifier import ComplexityClassifier
@@ -39,7 +49,7 @@ class AgentOrchestrator:
         plan_validator: PlanValidator,
         *,
         on_observe: Optional[
-            callable
+            Callable[[str, Mapping[str, Any]], None]
         ] = None,  # callable(event_name: str, fields: dict)
         planning_model: str = "gpt-4o",
         planning_temperature: float = 0.2,
@@ -259,14 +269,14 @@ class AgentOrchestrator:
         if len(s) > MAX_JSON_CHARS:
             raise ValueError(f"LLM JSON exceeds {MAX_JSON_CHARS} chars")
         try:
-            return json.loads(s)
+            return cast(Dict[str, Any], json.loads(s))
         except json.JSONDecodeError as e:
             raise ValueError(f"JSON decode error at pos {e.pos}: {e.msg}") from e
 
     def _observe(self, event: str, **fields: Any) -> None:
         if callable(self._obs):
             try:
-                self._obs(event, fields)
+                self._obs(event, dict(fields))
             except Exception:
                 # Never let observability break control flow
                 pass

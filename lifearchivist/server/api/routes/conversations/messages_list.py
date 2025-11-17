@@ -212,7 +212,7 @@ async def get_messages(
         )
 
         if result.is_failure():
-            error_msg = result.error
+            error_msg = result.unwrap_error().message
             if "not found" in error_msg.lower():
                 raise ResourceNotFoundError("Conversation", conversation_id)
             raise InternalServerError("Get messages", Exception(error_msg))

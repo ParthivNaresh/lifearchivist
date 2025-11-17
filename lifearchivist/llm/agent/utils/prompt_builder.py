@@ -1,13 +1,12 @@
 import json
-from typing import Any, Dict, Iterable, List, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Union
 
-try:
-    # optional import to type-hint tool objects; code works without it
+if TYPE_CHECKING:
     from ..tools.base import BaseAgentTool
 
     ToolLike = Union[Dict[str, Any], "BaseAgentTool"]
-except Exception:
-    ToolLike = Dict[str, Any]
+else:
+    ToolLike = Union[Dict[str, Any], Any]
 
 
 class PromptBuilder:

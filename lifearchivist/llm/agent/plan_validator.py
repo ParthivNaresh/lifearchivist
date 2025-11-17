@@ -1,5 +1,5 @@
 from collections import Counter, deque
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from pydantic import ValidationError
 
@@ -166,7 +166,7 @@ class PlanValidator:
         if not expected_type:
             return None
 
-        py_map = {
+        py_map: Dict[str, Union[type, tuple[type, ...]]] = {
             "string": str,
             "number": (int, float),
             "integer": int,
@@ -174,15 +174,17 @@ class PlanValidator:
             "array": list,
             "object": dict,
         }
-        py_t = py_map.get(expected_type)
-        if py_t and not isinstance(value, py_t):
+        py_t: Union[type, tuple[type, ...], None] = py_map.get(expected_type)
+        if py_t is not None and not isinstance(value, py_t):
             return f"expected {expected_type}, got {type(value).__name__}"
 
         if expected_type == "array" and "items" in schema:
             subtype = schema["items"].get("type")
             if subtype and isinstance(value, list):
-                sub_py = py_map.get(subtype)
-                if sub_py and not all(isinstance(it, sub_py) for it in value):
+                sub_py: Union[type, tuple[type, ...], None] = py_map.get(subtype)
+                if sub_py is not None and not all(
+                    isinstance(it, sub_py) for it in value
+                ):
                     return f"array items must be {subtype}"
         return None
 

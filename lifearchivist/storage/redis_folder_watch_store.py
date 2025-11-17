@@ -91,11 +91,7 @@ class RedisFolderWatchStore:
         # Connection state
         self._initialized = False
 
-    @track(
-        operation="redis_folder_watch_store_initialize",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="redis_folder_watch_store_initialize")
     async def initialize(self) -> None:
         """
         Initialize Redis connection and verify connectivity.
@@ -158,12 +154,7 @@ class RedisFolderWatchStore:
                 {"redis_url": self.redis_url},
             )
 
-    @track(
-        operation="redis_add_watched_folder",
-        include_args=["path"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="redis_add_watched_folder")
     async def add_folder(
         self,
         path: str,
@@ -248,12 +239,7 @@ class RedisFolderWatchStore:
 
         return folder_id
 
-    @track(
-        operation="redis_get_watched_folder",
-        include_args=["folder_id"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="redis_get_watched_folder")
     async def get_folder(self, folder_id: str) -> Optional[Dict[str, Any]]:
         """
         Get folder configuration by ID.
@@ -278,11 +264,7 @@ class RedisFolderWatchStore:
         # Deserialize data types
         return self._deserialize_folder_data(raw_data)
 
-    @track(
-        operation="redis_list_watched_folders",
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    @track(operation="redis_list_watched_folders")
     async def list_folders(self, enabled_only: bool = False) -> List[Dict[str, Any]]:
         """
         List all watched folders.
@@ -318,12 +300,7 @@ class RedisFolderWatchStore:
 
         return folders
 
-    @track(
-        operation="redis_update_watched_folder",
-        include_args=["folder_id"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    @track(operation="redis_update_watched_folder")
     async def update_folder(self, folder_id: str, updates: Dict[str, Any]) -> bool:
         """
         Update folder configuration fields.
@@ -355,12 +332,7 @@ class RedisFolderWatchStore:
 
         return True
 
-    @track(
-        operation="redis_remove_watched_folder",
-        include_args=["folder_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="redis_remove_watched_folder")
     async def remove_folder(self, folder_id: str) -> bool:
         """
         Remove a watched folder configuration atomically.
@@ -411,12 +383,7 @@ class RedisFolderWatchStore:
 
         return True
 
-    @track(
-        operation="redis_increment_folder_stat",
-        include_args=["folder_id", "stat_name"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="redis_increment_folder_stat")
     async def increment_stat(
         self, folder_id: str, stat_name: str, amount: int = 1
     ) -> int:
@@ -553,11 +520,7 @@ class RedisFolderWatchStore:
             pipe.hset(folder_key, "error_count", "0")
             await pipe.execute()
 
-    @track(
-        operation="redis_clear_all_folders",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="redis_clear_all_folders")
     async def clear_all(self) -> Dict[str, Any]:
         """
         Clear all watched folder configurations.

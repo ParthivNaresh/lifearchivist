@@ -1,5 +1,5 @@
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ...llm import LLMMessage
 from .models.query import ComplexityClassification, QueryComplexity
@@ -23,7 +23,7 @@ class ComplexityClassifier:
         self.model = model
 
     async def classify(
-        self, query: str, context: any = None
+        self, query: str, context: Any | None = None
     ) -> ComplexityClassification:
         prompt = self.prompt_builder.build_complexity_classification_prompt(
             query=query, context=context

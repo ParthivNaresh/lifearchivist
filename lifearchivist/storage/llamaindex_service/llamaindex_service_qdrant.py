@@ -26,8 +26,9 @@ from lifearchivist.storage.redis_document_tracker import RedisDocumentTracker
 from lifearchivist.storage.search_service import LlamaIndexSearchService
 from lifearchivist.storage.utils import StorageConstants
 from lifearchivist.utils.result import (
+    FailurePayload,
     Result,
-    internal_error,
+    fail,
 )
 
 from ...utils.logx import log_event, track
@@ -357,7 +358,7 @@ class LlamaIndexQdrantService:
         document_id: str,
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Add a document to the index.
 
@@ -369,11 +370,15 @@ class LlamaIndexQdrantService:
         Returns:
             Success with document info, or Failure with error details
         """
-        # Check if initialized
         if not self._initialized:
-            return internal_error(
-                NOT_INITIALIZED_LLAMA_INDEX_SEARCH_SERVICE,
-                context={"document_id": document_id},
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_LLAMA_INDEX_SEARCH_SERVICE,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"document_id": document_id},
+                )
             )
 
         if not self.document_service:
@@ -386,17 +391,22 @@ class LlamaIndexQdrantService:
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                NOT_INITIALIZED_DOCUMENT_SERVICE,
-                context={
-                    "document_id": document_id,
-                    "has_tracker": self.doc_tracker is not None,
-                },
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_DOCUMENT_SERVICE,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "has_tracker": self.doc_tracker is not None,
+                    },
+                )
             )
 
-        # Delegate to document service (which now returns Result)
-        result: Result[Dict[str, Any], str] = await self.document_service.add_document(
-            document_id, content, metadata
+        # Delegate to document service (now Result[..., FailurePayload])
+        result: Result[Dict[str, Any], FailurePayload] = (
+            await self.document_service.add_document(document_id, content, metadata)
         )
         return result
 
@@ -430,12 +440,10 @@ class LlamaIndexQdrantService:
             result = await self.metadata_service.get_full_document_metadata(document_id)
             if result.is_failure():
                 return {}
-            return dict(result.value)
-
-        # Fallback if metadata service not available
+            return dict(result.unwrap())  # was result.value
         return {}
 
-    async def get_document_count(self) -> Result[int, str]:
+    async def get_document_count(self) -> Result[int, FailurePayload]:
         """
         Get count of indexed documents.
 
@@ -445,16 +453,24 @@ class LlamaIndexQdrantService:
             Success with document count, or Failure with error details
         """
         if not self.document_service:
-            return internal_error(
-                NOT_INITIALIZED_DOCUMENT_SERVICE,
-                context={"service": "llamaindex_service"},
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_DOCUMENT_SERVICE,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"service": "llamaindex_service"},
+                )
             )
 
-        # Delegate to document service (which now returns Result)
-        result: Result[int, str] = await self.document_service.get_document_count()
+        result: Result[int, FailurePayload] = (
+            await self.document_service.get_document_count()
+        )
         return result
 
-    async def delete_document(self, document_id: str) -> Result[Dict[str, Any], str]:
+    async def delete_document(
+        self, document_id: str
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Delete a document from the index.
 
@@ -469,18 +485,25 @@ class LlamaIndexQdrantService:
                 {"document_id": document_id, "reason": "no_document_service"},
                 level=logging.WARNING,
             )
-            return internal_error(
-                NOT_INITIALIZED_DOCUMENT_SERVICE,
-                context={"document_id": document_id, "service": "llamaindex_service"},
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_DOCUMENT_SERVICE,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "service": "llamaindex_service",
+                    },
+                )
             )
 
-        # Delegate to document service (which now returns Result)
-        result: Result[Dict[str, Any], str] = (
+        result: Result[Dict[str, Any], FailurePayload] = (
             await self.document_service.delete_document(document_id)
         )
         return result
 
-    async def clear_all_data(self) -> Result[Dict[str, Any], str]:
+    async def clear_all_data(self) -> Result[Dict[str, Any], FailurePayload]:
         """
         Clear all data and reset the system.
 
@@ -490,21 +513,22 @@ class LlamaIndexQdrantService:
             Success with clearing statistics, or Failure with error details
         """
         try:
-            # Use document service to clear data
             if not self.document_service:
-                return internal_error(
-                    NOT_INITIALIZED_DOCUMENT_SERVICE,
-                    context={"service": "llamaindex_service"},
+                return fail(
+                    FailurePayload(
+                        message=NOT_INITIALIZED_DOCUMENT_SERVICE,
+                        error_type="InternalError",
+                        status_code=500,
+                        recoverable=False,
+                        details={"service": "llamaindex_service"},
+                    )
                 )
 
-            # Delegate to document service (which now returns Result)
-            clear_result: Result[Dict[str, Any], str] = (
+            clear_result: Result[Dict[str, Any], FailurePayload] = (
                 await self.document_service.clear_all_data()
             )
-
             if clear_result.is_failure():
-                return clear_result  # Propagate the failure
-
+                return clear_result
             return clear_result
 
         except Exception as e:
@@ -513,9 +537,14 @@ class LlamaIndexQdrantService:
                 {"error": str(e), "error_type": type(e).__name__},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to clear all data: {str(e)}",
-                context={"error_type": type(e).__name__},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to clear all data: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"error_type": type(e).__name__},
+                )
             )
 
     async def update_document_metadata(
@@ -523,7 +552,7 @@ class LlamaIndexQdrantService:
         document_id: str,
         metadata_updates: Dict[str, Any],
         merge_mode: str = "update",
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Update metadata for a document.
 
@@ -533,27 +562,31 @@ class LlamaIndexQdrantService:
             Success with update info, or Failure with error details
         """
         if self.metadata_service:
-            result: Result[Dict[str, Any], str] = (
+            result: Result[Dict[str, Any], FailurePayload] = (
                 await self.metadata_service.update_document_metadata(
                     document_id, metadata_updates, merge_mode
                 )
             )
             return result
 
-        # Fallback if metadata service not available
         log_event(
             "metadata_update_skipped",
             {"document_id": document_id, "reason": "no_metadata_service"},
             level=logging.WARNING,
         )
-        return internal_error(
-            NOT_INITIALIZED_METADATA_SERVICE,
-            context={"document_id": document_id},
+        return fail(
+            FailurePayload(
+                message=NOT_INITIALIZED_METADATA_SERVICE,
+                error_type="InternalError",
+                status_code=500,
+                recoverable=False,
+                details={"document_id": document_id},
+            )
         )
 
     async def query_documents_by_metadata(
         self, filters: Dict[str, Any], limit: int = 100, offset: int = 0
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Query documents based on metadata filters.
 
@@ -565,34 +598,43 @@ class LlamaIndexQdrantService:
         Returns:
             Success with list of documents, or Failure with error details
         """
-        # Check if initialized
         if not self._initialized:
             log_event(
                 "query_skipped_not_initialized",
                 {"filters": filters},
                 level=logging.WARNING,
             )
-            return internal_error(
-                NOT_INITIALIZED_LLAMA_INDEX_QDRANT_SERVICE,
-                context={"filters": filters},
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_LLAMA_INDEX_QDRANT_SERVICE,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"filters": filters},
+                )
             )
 
         if self.metadata_service:
-            result: Result[List[Dict[str, Any]], str] = (
+            result: Result[List[Dict[str, Any]], FailurePayload] = (
                 await self.metadata_service.query_documents_by_metadata(
                     filters, limit, offset
                 )
             )
             return result
 
-        # Fallback if metadata service not available
-        return internal_error(
-            NOT_INITIALIZED_METADATA_SERVICE, context={"filters": filters}
+        return fail(
+            FailurePayload(
+                message=NOT_INITIALIZED_METADATA_SERVICE,
+                error_type="InternalError",
+                status_code=500,
+                recoverable=False,
+                details={"filters": filters},
+            )
         )
 
     async def get_document_analysis(
         self, document_id: str
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get comprehensive analysis of a document.
 
@@ -602,14 +644,19 @@ class LlamaIndexQdrantService:
             Success with document analysis, or Failure with error details
         """
         if self.metadata_service:
-            result: Result[Dict[str, Any], str] = (
+            result: Result[Dict[str, Any], FailurePayload] = (
                 await self.metadata_service.get_document_analysis(document_id)
             )
             return result
 
-        # Fallback if metadata service not available
-        return internal_error(
-            NOT_INITIALIZED_METADATA_SERVICE, context={"document_id": document_id}
+        return fail(
+            FailurePayload(
+                message=NOT_INITIALIZED_METADATA_SERVICE,
+                error_type="InternalError",
+                status_code=500,
+                recoverable=False,
+                details={"document_id": document_id},
+            )
         )
 
     def _get_embedding_stats(self) -> Dict[str, Any]:
@@ -626,7 +673,7 @@ class LlamaIndexQdrantService:
 
     async def get_document_chunks(
         self, document_id: str, limit: int = 100, offset: int = 0
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get all chunks for a specific document with pagination.
 
@@ -636,13 +683,20 @@ class LlamaIndexQdrantService:
             Success with chunks data, or Failure with error details
         """
         if not self.document_service:
-            return internal_error(
-                NOT_INITIALIZED_DOCUMENT_SERVICE,
-                context={"document_id": document_id, "service": "llamaindex_service"},
+            return fail(
+                FailurePayload(
+                    message=NOT_INITIALIZED_DOCUMENT_SERVICE,
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "service": "llamaindex_service",
+                    },
+                )
             )
 
-        # Delegate to document service (which now returns Result)
-        result: Result[Dict[str, Any], str] = (
+        result: Result[Dict[str, Any], FailurePayload] = (
             await self.document_service.get_document_chunks(document_id, limit, offset)
         )
         return result

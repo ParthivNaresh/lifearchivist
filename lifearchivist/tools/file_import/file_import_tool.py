@@ -228,12 +228,11 @@ class FileImportTool(BaseTool):
                         level=logging.DEBUG,
                     )
 
-            theme_result = {}
+            theme_result: Dict[str, Any] = {}
             if extracted_text:
-                theme_result = await self._classify_themes(
-                    file_id, extracted_text, display_path
-                )
-                if theme_result:
+                tr = await self._classify_themes(file_id, extracted_text, display_path)
+                if tr:
+                    theme_result = tr
                     # Classify subthemes if we have a primary theme
                     theme = theme_result.get("theme")
                     if theme and theme != "Unclassified":
@@ -244,7 +243,9 @@ class FileImportTool(BaseTool):
                             theme_result.update(subtheme_result)
 
             # Build custom metadata dictionary with all enrichments
-            custom_metadata_dict = {**metadata}  # Start with user-provided metadata
+            custom_metadata_dict: Dict[str, Any] = dict(
+                metadata
+            )  # Start with user-provided metadata
 
             # Add document internal metadata (PDF/DOCX dates, author, etc.)
             if document_metadata:

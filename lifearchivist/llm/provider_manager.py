@@ -7,10 +7,10 @@ This is the main entry point for all LLM operations.
 
 import logging
 from datetime import datetime
-from typing import Any, AsyncGenerator, Dict, List, Optional, cast
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from ..utils.logx import log_event, track
-from ..utils.result import Failure, Result, Success
+from ..utils.result import Failure, FailurePayload, Result, Success, fail
 from .base_provider import (
     BaseLLMProvider,
     LLMMessage,
@@ -83,7 +83,7 @@ class LLMProviderManager:
         """Exit async context manager and cleanup resources."""
         await self.shutdown()
 
-    async def initialize(self) -> Result[None, str]:
+    async def initialize(self) -> Result[None, FailurePayload]:
         """
         Initialize the provider manager.
 
@@ -93,14 +93,10 @@ class LLMProviderManager:
             Result indicating success or failure
         """
         if self._initialized:
-            log_event(
-                "provider_manager_already_initialized",
-                level=logging.WARNING,
-            )
+            log_event("provider_manager_already_initialized", level=logging.WARNING)
             return Success(None)
 
         try:
-            # Start health monitoring if available
             if self.health_monitor:
                 await self.health_monitor.start()
 
@@ -114,7 +110,6 @@ class LLMProviderManager:
                     "has_health_monitor": self.health_monitor is not None,
                 },
             )
-
             return Success(None)
 
         except Exception as e:
@@ -123,10 +118,13 @@ class LLMProviderManager:
                 {"error": str(e), "error_type": type(e).__name__},
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to initialize provider manager: {e}",
-                error_type=type(e).__name__,
-                status_code=500,
+            return fail(
+                FailurePayload(
+                    message=f"Failed to initialize provider manager: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                )
             )
 
     async def shutdown(self) -> None:
@@ -164,7 +162,7 @@ class LLMProviderManager:
         self,
         provider: BaseLLMProvider,
         set_as_default: bool = False,
-    ) -> Result[None, str]:
+    ) -> Result[None, FailurePayload]:
         """
         Add a provider to the manager.
 
@@ -177,19 +175,45 @@ class LLMProviderManager:
         Returns:
             Result indicating success or failure
         """
-        result = await self.registry.register(provider, set_as_default)
-
-        if result.is_success():
-            log_event(
-                "provider_added",
-                {
-                    "provider_id": provider.provider_id,
-                    "provider_type": provider.provider_type.value,
-                    "is_default": set_as_default,
-                },
+        try:
+            result: Result[None, FailurePayload] = await self.registry.register(
+                provider, set_as_default
             )
 
-        return result
+            if result.is_success():
+                log_event(
+                    "provider_added",
+                    {
+                        "provider_id": provider.provider_id,
+                        "provider_type": provider.provider_type.value,
+                        "is_default": set_as_default,
+                    },
+                )
+
+            return result
+
+        except Exception as e:
+            log_event(
+                "provider_add_failed",
+                {
+                    "provider_id": getattr(provider, "provider_id", "unknown"),
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                level=logging.ERROR,
+            )
+            return fail(
+                FailurePayload(
+                    message=f"Failed to add provider: {e}",
+                    error_type=type(e).__name__,
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "provider_id": getattr(provider, "provider_id", "unknown"),
+                        "set_as_default": set_as_default,
+                    },
+                )
+            )
 
     async def remove_provider(self, provider_id: str) -> Result[BaseLLMProvider, str]:
         """
@@ -302,7 +326,10 @@ class LLMProviderManager:
         )
 
         if route_result.is_failure():
-            error_msg = route_result.error_or("Failed to route request")
+            error_payload = route_result.unwrap_error()
+            error_msg = (
+                error_payload if isinstance(error_payload, str) else str(error_payload)
+            )
             return Failure(
                 error=error_msg,
                 error_type="RoutingError",
@@ -338,7 +365,8 @@ class LLMProviderManager:
 
             budget_check = await self.cost_tracker.check_budget(user_id, estimated_cost)
             if budget_check.is_failure():
-                error_msg = budget_check.error_or("Budget check failed")
+                err = budget_check.unwrap_error()
+                error_msg = err if isinstance(err, str) else str(err)
                 return Failure(
                     error=error_msg,
                     error_type="BudgetExceeded",
@@ -410,7 +438,7 @@ class LLMProviderManager:
                 error=str(e),
                 error_type=type(e).__name__,
                 status_code=500,
-                context={
+                details={
                     "provider_id": provider.provider_id,
                     "model": model,
                 },
@@ -460,7 +488,10 @@ class LLMProviderManager:
         )
 
         if route_result.is_failure():
-            error_msg = route_result.error_or("Failed to route request")
+            error_payload = route_result.unwrap_error()
+            error_msg = (
+                error_payload if isinstance(error_payload, str) else str(error_payload)
+            )
             log_event(
                 "llm_stream_routing_failed",
                 {"error": error_msg},
@@ -481,7 +512,8 @@ class LLMProviderManager:
 
             budget_check = await self.cost_tracker.check_budget(user_id, estimated_cost)
             if budget_check.is_failure():
-                error_msg = budget_check.error_or("Budget exceeded")
+                err = budget_check.unwrap_error()
+                error_msg = err if isinstance(err, str) else str(err)
                 raise RuntimeError(f"Budget exceeded: {error_msg}")
 
         log_event(
@@ -498,15 +530,12 @@ class LLMProviderManager:
         total_tokens = 0
 
         try:
-            stream = cast(
-                AsyncGenerator[LLMStreamChunk, None],
-                provider.generate_stream(
-                    messages=messages,
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    **kwargs,
-                ),
+            stream = provider.generate_stream(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs,
             )
             async for chunk in stream:
                 chunk_count += 1

@@ -1,4 +1,4 @@
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Mapping, Optional
 
 from llm.agent import (
     AgentToolRegistry,
@@ -68,13 +68,9 @@ class GatewayStreamProcessor(StreamProcessor):
                 "complexity_classification_completed",
                 {
                     "conversation_id": context.conversation_id,
-                    "complexity": (
-                        getattr(classification, "complexity", None).value
-                        if getattr(classification, "complexity", None)
-                        else None
-                    ),
-                    "confidence": getattr(classification, "confidence", None),
-                    "estimated_steps": getattr(classification, "estimated_steps", None),
+                    "complexity": classification.complexity.value,
+                    "confidence": classification.confidence,
+                    "estimated_steps": classification.estimated_steps,
                 },
             )
             yield SSEFormatter.format_event(
@@ -86,10 +82,7 @@ class GatewayStreamProcessor(StreamProcessor):
                 },
             )
 
-            is_simple = (
-                getattr(classification, "complexity", None)
-                and classification.complexity.value == "simple"
-            )
+            is_simple = classification.complexity.value == "simple"
 
             if is_simple:
                 log_event(
@@ -194,7 +187,12 @@ class GatewayStreamProcessor(StreamProcessor):
                         {"conversation_id": context.conversation_id},
                     )
                 elif et == "response_chunk":
-                    chunk = ev.data if isinstance(ev.data, str) else str(ev.data)
+                    if isinstance(ev.data, Mapping):
+                        chunk = str(ev.data.get("text", ""))
+                    elif isinstance(ev.data, str):
+                        chunk = ev.data
+                    else:
+                        chunk = str(ev.data)
                     accumulated.append(chunk)
                     yield SSEFormatter.format_event(EventType.CHUNK, {"text": chunk})
                 elif et == "error":

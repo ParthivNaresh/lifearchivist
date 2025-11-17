@@ -119,9 +119,7 @@ class DataExtractionTool(BaseAgentTool):
     # Public execution API (typed)
     # ---------------------------
 
-    async def execute_typed(
-        self, *, params: DataExtractionParams, context: Dict[str, Any]
-    ) -> Any:
+    async def execute_typed(self, *, params: BaseModel, context: Dict[str, Any]) -> Any:
         """
         This tool requires an LLM; non-LLM execution is not supported.
         """
@@ -134,7 +132,7 @@ class DataExtractionTool(BaseAgentTool):
         *,
         llm_provider: "LLMProviderManager",
         prompt: str,
-        params: DataExtractionParams,
+        params: BaseModel,
         context: Dict[str, Any],
     ) -> Any:
         """
@@ -145,13 +143,20 @@ class DataExtractionTool(BaseAgentTool):
         """
         self._assert_ready()
 
+        # Coerce/validate parameters to expected schema
+        p = (
+            params
+            if isinstance(params, DataExtractionParams)
+            else DataExtractionParams.model_validate(params.model_dump())
+        )
+
         metrics = ExtractionMetrics()
         chunks = await self._gather_chunks(
-            document_ids=params.document_ids,
-            max_chunks=params.max_chunks_per_doc,
-            max_chars_per_chunk=params.max_chars_per_chunk,
-            max_total_chars=params.max_total_chars,
-            fetch_concurrency=params.fetch_concurrency,
+            document_ids=p.document_ids,
+            max_chunks=p.max_chunks_per_doc,
+            max_chars_per_chunk=p.max_chars_per_chunk,
+            max_total_chars=p.max_total_chars,
+            fetch_concurrency=p.fetch_concurrency,
             metrics=metrics,
         )
 
@@ -159,8 +164,8 @@ class DataExtractionTool(BaseAgentTool):
         request_payload = {
             "instruction": prompt,  # already composed by PromptBuilder
             "hints": {
-                "fields": params.fields or [],
-                "queries": params.queries or [],
+                "fields": p.fields or [],
+                "queries": p.queries or [],
             },
             "documents": [{"doc_id": c["doc_id"], "text": c["text"]} for c in chunks],
         }
@@ -184,9 +189,9 @@ class DataExtractionTool(BaseAgentTool):
         llm_data = await self._call_llm_generate(
             llm_provider=llm_provider,
             messages=messages,
-            model=params.model,
-            temperature=params.temperature,
-            max_tokens=params.max_tokens,
+            model=p.model,
+            temperature=p.temperature,
+            max_tokens=p.max_tokens,
             timeout_s=self.llm_timeout_s,
         )
 
@@ -196,13 +201,13 @@ class DataExtractionTool(BaseAgentTool):
                 "documents_seen": metrics.documents_seen,
                 "chunks_used": metrics.chunks_used,
                 "chars_used": metrics.chars_used,
-                "model": params.model,
-                "temperature": params.temperature,
-                "max_tokens": params.max_tokens,
+                "model": p.model,
+                "temperature": p.temperature,
+                "max_tokens": p.max_tokens,
             },
             "hints": {
-                "fields": params.fields or [],
-                "queries": params.queries or [],
+                "fields": p.fields or [],
+                "queries": p.queries or [],
             },
         }
         return result
@@ -231,8 +236,14 @@ class DataExtractionTool(BaseAgentTool):
 
         async def _fetch_one(doc_id: str) -> List[Dict[str, str]]:
             async with sem:
+                doc_service = self.document_service
+                if doc_service is None:
+                    self.log.warning(
+                        "Document service not configured; skipping %s", doc_id
+                    )
+                    return []
                 try:
-                    chunks_result = await self.document_service.get_document_chunks(
+                    chunks_result = await doc_service.get_document_chunks(
                         doc_id, limit=max_chunks
                     )
                 except Exception as e:

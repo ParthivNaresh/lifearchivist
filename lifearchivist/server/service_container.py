@@ -589,12 +589,12 @@ class ServiceContainer:
 
             log_event(
                 "llm_provider_manager_initialized",
-                {
-                    "providers_loaded": provider_count,
-                    "default_provider": default_provider,
-                    "cost_tracking": True,
-                    "health_monitoring": True,
-                },
+                dict(
+                    providers_loaded=provider_count,
+                    default_provider=default_provider,
+                    cost_tracking=True,
+                    health_monitoring=True,
+                ),
             )
 
         except Exception as e:
@@ -696,10 +696,12 @@ class ServiceContainer:
                 "data_extraction": 8,
             }
 
-            def _observer(event: str, fields: dict) -> None:
+            from typing import Any, Mapping
+
+            def _observer(event: str, fields: Mapping[str, Any]) -> None:
                 # bridge to your telemetry/logging
                 try:
-                    log_event(event, fields)
+                    log_event(event, dict(fields))
                 except Exception:
                     pass
 
