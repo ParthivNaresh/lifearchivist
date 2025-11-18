@@ -111,7 +111,7 @@ async for chunk in manager.generate_stream(
 # Explicitly use Ollama instead of default
 result = await manager.generate(
     messages=messages,
-    model="llama3.2:1b",
+    model="qwen2.5:7b",
     provider_id="my-ollama",  # Explicit provider
     temperature=0.7,
 )

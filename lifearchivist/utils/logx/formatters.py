@@ -10,7 +10,7 @@ _HOST = socket.gethostname()
 _SERVICE = os.getenv("LOG_SERVICE", "app")
 
 _DEV_MAX_KV = int(os.getenv("LOG_DEV_MAX_KV", "8"))  # how many key=val pairs to print
-_DEV_MAX_VAL = int(os.getenv("LOG_DEV_MAX_VAL", "120"))  # max chars per value
+_DEV_MAX_VAL = int(os.getenv("LOG_DEV_MAX_VAL", "10000"))  # max chars per value
 
 _RESERVED = {
     "ts",

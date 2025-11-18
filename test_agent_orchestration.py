@@ -341,9 +341,9 @@ async def test_orchestration_pipeline():
             planning_model = "claude-3-5-sonnet-20241022"
             synthesis_model = "claude-3-5-sonnet-20241022"
         else:
-            classification_model = "llama3.2:1b"
-            planning_model = "llama3.2:1b"
-            synthesis_model = "llama3.2:1b"
+            classification_model = "qwen2.5:7b"
+            planning_model = "qwen2.5:7b"
+            synthesis_model = "qwen2.5:7b"
         
         logger.log_event("model_selection", {
             "classification": classification_model,

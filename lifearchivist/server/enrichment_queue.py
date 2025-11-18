@@ -111,11 +111,11 @@ class EnrichmentQueue:
             )
             return False
 
-    @track(
-        operation="dequeue_enrichment_task",
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(
+    #     operation="dequeue_enrichment_task",
+    #     track_performance=True,
+    #     frequency="high_frequency",
+    # )
     async def get_next_task(self) -> Optional[Dict[str, Any]]:
         """Get the next task from the queue."""
         if not self.redis_client:

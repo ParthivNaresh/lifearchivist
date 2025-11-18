@@ -845,12 +845,7 @@ class ConversationRAGService:
             ):
                 yield event
 
-    @track(
-        operation="rag_process_message",
-        include_args=["conversation_id"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="rag_process_message")
     async def process_message_with_rag(
         self,
         conversation_id: str,

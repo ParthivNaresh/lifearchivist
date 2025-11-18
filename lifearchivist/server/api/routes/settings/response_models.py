@@ -21,7 +21,7 @@ class SettingsResponse(BaseModel):
     max_file_size_mb: int = Field(default=100, description="Maximum file size in MB")
 
     llm_model: str = Field(
-        default="llama3.2:1b", description="Language model for AI processing"
+        default="qwen2.5:7b", description="Language model for AI processing"
     )
     embedding_model: str = Field(
         default="all-MiniLM-L6-v2", description="Embedding model for search"

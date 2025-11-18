@@ -3,9 +3,10 @@ import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from ....llm import LLMMessage
+from ....utils.logx import log_event
 from ..exceptions import ToolExecutionError
 from .base import BaseAgentTool
 
@@ -14,24 +15,45 @@ if TYPE_CHECKING:
     from storage.document_service import LlamaIndexDocumentService
 
 
+class ExtractionFilters(BaseModel):
+    # Extend as needed (mime types, date ranges, tags, etc.)
+    mime_types: Optional[List[str]] = None
+    date_from: Optional[str] = None  # ISO8601
+    date_to: Optional[str] = None  # ISO8601
+    sources: Optional[List[str]] = None
+
+
 class DataExtractionParams(BaseModel):
     """
     Parameters controlling data extraction from one or more documents.
     """
 
-    document_ids: List[str] = Field(
-        ..., min_length=1, description="List of source document IDs to extract from."
-    )
+    document_ids: List[str] = Field(..., min_length=1, description="Target documents")
     fields: Optional[List[str]] = Field(
         default=None,
+        description="Structured fields to extract. At least one of fields|queries is required.",
         min_length=1,
-        description="Optional list of target field names (acts as hints to the LLM).",
     )
     queries: Optional[List[str]] = Field(
         default=None,
+        description="Free-form information needs. At least one of fields|queries is required.",
         min_length=1,
-        description="Optional list of natural language queries guiding extraction.",
     )
+    filters: Optional[ExtractionFilters] = None
+
+    # Retrieval knobs
+    top_k_chunks_per_doc: int = Field(20, ge=1, le=200)
+    max_total_chunks: int = Field(200, ge=1, le=2000)
+    max_concurrency: int = Field(16, ge=1, le=64, description="Parallel chunk fetches")
+
+    # Budgeting knobs
+    max_input_chars: int = Field(250_000, ge=10_000, le=2_000_000)
+    require_provenance: bool = Field(True)
+
+    # LLM steering knobs (hints; orchestrator may override)
+    model: Optional[str] = Field(default=None, description="Model hint/override")
+    temperature: float = Field(0.0, ge=0.0, le=1.0)
+    max_tokens: int = Field(800, ge=64, le=8192)
 
     max_chunks_per_doc: int = Field(
         100,
@@ -58,21 +80,40 @@ class DataExtractionParams(BaseModel):
         description="Max concurrent chunk fetches from the document service.",
     )
 
-    # LLM steering knobs
-    model: str = Field(
-        default="llama3.2:1b", description="Optional LLM model hint/override."
+    @model_validator(mode="after")
+    def _at_least_one_guidance(self) -> "DataExtractionParams":
+        if not (self.fields or self.queries):
+            raise ValueError("At least one of `fields` or `queries` must be provided.")
+        return self
+
+
+class ProvenanceItem(BaseModel):
+    document_id: str
+    chunk_id: str
+    start_char: Optional[int] = None
+    end_char: Optional[int] = None
+    score: Optional[float] = None
+    page: Optional[int] = None
+
+
+class DataExtractionOutput(BaseModel):
+    """
+    Strict JSON schema expected from the LLM.
+    """
+
+    extracted: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Map of field/query -> extracted value(s)",
     )
-    temperature: float = Field(
-        0.0,
-        ge=0.0,
-        le=1.0,
-        description="Sampling temperature (0.0 = deterministic).",
+    provenance: List[ProvenanceItem] = Field(
+        default_factory=list,
+        description="Per-field citations to source chunks",
     )
-    max_tokens: int = Field(
-        1500,
-        ge=128,
-        le=4096,
-        description="Maximum tokens requested from the LLM.",
+    partial: bool = Field(
+        False, description="True if any retrieval failed or truncated"
+    )
+    diagnostics: Dict[str, Any] = Field(
+        default_factory=dict, description="Latency, counts, model, budgeting info"
     )
 
 
@@ -94,13 +135,14 @@ class DataExtractionTool(BaseAgentTool):
       - Returns a dict: {extractions, meta, hints}.
     """
 
-    name: str = "data_extraction"
-    requires_llm: bool = True
-    input_model = DataExtractionParams
-    summary: str = (
-        "Extract structured data from specified documents. "
-        "Supports field/query hints, bounded chunk retrieval, and strict size budgets."
+    name = "data_extraction"
+    description = (
+        "Extracts structured information from specified documents. "
+        "Performs targeted retrieval (by fields/queries), compacts context under a strict budget, "
+        "and synthesizes a STRICT JSON result with per-field provenance."
     )
+    requires_llm = True
+    input_model = DataExtractionParams
 
     def __init__(
         self,
@@ -143,11 +185,21 @@ class DataExtractionTool(BaseAgentTool):
         """
         self._assert_ready()
 
-        # Coerce/validate parameters to expected schema
         p = (
             params
             if isinstance(params, DataExtractionParams)
             else DataExtractionParams.model_validate(params.model_dump())
+        )
+
+        log_event(
+            "extraction_tool_execute_started",
+            {
+                "document_count": len(p.document_ids),
+                "fields_count": len(p.fields) if p.fields else 0,
+                "queries_count": len(p.queries) if p.queries else 0,
+                "max_chunks_per_doc": p.max_chunks_per_doc,
+                "max_total_chars": p.max_total_chars,
+            },
         )
 
         metrics = ExtractionMetrics()
@@ -160,9 +212,17 @@ class DataExtractionTool(BaseAgentTool):
             metrics=metrics,
         )
 
-        # Build compact payload for the LLM
+        log_event(
+            "extraction_tool_chunks_gathered",
+            {
+                "documents_seen": metrics.documents_seen,
+                "chunks_used": metrics.chunks_used,
+                "chars_used": metrics.chars_used,
+            },
+        )
+
         request_payload = {
-            "instruction": prompt,  # already composed by PromptBuilder
+            "instruction": prompt,
             "hints": {
                 "fields": p.fields or [],
                 "queries": p.queries or [],
@@ -170,8 +230,6 @@ class DataExtractionTool(BaseAgentTool):
             "documents": [{"doc_id": c["doc_id"], "text": c["text"]} for c in chunks],
         }
 
-        # Compose messages for your manager.generate(...) API
-        # We send a strict system directive + a user message carrying the payload.
         messages: List[LLMMessage] = [
             LLMMessage(
                 role="system",
@@ -180,16 +238,16 @@ class DataExtractionTool(BaseAgentTool):
             LLMMessage(
                 role="user",
                 content=json.dumps(request_payload, ensure_ascii=False),
-                metadata={
-                    "payload": request_payload
-                },  # optional: keep the structured form
+                metadata={"payload": request_payload},
             ),
         ]
+
+        model_to_use = p.model or "qwen2.5:7b"
 
         llm_data = await self._call_llm_generate(
             llm_provider=llm_provider,
             messages=messages,
-            model=p.model,
+            model=model_to_use,
             temperature=p.temperature,
             max_tokens=p.max_tokens,
             timeout_s=self.llm_timeout_s,
@@ -210,6 +268,21 @@ class DataExtractionTool(BaseAgentTool):
                 "queries": p.queries or [],
             },
         }
+
+        log_event(
+            "extraction_tool_execute_success",
+            {
+                "documents_seen": metrics.documents_seen,
+                "chunks_used": metrics.chunks_used,
+                "chars_used": metrics.chars_used,
+                "extraction_keys": (
+                    list(result["extractions"].keys())
+                    if isinstance(result["extractions"], dict)
+                    else []
+                ),
+            },
+        )
+
         return result
 
     def _assert_ready(self) -> None:
@@ -331,7 +404,7 @@ class DataExtractionTool(BaseAgentTool):
 
         # Result[T, E] handling
         if hasattr(result, "is_failure") and result.is_failure():
-            error_msg = result.error_or("LLM call failed")
+            error_msg = result.unwrap_error()
             raise ToolExecutionError(f"{self.name}: LLM call failed: {error_msg}")
 
         response = result.unwrap() if hasattr(result, "unwrap") else result

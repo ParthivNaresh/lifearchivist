@@ -1,19 +1,19 @@
 from typing import Any, AsyncGenerator, Mapping, Optional
 
-from llm.agent import (
+from ...server.api.routes.conversations.misc_models import EventType, StreamContext
+from ...server.api.routes.shared.exceptions import ServiceUnavailableError
+from ...utils.logx import log_event, track
+from ...utils.sse import SSEFormatter
+from ..agent import (
     AgentToolRegistry,
     ComplexityClassifier,
 )
-from llm.agent import ConversationContext as AgentConversationContext
-from llm.agent import (
+from ..agent import ConversationContext as AgentConversationContext
+from ..agent import (
     PromptBuilder,
 )
-from llm.processors.base import StreamProcessor
-from llm.processors.direct import DirectStreamProcessor
-from server.api.routes.conversations.misc_models import EventType, StreamContext
-from server.api.routes.shared.exceptions import ServiceUnavailableError
-from utils.logx import log_event
-from utils.sse import SSEFormatter
+from ..processors.base import StreamProcessor
+from ..processors.direct import DirectStreamProcessor
 
 
 class GatewayStreamProcessor(StreamProcessor):
@@ -34,6 +34,7 @@ class GatewayStreamProcessor(StreamProcessor):
             if not getattr(self.server.service_container, attr, None):
                 raise ServiceUnavailableError(name)
 
+    @track(operation="gateway_process")
     async def process(self, context: StreamContext) -> AsyncGenerator[str, None]:
         log_event("gateway_route_started", {"conversation_id": context.conversation_id})
         dsp = DirectStreamProcessor(self.server)
@@ -115,7 +116,9 @@ class GatewayStreamProcessor(StreamProcessor):
                     self.server.service_container.llamaindex_service.document_service
                     if self.server.service_container.llamaindex_service
                     else None
-                )
+                ),
+                search_service=self.server.service_container.llamaindex_service.search_service,
+                metadata_service=self.server.service_container.llamaindex_service.metadata_service,
             )
             try:
                 if (

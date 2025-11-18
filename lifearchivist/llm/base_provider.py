@@ -194,7 +194,7 @@ class BaseHTTPProvider:
         )
 
     def _create_timeout(
-        self, total: int, connect: int = 10, sock_read: int = 30
+        self, total: int, connect: int = 10, sock_read: Optional[int] = None
     ) -> aiohttp.ClientTimeout:
         """
         Create timeout configuration.
@@ -202,11 +202,14 @@ class BaseHTTPProvider:
         Args:
             total: Total request timeout in seconds
             connect: Connection timeout in seconds
-            sock_read: Socket read timeout in seconds
+            sock_read: Socket read timeout in seconds (defaults to total if not specified)
 
         Returns:
             Configured ClientTimeout
         """
+        if sock_read is None:
+            sock_read = total
+
         return aiohttp.ClientTimeout(
             total=total,
             connect=connect,

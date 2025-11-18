@@ -16,9 +16,9 @@ class BaseAgentTool(ABC):
     """
 
     name: str
+    description: Optional[str] = None
     requires_llm: bool = False
     input_model: Optional[ParamsModel] = None
-    summary: Optional[str] = None
 
     def descriptor(self) -> Dict[str, Any]:
         schema: Dict[str, Any] = {}
@@ -28,7 +28,7 @@ class BaseAgentTool(ABC):
             "name": self.name,
             "requires_llm": self.requires_llm,
             "input_schema": schema,  # planner still expects "input_schema"
-            "summary": self.summary or "",
+            "summary": self.description or "",
         }
 
     # --- Preferred typed API

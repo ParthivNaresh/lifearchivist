@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from dataclasses import dataclass, field
 from typing import (
     Any,
@@ -12,6 +13,7 @@ from typing import (
     cast,
 )
 
+from ...utils.logx import log_event, track
 from .models import (
     AgentEvent,
     AgentEventType,
@@ -71,6 +73,7 @@ class TaskExecutor:
         self.fail_fast = fail_fast
         self._obs = on_observe
 
+    @track(operation="execute_plan")
     async def execute_plan(
         self, plan: ExecutionPlan, context: ConversationContext
     ) -> AsyncGenerator[AgentEvent, None]:
@@ -78,11 +81,28 @@ class TaskExecutor:
         Drives plan execution and yields AgentEvents as they occur.
         Terminates with PLAN_COMPLETED or PLAN_FAILED; never raises to the caller for normal flow.
         """
+        log_event(
+            "executor_plan_started",
+            {
+                "conversation_id": context.conversation_id,
+                "task_count": len(plan.tasks),
+                "max_concurrency": self.max_concurrency,
+                "fail_fast": self.fail_fast,
+            },
+        )
+
         state = _PlanState()
         try:
             while not state.terminated and not self._is_plan_complete(plan, state):
-                # 1) Mark tasks that became blocked by upstream failures/skips
                 for ev in self._skip_due_to_failed_or_skipped_deps(plan, state):
+                    log_event(
+                        "executor_task_skipped",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "task_id": ev.task_id,
+                            "reason": ev.data.get("reason") if ev.data else None,
+                        },
+                    )
                     self._observe(
                         "task_skipped",
                         task_id=ev.task_id,
@@ -90,46 +110,101 @@ class TaskExecutor:
                     )
                     yield ev
 
-                # 2) Schedule ready tasks (capacity aware)
                 for ev in self._schedule_ready_tasks(plan, state, context):
+                    log_event(
+                        "executor_task_started",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "task_id": ev.task_id,
+                            "running_count": len(state.running),
+                        },
+                    )
                     self._observe("task_started", task_id=ev.task_id)
                     yield ev
 
-                # 3) If nothing is running and we still have remaining tasks, it's a deadlock
                 if not state.running and not self._is_plan_complete(plan, state):
                     deadlock_msg = self._deadlock_message(plan, state)
+                    log_event(
+                        "executor_deadlock_detected",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "message": deadlock_msg,
+                            "completed": len(state.completed),
+                            "failed": len(state.failed),
+                            "skipped": len(state.skipped),
+                        },
+                        level=logging.ERROR,
+                    )
                     self._observe("deadlock", message=deadlock_msg)
-                    # Emit a plan_failed and terminate cleanly
                     yield AgentEvent.plan_failed(deadlock_msg)
                     state.terminated = True
                     break
 
-                # 4) Wait for one completion and process it (emit events)
                 for ev in await self._wait_one_and_process(plan, state):
-                    # Track counters around completion/failure/skip
                     if ev.type == AgentEventType.TASK_COMPLETED:
+                        log_event(
+                            "executor_task_completed",
+                            {
+                                "conversation_id": context.conversation_id,
+                                "task_id": ev.task_id,
+                                "completed_count": len(state.completed),
+                            },
+                        )
                         self._observe("task_completed", task_id=ev.task_id)
                     elif ev.type == AgentEventType.TASK_FAILED:
+                        log_event(
+                            "executor_task_failed",
+                            {
+                                "conversation_id": context.conversation_id,
+                                "task_id": ev.task_id,
+                                "error": ev.data.get("error") if ev.data else None,
+                                "failed_count": len(state.failed),
+                            },
+                            level=logging.ERROR,
+                        )
                         self._observe(
                             "task_failed",
                             task_id=ev.task_id,
                             error=ev.data.get("error") if ev.data else None,
                         )
                     elif ev.type == AgentEventType.PLAN_FAILED:
+                        log_event(
+                            "executor_plan_failed",
+                            {
+                                "conversation_id": context.conversation_id,
+                                "message": ev.data.get("error") if ev.data else None,
+                            },
+                            level=logging.ERROR,
+                        )
                         self._observe(
                             "plan_failed",
                             message=ev.data.get("error") if ev.data else None,
                         )
                     yield ev
 
-                # Loop condition will handle termination on next iteration
-
-            # 5) Final event
             if not state.terminated:
+                log_event(
+                    "executor_plan_completed",
+                    {
+                        "conversation_id": context.conversation_id,
+                        "results_count": len(state.results),
+                        "completed": len(state.completed),
+                        "failed": len(state.failed),
+                        "skipped": len(state.skipped),
+                    },
+                )
                 self._observe("plan_completed", results_count=len(state.results))
                 yield AgentEvent.plan_completed(state.results)
 
         finally:
+            if state.running:
+                log_event(
+                    "executor_cancelling_tasks",
+                    {
+                        "conversation_id": context.conversation_id,
+                        "running_count": len(state.running),
+                    },
+                )
             await self._cancel_all(state)
 
     # ----------------------------

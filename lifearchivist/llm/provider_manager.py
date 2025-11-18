@@ -285,12 +285,7 @@ class LLMProviderManager:
         """
         return self.registry.set_default(provider_id)
 
-    @track(
-        operation="llm_generate",
-        include_args=["model", "provider_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="llm_generate")
     async def generate(
         self,
         messages: List[LLMMessage],
@@ -444,12 +439,7 @@ class LLMProviderManager:
                 },
             )
 
-    @track(
-        operation="llm_generate_stream",
-        include_args=["model", "provider_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="llm_generate_stream")
     async def generate_stream(
         self,
         messages: List[LLMMessage],

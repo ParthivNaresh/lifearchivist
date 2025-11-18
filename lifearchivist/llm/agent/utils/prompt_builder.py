@@ -2,8 +2,6 @@ import json
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Union
 
 if TYPE_CHECKING:
-    from ..tools.base import BaseAgentTool
-
     ToolLike = Union[Dict[str, Any], "BaseAgentTool"]
 else:
     ToolLike = Union[Dict[str, Any], Any]
@@ -20,19 +18,38 @@ class PromptBuilder:
         self, *, query: str, context: Any = None
     ) -> str:
         # You can embed a tiny preview of context if you want; omitted here for brevity.
-        return f"""You are a classifier that decides if a user query needs multi-step tool usage.
+        return f"""You are a classifier that decides whether a user query requires a single-step response (simple)
+or multi-step reasoning or tool usage (complex).
+
+Definitions:
+- "simple" → can be answered directly with text or a single retrieval of facts.
+- "complex" → needs planning, multiple steps, API/tool calls, or reasoning beyond retrieval (e.g., data analysis, code, long reasoning chains).
+
+Return ONLY strict JSON with:
+{{
+  "complexity": "simple" | "complex",
+  "confidence": float (0–1),
+  "reasoning": short string (max 20 words),
+  "estimated_steps": integer >= 1
+}}
+
+Examples:
+1. Query: "Who is the CEO of Apple?"
+   → {{ "complexity": "simple", "confidence": 0.95, "reasoning": "single fact lookup", "estimated_steps": 1 }}
+
+2. Query: "Summarize these three documents and generate a recommendation."
+   → {{ "complexity": "complex", "confidence": 0.93, "reasoning": "multi-doc analysis and synthesis", "estimated_steps": 3 }}
+
+3. Query: "Write Python code that plots sales by region."
+   → {{ "complexity": "complex", "confidence": 0.9, "reasoning": "requires code generation", "estimated_steps": 2 }}
+
+4. Query: "What time is it in Tokyo?"
+   → {{ "complexity": "simple", "confidence": 0.9, "reasoning": "single lookup", "estimated_steps": 1 }}
 
 USER QUERY:
 {query}
 
-TASK:
-Return strict JSON with keys:
-- "complexity": "simple" | "complex"
-- "confidence": number between 0 and 1
-- "reasoning": brief string
-- "estimated_steps": integer >= 1
-
-Return ONLY JSON. No prose.
+Output only the JSON object, nothing else.
 """
 
     # ------------ Planning ------------
@@ -62,27 +79,66 @@ RECENT CONVERSATION (preview):
 AVAILABLE TOOLS:
 {tools_text}
 
+CRITICAL RULES:
+1. ONLY use tools from the AVAILABLE TOOLS list above
+2. Each task MUST have a valid "tool_name" from the list
+3. Do NOT create tasks with empty tool_name ("")
+4. Do NOT invent tools that don't exist
+5. If you can't complete the query with available tools, create a plan with only the tools you have
+
 CONSTRAINTS:
 - Max tasks: {max_tasks}
-- Cost budget (USD): {cost_budget_usd:.2f}
-- Time budget (seconds): {time_budget_s}
+- Cost budget: ${cost_budget_usd:.2f}
+- Time budget: {time_budget_s}s
 
-OUTPUT:
-Return STRICT JSON (no prose) matching this schema. Each task MUST include a unique, stable "task_id"; "depends_on" MUST reference these task_ids exactly.
+EXAMPLE - Document Search + Extraction:
 {{
   "tasks": [
     {{
-      "task_id": "string",
-      "tool_name": "string",
-      "description": "string",
+      "task_id": "search_docs",
+      "tool_name": "document_search",
+      "description": "Find relevant documents",
+      "requires_llm": false,
+      "parameters": {{
+        "query": "medical records",
+        "search_method": "hybrid",
+        "top_k": 5
+      }},
+      "depends_on": []
+    }},
+    {{
+      "task_id": "extract_data",
+      "tool_name": "data_extraction",
+      "description": "Extract specific fields from documents",
+      "requires_llm": true,
+      "parameters": {{
+        "document_ids": ["<from search_docs>"],
+        "fields": ["date", "diagnosis"]
+      }},
+      "depends_on": ["search_docs"]
+    }}
+  ],
+  "estimated_time_seconds": 30,
+  "estimated_cost_usd": 0.0,
+  "reasoning": "Search for documents, then extract structured data"
+}}
+
+OUTPUT FORMAT:
+Return STRICT JSON (no markdown, no prose) matching this schema:
+{{
+  "tasks": [
+    {{
+      "task_id": "unique_id",
+      "tool_name": "MUST be from AVAILABLE TOOLS list",
+      "description": "what this task does",
       "requires_llm": true/false,
-      "parameters": {{ ... }},
-      "depends_on": ["task_id_1", "task_id_2"]
+      "parameters": {{}},
+      "depends_on": ["other_task_ids"]
     }}
   ],
   "estimated_time_seconds": number,
   "estimated_cost_usd": number,
-  "reasoning": "string"
+  "reasoning": "brief explanation"
 }}
 """
 

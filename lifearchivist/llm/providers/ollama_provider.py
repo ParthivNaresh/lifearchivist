@@ -110,12 +110,7 @@ class OllamaProvider(BaseHTTPProvider, BaseLLMProvider):
             for msg in messages
         ]
 
-    @track(
-        operation="ollama_generate",
-        include_args=["model"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="ollama_generate")
     async def generate(
         self,
         messages: List[LLMMessage],

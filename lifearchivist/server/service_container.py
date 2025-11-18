@@ -728,9 +728,9 @@ class ServiceContainer:
                 prompt_builder=prompt_builder,
                 plan_validator=plan_validator,
                 on_observe=_observer,
-                planning_model="gpt-4o",
+                planning_model="qwen2.5:7b",
                 planning_temperature=0.2,
-                synthesis_model="gpt-4o",
+                synthesis_model="qwen2.5:7b",
                 synthesis_temperature=0.7,
             )
 

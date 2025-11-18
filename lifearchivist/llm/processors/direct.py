@@ -21,6 +21,7 @@ from lifearchivist.utils.sse import SSEFormatter
 
 from ...config import get_settings
 from ...llm import LLMMessage
+from ...utils.logx import track
 from .base import StreamProcessor
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ class DirectStreamProcessor(StreamProcessor):
             if not getattr(self.server.service_container, attr, None):
                 raise ServiceUnavailableError(name)
 
+    @track(operation="direct_process")
     async def process(self, context: StreamContext) -> AsyncGenerator[str, None]:
         """Process without RAG service."""
         processing_message_id = None

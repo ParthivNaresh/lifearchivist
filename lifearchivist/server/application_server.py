@@ -452,13 +452,23 @@ class ApplicationServer:
 
         try:
             document_service = None
+            search_service = None
+            metadata_service = None
             if self.service_container.llamaindex_service:
                 document_service = (
                     self.service_container.llamaindex_service.document_service
                 )
+                search_service = (
+                    self.service_container.llamaindex_service.search_service
+                )
+                metadata_service = (
+                    self.service_container.llamaindex_service.metadata_service
+                )
 
             self.agent_tool_registry = AgentToolRegistry(
                 document_service=document_service,
+                search_service=search_service,
+                metadata_service=metadata_service,
             )
 
             self.service_container.init_agent_orchestrator(

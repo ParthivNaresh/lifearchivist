@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Optional, Tuple
 
 from pydantic import BaseModel
 
+from ...utils.logx import log_event, track
 from .exceptions import ToolExecutionError
 from .models import (  # adjust to your package layout
     AgentTask,
@@ -87,6 +88,7 @@ class AgentSpawner:
 
         self.log = logger or logging.getLogger(__name__)
 
+    @track(operation="spawn_and_execute")
     async def spawn_and_execute(
         self,
         task: AgentTask,
@@ -97,8 +99,28 @@ class AgentSpawner:
         Execute a task through its tool. Always returns a ResultEnvelope.
         Cancellation propagates (asyncio.CancelledError is not swallowed).
         """
+        log_event(
+            "spawner_execute_started",
+            {
+                "conversation_id": context.conversation_id,
+                "task_id": task.task_id,
+                "tool_name": task.tool_name,
+                "requires_llm": task.requires_llm,
+                "depends_on_count": len(task.depends_on),
+            },
+        )
+
         tool = self.tools.get_tool(task.tool_name)
         if not tool:
+            log_event(
+                "spawner_tool_not_found",
+                {
+                    "conversation_id": context.conversation_id,
+                    "task_id": task.task_id,
+                    "tool_name": task.tool_name,
+                },
+                level=logging.ERROR,
+            )
             return ResultEnvelope(
                 task_id=task.task_id,
                 status="error",
@@ -117,9 +139,18 @@ class AgentSpawner:
 
         while True:
             attempts += 1
+            log_event(
+                "spawner_attempt_started",
+                {
+                    "conversation_id": context.conversation_id,
+                    "task_id": task.task_id,
+                    "attempt": attempts,
+                    "max_retries": self.max_retries,
+                },
+            )
+
             try:
                 async with _maybe_timeout(self.task_timeout_s):
-                    # Pydantic-only: build a typed instance every attempt (cheap, ensures correctness)
                     model = getattr(tool, "input_model", None)
                     if model is None:
                         raise ToolExecutionError(
@@ -136,9 +167,20 @@ class AgentSpawner:
                     )
 
                 duration_ms = (time.perf_counter_ns() - start_ns) // 1_000_000
-                # Normalize to ResultEnvelope (tools may already return envelopes; pass-through if so)
+
+                log_event(
+                    "spawner_execute_success",
+                    {
+                        "conversation_id": context.conversation_id,
+                        "task_id": task.task_id,
+                        "tool_name": task.tool_name,
+                        "attempts": attempts,
+                        "duration_ms": duration_ms,
+                        "requires_llm": requires_llm,
+                    },
+                )
+
                 if isinstance(value, ResultEnvelope):
-                    # respect the tool's envelope but ensure attempts/duration are populated
                     if value.attempts < attempts:
                         value.attempts = attempts
                     if not value.duration_ms:
@@ -154,7 +196,14 @@ class AgentSpawner:
                 )
 
             except asyncio.CancelledError:
-                # Propagate cancellation so the executor can handle fail-fast semantics consistently.
+                log_event(
+                    "spawner_task_cancelled",
+                    {
+                        "conversation_id": context.conversation_id,
+                        "task_id": task.task_id,
+                        "attempt": attempts,
+                    },
+                )
                 self.log.debug("Task %s cancelled", task.task_id)
                 raise
 
@@ -162,6 +211,19 @@ class AgentSpawner:
                 last_exc = e
                 if attempts <= self.max_retries:
                     delay = self._compute_backoff(attempts)
+                    log_event(
+                        "spawner_retriable_error",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "task_id": task.task_id,
+                            "attempt": attempts,
+                            "max_retries": self.max_retries,
+                            "error_type": type(e).__name__,
+                            "error": str(e),
+                            "backoff_seconds": delay,
+                        },
+                        level=logging.WARNING,
+                    )
                     self.log.warning(
                         "Retriable error on task %s (attempt %d/%d): %s; backing off %.2fs",
                         task.task_id,
@@ -172,14 +234,48 @@ class AgentSpawner:
                     )
                     await asyncio.sleep(delay)
                     continue
+                log_event(
+                    "spawner_retries_exhausted",
+                    {
+                        "conversation_id": context.conversation_id,
+                        "task_id": task.task_id,
+                        "attempts": attempts,
+                        "error_type": type(e).__name__,
+                        "error": str(e),
+                    },
+                    level=logging.ERROR,
+                )
                 break
 
             except Exception as e:
                 last_exc = e
+                log_event(
+                    "spawner_non_retriable_error",
+                    {
+                        "conversation_id": context.conversation_id,
+                        "task_id": task.task_id,
+                        "attempt": attempts,
+                        "error_type": type(e).__name__,
+                        "error": str(e),
+                    },
+                    level=logging.ERROR,
+                )
                 break
 
-        # Exhausted retries or non-retriable error
         duration_ms = (time.perf_counter_ns() - start_ns) // 1_000_000
+        log_event(
+            "spawner_execute_failed",
+            {
+                "conversation_id": context.conversation_id,
+                "task_id": task.task_id,
+                "tool_name": task.tool_name,
+                "attempts": attempts,
+                "duration_ms": duration_ms,
+                "error_type": type(last_exc).__name__ if last_exc else "UnknownError",
+                "error": str(last_exc) if last_exc else "Unknown error",
+            },
+            level=logging.ERROR,
+        )
         return ResultEnvelope(
             task_id=task.task_id,
             status="error",
