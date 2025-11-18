@@ -821,7 +821,7 @@ class LlamaIndexDocumentService(DocumentService):
             )
             # Continue with deletion even if vector store fails
 
-    @track(operation="document_count")
+    # @track(operation="document_count")
     async def get_document_count(self) -> Result[int, FailurePayload]:
         """
         Get count of indexed documents.
@@ -998,7 +998,7 @@ class LlamaIndexDocumentService(DocumentService):
             )
             raise
 
-    @track(operation="document_chunks_retrieval")
+    # @track(operation="document_chunks_retrieval")
     async def get_document_chunks(
         self,
         document_id: str,

@@ -278,7 +278,7 @@ class ConversationService:
                 )
             )
 
-    @track(operation="conversation_get")
+    # @track(operation="conversation_get")
     async def get_conversation(
         self, conversation_id: str
     ) -> Result[Dict[str, Any], FailurePayload]:

@@ -81,16 +81,6 @@ class TaskExecutor:
         Drives plan execution and yields AgentEvents as they occur.
         Terminates with PLAN_COMPLETED or PLAN_FAILED; never raises to the caller for normal flow.
         """
-        log_event(
-            "executor_plan_started",
-            {
-                "conversation_id": context.conversation_id,
-                "task_count": len(plan.tasks),
-                "max_concurrency": self.max_concurrency,
-                "fail_fast": self.fail_fast,
-            },
-        )
-
         state = _PlanState()
         try:
             while not state.terminated and not self._is_plan_complete(plan, state):
@@ -114,7 +104,6 @@ class TaskExecutor:
                     log_event(
                         "executor_task_started",
                         {
-                            "conversation_id": context.conversation_id,
                             "task_id": ev.task_id,
                             "running_count": len(state.running),
                         },
@@ -142,14 +131,14 @@ class TaskExecutor:
 
                 for ev in await self._wait_one_and_process(plan, state):
                     if ev.type == AgentEventType.TASK_COMPLETED:
-                        log_event(
-                            "executor_task_completed",
-                            {
-                                "conversation_id": context.conversation_id,
-                                "task_id": ev.task_id,
-                                "completed_count": len(state.completed),
-                            },
-                        )
+                        # log_event(
+                        #     "executor_task_completed",
+                        #     {
+                        #         "conversation_id": context.conversation_id,
+                        #         "task_id": ev.task_id,
+                        #         "completed_count": len(state.completed),
+                        #     },
+                        # )
                         self._observe("task_completed", task_id=ev.task_id)
                     elif ev.type == AgentEventType.TASK_FAILED:
                         log_event(

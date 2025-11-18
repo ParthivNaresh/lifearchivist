@@ -43,10 +43,10 @@ class CredentialService:
         """
         self.redis = redis_client
 
-        log_event(
-            "credential_service_initialized",
-            {"storage": "redis", "encryption": False},
-        )
+        # log_event(
+        #     "credential_service_initialized",
+        #     {"storage": "redis", "encryption": False},
+        # )
 
     def _get_provider_key(self, provider_id: str) -> str:
         """Get Redis key for provider."""
@@ -112,14 +112,14 @@ class CredentialService:
             # Add to provider list
             await cast(Any, self.redis.sadd(PROVIDER_LIST_KEY, provider_id))
 
-            log_event(
-                "provider_added",
-                {
-                    "provider_id": provider_id,
-                    "provider_type": provider_type.value,
-                    "is_default": is_default,
-                },
-            )
+            # log_event(
+            #     "provider_added",
+            #     {
+            #         "provider_id": provider_id,
+            #         "provider_type": provider_type.value,
+            #         "is_default": is_default,
+            #     },
+            # )
 
             return Success(provider_data)
 
@@ -143,7 +143,7 @@ class CredentialService:
                 )
             )
 
-    @track(operation="credential_service_get_provider_metadata")
+    # @track(operation="credential_service_get_provider_metadata")
     async def get_provider_metadata(
         self, provider_id: str
     ) -> Result[Dict, FailurePayload]:
@@ -190,12 +190,7 @@ class CredentialService:
                 )
             )
 
-    @track(
-        operation="credential_service_get_provider_config",
-        include_args=["provider_id"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    # @track(operation="credential_service_get_provider_config")
     async def get_provider_config(
         self, provider_id: str
     ) -> Result["BaseProviderConfig", FailurePayload]:
@@ -264,7 +259,7 @@ class CredentialService:
                 )
             )
 
-    @track(operation="credential_service_list_providers")
+    # @track(operation="credential_service_list_providers")
     async def list_providers(
         self, user_id: str = "default"
     ) -> Result[List[Dict], FailurePayload]:

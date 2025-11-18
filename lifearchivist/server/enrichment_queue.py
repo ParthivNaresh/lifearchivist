@@ -30,12 +30,12 @@ class EnrichmentQueue:
                 self.redis_url, encoding="utf-8", decode_responses=True
             )
             await self.redis_client.ping()
-            log_event(
-                "enrichment_queue_initialized",
-                {
-                    "redis_url": self.redis_url,
-                },
-            )
+            # log_event(
+            #     "enrichment_queue_initialized",
+            #     {
+            #         "redis_url": self.redis_url,
+            #     },
+            # )
         except Exception as e:
             log_event(
                 "enrichment_queue_init_failed",
@@ -351,4 +351,4 @@ class EnrichmentQueue:
         """Clean up Redis connection."""
         if self.redis_client:
             await self.redis_client.aclose()
-            log_event("enrichment_queue_closed", {})
+            # log_event("enrichment_queue_closed", {})

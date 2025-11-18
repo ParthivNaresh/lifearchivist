@@ -1,12 +1,15 @@
 import asyncio
+import json
 import logging
 import random
+import re
 import time
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, Iterable, Optional, Tuple
 
 from pydantic import BaseModel
 
+from ..resolver import resolve_params
 from ...utils.logx import log_event, track
 from .exceptions import ToolExecutionError
 from .models import (  # adjust to your package layout
@@ -19,7 +22,9 @@ from .tool_registry import AgentToolRegistry
 if TYPE_CHECKING:
     from llm import LLMProviderManager
 
-    from .utils.prompt_builder import PromptBuilder
+from .utils.prompt_builder import PromptBuilder, _json_preview
+
+_PLACEHOLDER_PATTERN = re.compile(r"<from\s+[\w\-\.:/]+")
 
 
 def _approx_size(obj: Any) -> int:
@@ -28,6 +33,16 @@ def _approx_size(obj: Any) -> int:
         return len(repr(obj).encode("utf-8"))
     except Exception:
         return 0
+
+
+def _safe_preview(value: Any, max_chars: int = 1000) -> str:
+    try:
+        s = repr(value)
+    except Exception:
+        s = "<unrepr>"
+    if len(s) > max_chars:
+        return s[:max_chars] + "…"
+    return s
 
 
 DEFAULT_RETRIABLE: Tuple[type[BaseException], ...] = (
@@ -131,7 +146,28 @@ class AgentSpawner:
             )
 
         task_ctx = self._build_task_context(task, previous_results, context)
-        requires_llm = bool(task.requires_llm or getattr(tool, "requires_llm", False))
+        log_event(
+            "spawner_task_context_built",
+            {
+                "conversation_id": context.conversation_id,
+                "task_id": task.task_id,
+                "tool_name": task.tool_name,
+                "depends_on_count": len(task.depends_on),
+                "dependent_results_count": len(task_ctx.get("dependent_results", {})),
+                "dependent_bytes_estimate": int(task_ctx.get("dependent_bytes_estimate", 0)),
+                "history_count": len(task_ctx.get("conversation_history", [])),
+            },
+        )
+        tool_requires = tool.requires_llm  # True for document_search
+        task_requires = task.requires_llm  # may be None/True/False
+
+        if tool_requires and task_requires is False:
+            raise ValueError(
+                f"Task '{task.task_id}' uses '{task.tool_name}' which requires LLM, "
+                f"but task.requires_llm=False. Either set requires_llm=True or use a different tool."
+            )
+
+        requires_llm = task_requires if task_requires is not None else tool_requires
 
         attempts = 0
         start_ns = time.perf_counter_ns()
@@ -151,12 +187,68 @@ class AgentSpawner:
 
             try:
                 async with _maybe_timeout(self.task_timeout_s):
+                    try:
+                        resolved_params = resolve_params(
+                            task.parameters,
+                            previous_results,          # upstream task_id -> result payload
+                            task.depends_on or [],     # enforce dependency visibility
+                        )
+                    except Exception as e:
+                        # Treat as non-retriable: bad plan wiring / missing deps should fail fast
+                        log_event(
+                            "spawner_param_resolution_failed",
+                            {
+                                "conversation_id": context.conversation_id,
+                                "task_id": task.task_id,
+                                "tool_name": task.tool_name,
+                                "error": str(e),
+                                "depends_on": task.depends_on,
+                                "params_preview": _safe_preview(task.parameters, 600),
+                            },
+                            level=logging.ERROR,
+                        )
+                        raise
+
+                    # Guard: if any "<from ..." placeholders survive resolution, fail early
+                    try:
+                        params_str = json.dumps(resolved_params, ensure_ascii=False)
+                    except Exception:
+                        # Fallback stringify if non-serializable
+                        params_str = str(resolved_params)
+
+                    if _PLACEHOLDER_PATTERN.search(params_str):
+                        msg = (
+                            "Unresolved dependency placeholder remains in parameters. "
+                            "Ensure all '<from task_id>' references point to completed dependencies."
+                        )
+                        log_event(
+                            "spawner_unresolved_placeholders",
+                            {
+                                "conversation_id": context.conversation_id,
+                                "task_id": task.task_id,
+                                "tool_name": task.tool_name,
+                                "params_preview": _json_preview(params_str, 1500),
+                            },
+                            level=logging.ERROR,
+                        )
+                        raise ValueError(msg)
+
+                    log_event(
+                        "spawner_params_resolved",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "task_id": task.task_id,
+                            "tool_name": task.tool_name,
+                            "resolved_params_preview": _json_preview(params_str, 1500),
+                        },
+                    )
+
                     model = getattr(tool, "input_model", None)
                     if model is None:
                         raise ToolExecutionError(
                             f"Tool '{task.tool_name}' missing input_model (Pydantic BaseModel)"
                         )
-                    typed_params: BaseModel = model.model_validate(task.parameters)
+                    typed_params: BaseModel = model.model_validate(resolved_params)
 
                     value = await self._invoke_tool(
                         tool=tool,
@@ -164,6 +256,18 @@ class AgentSpawner:
                         task_ctx=task_ctx,
                         requires_llm=requires_llm,
                         typed_params=typed_params,
+                    )
+
+                    log_event(
+                        "spawner_task_value_summary",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "task_id": task.task_id,
+                            "tool_name": task.tool_name,
+                            "value_type": type(value).__name__,
+                            "approx_bytes": _approx_size(value),
+                            "value_preview": _json_preview(value, 1000),
+                        },
                     )
 
                 duration_ms = (time.perf_counter_ns() - start_ns) // 1_000_000
@@ -305,6 +409,19 @@ class AgentSpawner:
             prompt = self.prompt_builder.build_agent_prompt(
                 task=task, tool=tool, context=task_ctx
             )
+            log_event(
+                "spawner_llm_prompt_built",
+                {
+                    "task_id": task.task_id,
+                    "tool_name": task.tool_name,
+                    "prompt_len": len(prompt),
+                    "prompt_preview": prompt[:1000],
+                    "param_model": type(typed_params).__name__,
+                    "param_keys": list(typed_params.model_dump().keys())[:20]
+                    if hasattr(typed_params, "model_dump")
+                    else None,
+                },
+            )
             return await tool.execute_with_llm(
                 llm_provider=self.llm,
                 prompt=prompt,
@@ -360,6 +477,7 @@ class AgentSpawner:
             "dependent_results": deps,
             "conversation_history": history,
             "user_preferences": context.user_preferences,
+            "dependent_bytes_estimate": total_bytes,
             # could also pass: conversation_id/user_id/trace ids here for observability
         }
 

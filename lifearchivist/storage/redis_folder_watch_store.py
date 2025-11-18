@@ -91,7 +91,7 @@ class RedisFolderWatchStore:
         # Connection state
         self._initialized = False
 
-    @track(operation="redis_folder_watch_store_initialize")
+    # @track(operation="redis_folder_watch_store_initialize")
     async def initialize(self) -> None:
         """
         Initialize Redis connection and verify connectivity.
@@ -114,13 +114,13 @@ class RedisFolderWatchStore:
 
             folder_count = await self.get_folder_count()
 
-            log_event(
-                "redis_folder_watch_store_initialized",
-                {
-                    "redis_url": self.redis_url,
-                    "folder_count": folder_count,
-                },
-            )
+            # log_event(
+            #     "redis_folder_watch_store_initialized",
+            #     {
+            #         "redis_url": self.redis_url,
+            #         "folder_count": folder_count,
+            #     },
+            # )
 
             logger.info(
                 f"RedisFolderWatchStore initialized with {folder_count} folders"
@@ -264,7 +264,7 @@ class RedisFolderWatchStore:
         # Deserialize data types
         return self._deserialize_folder_data(raw_data)
 
-    @track(operation="redis_list_watched_folders")
+    # @track(operation="redis_list_watched_folders")
     async def list_folders(self, enabled_only: bool = False) -> List[Dict[str, Any]]:
         """
         List all watched folders.

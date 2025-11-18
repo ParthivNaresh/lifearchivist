@@ -31,7 +31,7 @@ class EnrichmentWorker:
 
     async def initialize(self):
         """Initialize worker components."""
-        log_event("enrichment_worker_init_started", {})
+        # log_event("enrichment_worker_init_started", {})
 
         await self.queue.initialize()
 
@@ -48,38 +48,34 @@ class EnrichmentWorker:
 
         self._setup_signal_handlers()
 
-        log_event(
-            "enrichment_worker_initialized",
-            {
-                "vault_path": str(self.settings.vault_path),
-                "redis_url": self.settings.redis_url,
-            },
-        )
+        # log_event(
+        #     "enrichment_worker_initialized",
+        #     {
+        #         "vault_path": str(self.settings.vault_path),
+        #         "redis_url": self.settings.redis_url,
+        #     },
+        # )
 
     def _setup_signal_handlers(self):
         """Setup graceful shutdown handlers."""
 
         def signal_handler(signum, frame):
-            log_event(
-                "enrichment_worker_shutdown_signal",
-                {
-                    "signal": signum,
-                },
-            )
+            # log_event(
+            #     "enrichment_worker_shutdown_signal",
+            #     {
+            #         "signal": signum,
+            #     },
+            # )
             self.shutdown_event.set()
 
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
-    @track(
-        operation="enrichment_worker_run",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="enrichment_worker_run")
     async def run(self):
         """Main worker loop."""
         self.running = True
-        log_event("enrichment_worker_started", {})
+        # log_event("enrichment_worker_started", {})
 
         try:
             while self.running and not self.shutdown_event.is_set():
@@ -226,13 +222,13 @@ class EnrichmentWorker:
         """Internal implementation for graceful shutdown."""
         self.running = False
 
-        log_event(
-            "enrichment_worker_shutdown",
-            {
-                "tasks_processed": self.tasks_processed,
-                "tasks_failed": self.tasks_failed,
-            },
-        )
+        # log_event(
+        #     "enrichment_worker_shutdown",
+        #     {
+        #         "tasks_processed": self.tasks_processed,
+        #         "tasks_failed": self.tasks_failed,
+        #     },
+        # )
 
         await self.queue.cleanup()
 

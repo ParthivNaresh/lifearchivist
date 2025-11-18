@@ -42,7 +42,7 @@ class ProviderLoader:
         """
         self.credential_service = credential_service
 
-    @track(operation="provider_loader_load_provider")
+    # @track(operation="provider_loader_load_provider")
     async def load_provider(
         self,
         provider_id: str,
@@ -143,17 +143,17 @@ class ProviderLoader:
 
         provider = provider_result.unwrap()
 
-        log_event(
-            "provider_loaded",
-            {
-                "provider_id": provider_id,
-                "provider_type": provider_type.value,
-            },
-        )
+        # log_event(
+        #     "provider_loaded",
+        #     {
+        #         "provider_id": provider_id,
+        #         "provider_type": provider_type.value,
+        #     },
+        # )
 
         return Success(provider)
 
-    @track(operation="provider_loader_load_all")
+    # @track(operation="provider_loader_load_all")
     async def load_all_providers(
         self,
         user_id: str = "default",
@@ -238,15 +238,15 @@ class ProviderLoader:
                 )
                 failed_count += 1
 
-        log_event(
-            "provider_load_all_complete",
-            {
-                "user_id": user_id,
-                "loaded": len(providers),
-                "failed": failed_count,
-                "total": len(provider_data_list),
-            },
-        )
+        # log_event(
+        #     "provider_load_all_complete",
+        #     {
+        #         "user_id": user_id,
+        #         "loaded": len(providers),
+        #         "failed": failed_count,
+        #         "total": len(provider_data_list),
+        #     },
+        # )
 
         return Success(providers)
 
@@ -293,14 +293,14 @@ class ProviderLoader:
         try:
             provider = provider_class(provider_id, config)
 
-            log_event(
-                "provider_instantiated",
-                {
-                    "provider_id": provider_id,
-                    "provider_type": provider_type.value,
-                    "provider_class": provider_class.__name__,
-                },
-            )
+            # log_event(
+            #     "provider_instantiated",
+            #     {
+            #         "provider_id": provider_id,
+            #         "provider_type": provider_type.value,
+            #         "provider_class": provider_class.__name__,
+            #     },
+            # )
 
             return Success(provider)
 

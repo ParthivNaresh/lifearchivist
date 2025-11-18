@@ -37,17 +37,8 @@ class PlanValidator:
         self.max_cost_usd = max_cost_usd
         self.max_time_seconds = max_time_seconds
 
-    @track(operation="plan_validate")
+    # @track(operation="plan_validate")
     def validate(self, plan: ExecutionPlan) -> None:
-        log_event(
-            "validator_validate_started",
-            {
-                "task_count": len(plan.tasks),
-                "estimated_cost_usd": plan.estimated_cost_usd,
-                "estimated_time_seconds": plan.estimated_time_seconds,
-            },
-        )
-
         result = self._validate_plan(plan)
 
         if result.warnings:
@@ -73,14 +64,6 @@ class PlanValidator:
                 f"  - {e}" for e in result.errors
             )
             raise PlanningError(msg)
-
-        log_event(
-            "validator_validation_success",
-            {
-                "task_count": len(plan.tasks),
-                "warning_count": len(result.warnings),
-            },
-        )
         # You may want to surface warnings upstream as events/logs
         # (e.g., AgentEvent of type PLAN_VALIDATED with warnings)
 

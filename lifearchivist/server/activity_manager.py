@@ -73,11 +73,7 @@ class ActivityManager:
         self.session_manager: Optional[Any] = None  # Set by ApplicationServer
         self._initialized = False
 
-    @track(
-        operation="activity_manager_initialize",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="activity_manager_initialize")
     async def initialize(self) -> None:
         """
         Initialize Redis connection and verify connectivity.
@@ -104,14 +100,14 @@ class ActivityManager:
             client = self._client()
             event_count = await cast(Awaitable[int], client.llen(self.EVENTS_KEY))
 
-            log_event(
-                "activity_manager_initialized",
-                {
-                    "redis_url": self.redis_url,
-                    "existing_events": event_count,
-                    "max_events": self.MAX_EVENTS,
-                },
-            )
+            # log_event(
+            #     "activity_manager_initialized",
+            #     {
+            #         "redis_url": self.redis_url,
+            #         "existing_events": event_count,
+            #         "max_events": self.MAX_EVENTS,
+            #     },
+            # )
 
         except Exception as e:
             log_event(
@@ -133,7 +129,7 @@ class ActivityManager:
             await self.redis_client.aclose()
             self._initialized = False
 
-            log_event("activity_manager_closed", {"redis_url": self.redis_url})
+            # log_event("activity_manager_closed", {"redis_url": self.redis_url})
 
     @track(
         operation="activity_add_event",

@@ -70,14 +70,14 @@ class OllamaProvider(BaseHTTPProvider, BaseLLMProvider):
 
         await BaseLLMProvider.initialize(self)
 
-        log_event(
-            "ollama_provider_initialized",
-            {
-                "provider_id": self.provider_id,
-                "base_url": self.config.base_url,
-                "timeout": self.config.timeout_seconds,
-            },
-        )
+        # log_event(
+        #     "ollama_provider_initialized",
+        #     {
+        #         "provider_id": self.provider_id,
+        #         "base_url": self.config.base_url,
+        #         "timeout": self.config.timeout_seconds,
+        #     },
+        # )
 
     async def cleanup(self) -> None:
         """
@@ -110,7 +110,7 @@ class OllamaProvider(BaseHTTPProvider, BaseLLMProvider):
             for msg in messages
         ]
 
-    @track(operation="ollama_generate")
+    # @track(operation="ollama_generate")
     async def generate(
         self,
         messages: List[LLMMessage],
@@ -217,12 +217,7 @@ class OllamaProvider(BaseHTTPProvider, BaseLLMProvider):
                 f"Failed to connect to Ollama at {self.config.base_url}: {e}"
             ) from e
 
-    @track(
-        operation="ollama_generate_stream",
-        include_args=["model"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="ollama_generate_stream")
     async def generate_stream(
         self,
         messages: List[LLMMessage],

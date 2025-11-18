@@ -144,15 +144,15 @@ class FolderWatcherService:
 
             self._initialized = True
 
-            log_event(
-                "folder_watcher_service_initialized",
-                {
-                    "max_folders": self.max_folders,
-                    "ingestion_concurrency": self.ingestion_concurrency,
-                    "debounce_seconds": self.debounce_seconds,
-                    "resumed_folders": len(self.watched_folders),
-                },
-            )
+            # log_event(
+            #     "folder_watcher_service_initialized",
+            #     {
+            #         "max_folders": self.max_folders,
+            #         "ingestion_concurrency": self.ingestion_concurrency,
+            #         "debounce_seconds": self.debounce_seconds,
+            #         "resumed_folders": len(self.watched_folders),
+            #     },
+            # )
 
         except Exception as e:
             logger.error(

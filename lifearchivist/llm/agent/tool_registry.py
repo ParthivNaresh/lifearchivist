@@ -67,19 +67,19 @@ class AgentToolRegistry:
     def count(self) -> int:
         return len(self._tools)
 
-    @track(operation="agent_register_all")
+    # @track(operation="agent_register_all")
     def register_all(self) -> None:
         if self._finalized:
             raise ToolExecutionError(
                 "Cannot register tools after registry has been finalized"
             )
-
-        log_event(
-            "registry_register_all_started",
-            {
-                "has_document_service": self.document_service is not None,
-            },
-        )
+        #
+        # log_event(
+        #     "registry_register_all_started",
+        #     {
+        #         "has_document_service": self.document_service is not None,
+        #     },
+        # )
 
         tool_definitions: List[Dict[str, Any]] = []
 
@@ -137,13 +137,13 @@ class AgentToolRegistry:
                 kwargs = tool_def.get("kwargs", {})
                 tool_instance = tool_class(**kwargs)
                 self.register(tool_instance)
-                log_event(
-                    "registry_tool_registered",
-                    {
-                        "tool_name": tool_name,
-                        "requires_llm": getattr(tool_instance, "requires_llm", False),
-                    },
-                )
+                # log_event(
+                #     "registry_tool_registered",
+                #     {
+                #         "tool_name": tool_name,
+                #         "requires_llm": getattr(tool_instance, "requires_llm", False),
+                #     },
+                # )
                 registered_count += 1
 
             except Exception as e:
@@ -159,14 +159,14 @@ class AgentToolRegistry:
                 skipped_count += 1
                 continue
 
-        log_event(
-            "registry_register_all_completed",
-            {
-                "registered_count": registered_count,
-                "skipped_count": skipped_count,
-                "total_tools": len(self._tools),
-            },
-        )
+        # log_event(
+        #     "registry_register_all_completed",
+        #     {
+        #         "registered_count": registered_count,
+        #         "skipped_count": skipped_count,
+        #         "total_tools": len(self._tools),
+        #     },
+        # )
 
     def finalize(self) -> None:
         if self._finalized:

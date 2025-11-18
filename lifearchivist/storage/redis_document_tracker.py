@@ -77,7 +77,7 @@ class RedisDocumentTracker:
         self.max_retries = 3
         self.retry_delay = 0.1  # seconds
 
-    @track(operation="redis_tracker_initialize")
+    # @track(operation="redis_tracker_initialize")
     async def initialize(self) -> None:
         """
         Initialize Redis connection and verify connectivity.
@@ -108,13 +108,13 @@ class RedisDocumentTracker:
 
             doc_count = await self.get_document_count()
 
-            log_event(
-                "redis_tracker_initialized",
-                {
-                    "redis_url": self.redis_url,
-                    "document_count": doc_count,
-                },
-            )
+            # log_event(
+            #     "redis_tracker_initialized",
+            #     {
+            #         "redis_url": self.redis_url,
+            #         "document_count": doc_count,
+            #     },
+            # )
 
         except Exception as e:
             log_event(
@@ -146,10 +146,10 @@ class RedisDocumentTracker:
             await self.redis_client.aclose()
             self._initialized = False
 
-            log_event(
-                "redis_tracker_closed",
-                {"redis_url": self.redis_url},
-            )
+            # log_event(
+            #     "redis_tracker_closed",
+            #     {"redis_url": self.redis_url},
+            # )
 
     @track(operation="redis_add_document")
     async def add_document(self, document_id: str, node_ids: List[str]) -> None:
@@ -187,7 +187,7 @@ class RedisDocumentTracker:
             pipe.incr(count_key)
             await pipe.execute()
 
-    @track(operation="redis_get_node_ids")
+    # @track(operation="redis_get_node_ids")
     async def get_node_ids(self, document_id: str) -> Optional[List[str]]:
         """
         Get node IDs for a document.
@@ -252,7 +252,7 @@ class RedisDocumentTracker:
 
         return True
 
-    @track(operation="redis_document_exists")
+    # @track(operation="redis_document_exists")
     async def document_exists(self, document_id: str) -> bool:
         """
         Check if a document exists in the tracker.
@@ -277,7 +277,7 @@ class RedisDocumentTracker:
 
         return bool(exists)
 
-    @track(operation="redis_get_document_count")
+    # @track(operation="redis_get_document_count")
     async def get_document_count(self) -> int:
         """
         Get total count of tracked documents.
@@ -297,7 +297,7 @@ class RedisDocumentTracker:
 
         return int(count) if count else 0
 
-    @track(operation="redis_get_all_document_ids")
+    # @track(operation="redis_get_all_document_ids")
     async def get_all_document_ids(self) -> List[str]:
         """
         Get all document IDs.
@@ -354,7 +354,7 @@ class RedisDocumentTracker:
                         pipe.sadd(index_key, document_id)
                 await pipe.execute()
 
-    @track(operation="redis_get_full_metadata")
+    # @track(operation="redis_get_full_metadata")
     async def get_full_metadata(self, document_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve complete metadata for a document.

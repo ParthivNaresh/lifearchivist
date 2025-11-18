@@ -23,7 +23,7 @@ from .models.events import AgentEvent, AgentEventType
 from .models.task import AgentTask, ExecutionPlan
 from .plan_validator import PlanValidator
 from .tool_registry import AgentToolRegistry
-from .utils.prompt_builder import PromptBuilder
+from .utils.prompt_builder import PromptBuilder, _json_preview
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
@@ -74,7 +74,7 @@ class AgentOrchestrator:
         self.max_plan_reasoning_chars = max_plan_reasoning_chars
         self.max_param_preview_chars = max_param_preview_chars
 
-    @track(operation="process_query")
+    # @track(operation="process_query")
     async def process_query(
         self, query: str, context: ConversationContext
     ) -> AsyncGenerator[AgentEvent, None]:
@@ -84,27 +84,8 @@ class AgentOrchestrator:
         PLAN_CREATED -> (TASK_*... -> PLAN_COMPLETED | PLAN_FAILED) ->
         SYNTHESIS_* -> COMPLETE
         """
-        log_event(
-            "orchestrator_process_query_started",
-            {
-                "conversation_id": context.conversation_id,
-                "user_id": context.user_id,
-                "query_length": len(query),
-            },
-        )
-
         try:
             plan = await self._create_execution_plan(query, context)
-            log_event(
-                "orchestrator_plan_created",
-                {
-                    "conversation_id": context.conversation_id,
-                    "task_count": len(plan.tasks),
-                    "estimated_time_seconds": plan.estimated_time_seconds,
-                    "estimated_cost_usd": plan.estimated_cost_usd,
-                    "task_ids": [t.task_id for t in plan.tasks],
-                },
-            )
         except PlanningError as e:
             log_event(
                 "orchestrator_planning_error",
@@ -140,14 +121,6 @@ class AgentOrchestrator:
 
         task_results: Dict[str, Any] = {}
         plan_failed = False
-
-        log_event(
-            "orchestrator_execution_started",
-            {
-                "conversation_id": context.conversation_id,
-                "task_count": len(plan.tasks),
-            },
-        )
 
         async for ev in self.executor.execute_plan(plan, context):
             yield ev
@@ -192,13 +165,6 @@ class AgentOrchestrator:
                 async for chunk in self._synthesize_response(query, plan, task_results):
                     chunk_count += 1
                     yield AgentEvent.response_chunk(chunk)
-                log_event(
-                    "orchestrator_synthesis_completed",
-                    {
-                        "conversation_id": context.conversation_id,
-                        "chunk_count": chunk_count,
-                    },
-                )
             except Exception as e:
                 log_event(
                     "orchestrator_synthesis_failed",
@@ -265,22 +231,12 @@ class AgentOrchestrator:
             raise PlanningError(result.error)
 
         response = result.unwrap()
-        log_event(
-            "orchestrator_llm_response_received",
-            {
-                "conversation_id": context.conversation_id,
-                "content_length": len(response.content),
-                "tokens_used": response.tokens_used,
-                "cost_usd": response.cost_usd,
-            },
-        )
 
         try:
             plan_data = self._json_loads_strict(response.content)
             log_event(
-                "orchestrator_json_parse_succeeded",
+                "plan_json_parse_succeeded",
                 {
-                    "conversation_id": context.conversation_id,
                     "content_preview": response.content[:5000],
                 },
             )
@@ -320,12 +276,9 @@ class AgentOrchestrator:
                 reasoning=str(plan_data.get("reasoning", "")),
             )
             log_event(
-                "orchestrator_plan_constructed",
+                "plan created",
                 {
-                    "conversation_id": context.conversation_id,
-                    "task_count": len(tasks),
-                    "estimated_time_seconds": plan.estimated_time_seconds,
-                    "estimated_cost_usd": plan.estimated_cost_usd,
+                    "tasks": [t.to_dict() for t in tasks],
                 },
             )
         except Exception as e:
@@ -341,13 +294,7 @@ class AgentOrchestrator:
             raise PlanningError(f"Plan construction failed: {e}") from e
 
         self.validator.validate(plan)
-        log_event(
-            "orchestrator_plan_validated",
-            {
-                "conversation_id": context.conversation_id,
-                "task_count": len(plan.tasks),
-            },
-        )
+
         return plan
 
     async def _synthesize_response(
@@ -358,6 +305,16 @@ class AgentOrchestrator:
         """
         prompt = self.prompt_builder.build_synthesis_prompt(
             query=query, plan=plan, results=task_results
+        )
+        log_event(
+            "orchestrator_synthesis_input",
+            {
+                "prompt_len": len(prompt),
+                "prompt_snippet": _json_preview(prompt,2000),
+                "task_keys_present": [k for k in ("search_docs", "extract_data") if k in prompt],
+                "model": self.synthesis_model,
+                "temperature": self.synthesis_temperature,
+            },
         )
         async for chunk in self.llm.generate_stream(
             messages=[LLMMessage(role="user", content=prompt)],

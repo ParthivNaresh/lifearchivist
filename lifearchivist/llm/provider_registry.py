@@ -110,15 +110,15 @@ class ProviderRegistry:
         if set_as_default or self._default_provider_id is None:
             self._default_provider_id = provider.provider_id
 
-        log_event(
-            "provider_registered",
-            {
-                "provider_id": provider.provider_id,
-                "provider_type": provider.provider_type.value,
-                "is_default": provider.provider_id == self._default_provider_id,
-                "initialized": provider.is_initialized,
-            },
-        )
+        # log_event(
+        #     "provider_registered",
+        #     {
+        #         "provider_id": provider.provider_id,
+        #         "provider_type": provider.provider_type.value,
+        #         "is_default": provider.provider_id == self._default_provider_id,
+        #         "initialized": provider.is_initialized,
+        #     },
+        # )
 
         return Success(None)
 

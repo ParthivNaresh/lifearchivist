@@ -188,14 +188,14 @@ class ProviderRouter:
                     ]
                 },
             )
-
-        log_event(
-            "provider_routed_default",
-            {
-                "provider_id": provider.provider_id,
-                "provider_type": provider.provider_type.value,
-            },
-        )
+        #
+        # log_event(
+        #     "provider_routed_default",
+        #     {
+        #         "provider_id": provider.provider_id,
+        #         "provider_type": provider.provider_type.value,
+        #     },
+        # )
 
         return Success(provider)
 

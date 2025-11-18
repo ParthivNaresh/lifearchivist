@@ -58,7 +58,7 @@ class MessageService:
         """
         self.db_pool = db_pool
 
-    @track(operation="message_create")
+    # @track(operation="message_create")
     async def add_message(
         self,
         conversation_id: str,
@@ -188,16 +188,16 @@ class MessageService:
 
             message = record_to_dict(record)
 
-            log_event(
-                "message_added",
-                {
-                    "message_id": str(message["id"]),
-                    "conversation_id": conversation_id,
-                    "role": role,
-                    "status": status,
-                    "sequence": sequence_number,
-                },
-            )
+            # log_event(
+            #     "message_added",
+            #     {
+            #         "message_id": str(message["id"]),
+            #         "conversation_id": conversation_id,
+            #         "role": role,
+            #         "status": status,
+            #         "sequence": sequence_number,
+            #     },
+            # )
 
             return Success(message)
 
@@ -237,7 +237,7 @@ class MessageService:
                 )
             )
 
-    @track(operation="message_status_update")
+    # @track(operation="message_status_update")
     async def update_message_status(
         self,
         message_id: str,
@@ -295,14 +295,14 @@ class MessageService:
 
             message = record_to_dict(record)
 
-            log_event(
-                "message_status_updated",
-                {
-                    "message_id": message_id,
-                    "status": status,
-                    "content_updated": content is not None,
-                },
-            )
+            # log_event(
+            #     "message_status_updated",
+            #     {
+            #         "message_id": message_id,
+            #         "status": status,
+            #         "content_updated": content is not None,
+            #     },
+            # )
 
             return Success(message)
 

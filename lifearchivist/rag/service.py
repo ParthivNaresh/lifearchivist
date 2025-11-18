@@ -154,13 +154,13 @@ class ConversationRAGService:
         message = result.unwrap()
         message_id = str(message["id"])
 
-        log_event(
-            "message_processing_started",
-            {
-                "message_id": message_id,
-                "conversation_id": conversation_id,
-            },
-        )
+        # log_event(
+        #     "message_processing_started",
+        #     {
+        #         "message_id": message_id,
+        #         "conversation_id": conversation_id,
+        #     },
+        # )
 
         return message_id
 
@@ -190,16 +190,16 @@ class ConversationRAGService:
                 content=content,
                 metadata=metadata,
             )
-
-            log_event(
-                "message_status_broadcasted",
-                {
-                    "message_id": message_id,
-                    "conversation_id": conversation_id,
-                    "status": status,
-                    "stage": stage,
-                },
-            )
+            #
+            # log_event(
+            #     "message_status_broadcasted",
+            #     {
+            #         "message_id": message_id,
+            #         "conversation_id": conversation_id,
+            #         "status": status,
+            #         "stage": stage,
+            #     },
+            # )
         except Exception as e:
             log_event(
                 "message_status_broadcast_failed",
@@ -228,13 +228,13 @@ class ConversationRAGService:
             )
             return
 
-        log_event(
-            "message_processing_completed",
-            {
-                "message_id": message_id,
-                "content_length": len(content),
-            },
-        )
+        # log_event(
+        #     "message_processing_completed",
+        #     {
+        #         "message_id": message_id,
+        #         "content_length": len(content),
+        #     },
+        # )
 
     async def _mark_message_failed(self, message_id: str) -> None:
         """Mark message as failed."""

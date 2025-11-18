@@ -54,11 +54,7 @@ class Vault:
         self.temp_dir = self.vault_path / "temp"
         self.exports_dir = self.vault_path / "exports"
 
-    @track(
-        operation="vault_initialization",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="vault_initialization")
     async def initialize(self):
         """
         Create vault directory structure if it doesn't exist.
@@ -77,13 +73,13 @@ class Vault:
             ("exports", self.exports_dir),
         ]
 
-        log_event(
-            "vault_init_started",
-            {
-                "vault_path": str(self.vault_path),
-                "directories_to_create": len(directories),
-            },
-        )
+        # log_event(
+        #     "vault_init_started",
+        #     {
+        #         "vault_path": str(self.vault_path),
+        #         "directories_to_create": len(directories),
+        #     },
+        # )
 
         created_count = 0
         existing_count = 0
@@ -120,14 +116,14 @@ class Vault:
                     f"Failed to create vault directory {directory}: {e}"
                 ) from None
 
-        log_event(
-            "vault_initialized",
-            {
-                "vault_path": str(self.vault_path),
-                "directories_created": created_count,
-                "directories_existing": existing_count,
-            },
-        )
+        # log_event(
+        #     "vault_initialized",
+        #     {
+        #         "vault_path": str(self.vault_path),
+        #         "directories_created": created_count,
+        #         "directories_existing": existing_count,
+        #     },
+        # )
 
     @track(
         operation="vault_file_clearing",

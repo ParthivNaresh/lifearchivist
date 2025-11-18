@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 from pydantic import BaseModel, Field, model_validator
 
+from ...llm_io import _unwrap_result_or_raise, _response_text, _parse_json_maybe
 from ....llm import LLMMessage
 from ....utils.logx import log_event
 from ..exceptions import ToolExecutionError
@@ -13,6 +14,16 @@ from .base import BaseAgentTool
 if TYPE_CHECKING:
     from llm import LLMProviderManager
     from storage.document_service import LlamaIndexDocumentService
+
+
+def _safe_preview(value: Any, max_chars: int = 1200) -> str:
+    try:
+        s = repr(value)
+    except Exception:
+        s = "<unrepr>"
+    if len(s) > max_chars:
+        return s[:max_chars] + "…"
+    return s
 
 
 class ExtractionFilters(BaseModel):
@@ -233,7 +244,25 @@ class DataExtractionTool(BaseAgentTool):
         messages: List[LLMMessage] = [
             LLMMessage(
                 role="system",
-                content="You are an information extraction engine. ONLY return valid JSON with extractions—no prose.",
+                content=(
+                    "You extract structured data from document chunks.\n"
+                    "Return ONLY strict JSON (no prose) with this EXACT shape:\n"
+                    "{\n"
+                    '  "extractions": [\n'
+                    "    {\n"
+                    '      "test_type": string,\n'
+                    '      "date": string|null,\n'
+                    '      "results": object|null,\n'
+                    '      "patient_id": string|null,\n'
+                    '      "doctor_name": string|null\n'
+                    "    }\n"
+                    "  ],\n"
+                    '  "provenance": [\n'
+                    '    {"document_id": string, "chunk_id": string, "reason": string}\n'
+                    "  ]\n"
+                    "}\n"
+                    "Do not wrap the JSON in markdown. Do not return a top-level array."
+                ),
             ),
             LLMMessage(
                 role="user",
@@ -244,6 +273,20 @@ class DataExtractionTool(BaseAgentTool):
 
         model_to_use = p.model or "qwen2.5:7b"
 
+        log_event(
+            "extraction_llm_request",
+            {
+                "model": model_to_use,
+                "temperature": p.temperature,
+                "max_tokens": p.max_tokens,
+                "message_count": len(messages),
+                "documents": len(chunks),
+                "chars_used": metrics.chars_used,
+                "fields_count": len(p.fields) if p.fields else 0,
+                "queries_count": len(p.queries) if p.queries else 0,
+            },
+        )
+
         llm_data = await self._call_llm_generate(
             llm_provider=llm_provider,
             messages=messages,
@@ -251,6 +294,15 @@ class DataExtractionTool(BaseAgentTool):
             temperature=p.temperature,
             max_tokens=p.max_tokens,
             timeout_s=self.llm_timeout_s,
+        )
+
+        log_event(
+            "extraction_llm_response_preview",
+            {
+                "model": model_to_use,
+                "response_type": type(llm_data).__name__,
+                "response_preview": _safe_preview(llm_data, 800),
+            },
         )
 
         result: Dict[str, Any] = {
@@ -386,14 +438,17 @@ class DataExtractionTool(BaseAgentTool):
         We honor your Result[...] contract and surface ToolExecutionError on failure.
         """
         # Provide sane defaults; the router can still pick best provider/model if model is None.
-        kwargs = {"timeout_s": timeout_s}
         try:
+            # Ask adapters to produce pure JSON objects. Providers that don't support these
+            # kwargs will ignore them (safe no-ops).
             result = await llm_provider.generate(
                 messages=messages,
                 model=model,
-                temperature=temperature,
+                temperature=temperature,          # ← honor caller's temperature
                 max_tokens=max_tokens,
-                **kwargs,
+                timeout_s=timeout_s,              # ← honor timeout
+                response_format={"type": "json_object"},  # OpenAI-style adapters
+                format="json",                             # Ollama-style adapters
             )
         except asyncio.CancelledError:
             raise
@@ -405,33 +460,74 @@ class DataExtractionTool(BaseAgentTool):
         # Result[T, E] handling
         if hasattr(result, "is_failure") and result.is_failure():
             error_msg = result.unwrap_error()
+            log_event(
+                "extraction_llm_generate_failed",
+                {"error": str(error_msg), "model": model, "temperature": temperature, "max_tokens": max_tokens},
+                level=40,
+            )
             raise ToolExecutionError(f"{self.name}: LLM call failed: {error_msg}")
 
-        response = result.unwrap() if hasattr(result, "unwrap") else result
+        resp = _unwrap_result_or_raise(result)   # -> LLMResponse
+        raw = _response_text(resp)               # -> str
 
-        # Return something consumable by _normalize_extractions
-        # Try common shapes: text/content, message dict, etc.
-        if isinstance(response, dict):
-            return response
+        # --- Strict parse with normalization to OBJECT shape ---
+        obj = _parse_json_maybe(raw)
+        log_event(
+            "extraction_llm_raw_parsed",
+            {
+                "model": model,
+                "type_detected": type(obj).__name__,
+                "starts_with": str(raw)[:50] if isinstance(raw, str) else None,
+                "len_raw": len(raw) if isinstance(raw, str) else None,
+            },
+        )
 
-        # LLMResponse-like object normalization
-        for attr in ("json", "parsed", "data"):
-            if hasattr(response, attr):
-                val = getattr(response, attr)
-                if callable(val):
-                    try:
-                        return val()
-                    except Exception:
-                        pass
-                else:
-                    return val
+        if isinstance(obj, list):
+            # Normalize a top-level array into the required object shape
+            obj = {"extractions": obj, "provenance": []}
 
-        for attr in ("text", "content"):
-            if hasattr(response, attr):
-                return getattr(response, attr)
+        if not isinstance(obj, dict):
+            log_event(
+                "extraction_json_parse_failed",
+                {"preview": (raw[:800] if isinstance(raw, str) else str(raw)[:800])},
+                level=30,
+            )
+            # Fallback: still return object-shaped payload so downstream stays consistent
+            return {
+                "extractions": [],
+                "provenance": [],
+                "text": raw,
+            }
 
-        # Fallback to str()
-        return str(response)
+        # Ensure expected keys exist (stable contract)
+        obj.setdefault("extractions", [])
+        obj.setdefault("provenance", [])
+
+        # Observability
+        try:
+            log_event(
+                "extraction_llm_generate_completed",
+                {
+                    "model": model,
+                    "response_type": type(raw).__name__,
+                    "response_preview": (raw[:1500] if isinstance(raw, str) else str(raw)[:1500]),
+                },
+            )
+        except Exception:
+            pass
+
+        log_event(
+            "extraction_llm_normalized",
+            {
+                "extraction_count": len(obj.get("extractions", [])) if isinstance(obj, dict) else 0,
+                "provenance_count": len(obj.get("provenance", [])) if isinstance(obj, dict) else 0,
+                "keys": list(obj.keys()) if isinstance(obj, dict) else [],
+                "has_text_fallback": "text" in obj if isinstance(obj, dict) else False,
+            },
+        )
+
+        # ✅ Return the normalized OBJECT (not the raw string)
+        return obj
 
     def _normalize_extractions(self, llm_output: Any) -> Any:
         """

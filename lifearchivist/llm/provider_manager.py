@@ -102,14 +102,14 @@ class LLMProviderManager:
 
             self._initialized = True
 
-            log_event(
-                "provider_manager_initialized",
-                {
-                    "providers": self.registry.count(),
-                    "has_cost_tracker": self.cost_tracker is not None,
-                    "has_health_monitor": self.health_monitor is not None,
-                },
-            )
+            # log_event(
+            #     "provider_manager_initialized",
+            #     {
+            #         "providers": self.registry.count(),
+            #         "has_cost_tracker": self.cost_tracker is not None,
+            #         "has_health_monitor": self.health_monitor is not None,
+            #     },
+            # )
             return Success(None)
 
         except Exception as e:
@@ -180,15 +180,15 @@ class LLMProviderManager:
                 provider, set_as_default
             )
 
-            if result.is_success():
-                log_event(
-                    "provider_added",
-                    {
-                        "provider_id": provider.provider_id,
-                        "provider_type": provider.provider_type.value,
-                        "is_default": set_as_default,
-                    },
-                )
+            # if result.is_success():
+            #     log_event(
+            #         "provider_added",
+            #         {
+            #             "provider_id": provider.provider_id,
+            #             "provider_type": provider.provider_type.value,
+            #             "is_default": set_as_default,
+            #         },
+            #     )
 
             return result
 
@@ -285,7 +285,7 @@ class LLMProviderManager:
         """
         return self.registry.set_default(provider_id)
 
-    @track(operation="llm_generate")
+    # @track(operation="llm_generate")
     async def generate(
         self,
         messages: List[LLMMessage],
@@ -370,18 +370,6 @@ class LLMProviderManager:
 
         # Execute request
         try:
-            log_event(
-                "llm_generate_start",
-                {
-                    "provider_id": provider.provider_id,
-                    "provider_type": provider.provider_type.value,
-                    "model": model,
-                    "message_count": len(messages),
-                    "temperature": temperature,
-                    "max_tokens": max_tokens,
-                },
-            )
-
             response = await provider.generate(
                 messages=messages,
                 model=model,
@@ -404,16 +392,16 @@ class LLMProviderManager:
                 )
                 await self.cost_tracker.record_cost(cost_record)
 
-            log_event(
-                "llm_generate_success",
-                {
-                    "provider_id": provider.provider_id,
-                    "model": model,
-                    "tokens_used": response.tokens_used,
-                    "cost_usd": response.cost_usd,
-                    "finish_reason": response.finish_reason,
-                },
-            )
+            # log_event(
+            #     "llm_generate_success",
+            #     {
+            #         "provider_id": provider.provider_id,
+            #         "model": model,
+            #         "tokens_used": response.tokens_used,
+            #         "cost_usd": response.cost_usd,
+            #         "finish_reason": response.finish_reason,
+            #     },
+            # )
 
             return Success(response)
 
@@ -439,7 +427,7 @@ class LLMProviderManager:
                 },
             )
 
-    @track(operation="llm_generate_stream")
+    # @track(operation="llm_generate_stream")
     async def generate_stream(
         self,
         messages: List[LLMMessage],
@@ -557,15 +545,15 @@ class LLMProviderManager:
                 )
                 await self.cost_tracker.record_cost(cost_record)
 
-            log_event(
-                "llm_stream_complete",
-                {
-                    "provider_id": provider.provider_id,
-                    "model": model,
-                    "chunks_generated": chunk_count,
-                    "total_tokens": total_tokens,
-                },
-            )
+            # log_event(
+            #     "llm_stream_complete",
+            #     {
+            #         "provider_id": provider.provider_id,
+            #         "model": model,
+            #         "chunks_generated": chunk_count,
+            #         "total_tokens": total_tokens,
+            #     },
+            # )
 
         except Exception as e:
             log_event(

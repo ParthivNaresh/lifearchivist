@@ -136,7 +136,7 @@ class LlamaIndexSearchService(SearchService):
         self.doc_tracker = doc_tracker
         self.qdrant_client = qdrant_client
 
-    @track(operation="semantic_search")
+    # @track(operation="semantic_search")
     async def semantic_search(
         self,
         query: str,
@@ -171,17 +171,17 @@ class LlamaIndexSearchService(SearchService):
             )
 
         try:
-            log_event(
-                "semantic_search_started",
-                {
-                    "query_length": len(query),
-                    "query_preview": query[:50],
-                    "top_k": top_k,
-                    "similarity_threshold": similarity_threshold,
-                    "has_filters": bool(filters),
-                    "method": "direct_qdrant",
-                },
-            )
+            # log_event(
+            #     "semantic_search_started",
+            #     {
+            #         "query_length": len(query),
+            #         "query_preview": query[:50],
+            #         "top_k": top_k,
+            #         "similarity_threshold": similarity_threshold,
+            #         "has_filters": bool(filters),
+            #         "method": "direct_qdrant",
+            #     },
+            # )
 
             query_embedding = Settings.embed_model.get_query_embedding(query)
 
@@ -233,17 +233,17 @@ class LlamaIndexSearchService(SearchService):
                 sum(r["score"] for r in results) / len(results) if results else 0
             )
 
-            log_event(
-                "semantic_search_completed",
-                {
-                    "points_retrieved": len(search_results),
-                    "points_above_threshold": len(results),
-                    "points_below_threshold": nodes_below_threshold,
-                    "threshold": similarity_threshold,
-                    "avg_score": avg_score,
-                    "method": "direct_qdrant",
-                },
-            )
+            # log_event(
+            #     "semantic_search_completed",
+            #     {
+            #         "points_retrieved": len(search_results),
+            #         "points_above_threshold": len(results),
+            #         "points_below_threshold": nodes_below_threshold,
+            #         "threshold": similarity_threshold,
+            #         "avg_score": avg_score,
+            #         "method": "direct_qdrant",
+            #     },
+            # )
 
             return Success(results)
 
@@ -269,7 +269,7 @@ class LlamaIndexSearchService(SearchService):
                 )
             )
 
-    @track(operation="keyword_search")
+    # @track(operation="keyword_search")
     async def keyword_search(
         self,
         query: str,
@@ -300,14 +300,14 @@ class LlamaIndexSearchService(SearchService):
                 )
             )
 
-        log_event(
-            "keyword_search_started",
-            {
-                "query": query[:50],
-                "top_k": top_k,
-                "has_filters": bool(filters),
-            },
-        )
+        # log_event(
+        #     "keyword_search_started",
+        #     {
+        #         "query": query[:50],
+        #         "top_k": top_k,
+        #         "has_filters": bool(filters),
+        #     },
+        # )
 
         try:
             # Get BM25 results (document_id, score pairs)
@@ -333,14 +333,14 @@ class LlamaIndexSearchService(SearchService):
             # Apply pagination
             final_results: List[Dict[str, Any]] = enriched_results[:top_k]
 
-            log_event(
-                "keyword_search_completed",
-                {
-                    "bm25_results": len(bm25_results),
-                    "after_filters": len(enriched_results),
-                    "returned": len(final_results),
-                },
-            )
+            # log_event(
+            #     "keyword_search_completed",
+            #     {
+            #         "bm25_results": len(bm25_results),
+            #         "after_filters": len(enriched_results),
+            #         "returned": len(final_results),
+            #     },
+            # )
 
             return Success(final_results)
 
@@ -464,7 +464,7 @@ class LlamaIndexSearchService(SearchService):
 
         return ""
 
-    @track(operation="hybrid_search")
+    # @track(operation="hybrid_search")
     async def hybrid_search(
         self,
         query: str,
@@ -491,16 +491,16 @@ class LlamaIndexSearchService(SearchService):
                 )
             )
 
-        log_event(
-            "hybrid_search_started",
-            {
-                "query": query[:50],
-                "top_k": top_k,
-                "semantic_weight": semantic_weight,
-                "keyword_weight": 1 - semantic_weight,
-                "has_filters": bool(filters),
-            },
-        )
+        # log_event(
+        #     "hybrid_search_started",
+        #     {
+        #         "query": query[:50],
+        #         "top_k": top_k,
+        #         "semantic_weight": semantic_weight,
+        #         "keyword_weight": 1 - semantic_weight,
+        #         "has_filters": bool(filters),
+        #     },
+        # )
 
         try:
             # Get results from both search methods (both return Result now)
@@ -535,16 +535,6 @@ class LlamaIndexSearchService(SearchService):
 
             combined_results.sort(key=lambda x: x["score"], reverse=True)
             final_results: List[Dict[str, Any]] = combined_results[:top_k]
-
-            log_event(
-                "hybrid_search_completed",
-                {
-                    "semantic_results": len(semantic_results),
-                    "keyword_results": len(keyword_results),
-                    "combined_results": len(combined_results),
-                    "final_results": len(final_results),
-                },
-            )
 
             return Success(final_results)
 

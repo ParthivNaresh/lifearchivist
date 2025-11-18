@@ -29,7 +29,7 @@ class ToolRegistry:
         self.enrichment_queue = enrichment_queue
         self.activity_manager = activity_manager
 
-    @track(operation="tool_registration_batch")
+    # @track(operation="tool_registration_batch")
     async def register_all(self):
         """Register all available tools."""
         # LlamaIndex service should already be initialized by MCP server

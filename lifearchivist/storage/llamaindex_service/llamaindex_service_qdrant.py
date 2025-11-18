@@ -118,13 +118,13 @@ class LlamaIndexQdrantService:
                 await self.bm25_service.initialize()
 
                 self._initialized = True
-                log_event(
-                    "llamaindex_service_initialized",
-                    {
-                        "tracker_initialized": True,
-                        "bm25_initialized": True,
-                    },
-                )
+                # log_event(
+                #     "llamaindex_service_initialized",
+                #     {
+                #         "tracker_initialized": True,
+                #         "bm25_initialized": True,
+                #     },
+                # )
             except Exception as e:
                 log_event(
                     "llamaindex_service_init_failed",
@@ -145,17 +145,17 @@ class LlamaIndexQdrantService:
             self._setup_document_service()
 
             # Log final setup status
-            log_event(
-                "llamaindex_setup_complete",
-                {
-                    "has_doc_tracker": self.doc_tracker is not None,
-                    "has_document_service": self.document_service is not None,
-                    "has_metadata_service": self.metadata_service is not None,
-                    "has_search_service": self.search_service is not None,
-                    "tracker_initialized": self._initialized,
-                    "tracker_init_deferred": "Call ensure_initialized() or use context manager",
-                },
-            )
+            # log_event(
+            #     "llamaindex_setup_complete",
+            #     {
+            #         "has_doc_tracker": self.doc_tracker is not None,
+            #         "has_document_service": self.document_service is not None,
+            #         "has_metadata_service": self.metadata_service is not None,
+            #         "has_search_service": self.search_service is not None,
+            #         "tracker_initialized": self._initialized,
+            #         "tracker_init_deferred": "Call ensure_initialized() or use context manager",
+            #     },
+            # )
         except Exception as e:
             log_event(
                 "llamaindex_setup_failed",
@@ -172,14 +172,14 @@ class LlamaIndexQdrantService:
                 doc_tracker=self.doc_tracker,
                 qdrant_client=self.qdrant_client,
             )
-            log_event(
-                "search_service_initialized",
-                {
-                    "has_qdrant_client": True,
-                    "has_bm25": self.bm25_service is not None,
-                    "has_doc_tracker": True,
-                },
-            )
+            # log_event(
+            #     "search_service_initialized",
+            #     {
+            #         "has_qdrant_client": True,
+            #         "has_bm25": self.bm25_service is not None,
+            #         "has_doc_tracker": True,
+            #     },
+            # )
         else:
             self.search_service = None
             log_event(
@@ -199,13 +199,13 @@ class LlamaIndexQdrantService:
                 doc_tracker=self.doc_tracker,
                 qdrant_client=self.qdrant_client,
             )
-            log_event(
-                "metadata_service_initialized",
-                {
-                    "has_qdrant_client": True,
-                    "has_tracker": True,
-                },
-            )
+            # log_event(
+            #     "metadata_service_initialized",
+            #     {
+            #         "has_qdrant_client": True,
+            #         "has_tracker": True,
+            #     },
+            # )
         else:
             self.metadata_service = None
             log_event(
@@ -229,15 +229,15 @@ class LlamaIndexQdrantService:
                     settings=self.settings,
                     bm25_service=self.bm25_service,
                 )
-                log_event(
-                    "document_service_initialized",
-                    {
-                        "has_qdrant_client": True,
-                        "has_tracker": True,
-                        "has_metadata_service": self.metadata_service is not None,
-                        "has_bm25_service": self.bm25_service is not None,
-                    },
-                )
+                # log_event(
+                #     "document_service_initialized",
+                #     {
+                #         "has_qdrant_client": True,
+                #         "has_tracker": True,
+                #         "has_metadata_service": self.metadata_service is not None,
+                #         "has_bm25_service": self.bm25_service is not None,
+                #     },
+                # )
             else:
                 self.document_service = None
                 log_event(
@@ -257,11 +257,7 @@ class LlamaIndexQdrantService:
                 level=logging.ERROR,
             )
 
-    @track(
-        operation="embeddings_llm_setup",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="embeddings_llm_setup")
     def _setup_embeddings_and_llm(self):
         """Configure embeddings and LLM settings."""
         import os
@@ -269,17 +265,17 @@ class LlamaIndexQdrantService:
         # Check if we're in test mode
         is_test_mode = os.environ.get("PYTEST_CURRENT_TEST") is not None
 
-        log_event(
-            "llm_config",
-            {
-                "embedding_model": (
-                    self.settings.embedding_model if not is_test_mode else "mock"
-                ),
-                "llm_model": self.settings.llm_model if not is_test_mode else "mock",
-                "ollama_url": self.settings.ollama_url if not is_test_mode else "mock",
-                "test_mode": is_test_mode,
-            },
-        )
+        # log_event(
+        #     "llm_config",
+        #     {
+        #         "embedding_model": (
+        #             self.settings.embedding_model if not is_test_mode else "mock"
+        #         ),
+        #         "llm_model": self.settings.llm_model if not is_test_mode else "mock",
+        #         "ollama_url": self.settings.ollama_url if not is_test_mode else "mock",
+        #         "test_mode": is_test_mode,
+        #     },
+        # )
 
         if is_test_mode:
             from llama_index.core.embeddings import MockEmbedding
@@ -307,11 +303,7 @@ class LlamaIndexQdrantService:
             separator=StorageConstants.DEFAULT_CHUNK_SEPARATOR,
         )
 
-    @track(
-        operation="qdrant_setup",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="qdrant_setup")
     def _setup_qdrant(self):
         """Setup Qdrant client and collection."""
         try:
@@ -338,13 +330,13 @@ class LlamaIndexQdrantService:
                 )
             else:
                 collection_info = self.qdrant_client.get_collection("lifearchivist")
-                log_event(
-                    "qdrant_collection_exists",
-                    {
-                        "collection": "lifearchivist",
-                        "points_count": collection_info.points_count,
-                    },
-                )
+                # log_event(
+                #     "qdrant_collection_exists",
+                #     {
+                #         "collection": "lifearchivist",
+                #         "points_count": collection_info.points_count,
+                #     },
+                # )
         except Exception as e:
             log_event(
                 "qdrant_setup_failed",
@@ -890,13 +882,13 @@ class LlamaIndexQdrantService:
                     await self.bm25_service.close()
 
                 self._initialized = False
-                log_event(
-                    "llamaindex_service_cleanup",
-                    {
-                        "tracker_closed": True,
-                        "bm25_closed": True,
-                    },
-                )
+                # log_event(
+                #     "llamaindex_service_cleanup",
+                #     {
+                #         "tracker_closed": True,
+                #         "bm25_closed": True,
+                #     },
+                # )
         except Exception as e:
             log_event(
                 "llamaindex_service_cleanup_error",

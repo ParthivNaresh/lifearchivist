@@ -95,13 +95,13 @@ class ProviderManagerFactory:
             health_monitor=health_monitor,
         )
 
-        log_event(
-            "provider_manager_created",
-            {
-                "cost_tracking": enable_cost_tracking,
-                "health_monitoring": enable_health_monitoring,
-            },
-        )
+        # log_event(
+        #     "provider_manager_created",
+        #     {
+        #         "cost_tracking": enable_cost_tracking,
+        #         "health_monitoring": enable_health_monitoring,
+        #     },
+        # )
 
         return manager
 
@@ -131,7 +131,7 @@ class ProviderManagerFactory:
             health_monitor=None,
         )
 
-        log_event("provider_manager_created_minimal")
+        # log_event("provider_manager_created_minimal")
 
         return manager
 
@@ -281,13 +281,13 @@ class ProviderManagerFactory:
                 manager, credential_service, user_id
             )
 
-        log_event(
-            "provider_factory_created_with_providers",
-            {
-                "providers_loaded": len(providers),
-                "user_id": user_id,
-            },
-        )
+        # log_event(
+        #     "provider_factory_created_with_providers",
+        #     {
+        #         "providers_loaded": len(providers),
+        #         "user_id": user_id,
+        #     },
+        # )
 
         return manager
 

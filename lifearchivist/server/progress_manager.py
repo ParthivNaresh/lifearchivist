@@ -113,13 +113,13 @@ class ProgressManager:
             await self.redis_client.ping()
             self._initialized = True
 
-            log_event(
-                "progress_manager_redis_connected",
-                {
-                    "redis_url": self.redis_url,
-                    "max_connections": self.max_connections,
-                },
-            )
+            # log_event(
+            #     "progress_manager_redis_connected",
+            #     {
+            #         "redis_url": self.redis_url,
+            #         "max_connections": self.max_connections,
+            #     },
+            # )
 
         except (ConnectionError, TimeoutError) as e:
             log_event(
@@ -134,7 +134,7 @@ class ProgressManager:
         if self.redis_client:
             try:
                 await self.redis_client.aclose()
-                log_event("progress_manager_redis_closed")
+                # log_event("progress_manager_redis_closed")
             except Exception as e:
                 log_event(
                     "progress_manager_close_error",

@@ -2,7 +2,7 @@ from typing import Any, AsyncGenerator, Mapping, Optional
 
 from ...server.api.routes.conversations.misc_models import EventType, StreamContext
 from ...server.api.routes.shared.exceptions import ServiceUnavailableError
-from ...utils.logx import log_event, track
+from ...utils.logx import log_event
 from ...utils.sse import SSEFormatter
 from ..agent import (
     AgentToolRegistry,
@@ -20,7 +20,6 @@ class GatewayStreamProcessor(StreamProcessor):
     def __init__(self, server: Any):
         self.server = server
         self._validate_services()
-        log_event("gateway_processor_initialized")
 
     def _validate_services(self) -> None:
         if not self.server.service_container:
@@ -34,9 +33,8 @@ class GatewayStreamProcessor(StreamProcessor):
             if not getattr(self.server.service_container, attr, None):
                 raise ServiceUnavailableError(name)
 
-    @track(operation="gateway_process")
+    # @track(operation="gateway_process")
     async def process(self, context: StreamContext) -> AsyncGenerator[str, None]:
-        log_event("gateway_route_started", {"conversation_id": context.conversation_id})
         dsp = DirectStreamProcessor(self.server)
         processing_message_id: Optional[str] = None
         try:
@@ -86,9 +84,9 @@ class GatewayStreamProcessor(StreamProcessor):
             is_simple = classification.complexity.value == "simple"
 
             if is_simple:
-                log_event(
-                    "gateway_route_simple", {"conversation_id": context.conversation_id}
-                )
+                # log_event(
+                #     "gateway_route_simple", {"conversation_id": context.conversation_id}
+                # )
                 await dsp._perform_search(context)
                 yield SSEFormatter.format_event(EventType.SOURCES, context.sources)
                 config = await dsp._get_stream_config(context)
@@ -105,10 +103,10 @@ class GatewayStreamProcessor(StreamProcessor):
                         "completed",
                         content=context.accumulated_text,
                     )
-                log_event(
-                    "gateway_route_completed",
-                    {"conversation_id": context.conversation_id, "path": "simple"},
-                )
+                # log_event(
+                #     "gateway_route_completed",
+                #     {"conversation_id": context.conversation_id, "path": "simple"},
+                # )
                 return
 
             tool_registry = AgentToolRegistry(
@@ -131,10 +129,10 @@ class GatewayStreamProcessor(StreamProcessor):
                     )
                     self.server.service_container.init_agent_orchestrator(tool_registry)
                 orchestrator = self.server.service_container.agent_orchestrator
-                log_event(
-                    "agent_orchestrator_initialized",
-                    {"conversation_id": context.conversation_id},
-                )
+                # log_event(
+                #     "agent_orchestrator_initialized",
+                #     {"conversation_id": context.conversation_id},
+                # )
             except Exception as e:
                 log_event(
                     "agent_orchestrator_init_failed",
@@ -149,9 +147,9 @@ class GatewayStreamProcessor(StreamProcessor):
                 return
 
             accumulated = []
-            log_event(
-                "gateway_route_agent", {"conversation_id": context.conversation_id}
-            )
+            # log_event(
+            #     "gateway_route_agent", {"conversation_id": context.conversation_id}
+            # )
             yield SSEFormatter.format_event(
                 EventType.CONTEXT, {"note": "agent_orchestration_started"}
             )
@@ -160,10 +158,6 @@ class GatewayStreamProcessor(StreamProcessor):
             ):
                 et = ev.type.value if hasattr(ev, "type") else str(ev)
                 if et == "plan_created":
-                    log_event(
-                        "agent_plan_created",
-                        {"conversation_id": context.conversation_id},
-                    )
                     yield SSEFormatter.format_event(
                         EventType.METADATA, {"plan": ev.data}
                     )
@@ -224,10 +218,10 @@ class GatewayStreamProcessor(StreamProcessor):
                     "completed",
                     content=context.accumulated_text,
                 )
-            log_event(
-                "gateway_route_completed",
-                {"conversation_id": context.conversation_id, "path": "agent"},
-            )
+            # log_event(
+            #     "gateway_route_completed",
+            #     {"conversation_id": context.conversation_id, "path": "agent"},
+            # )
 
             async for event in dsp._finalize_response(
                 context,

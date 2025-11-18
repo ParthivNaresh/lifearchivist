@@ -24,7 +24,7 @@ class ComplexityClassifier:
         self.prompt_builder = prompt_builder
         self.model = model
 
-    @track(operation="complexity_classify")
+    # @track(operation="complexity_classify")
     async def classify(
         self, query: str, context: Any | None = None
     ) -> ComplexityClassification:

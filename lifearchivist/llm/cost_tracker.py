@@ -118,12 +118,7 @@ class CostTracker:
         self.redis = redis_client
         self._budgets: Dict[str, Budget] = {}
 
-    @track(
-        operation="cost_tracker_record",
-        include_args=["provider_id", "model", "cost_usd"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="cost_tracker_record")
     async def record_cost(self, record: CostRecord) -> Result[None, str]:
         """
         Record cost for an LLM request.
@@ -162,15 +157,15 @@ class CostTracker:
             # Update aggregated counters
             await self._update_aggregates(record)
 
-            log_event(
-                "cost_recorded",
-                {
-                    "provider_id": record.provider_id,
-                    "model": record.model,
-                    "cost_usd": record.cost_usd,
-                    "tokens": record.prompt_tokens + record.completion_tokens,
-                },
-            )
+            # log_event(
+            #     "cost_recorded",
+            #     {
+            #         "provider_id": record.provider_id,
+            #         "model": record.model,
+            #         "cost_usd": record.cost_usd,
+            #         "tokens": record.prompt_tokens + record.completion_tokens,
+            #     },
+            # )
 
             return Success(None)
 
@@ -258,12 +253,7 @@ class CostTracker:
         )
         await cast(Awaitable[int], self.redis.hincrby(user_key, "total_requests", 1))
 
-    @track(
-        operation="cost_tracker_check_budget",
-        include_args=["user_id"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="cost_tracker_check_budget")
     async def check_budget(
         self,
         user_id: str,

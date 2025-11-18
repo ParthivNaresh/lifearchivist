@@ -1,10 +1,97 @@
 import json
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Union
 
+from ....utils.logx import log_event
+
 if TYPE_CHECKING:
     ToolLike = Union[Dict[str, Any], "BaseAgentTool"]
 else:
     ToolLike = Union[Dict[str, Any], Any]
+
+
+def _json_preview(obj, limit: int = 800) -> str:
+    try:
+        s = json.dumps(obj, ensure_ascii=False, default=str)
+    except Exception:
+        s = str(obj)
+    # only slice strings
+    return s[:limit]
+
+
+def _maybe_parse_json_string(x: Any) -> Any:
+    """If x looks like a JSON string, parse it; otherwise return x unchanged."""
+    if isinstance(x, str):
+        s = x.strip()
+        if (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]")):
+            try:
+                return json.loads(s)
+            except Exception:
+                return x
+    return x
+
+def _approx_json_size(obj: Any) -> int:
+    try:
+        return len(json.dumps(obj, ensure_ascii=False, default=str))
+    except Exception:
+        return len(str(obj))
+
+def _compact_for_synthesis(task_id: str, value: Any, byte_budget: int = 20_000) -> Any:
+    """
+    Keep every task; compact large payloads (esp. extraction output) instead of dropping them.
+    - Parse stringified JSON if present (extractions often arrive as a string).
+    - Normalize top-level arrays to objects.
+    - Clip long lists and long strings; trim provenance lists.
+    """
+    v = value
+
+    # Common case: ResultEnvelope wrapper
+    if isinstance(v, dict) and "value" in v and len(v) == 1:
+        v = v["value"]
+
+    # If tool stashed model output under 'extractions' as a string, parse it
+    if isinstance(v, dict) and "extractions" in v:
+        v = v.copy()
+        v["extractions"] = _maybe_parse_json_string(v.get("extractions"))
+
+    # If we got a top-level array, normalize into expected object shape
+    if isinstance(v, list):
+        v = {"extractions": v, "provenance": []}
+
+    if _approx_json_size(v) <= byte_budget:
+        return v
+
+    # Compact extraction payloads responsibly
+    if isinstance(v, dict) and "extractions" in v:
+        v = v.copy()
+        ex = _maybe_parse_json_string(v.get("extractions"))
+        if isinstance(ex, list):
+            # keep first few items
+            ex = ex[:5]
+            # clip long fields
+            for item in ex:
+                if isinstance(item, dict):
+                    for k, val in list(item.items()):
+                        if isinstance(val, str) and len(val) > 500:
+                            item[k] = val[:500] + "…"
+                        elif isinstance(val, dict):
+                            for rk, rv in list(val.items()):
+                                if isinstance(rv, str) and len(rv) > 300:
+                                    val[rk] = rv[:300] + "…"
+        v["extractions"] = ex
+
+        # trim provenance
+        if "provenance" in v and isinstance(v["provenance"], list):
+            v["provenance"] = v["provenance"][:10]
+
+        if _approx_json_size(v) <= byte_budget:
+            return v
+
+    # Last resort: stringify and clip but NEVER drop the whole task
+    s = str(v)
+    if len(s) > byte_budget:
+        s = s[:byte_budget] + "…"
+    return s
+
 
 
 class PromptBuilder:
@@ -54,93 +141,139 @@ Output only the JSON object, nothing else.
 
     # ------------ Planning ------------
     def build_planning_prompt(
-        self,
-        *,
-        query: str,
-        context: Any,
-        available_tools: Iterable[ToolLike],
-        max_tasks: int = 20,
-        cost_budget_usd: float = 1.0,
-        time_budget_s: int = 300,
+            self,
+            *,
+            query: str,
+            context: Any,
+            available_tools: Iterable[ToolLike],
+            max_tasks: int = 20,
+            cost_budget_usd: float = 1.0,
+            time_budget_s: int = 300,
     ) -> str:
         tools_text = self._tools_as_text(available_tools)
-        history_preview = self._preview(
-            self._maybe_get(context, "recent_messages"), 1200
-        )
+        history_preview = self._preview(self._maybe_get(context, "recent_messages"), 1200)
 
         return f"""You are a planner for a multi-tool agent. Plan a DAG of tasks to answer the user's query.
-
-USER QUERY:
-{query}
-
-RECENT CONVERSATION (preview):
-{history_preview}
-
-AVAILABLE TOOLS:
-{tools_text}
-
-CRITICAL RULES:
-1. ONLY use tools from the AVAILABLE TOOLS list above
-2. Each task MUST have a valid "tool_name" from the list
-3. Do NOT create tasks with empty tool_name ("")
-4. Do NOT invent tools that don't exist
-5. If you can't complete the query with available tools, create a plan with only the tools you have
-
-CONSTRAINTS:
-- Max tasks: {max_tasks}
-- Cost budget: ${cost_budget_usd:.2f}
-- Time budget: {time_budget_s}s
-
-EXAMPLE - Document Search + Extraction:
-{{
-  "tasks": [
+    
+    USER QUERY:
+    {query}
+    
+    RECENT CONVERSATION (preview):
+    {history_preview}
+    
+    AVAILABLE TOOLS:
+    {tools_text}
+    
+    CRITICAL RULES:
+    1) ONLY use tools from the AVAILABLE TOOLS list above.
+    2) Each task MUST have a valid "tool_name" from the list.
+    3) Do NOT invent tools that don't exist; do NOT leave tool_name empty.
+    4) Respect tool contracts:
+       - If a tool states it REQUIRES LLM, set "requires_llm": true on that task.
+       - If a tool does not require LLM, you may set true or false based on need.
+    5) All parameters MUST match the tool's expected input schema.
+    6) All dependencies MUST form a DAG (no cycles).
+    
+    DEPENDENCY BINDING SYNTAX (VERY IMPORTANT):
+    - To pass outputs from an upstream task into a downstream task parameter, use a placeholder:
+        "<from TASK_ID>"
+    - You may optionally limit how many items you take from the upstream result:
+        "<from TASK_ID | top_k=N>"
+    - The placeholder MUST exactly match one of the above forms.
+    - If you use "<from TASK_ID...>", then TASK_ID MUST appear in "depends_on" for that task.
+    - Do NOT use any other templating or variable syntax.
+    
+    TOOL PARAMETER CHEATSHEET (follow exactly):
+    - document_search (LLM-only):
+        - requires_llm: true
+        - parameters:
+            {{
+              "query": string,
+              "search_method": "hybrid" | "semantic" | "keyword" | "metadata",
+              "top_k": integer (1-100),
+              "similarity_threshold": float (0..1)   // optional, recommended
+              "semantic_weight": float (0..1)        // optional, recommended for hybrid
+              "mime_types": [string]?,
+              "themes": [string]?,
+              "date_filter": {{"after": "YYYY-MM-DD"?, "before": "YYYY-MM-DD"?"}}?,
+              "status": string?,
+              "include_metadata": true/false?,
+              "include_text_preview": true/false?,
+              "instructions": string?,               // guidance to the search agent
+              "model": string?                       // optional model hint
+            }}
+    
+    - data_extraction:
+        - requires_llm: true (recommended)
+        - parameters:
+            {{
+              "document_ids": ["<from SEARCH_TASK_ID>" | "<from SEARCH_TASK_ID | top_k=N>", ...]  // usually one placeholder list
+              "fields": [string, ...],
+              "max_total_chars": integer?,      // optional safety cap
+              "max_chunks_per_doc": integer?,   // optional per-doc cap
+              "model": string?                  // optional model hint
+            }}
+    
+    CONSTRAINTS:
+    - Max tasks: {max_tasks}
+    - Cost budget: ${cost_budget_usd:.2f}
+    - Time budget: {time_budget_s}s
+    
+    EXAMPLE - Document Search (LLM) + Extraction:
     {{
-      "task_id": "search_docs",
-      "tool_name": "document_search",
-      "description": "Find relevant documents",
-      "requires_llm": false,
-      "parameters": {{
-        "query": "medical records",
-        "search_method": "hybrid",
-        "top_k": 5
-      }},
-      "depends_on": []
-    }},
-    {{
-      "task_id": "extract_data",
-      "tool_name": "data_extraction",
-      "description": "Extract specific fields from documents",
-      "requires_llm": true,
-      "parameters": {{
-        "document_ids": ["<from search_docs>"],
-        "fields": ["date", "diagnosis"]
-      }},
-      "depends_on": ["search_docs"]
+      "tasks": [
+        {{
+          "task_id": "search_docs",
+          "tool_name": "document_search",
+          "description": "Find relevant blood test documents",
+          "requires_llm": true,
+          "parameters": {{
+            "query": "blood test",
+            "search_method": "hybrid",
+            "top_k": 5,
+            "similarity_threshold": 0.3,
+            "semantic_weight": 0.6,
+            "instructions": "Prefer recent lab reports; exclude appointment reminders."
+          }},
+          "depends_on": []
+        }},
+        {{
+          "task_id": "extract_data",
+          "tool_name": "data_extraction",
+          "description": "Extract test_type, date, results from the retrieved documents",
+          "requires_llm": true,
+          "parameters": {{
+            "document_ids": ["<from search_docs>"],
+            "fields": ["test_type", "date", "results"],
+            "max_total_chars": 200000,
+            "max_chunks_per_doc": 100
+          }},
+          "depends_on": ["search_docs"]
+        }}
+      ],
+      "estimated_time_seconds": 45,
+      "estimated_cost_usd": 0.02,
+      "reasoning": "Search first with LLM-chosen strategy; then extract structured fields with provenance."
     }}
-  ],
-  "estimated_time_seconds": 30,
-  "estimated_cost_usd": 0.0,
-  "reasoning": "Search for documents, then extract structured data"
-}}
-
-OUTPUT FORMAT:
-Return STRICT JSON (no markdown, no prose) matching this schema:
-{{
-  "tasks": [
+    
+    OUTPUT FORMAT:
+    Return STRICT JSON (no markdown, no prose) matching this schema:
     {{
-      "task_id": "unique_id",
-      "tool_name": "MUST be from AVAILABLE TOOLS list",
-      "description": "what this task does",
-      "requires_llm": true/false,
-      "parameters": {{}},
-      "depends_on": ["other_task_ids"]
+      "tasks": [
+        {{
+          "task_id": "unique_id",
+          "tool_name": "MUST be from AVAILABLE TOOLS list",
+          "description": "what this task does",
+          "requires_llm": true/false,
+          "parameters": {{}},
+          "depends_on": ["other_task_ids"]
+        }}
+      ],
+      "estimated_time_seconds": number,
+      "estimated_cost_usd": number,
+      "reasoning": "brief explanation"
     }}
-  ],
-  "estimated_time_seconds": number,
-  "estimated_cost_usd": number,
-  "reasoning": "brief explanation"
-}}
-"""
+    """
 
     # ------------ Task (LLM-assisted tools) ------------
     def build_agent_prompt(self, *, task, tool, context: Dict[str, Any]) -> str:
@@ -184,24 +317,38 @@ INSTRUCTIONS:
     def build_synthesis_prompt(
         self, *, query: str, plan, results: Dict[str, Any]
     ) -> str:
-        plan_reasoning = getattr(plan, "reasoning", "")
-        plan_prev = self._preview(plan_reasoning, 800)
-        results_prev = self._preview(results, 2000)
+        plan_brief = getattr(plan, "reasoning", "") or ""
+        # compact each task payload; never drop entire tasks
+        compacted_results: Dict[str, Any] = {}
+        for tid, payload in (results or {}).items():
+            try:
+                compacted_results[tid] = _compact_for_synthesis(tid, payload)
+            except Exception:
+                compacted_results[tid] = (str(payload)[:20000] + "…")
 
-        return f"""You are synthesizing a final answer for the user.
+        task_results_json = json.dumps(compacted_results, ensure_ascii=False, default=str)
 
-USER QUERY:
-{query}
+        log_event(
+            "synthesis_prompt_compacted",
+            {
+                "task_count": len(results or {}),
+                "included_tasks": list(compacted_results.keys()),
+                "avg_task_size_bytes": int(sum(len(json.dumps(v, ensure_ascii=False, default=str)) for v in compacted_results.values()) / max(1, len(compacted_results))),
+                "prompt_len": len(task_results_json),
+                "prompt_preview": task_results_json[:600],
+            },
+        )
 
-PLAN (brief):
-{plan_prev}
-
-TASK RESULTS (by task_id):
-{results_prev}
-
-Write a clear, concise answer grounded in the results. Use markdown when helpful.
-Do not invent facts. If something is missing, state the limitation.
-"""
+        # build your final prompt text (keep your existing verbiage)
+        return (
+            "You are synthesizing a final answer for the user.\n\n"
+            f"USER QUERY:\n{query}\n\n"
+            "PLAN (brief):\n"
+            f"{plan_brief}\n\n"
+            "TASK RESULTS (by task_id):\n"
+            f"{task_results_json}\n"
+            "\nRespond clearly and concisely. Prefer grounded facts from the task results."
+        )
 
     # ------------ Helpers ------------
     def _tools_as_text(self, tools: Iterable[ToolLike]) -> str:

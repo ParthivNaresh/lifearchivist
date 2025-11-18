@@ -136,13 +136,13 @@ class DirectStreamProcessor(StreamProcessor):
         message = result.unwrap()
         message_id = str(message["id"])
 
-        log_event(
-            "message_processing_started",
-            {
-                "message_id": message_id,
-                "conversation_id": context.conversation_id,
-            },
-        )
+        # log_event(
+        #     "message_processing_started",
+        #     {
+        #         "message_id": message_id,
+        #         "conversation_id": context.conversation_id,
+        #     },
+        # )
 
         return message_id
 
@@ -167,14 +167,14 @@ class DirectStreamProcessor(StreamProcessor):
             content=content,
         )
 
-        log_event(
-            "message_status_broadcasted",
-            {
-                "message_id": message_id,
-                "conversation_id": conversation_id,
-                "status": status,
-            },
-        )
+        # log_event(
+        #     "message_status_broadcasted",
+        #     {
+        #         "message_id": message_id,
+        #         "conversation_id": conversation_id,
+        #         "status": status,
+        #     },
+        # )
 
     async def _finalize_processing_message(self, message_id: str, content: str) -> None:
         """Update processing message with final content and completed status."""
@@ -189,13 +189,13 @@ class DirectStreamProcessor(StreamProcessor):
             logger.warning(f"Failed to finalize processing message: {result.error}")
             return
 
-        log_event(
-            "message_processing_completed",
-            {
-                "message_id": message_id,
-                "content_length": len(content),
-            },
-        )
+        # log_event(
+        #     "message_processing_completed",
+        #     {
+        #         "message_id": message_id,
+        #         "content_length": len(content),
+        #     },
+        # )
 
     async def _mark_message_failed(self, message_id: str) -> None:
         """Mark message as failed."""

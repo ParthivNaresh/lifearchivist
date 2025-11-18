@@ -129,7 +129,7 @@ class ApplicationServer:
             return
 
         try:
-            log_event("application_server_init_start")
+            # log_event("application_server_init_start")
 
             # Phase 1: Initialize core infrastructure
             await self._init_service_container()
@@ -158,13 +158,13 @@ class ApplicationServer:
 
             self._initialized = True
 
-            log_event(
-                "application_server_initialized",
-                {
-                    "websockets_enabled": self.settings.enable_websockets,
-                    "background_tasks_enabled": self.background_tasks is not None,
-                },
-            )
+            # log_event(
+            #     "application_server_initialized",
+            #     {
+            #         "websockets_enabled": self.settings.enable_websockets,
+            #         "background_tasks_enabled": self.background_tasks is not None,
+            #     },
+            # )
 
         except Exception as e:
             log_event(
@@ -206,7 +206,7 @@ class ApplicationServer:
 
     async def cleanup(self):
         """Cleanup all services in reverse initialization order."""
-        log_event("application_server_cleanup_start")
+        # log_event("application_server_cleanup_start")
 
         await self._cleanup_service(
             self.background_tasks,
@@ -267,14 +267,14 @@ class ApplicationServer:
         self.service_container = ServiceContainer(config)
         await self.service_container.initialize()
 
-        log_event(
-            "service_container_ready",
-            {
-                "vault_path": str(self.settings.vault_path),
-                "redis_url": self.settings.redis_url,
-                "qdrant_url": self.settings.qdrant_url,
-            },
-        )
+        # log_event(
+        #     "service_container_ready",
+        #     {
+        #         "vault_path": str(self.settings.vault_path),
+        #         "redis_url": self.settings.redis_url,
+        #         "qdrant_url": self.settings.qdrant_url,
+        #     },
+        # )
 
     async def _run_startup_reconciliation(self):
         """
@@ -336,7 +336,7 @@ class ApplicationServer:
         """Initialize WebSocket broadcaster for conversation updates."""
         try:
             self.websocket_broadcaster = WebSocketBroadcaster()
-            log_event("websocket_broadcaster_initialized")
+            # log_event("websocket_broadcaster_initialized")
         except Exception as e:
             log_event(
                 "websocket_broadcaster_init_failed",
@@ -352,7 +352,7 @@ class ApplicationServer:
             await self.activity_manager.initialize()
             # Link to session manager for WebSocket broadcasting
             self.activity_manager.session_manager = self.session_manager
-            log_event("activity_manager_initialized")
+            # log_event("activity_manager_initialized")
         except Exception as e:
             log_event(
                 "activity_manager_init_failed",
@@ -373,7 +373,7 @@ class ApplicationServer:
                 session_manager=self.session_manager,
             )
             await self.progress_manager.initialize()
-            log_event("progress_manager_initialized")
+            # log_event("progress_manager_initialized")
         except Exception as e:
             log_event(
                 "progress_manager_init_failed",
@@ -387,7 +387,7 @@ class ApplicationServer:
         try:
             self.enrichment_queue = EnrichmentQueue(redis_url=self.settings.redis_url)
             await self.enrichment_queue.initialize()
-            log_event("enrichment_queue_initialized")
+            # log_event("enrichment_queue_initialized")
         except Exception as e:
             log_event(
                 "enrichment_queue_init_failed",
@@ -414,7 +414,7 @@ class ApplicationServer:
                 vault=self.service_container.vault,
             )
             await self.background_tasks.start()
-            log_event("background_tasks_initialized")
+            # log_event("background_tasks_initialized")
         except Exception as e:
             log_event(
                 "background_tasks_init_failed",
@@ -438,7 +438,7 @@ class ApplicationServer:
         await self.tool_registry.register_all()
 
         tool_count = len(self.tool_registry.tools)
-        log_event("tool_registry_initialized", {"tools_registered": tool_count})
+        # log_event("tool_registry_initialized", {"tools_registered": tool_count})
 
     async def _init_agent_orchestrator(self):
         """Initialize agent tool registry and orchestrator."""
@@ -475,10 +475,10 @@ class ApplicationServer:
                 tool_registry=self.agent_tool_registry
             )
 
-            log_event(
-                "agent_orchestrator_initialized",
-                {"agent_tools_registered": self.agent_tool_registry.count()},
-            )
+            # log_event(
+            #     "agent_orchestrator_initialized",
+            #     {"agent_tools_registered": self.agent_tool_registry.count()},
+            # )
         except Exception as e:
             log_event(
                 "agent_orchestrator_init_failed",
@@ -501,7 +501,7 @@ class ApplicationServer:
             self.service_container.init_rag_service(
                 activity_manager=self.activity_manager
             )
-            log_event("rag_service_initialized_with_activity_manager")
+            # log_event("rag_service_initialized_with_activity_manager")
         except Exception as e:
             log_event(
                 "rag_service_init_failed",
@@ -529,15 +529,15 @@ class ApplicationServer:
             # Initialize the service (async)
             await self.folder_watcher.initialize()
 
-            log_event(
-                "folder_watcher_initialized",
-                {
-                    "debounce_seconds": self.settings.folder_watch_debounce_seconds,
-                    "ingestion_concurrency": self.settings.folder_watch_concurrency,
-                    "max_folders": self.settings.folder_watch_max_folders,
-                    "auto_resume": self.settings.folder_watch_auto_resume,
-                },
-            )
+            # log_event(
+            #     "folder_watcher_initialized",
+            #     {
+            #         "debounce_seconds": self.settings.folder_watch_debounce_seconds,
+            #         "ingestion_concurrency": self.settings.folder_watch_concurrency,
+            #         "max_folders": self.settings.folder_watch_max_folders,
+            #         "auto_resume": self.settings.folder_watch_auto_resume,
+            #     },
+            # )
         except Exception as e:
             log_event(
                 "folder_watcher_init_failed",
