@@ -13,7 +13,7 @@ from typing import (
 )
 
 from ...llm import LLMMessage
-from ...utils.logx import log_event, track
+from ...utils.logx import log_event
 from .complexity_classifier import ComplexityClassifier
 from .constants import MAX_JSON_CHARS
 from .exceptions import PlanningError
@@ -23,7 +23,7 @@ from .models.events import AgentEvent, AgentEventType
 from .models.task import AgentTask, ExecutionPlan
 from .plan_validator import PlanValidator
 from .tool_registry import AgentToolRegistry
-from .utils.prompt_builder import PromptBuilder, _json_preview
+from .utils.prompt_builder import PromptBuilder
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
@@ -143,28 +143,25 @@ class AgentOrchestrator:
             )
         else:
             log_event(
-                "orchestrator_execution_completed",
-                {
-                    "conversation_id": context.conversation_id,
-                    "completed_tasks": len(task_results),
-                },
+                "------------------------------------------------ TASK RESULTS ------------------------------------------------"
             )
+            log_event(json.dumps(task_results, indent=2))
 
         if not plan_failed:
             log_event(
-                "orchestrator_synthesis_started",
-                {
-                    "conversation_id": context.conversation_id,
-                    "model": self.synthesis_model,
-                    "temperature": self.synthesis_temperature,
-                },
+                "------------------------------------------------ STARTING ORCHESTRATOR SYNTHESIS ------------------------------------------------"
             )
             yield AgentEvent.synthesis_started()
             try:
-                chunk_count = 0
+                chunks = ""
                 async for chunk in self._synthesize_response(query, plan, task_results):
-                    chunk_count += 1
+                    chunks += chunk
                     yield AgentEvent.response_chunk(chunk)
+
+                log_event(
+                    "------------------------------------------------ FINISHED ORCHESTRATOR SYNTHESIS ------------------------------------------------"
+                )
+                log_event(json.dumps({"Synthesized": chunks}, indent=2))
             except Exception as e:
                 log_event(
                     "orchestrator_synthesis_failed",
@@ -178,39 +175,24 @@ class AgentOrchestrator:
                 self._observe("synthesis_error", error=str(e))
                 yield AgentEvent.error(f"Synthesis failed: {e}")
 
-        log_event(
-            "orchestrator_process_query_completed",
-            {
-                "conversation_id": context.conversation_id,
-                "success": not plan_failed,
-            },
-        )
         yield AgentEvent.complete()
 
     async def _create_execution_plan(
         self, query: str, context: ConversationContext
     ) -> ExecutionPlan:
         log_event(
-            "orchestrator_create_plan_started",
-            {
-                "conversation_id": context.conversation_id,
-                "model": self.planning_model,
-                "temperature": self.planning_temperature,
-                "available_tools": len(self.tools.list_tools()),
-            },
+            "================================================ BEGINNING ORCHESTRATOR PLAN ================================================"
         )
+        log_event("")
 
         prompt = self.prompt_builder.build_planning_prompt(
             query=query, context=context, available_tools=self.tools.list_tools()
         )
 
         log_event(
-            "planning_prompt_building_succeeded",
-            {
-                "conversation_id": context.conversation_id,
-                "content_preview": prompt[:5000],
-            },
+            "------------------------------------------------ PLAN REQUEST PAYLOAD ------------------------------------------------"
         )
+        log_event(prompt)
 
         result = await self.llm.generate(
             messages=[LLMMessage(role="user", content=prompt)],
@@ -232,14 +214,13 @@ class AgentOrchestrator:
 
         response = result.unwrap()
 
+        log_event(
+            "-------------------------------------- PLAN LLM RESPONSE --------------------------------------"
+        )
+
         try:
             plan_data = self._json_loads_strict(response.content)
-            log_event(
-                "plan_json_parse_succeeded",
-                {
-                    "content_preview": response.content[:5000],
-                },
-            )
+            log_event(json.dumps(plan_data, indent=4))
         except Exception as e:
             log_event(
                 "orchestrator_json_parse_failed",
@@ -303,19 +284,20 @@ class AgentOrchestrator:
         """
         Streams final answer text (already chunked by provider).
         """
+        log_event(
+            "================================================  STRUCTURED EXTRACTION  ================================================"
+        )
+        log_event("")
+
         prompt = self.prompt_builder.build_synthesis_prompt(
             query=query, plan=plan, results=task_results
         )
+
         log_event(
-            "orchestrator_synthesis_input",
-            {
-                "prompt_len": len(prompt),
-                "prompt_snippet": _json_preview(prompt,2000),
-                "task_keys_present": [k for k in ("search_docs", "extract_data") if k in prompt],
-                "model": self.synthesis_model,
-                "temperature": self.synthesis_temperature,
-            },
+            "-------------------------------------- REQUEST PAYLOAD --------------------------------------"
         )
+        log_event(prompt)
+
         async for chunk in self.llm.generate_stream(
             messages=[LLMMessage(role="user", content=prompt)],
             model=self.synthesis_model,

@@ -1,11 +1,14 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from ...utils.logx import log_event, track
+from ...llm.agent.tools.search.document_search_tool import DocumentSearchTool
+from ...llm.agent.tools.structured_extraction.structured_extraction import (
+    StructuredExtractionTool,
+)
+from ...llm.agent.tools.text_extraction.text_extraction import TextExtractionTool
+from ...utils.logx import log_event
 from .exceptions import ToolExecutionError
 from .tools.base import BaseAgentTool
-from .tools.document_search_tool import DocumentSearchTool
-from .tools.extraction_tool import DataExtractionTool
 
 if TYPE_CHECKING:
     from storage.document_service import LlamaIndexDocumentService
@@ -99,8 +102,18 @@ class AgentToolRegistry:
         if self.document_service:
             tool_definitions.append(
                 {
-                    "name": "DataExtractionTool",
-                    "class": DataExtractionTool,
+                    "name": "StructuredExtractionTool",
+                    "class": StructuredExtractionTool,
+                    "dependencies": ["document_service"],
+                    "kwargs": {
+                        "document_service": self.document_service,
+                    },
+                }
+            )
+            tool_definitions.append(
+                {
+                    "name": "TextExtractionTool",
+                    "class": TextExtractionTool,
                     "dependencies": ["document_service"],
                     "kwargs": {
                         "document_service": self.document_service,

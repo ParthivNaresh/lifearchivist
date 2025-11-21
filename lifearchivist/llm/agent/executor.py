@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from dataclasses import dataclass, field
 from typing import (
     Any,
     AsyncGenerator,
@@ -9,7 +8,6 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Set,
     cast,
 )
 
@@ -21,27 +19,8 @@ from .models import (
     ExecutionPlan,
     ResultEnvelope,
 )
+from .models.plan import _PlanState
 from .models.task import AgentTask
-
-
-@dataclass(slots=True)
-class _PlanState:
-    # Terminal states
-    completed: Set[str] = field(default_factory=set)
-    failed: Set[str] = field(default_factory=set)
-    skipped: Set[str] = field(default_factory=set)
-
-    # Results by task_id
-    results: Dict[str, Any] = field(default_factory=dict)
-
-    # Running bookkeeping
-    running: Dict[str, asyncio.Task[ResultEnvelope]] = field(
-        default_factory=dict
-    )  # task_id -> task
-    running_per_tool: Dict[str, int] = field(default_factory=dict)  # tool_name -> count
-
-    # Control flags
-    terminated: bool = False  # set when fail_fast triggers
 
 
 class TaskExecutor:

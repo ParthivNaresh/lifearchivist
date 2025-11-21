@@ -31,7 +31,7 @@ from lifearchivist.utils.result import (
     fail,
 )
 
-from ...utils.logx import log_event, track
+from ...utils.logx import log_event
 from ..constants import (
     NOT_AVAILABLE_QDRANT_CLIENT,
     NOT_INITIALIZED_DOCUMENT_SERVICE,
@@ -329,7 +329,7 @@ class LlamaIndexQdrantService:
                     {"collection": "lifearchivist"},
                 )
             else:
-                collection_info = self.qdrant_client.get_collection("lifearchivist")
+                _ = self.qdrant_client.get_collection("lifearchivist")
                 # log_event(
                 #     "qdrant_collection_exists",
                 #     {

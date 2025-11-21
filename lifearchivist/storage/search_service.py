@@ -19,7 +19,7 @@ from lifearchivist.utils.result import (
     fail,
 )
 
-from ..utils.logx import log_event, track
+from ..utils.logx import log_event
 
 
 class SearchService(ABC):
@@ -194,13 +194,10 @@ class LlamaIndexSearchService(SearchService):
             )
 
             results = []
-            nodes_below_threshold = 0
-
             for point in search_results:
                 score = float(point.score)
 
                 if score < similarity_threshold:
-                    nodes_below_threshold += 1
                     continue
 
                 payload = point.payload or {}
@@ -228,10 +225,6 @@ class LlamaIndexSearchService(SearchService):
 
                 if len(results) >= top_k:
                     break
-
-            avg_score = (
-                sum(r["score"] for r in results) / len(results) if results else 0
-            )
 
             # log_event(
             #     "semantic_search_completed",

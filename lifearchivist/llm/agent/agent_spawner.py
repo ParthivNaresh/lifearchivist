@@ -2,15 +2,14 @@ import asyncio
 import json
 import logging
 import random
-import re
 import time
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any, Iterable, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Iterable, Optional
 
 from pydantic import BaseModel
 
-from ..resolver import resolve_params
 from ...utils.logx import log_event, track
+from ..resolver import resolve_params
 from .exceptions import ToolExecutionError
 from .models import (  # adjust to your package layout
     AgentTask,
@@ -18,37 +17,19 @@ from .models import (  # adjust to your package layout
     ResultEnvelope,
 )
 from .tool_registry import AgentToolRegistry
+from .types import DEFAULT_RETRIABLE
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
 
-from .utils.prompt_builder import PromptBuilder, _json_preview
-
-_PLACEHOLDER_PATTERN = re.compile(r"<from\s+[\w\-\.:/]+")
-
-
-def _approx_size(obj: Any) -> int:
-    """Best-effort, cheap size heuristic in bytes."""
-    try:
-        return len(repr(obj).encode("utf-8"))
-    except Exception:
-        return 0
-
-
-def _safe_preview(value: Any, max_chars: int = 1000) -> str:
-    try:
-        s = repr(value)
-    except Exception:
-        s = "<unrepr>"
-    if len(s) > max_chars:
-        return s[:max_chars] + "…"
-    return s
-
-
-DEFAULT_RETRIABLE: Tuple[type[BaseException], ...] = (
-    asyncio.TimeoutError,
-    ConnectionError,
+from .utils.parsing import (
+    _PLACEHOLDER_PATTERN,
+    _approx_size,
+    _json_preview,
+    _safe_preview,
+    sanitize_tool_output,
 )
+from .utils.prompt_builder import PromptBuilder
 
 
 @asynccontextmanager
@@ -146,18 +127,7 @@ class AgentSpawner:
             )
 
         task_ctx = self._build_task_context(task, previous_results, context)
-        log_event(
-            "spawner_task_context_built",
-            {
-                "conversation_id": context.conversation_id,
-                "task_id": task.task_id,
-                "tool_name": task.tool_name,
-                "depends_on_count": len(task.depends_on),
-                "dependent_results_count": len(task_ctx.get("dependent_results", {})),
-                "dependent_bytes_estimate": int(task_ctx.get("dependent_bytes_estimate", 0)),
-                "history_count": len(task_ctx.get("conversation_history", [])),
-            },
-        )
+
         tool_requires = tool.requires_llm  # True for document_search
         task_requires = task.requires_llm  # may be None/True/False
 
@@ -175,23 +145,14 @@ class AgentSpawner:
 
         while True:
             attempts += 1
-            log_event(
-                "spawner_attempt_started",
-                {
-                    "conversation_id": context.conversation_id,
-                    "task_id": task.task_id,
-                    "attempt": attempts,
-                    "max_retries": self.max_retries,
-                },
-            )
 
             try:
                 async with _maybe_timeout(self.task_timeout_s):
                     try:
                         resolved_params = resolve_params(
                             task.parameters,
-                            previous_results,          # upstream task_id -> result payload
-                            task.depends_on or [],     # enforce dependency visibility
+                            previous_results,  # upstream task_id -> result payload
+                            task.depends_on or [],  # enforce dependency visibility
                         )
                     except Exception as e:
                         # Treat as non-retriable: bad plan wiring / missing deps should fail fast
@@ -233,16 +194,6 @@ class AgentSpawner:
                         )
                         raise ValueError(msg)
 
-                    log_event(
-                        "spawner_params_resolved",
-                        {
-                            "conversation_id": context.conversation_id,
-                            "task_id": task.task_id,
-                            "tool_name": task.tool_name,
-                            "resolved_params_preview": _json_preview(params_str, 1500),
-                        },
-                    )
-
                     model = getattr(tool, "input_model", None)
                     if model is None:
                         raise ToolExecutionError(
@@ -259,15 +210,15 @@ class AgentSpawner:
                     )
 
                     log_event(
-                        "spawner_task_value_summary",
-                        {
-                            "conversation_id": context.conversation_id,
-                            "task_id": task.task_id,
-                            "tool_name": task.tool_name,
-                            "value_type": type(value).__name__,
-                            "approx_bytes": _approx_size(value),
-                            "value_preview": _json_preview(value, 1000),
-                        },
+                        "spawner_task_value_summary_pre_sanitized",
+                        {"value": value},
+                    )
+
+                    value = sanitize_tool_output(value)
+
+                    log_event(
+                        "spawner_task_value_summary_post_sanitized",
+                        {"value": value},
                     )
 
                 duration_ms = (time.perf_counter_ns() - start_ns) // 1_000_000
@@ -409,19 +360,7 @@ class AgentSpawner:
             prompt = self.prompt_builder.build_agent_prompt(
                 task=task, tool=tool, context=task_ctx
             )
-            log_event(
-                "spawner_llm_prompt_built",
-                {
-                    "task_id": task.task_id,
-                    "tool_name": task.tool_name,
-                    "prompt_len": len(prompt),
-                    "prompt_preview": prompt[:1000],
-                    "param_model": type(typed_params).__name__,
-                    "param_keys": list(typed_params.model_dump().keys())[:20]
-                    if hasattr(typed_params, "model_dump")
-                    else None,
-                },
-            )
+
             return await tool.execute_with_llm(
                 llm_provider=self.llm,
                 prompt=prompt,
@@ -456,6 +395,15 @@ class AgentSpawner:
         # Include dependent results (soft size cap: warn when exceeded)
         deps: dict[str, Any] = {}
         total_bytes = 0
+        log_event(
+            "================================= BUILD TASK CONTEXT ================================="
+        )
+        log_event(json.dumps({"Tool Name": task.tool_name}, indent=2))
+        log_event(json.dumps({"Depends On": task.depends_on}, indent=2))
+        log_event(json.dumps({"Previous Resultd": previous_results}, indent=2))
+        log_event(
+            "------------------------------------------------------------------------"
+        )
         for dep_id in task.depends_on:
             if dep_id in previous_results:
                 val = previous_results[dep_id]

@@ -95,20 +95,6 @@ class ActivityManager:
             await self.redis_client.ping()
 
             self._initialized = True
-
-            # Get current event count
-            client = self._client()
-            event_count = await cast(Awaitable[int], client.llen(self.EVENTS_KEY))
-
-            # log_event(
-            #     "activity_manager_initialized",
-            #     {
-            #         "redis_url": self.redis_url,
-            #         "existing_events": event_count,
-            #         "max_events": self.MAX_EVENTS,
-            #     },
-            # )
-
         except Exception as e:
             log_event(
                 "activity_manager_init_failed",

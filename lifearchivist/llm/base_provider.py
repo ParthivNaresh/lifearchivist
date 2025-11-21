@@ -9,7 +9,7 @@ import asyncio
 import json
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -67,6 +67,22 @@ class LLMMessage:
             raise ValueError(
                 f"Invalid role '{self.role}'. Must be one of: {valid_roles}"
             )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to a plain dict, ensuring JSON-serializable fields."""
+        d = asdict(self)
+        # Defensive cleanup: ensure metadata is JSON-safe
+        if self.metadata is not None:
+            try:
+                json.dumps(self.metadata)
+            except TypeError:
+                # Fall back to string representation for non-serializable values
+                d["metadata"] = {k: str(v) for k, v in self.metadata.items()}
+        return d
+
+    def to_json(self, **kwargs) -> str:
+        """Return a JSON string representation."""
+        return json.dumps(self.to_dict(), **kwargs)
 
 
 @dataclass

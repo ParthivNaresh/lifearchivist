@@ -342,7 +342,7 @@ class ServiceContainer:
             )
 
             # Test connection by getting collections (synchronous HTTP call)
-            collections = self.qdrant_client.get_collections()
+            _ = self.qdrant_client.get_collections()
 
             # log_event(
             #     "qdrant_initialized",
@@ -385,8 +385,8 @@ class ServiceContainer:
 
             # Test connection
             async with self.db_pool.acquire() as conn:
-                version = await conn.fetchval("SELECT version()")
-                pool_size = self.db_pool.get_size()
+                _ = await conn.fetchval("SELECT version()")
+                _ = self.db_pool.get_size()
 
                 # log_event(
                 #     "database_initialized",
@@ -435,11 +435,6 @@ class ServiceContainer:
         try:
             self.doc_tracker = RedisDocumentTracker(redis_url=self.config.redis_url)
             await self.doc_tracker.initialize()
-
-            doc_count = await self.doc_tracker.get_document_count()
-
-            # log_event("doc_tracker_initialized", {"document_count": doc_count})
-
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize document tracker: {str(e)}"
@@ -454,11 +449,6 @@ class ServiceContainer:
                 remove_stop_words=True,
             )
             await self.bm25_service.initialize()
-
-            doc_count = self.bm25_service.get_document_count()
-
-            # log_event("bm25_initialized", {"document_count": doc_count})
-
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize BM25 service: {str(e)}"
@@ -483,16 +473,6 @@ class ServiceContainer:
                     "LlamaIndex service failed to construct"
                 )
             await li.ensure_initialized()
-
-            # Get document count for logging
-            count_result = await li.get_document_count()
-            if count_result.is_success() and hasattr(count_result, "value"):
-                doc_count = count_result.value
-            else:
-                doc_count = 0
-
-            # log_event("llamaindex_initialized", {"document_count": doc_count})
-
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize LlamaIndex service: {str(e)}"
@@ -583,20 +563,6 @@ class ServiceContainer:
                     enable_health_monitoring=True,
                 )
             )
-
-            provider_count = self.llm_provider_manager.registry.count()
-            default_provider = self.llm_provider_manager.registry.get_default_id()
-
-            # log_event(
-            #     "llm_provider_manager_initialized",
-            #     dict(
-            #         providers_loaded=provider_count,
-            #         default_provider=default_provider,
-            #         cost_tracking=True,
-            #         health_monitoring=True,
-            #     ),
-            # )
-
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize LLM provider manager: {str(e)}"
@@ -693,7 +659,7 @@ class ServiceContainer:
             )
 
             per_tool_limits = {
-                "data_extraction": 8,
+                "structured_extraction": 8,
             }
 
             from typing import Any, Mapping

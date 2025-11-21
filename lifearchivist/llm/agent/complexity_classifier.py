@@ -3,7 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from ...llm import LLMMessage
-from ...utils.logx import log_event, track
+from ...utils.logx import log_event
 from .models.query import ComplexityClassification, QueryComplexity
 
 if TYPE_CHECKING:

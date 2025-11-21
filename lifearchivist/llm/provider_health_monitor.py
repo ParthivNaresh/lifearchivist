@@ -16,7 +16,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional, cast
 
-from ..utils.logx import log_event, track
+from ..utils.logx import log_event
 from .base_provider import BaseLLMProvider
 from .provider_registry import ProviderRegistry
 
@@ -169,12 +169,12 @@ class ProviderHealthMonitor:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Log summary
-        healthy = sum(
+        _ = sum(
             1
             for r in results
             if isinstance(r, HealthCheck) and r.status == HealthStatus.HEALTHY
         )
-        unhealthy = sum(
+        _ = sum(
             1
             for r in results
             if isinstance(r, HealthCheck) and r.status == HealthStatus.UNHEALTHY

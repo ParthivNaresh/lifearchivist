@@ -1,127 +1,28 @@
 import json
-from dataclasses import dataclass
-from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel
 
-from ...llm_io import _unwrap_result_or_raise, _parse_json_maybe, _response_text
-from ....utils.result import Result
-from ... import LLMMessage, LLMResponse
-from ....utils.logx import log_event
-from ..exceptions import ToolExecutionError
-from .base import BaseAgentTool
+from .....llm import LLMMessage, LLMResponse
+from .....llm.agent.exceptions import ToolExecutionError
+from .....llm.agent.tools.base import BaseAgentTool
+from .....llm.agent.tools.search.models import (
+    DocumentSearchParams,
+    SearchMethod,
+    SearchMetrics,
+)
+from .....llm.agent.utils.parsing import (
+    _parse_json_maybe,
+    _response_text,
+    _unwrap_result_or_raise,
+)
+from .....utils.logx import log_event
+from .....utils.result import Result
+from ...utils.prompt_builder import _build_document_search_system_message
 
 if TYPE_CHECKING:
     from storage.metadata_service import MetadataService
     from storage.search_service import SearchService
-
-
-class SearchMethod(str, Enum):
-    SEMANTIC = "semantic"
-    KEYWORD = "keyword"
-    HYBRID = "hybrid"
-    METADATA = "metadata"
-
-
-class DateFilter(BaseModel):
-    after: Optional[str] = Field(None, description="ISO8601 date string (YYYY-MM-DD)")
-    before: Optional[str] = Field(None, description="ISO8601 date string (YYYY-MM-DD)")
-
-
-class DocumentSearchParams(BaseModel):
-    query: str = Field(
-        ...,
-        min_length=1,
-        max_length=1000,
-        description="Natural language search query or keywords",
-    )
-
-    search_method: SearchMethod = Field(
-        SearchMethod.HYBRID,
-        description="Search method: semantic (vector), keyword (BM25), hybrid (both), or metadata (filters only)",
-    )
-
-    top_k: int = Field(
-        10,
-        ge=1,
-        le=100,
-        description="Maximum number of documents to return",
-    )
-
-    similarity_threshold: float = Field(
-        0.5,
-        ge=0.0,
-        le=1.0,
-        description="Minimum similarity score for semantic/hybrid search (0-1)",
-    )
-
-    semantic_weight: float = Field(
-        0.6,
-        ge=0.0,
-        le=1.0,
-        description="Weight for semantic search in hybrid mode (0-1, higher = more semantic)",
-    )
-
-    mime_types: Optional[List[str]] = Field(
-        None,
-        description="Filter by document types (e.g., ['application/pdf', 'text/plain'])",
-    )
-
-    themes: Optional[List[str]] = Field(
-        None,
-        description="Filter by document themes/categories",
-    )
-
-    date_filter: Optional[DateFilter] = Field(
-        None,
-        description="Filter by upload date range",
-    )
-
-    status: Optional[str] = Field(
-        None,
-        description="Filter by document status (e.g., 'indexed', 'processing')",
-    )
-
-    include_metadata: bool = Field(
-        True,
-        description="Include full document metadata in results",
-    )
-
-    include_text_preview: bool = Field(
-        True,
-        description="Include text preview/snippet in results",
-    )
-
-    allow_query_expansion: bool = True
-    allow_filter_synthesis: bool = True
-    allow_rerank: bool = True
-    rerank_top_k: int = 50
-    instructions: Optional[str] = None
-    model: Optional[str] = None
-
-    @model_validator(mode="after")
-    def _validate_search_params(self) -> "DocumentSearchParams":
-        if self.search_method == SearchMethod.METADATA and not any(
-            [
-                self.mime_types,
-                self.themes,
-                self.date_filter,
-                self.status,
-            ]
-        ):
-            raise ValueError(
-                "Metadata search requires at least one filter (mime_types, themes, date_filter, or status)"
-            )
-        return self
-
-
-@dataclass(slots=True)
-class SearchMetrics:
-    documents_found: int = 0
-    search_method_used: str = ""
-    avg_score: float = 0.0
-    filters_applied: int = 0
 
 
 class DocumentSearchTool(BaseAgentTool):
@@ -207,20 +108,6 @@ class DocumentSearchTool(BaseAgentTool):
                 },
             }
 
-            try:
-                ids_preview = [d.get("document_id") for d in processed_documents[:10]]
-                log_event(
-                    "document_search_result_preview",
-                    {
-                        "returned": len(processed_documents),
-                        "ids_preview": ids_preview,
-                        "search_method": metrics.search_method_used,
-                        "avg_score": metrics.avg_score,
-                    },
-                )
-            except Exception:
-                pass
-
             return out
 
         except Exception as e:
@@ -235,7 +122,9 @@ class DocumentSearchTool(BaseAgentTool):
             )
             raise ToolExecutionError(f"Document search failed: {str(e)}") from e
 
-    async def execute_with_llm(self, *, llm_provider, prompt: str, params: BaseModel, context: Dict[str, Any]) -> Any:
+    async def execute_with_llm(
+        self, *, llm_provider, prompt: str, params: BaseModel, context: Dict[str, Any]
+    ) -> Any:
         self._assert_ready_llm_friendly(params.search_method)
         p = DocumentSearchParams.model_validate(params.model_dump())
 
@@ -253,96 +142,217 @@ class DocumentSearchTool(BaseAgentTool):
                 "similarity_threshold": getattr(p, "similarity_threshold", 0.5),
                 "rerank_top_k": p.rerank_top_k,
             },
-            "user_filters_present": bool(p.mime_types or p.themes or p.date_filter or p.status),
+            "user_filters_present": bool(
+                p.mime_types or p.themes or p.date_filter or p.status
+            ),
         }
 
-        system = LLMMessage(
-            role="system",
-            content=(
-                "You are a retrieval strategist. "
-                "Return ONLY compact JSON with keys: "
-                "method ('semantic'|'keyword'|'hybrid'|'metadata'), "
-                "query, filters (optional), top_k, semantic_weight, similarity_threshold, rerank_top_k."
+        """
+        sample strategy_request
+        {
+            "task_description": "Search for blood test documents using a hybrid method.", 
+            "original_query": "blood test", 
+            "instructions": "Include only documents related to blood tests and exclude any non-relevant files.", 
+            "allow_query_expansion": true, 
+            "allow_filter_synthesis": true, 
+            "defaults": {
+                "search_method": "hybrid", 
+                "top_k": 10, 
+                "semantic_weight": 0.5, 
+                "similarity_threshold": 0.7, 
+                "rerank_top_k": 50
+            }, 
+            "user_filters_present": false
+        }
+        """
+        # TODO: MOVE INTO MAPPING SYSTEM IN PROMPT BUILDER
+        system_content = _build_document_search_system_message()
+
+        messages: List[LLMMessage] = [
+            LLMMessage(
+                role="system",
+                content=system_content,
             ),
-        )
-        user = LLMMessage(
-            role="user",
-            content=json.dumps(strategy_request, ensure_ascii=False),
-            metadata={"payload": strategy_request},
-        )
+            LLMMessage(
+                role="user",
+                content=json.dumps(strategy_request, ensure_ascii=False),
+                metadata={"payload": strategy_request},
+            ),
+        ]
+
         model = p.model or "qwen2.5:7b"
+
+        log_event(
+            "-------------------------------------- REQUEST PAYLOAD FOR DOCUMENT SEARCH --------------------------------------"
+        )
+        log_event(json.dumps(strategy_request, indent=4))
 
         try:
             result: Result[LLMResponse, str] = await llm_provider.generate(
-                messages=[system, user],
+                messages=messages,
                 model=model,
                 temperature=0.0,
                 max_tokens=300,
             )
         except Exception as e:
-            raise ToolExecutionError(f"{self.name}: LLM generate raised {type(e).__name__}: {e}") from e
+            raise ToolExecutionError(
+                f"{self.name}: LLM generate raised {type(e).__name__}: {e}"
+            ) from e
 
         try:
             resp = _unwrap_result_or_raise(result)
             raw = _response_text(resp)
             strategy = _parse_json_maybe(raw) or {}
         except Exception as e:
-            log_event("docsearch_llm_strategy_parse_failed", {"error": str(e), "preview": raw[:400] if isinstance(raw, str) else None}, level=30)
+            log_event(
+                "docsearch_llm_strategy_parse_failed",
+                {
+                    "error": str(e),
+                    "preview": raw[:400] if isinstance(raw, str) else None,
+                },
+                level=30,
+            )
             strategy = {}
+        """
+        sample strategy
+        {
+            "method": "hybrid",
+            "query": "blood test",
+            "top_k": 10,
+            "semantic_weight": 0.5,
+            "similarity_threshold": 0.7,
+            "rerank_top_k": 50
+        }
+        """
+        log_event(
+            "-------------------------------------- PARSED LLM RESPONSE --------------------------------------"
+        )
+        log_event(json.dumps(strategy, indent=4))
 
         # 2) Merge strategy into params (fallback to typed defaults)
         method = strategy.get("method", p.search_method.value)
-        p2 = p.model_copy(update={
-            "search_method": SearchMethod(method),
-            "query": strategy.get("query", p.query),
-            "top_k": int(strategy.get("top_k", p.top_k)),
-            "semantic_weight": float(strategy.get("semantic_weight", getattr(p, "semantic_weight", 0.6))),
-            "similarity_threshold": float(strategy.get("similarity_threshold", getattr(p, "similarity_threshold", 0.5))),
-        })
+        p2 = p.model_copy(
+            update={
+                "search_method": SearchMethod(method),
+                "query": strategy.get("query", p.query),
+                "top_k": int(strategy.get("top_k", p.top_k)),
+                "semantic_weight": float(
+                    strategy.get("semantic_weight", getattr(p, "semantic_weight", 0.6))
+                ),
+                "similarity_threshold": float(
+                    strategy.get(
+                        "similarity_threshold", getattr(p, "similarity_threshold", 0.5)
+                    )
+                ),
+            }
+        )
 
         # 3) Run the existing typed path (this keeps one code path for the actual search)
         self._assert_ready_llm_friendly(p2.search_method)
         raw_results = await self.execute_typed(params=p2, context=context)
 
-        if p.allow_rerank and strategy.get("rerank_top_k", p.rerank_top_k) > 0 and raw_results.get("documents"):
+        if (
+            p.allow_rerank
+            and strategy.get("rerank_top_k", p.rerank_top_k) > 0
+            and raw_results.get("documents")
+        ):
             k = int(strategy.get("rerank_top_k", p.rerank_top_k))
             candidates = raw_results["documents"][:k]
             shallow = [
                 {
                     "document_id": d["document_id"],
                     "title": d.get("title"),
-                    "score": d.get("final_score") or d.get("semantic_score") or d.get("keyword_score"),
-                    "preview": (d.get("text_preview") or "")[:320],
-                    "metadata": {key: d.get(key) for key in ("mime_type", "theme", "status", "uploaded_at") if key in d},
+                    "score": d.get("final_score")
+                    or d.get("semantic_score")
+                    or d.get("keyword_score"),
+                    "preview": (d.get("text_preview") or "")[:5000],
+                    "metadata": {
+                        key: d.get(key)
+                        for key in ("mime_type", "theme", "status", "uploaded_at")
+                        if key in d
+                    },
                 }
                 for d in candidates
             ]
-            rerank_sys = LLMMessage(role="system", content="Re-rank the documents for the given task. Return ONLY a JSON list of document_id in best-first order.")
-            rerank_user = LLMMessage(role="user", content=json.dumps({
-                "task": context.get("task_description"),
-                "query": p2.query,
-                "docs": shallow,
-            }, ensure_ascii=False))
+            rerank_sys = LLMMessage(
+                role="system",
+                content="Re-rank the documents for the given task. Return ONLY a JSON \
+                list of document_id in best-first order.",
+            )
+            """
+            sample rerank_user
+            {
+                "task": "Search for blood test documents using a hybrid method.",
+                "query": "blood test",
+                "docs": [
+                    {
+                        "document_id": "ategzyx75timi3q8s2u",
+                        "title": null,
+                        "score": 0.43257308,
+                        "preview": "Name: ... Your Value Standard Range\\nCholesterol \\nStandard21...",
+                        "metadata": {}
+                    },
+                    {
+                        "document_id": "g6drgbh6ppumi3q8s2u", 
+                        "title": null,
+                        ...
+                    },
+                    ...
+                ]
+            }
+            """
+            rerank_user = LLMMessage(
+                role="user",
+                content=json.dumps(
+                    {
+                        "task": context.get("task_description"),
+                        "query": p2.query,
+                        "docs": shallow,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
             try:
-                r2 = await llm_provider.generate(messages=[rerank_sys, rerank_user], model=model, temperature=0.0, max_tokens=400)
+                log_event(
+                    "search_llm_rerank_request",
+                    {
+                        "system": rerank_sys,
+                        "user": rerank_user,
+                    },
+                )
+                r2 = await llm_provider.generate(
+                    messages=[rerank_sys, rerank_user],
+                    model=model,
+                    temperature=0.0,
+                    max_tokens=400,
+                )
                 r2_resp = _unwrap_result_or_raise(r2)
                 r2_text = _response_text(r2_resp)
+
                 order_ids = _parse_json_maybe(r2_text) or []
+                log_event(
+                    "search_llm_rerank_response",
+                    {
+                        "response_preview": order_ids,
+                    },
+                )
                 id2doc = {d["document_id"]: d for d in candidates}
                 seen = set()
                 reranked = []
                 for _id in order_ids:
                     if _id in id2doc and _id not in seen:
-                        reranked.append(id2doc[_id]); seen.add(_id)
+                        reranked.append(id2doc[_id])
+                        seen.add(_id)
                 for d in candidates:
                     if d["document_id"] not in seen:
                         reranked.append(d)
-                raw_results["documents"] = reranked + raw_results["documents"][len(candidates):]
+                raw_results["documents"] = (
+                    reranked + raw_results["documents"][len(candidates) :]
+                )
                 raw_results.setdefault("metrics", {})["post_reranked"] = True
             except Exception as e:
                 log_event("docsearch_llm_rerank_failed", {"error": str(e)}, level=30)
 
-        # 5) Trace what happened
         raw_results.setdefault("metrics", {})["strategy"] = {
             "model": model,
             "method": p2.search_method.value,
@@ -352,6 +362,37 @@ class DocumentSearchTool(BaseAgentTool):
         # Optional: keep a tiny preview of the strategy raw text for observability
         if isinstance(locals().get("raw"), str):
             raw_results["metrics"]["llm_strategy_preview"] = raw[:160]
+
+        """
+        sample raw_results
+        [
+            {
+                "document_id": "ategzyx75timi3q8s2u", 
+                "score": 0.3477730664466884, 
+                "search_type": "hybrid", 
+                "metadata": {
+                    "document_id": "ategzyx75timi3q8s2u", 
+                    "title": "RanaParthivAugust21lipid.pdf", 
+                    "mime_type": "application/pdf", 
+                    "status": "ready", 
+                    "uploaded_date": "2025-11-17", 
+                    "file_hash_short": "772375b0", 
+                    "_node_content": \"{
+                        \"id_\": \"3056436e-500d-4f52-8af4-6e8637eff41f\", 
+                        \"embedding\": [-0.006828480400145054, ...]
+                    ...
+                    }
+                ...
+            },
+            ...
+        """
+        log_event(
+            "search_llm_success_response",
+            {
+                "keys": raw_results.keys(),
+                "raw_results": raw_results,
+            },
+        )
 
         return raw_results
 
@@ -504,7 +545,12 @@ class DocumentSearchTool(BaseAgentTool):
                 result["metadata"] = doc.get("metadata", {})
 
             if params.include_text_preview:
-                raw_text = doc.get("text") or doc.get("text_preview") or doc.get("snippet") or ""
+                raw_text = (
+                    doc.get("text")
+                    or doc.get("text_preview")
+                    or doc.get("snippet")
+                    or ""
+                )
                 result["text_preview"] = raw_text[:500]
 
             if "semantic_score" in doc:

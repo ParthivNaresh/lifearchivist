@@ -15,7 +15,7 @@ from typing import Awaitable, Dict, Optional, cast
 
 from redis.asyncio import Redis
 
-from ..utils.logx import log_event, track
+from ..utils.logx import log_event
 from ..utils.result import Failure, Result, Success
 
 logger = logging.getLogger(__name__)

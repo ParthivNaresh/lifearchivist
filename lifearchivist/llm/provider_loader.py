@@ -9,7 +9,7 @@ import logging
 from typing import Dict, List, cast
 
 from ..storage.credential_service import CredentialService
-from ..utils.logx import log_event, track
+from ..utils.logx import log_event
 from ..utils.result import Failure, Result, Success
 from .base_provider import BaseLLMProvider, ProviderType
 from .provider_config import BaseProviderConfig

@@ -1,9 +1,11 @@
 from .base import BaseAgentTool
-from .document_search_tool import DocumentSearchTool
-from .extraction_tool import DataExtractionTool
+from .search import DocumentSearchTool
+from .structured_extraction import StructuredExtractionTool
+from .text_extraction import TextExtractionTool
 
 __all__ = [
     "BaseAgentTool",
     "DocumentSearchTool",
-    "DataExtractionTool",
+    "StructuredExtractionTool",
+    "TextExtractionTool",
 ]

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from pydantic import ValidationError
 
-from ...utils.logx import log_event, track
+from ...utils.logx import log_event
 from .exceptions import PlanningError
 from .models.task import AgentTask, ExecutionPlan
 from .models.validation import ValidationResult

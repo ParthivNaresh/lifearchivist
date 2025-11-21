@@ -1,99 +1,18 @@
 import json
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Union
 
 from ....utils.logx import log_event
+from .parsing import _compact_for_synthesis, sanitize_tool_output
 
 if TYPE_CHECKING:
+    from .. import BaseAgentTool
+
     ToolLike = Union[Dict[str, Any], "BaseAgentTool"]
 else:
     ToolLike = Union[Dict[str, Any], Any]
 
 
-def _json_preview(obj, limit: int = 800) -> str:
-    try:
-        s = json.dumps(obj, ensure_ascii=False, default=str)
-    except Exception:
-        s = str(obj)
-    # only slice strings
-    return s[:limit]
-
-
-def _maybe_parse_json_string(x: Any) -> Any:
-    """If x looks like a JSON string, parse it; otherwise return x unchanged."""
-    if isinstance(x, str):
-        s = x.strip()
-        if (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]")):
-            try:
-                return json.loads(s)
-            except Exception:
-                return x
-    return x
-
-def _approx_json_size(obj: Any) -> int:
-    try:
-        return len(json.dumps(obj, ensure_ascii=False, default=str))
-    except Exception:
-        return len(str(obj))
-
-def _compact_for_synthesis(task_id: str, value: Any, byte_budget: int = 20_000) -> Any:
-    """
-    Keep every task; compact large payloads (esp. extraction output) instead of dropping them.
-    - Parse stringified JSON if present (extractions often arrive as a string).
-    - Normalize top-level arrays to objects.
-    - Clip long lists and long strings; trim provenance lists.
-    """
-    v = value
-
-    # Common case: ResultEnvelope wrapper
-    if isinstance(v, dict) and "value" in v and len(v) == 1:
-        v = v["value"]
-
-    # If tool stashed model output under 'extractions' as a string, parse it
-    if isinstance(v, dict) and "extractions" in v:
-        v = v.copy()
-        v["extractions"] = _maybe_parse_json_string(v.get("extractions"))
-
-    # If we got a top-level array, normalize into expected object shape
-    if isinstance(v, list):
-        v = {"extractions": v, "provenance": []}
-
-    if _approx_json_size(v) <= byte_budget:
-        return v
-
-    # Compact extraction payloads responsibly
-    if isinstance(v, dict) and "extractions" in v:
-        v = v.copy()
-        ex = _maybe_parse_json_string(v.get("extractions"))
-        if isinstance(ex, list):
-            # keep first few items
-            ex = ex[:5]
-            # clip long fields
-            for item in ex:
-                if isinstance(item, dict):
-                    for k, val in list(item.items()):
-                        if isinstance(val, str) and len(val) > 500:
-                            item[k] = val[:500] + "…"
-                        elif isinstance(val, dict):
-                            for rk, rv in list(val.items()):
-                                if isinstance(rv, str) and len(rv) > 300:
-                                    val[rk] = rv[:300] + "…"
-        v["extractions"] = ex
-
-        # trim provenance
-        if "provenance" in v and isinstance(v["provenance"], list):
-            v["provenance"] = v["provenance"][:10]
-
-        if _approx_json_size(v) <= byte_budget:
-            return v
-
-    # Last resort: stringify and clip but NEVER drop the whole task
-    s = str(v)
-    if len(s) > byte_budget:
-        s = s[:byte_budget] + "…"
-    return s
-
-
-
+# TODO: REFACTOR CLASS TO STATIC METHODS
 class PromptBuilder:
     """
     Centralized, compact prompt templates for classification, planning, task execution, and synthesis.
@@ -141,17 +60,17 @@ Output only the JSON object, nothing else.
 
     # ------------ Planning ------------
     def build_planning_prompt(
-            self,
-            *,
-            query: str,
-            context: Any,
-            available_tools: Iterable[ToolLike],
-            max_tasks: int = 20,
-            cost_budget_usd: float = 1.0,
-            time_budget_s: int = 300,
+        self,
+        *,
+        query: str,
+        context: Any,
+        available_tools: Iterable[ToolLike],
+        max_tasks: int = 20,
     ) -> str:
         tools_text = self._tools_as_text(available_tools)
-        history_preview = self._preview(self._maybe_get(context, "recent_messages"), 1200)
+        history_preview = self._preview(
+            self._maybe_get(context, "recent_messages"), 1200
+        )
 
         return f"""You are a planner for a multi-tool agent. Plan a DAG of tasks to answer the user's query.
     
@@ -203,7 +122,7 @@ Output only the JSON object, nothing else.
               "model": string?                       // optional model hint
             }}
     
-    - data_extraction:
+    - structured_extraction:
         - requires_llm: true (recommended)
         - parameters:
             {{
@@ -214,10 +133,21 @@ Output only the JSON object, nothing else.
               "model": string?                  // optional model hint
             }}
     
+    - text_extraction:
+        - requires_llm: true
+        - parameters:
+            {{
+              "document_ids": ["<from SEARCH_TASK_ID>" | "<from SEARCH_TASK_ID | top_k=N>", ...]  // usually one placeholder list
+              "instructions": string,           // what to extract/summarize
+              "style": "concise" | "detailed" | "bullet_points" | "narrative" | "technical" | "executive",
+              "focus": "overview" | "key_points" | "insights" | "recommendations" | "analysis" | "comparison"?,
+              "max_output_length": integer?,    // target word count
+              "include_citations": true/false?, // include document references
+              "model": string?                  // optional model hint
+            }}
+    
     CONSTRAINTS:
     - Max tasks: {max_tasks}
-    - Cost budget: ${cost_budget_usd:.2f}
-    - Time budget: {time_budget_s}s
     
     EXAMPLE - Document Search (LLM) + Extraction:
     {{
@@ -239,7 +169,7 @@ Output only the JSON object, nothing else.
         }},
         {{
           "task_id": "extract_data",
-          "tool_name": "data_extraction",
+          "tool_name": "structured_extraction",
           "description": "Extract test_type, date, results from the retrieved documents",
           "requires_llm": true,
           "parameters": {{
@@ -313,7 +243,6 @@ INSTRUCTIONS:
 - Be precise and avoid fabricating information.
 """
 
-    # ------------ Synthesis ------------
     def build_synthesis_prompt(
         self, *, query: str, plan, results: Dict[str, Any]
     ) -> str:
@@ -321,21 +250,50 @@ INSTRUCTIONS:
         # compact each task payload; never drop entire tasks
         compacted_results: Dict[str, Any] = {}
         for tid, payload in (results or {}).items():
+            log_event("------------------------------------------------")
+            log_event(tid)
+            log_event(payload)
             try:
-                compacted_results[tid] = _compact_for_synthesis(tid, payload)
-            except Exception:
-                compacted_results[tid] = (str(payload)[:20000] + "…")
+                # unwrap ResultEnvelope-like shapes ({"value": ...}) if present
+                val = payload
+                if isinstance(val, dict) and "value" in val and len(val) == 1:
+                    val = val["value"]
 
-        task_results_json = json.dumps(compacted_results, ensure_ascii=False, default=str)
+                # keep search results structured & light (avoid stringifying giant dicts)
+                if tid == "search_docs":
+                    val = sanitize_tool_output(val)
+
+                # use existing extraction-aware compactor
+                compacted = _compact_for_synthesis(tid, val)
+
+                # if worst-case compactor returned a giant string but original was a dict,
+                # try a safer dict-preserving fallback for readability
+                if isinstance(compacted, str) and isinstance(val, dict):
+                    safe = {}
+                    for k, v in val.items():
+                        if k == "documents" and isinstance(v, list):
+                            safe["documents"] = v[:5]
+                        elif isinstance(v, str):
+                            safe[k] = v[:600]
+                        else:
+                            safe[k] = v
+                    compacted = safe
+
+                compacted_results[tid] = compacted
+
+            except Exception:
+                compacted_results[tid] = str(payload)[:20000] + "…"
+
+        task_results_json = json.dumps(
+            compacted_results, ensure_ascii=False, default=str
+        )
 
         log_event(
             "synthesis_prompt_compacted",
             {
                 "task_count": len(results or {}),
                 "included_tasks": list(compacted_results.keys()),
-                "avg_task_size_bytes": int(sum(len(json.dumps(v, ensure_ascii=False, default=str)) for v in compacted_results.values()) / max(1, len(compacted_results))),
-                "prompt_len": len(task_results_json),
-                "prompt_preview": task_results_json[:600],
+                "prompt_preview": task_results_json[:6000],
             },
         )
 
@@ -410,3 +368,99 @@ INSTRUCTIONS:
             return getattr(obj, key, None)
         except Exception:
             return None
+
+
+def _build_document_search_system_message() -> str:
+    """
+    Build the system message with dynamic schema.
+    """
+    return (
+        "You are a retrieval strategist. "
+        "Return ONLY compact JSON with keys: "
+        "method ('semantic'|'keyword'|'hybrid'|'metadata'), "
+        "query, filters (optional), top_k, semantic_weight, similarity_threshold, rerank_top_k."
+    )
+
+
+def _build_structured_extraction_system_message(
+    full_schema: Dict[str, Any],
+    instructions: str,
+) -> str:
+    """
+    Build the system message with dynamic schema.
+    """
+    schema_json = json.dumps(full_schema, indent=2, ensure_ascii=False)
+
+    return (
+        "You are a JSON extraction system. Your ONLY job is to output valid JSON.\n\n"
+        "CRITICAL: Do NOT write explanations, summaries, or prose. Output ONLY the JSON object.\n\n"
+        f"TASK:\n{instructions}\n\n"
+        f"REQUIRED OUTPUT FORMAT:\n{schema_json}\n\n"
+        "STRICT RULES:\n"
+        "1. Output MUST be valid JSON matching the schema exactly\n"
+        "2. Do NOT wrap in markdown code blocks (no ```json)\n"
+        "3. Do NOT add any text before or after the JSON\n"
+        "4. Do NOT write explanations or summaries\n"
+        "5. If a field has no data, use null (not explanatory text)\n"
+        "6. Include document_id in provenance array for citations\n\n"
+        "OUTPUT ONLY THE JSON OBJECT NOW:"
+    )
+
+
+def _build_text_extraction_system_message(
+    style: str,
+    focus: Optional[str],
+    max_output_length: int,
+    include_citations: bool,
+) -> str:
+    """
+    Build the system message for free-form text extraction and summarization.
+    """
+    style_guidance = {
+        "concise": "Be brief and to the point. Use short sentences and avoid unnecessary details.",
+        "detailed": "Provide comprehensive coverage with thorough explanations and context.",
+        "bullet_points": "Use bullet points or numbered lists to organize information clearly.",
+        "narrative": "Write in a flowing, story-like format that connects ideas smoothly.",
+        "technical": "Use precise technical language and include relevant technical details.",
+        "executive": "Focus on high-level insights and actionable takeaways for decision-makers.",
+    }
+
+    focus_guidance = {
+        "overview": "Provide a comprehensive overview covering all major aspects.",
+        "key_points": "Identify and highlight the most important points and findings.",
+        "insights": "Extract deeper insights, patterns, and non-obvious observations.",
+        "recommendations": "Focus on actionable recommendations and next steps.",
+        "analysis": "Provide analytical perspective with critical evaluation.",
+        "comparison": "Compare and contrast different aspects, highlighting similarities and differences.",
+    }
+
+    style_instruction = style_guidance.get(style, style_guidance["detailed"])
+    focus_instruction = focus_guidance.get(focus, "") if focus else ""
+
+    citation_instruction = (
+        "\n\nCITATIONS:\n"
+        "- Reference document IDs when making specific claims or citing information\n"
+        "- Use format: [document_id] or (document_id) when referencing sources\n"
+        "- Ensure all major points are attributed to source documents"
+        if include_citations
+        else ""
+    )
+
+    return (
+        "You are a document analysis and summarization system. Your task is to extract, "
+        "analyze, and present information from documents in clear, well-structured prose.\n\n"
+        f"OUTPUT STYLE:\n{style_instruction}\n\n"
+        + (f"FOCUS:\n{focus_instruction}\n\n" if focus_instruction else "")
+        + f"LENGTH CONSTRAINT:\n"
+        f"Target approximately {max_output_length} words. Be thorough but respect this constraint.\n"
+        + citation_instruction
+        + "\n\nCRITICAL RULES:\n"
+        "1. Output ONLY the requested text content - no JSON, no metadata wrappers\n"
+        "2. Do NOT add explanatory prefixes like 'Here is the summary:' or 'Based on the documents:'\n"
+        "3. Start directly with the content\n"
+        "4. Be factual and grounded in the provided document content\n"
+        "5. Do NOT fabricate information not present in the documents\n"
+        "6. If documents lack information on a topic, acknowledge this clearly\n"
+        "7. Maintain professional tone and clarity throughout\n\n"
+        "BEGIN YOUR RESPONSE NOW:"
+    )

@@ -7,7 +7,6 @@ from typing import Dict, Optional
 from lifearchivist.tools.extract.extract_tool import ExtractTextTool
 from lifearchivist.tools.file_import.file_import_tool import FileImportTool
 
-from ..utils.logx import track
 from .base import BaseTool
 
 

@@ -105,17 +105,6 @@ class RedisDocumentTracker:
             await self.redis_client.ping()
 
             self._initialized = True
-
-            doc_count = await self.get_document_count()
-
-            # log_event(
-            #     "redis_tracker_initialized",
-            #     {
-            #         "redis_url": self.redis_url,
-            #         "document_count": doc_count,
-            #     },
-            # )
-
         except Exception as e:
             log_event(
                 "redis_tracker_init_failed",

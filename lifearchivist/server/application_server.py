@@ -437,9 +437,6 @@ class ApplicationServer:
         )
         await self.tool_registry.register_all()
 
-        tool_count = len(self.tool_registry.tools)
-        # log_event("tool_registry_initialized", {"tools_registered": tool_count})
-
     async def _init_agent_orchestrator(self):
         """Initialize agent tool registry and orchestrator."""
         if not self.service_container:

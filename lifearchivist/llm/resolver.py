@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 
 _PLACEHOLDER_RE = re.compile(r"^<from\s+([\w\-\.:/]+)(?:\s*\|\s*([^\>]+))?>$")
 
+
 def _extract_doc_ids(upstream_payload: Dict[str, Any]) -> List[str]:
     """
     Standard path for your document_search tool:
@@ -11,7 +12,10 @@ def _extract_doc_ids(upstream_payload: Dict[str, Any]) -> List[str]:
     docs = upstream_payload.get("documents") or []
     return [d.get("document_id") for d in docs if d.get("document_id")]
 
-def resolve_params(params: Any, results_by_task: Dict[str, Dict[str, Any]], deps: List[str]) -> Any:
+
+def resolve_params(
+    params: Any, results_by_task: Dict[str, Dict[str, Any]], deps: List[str]
+) -> Any:
     """
     Recursively resolve placeholders like:
       "<from search_docs>"
@@ -26,7 +30,9 @@ def resolve_params(params: Any, results_by_task: Dict[str, Dict[str, Any]], deps
         for v in params:
             rv = resolve_params(v, results_by_task, deps)
             # If a placeholder expands to a list, splice it in place
-            if isinstance(rv, list) and any(isinstance(v, str) and _PLACEHOLDER_RE.match(v) for v in [v]):
+            if isinstance(rv, list) and any(
+                isinstance(v, str) and _PLACEHOLDER_RE.match(v) for v in [v]
+            ):
                 out.extend(rv)
             else:
                 out.append(rv)
@@ -39,7 +45,9 @@ def resolve_params(params: Any, results_by_task: Dict[str, Dict[str, Any]], deps
 
         task_id, options = m.group(1), (m.group(2) or "").strip()
         if task_id not in results_by_task:
-            raise ValueError(f"Dependency placeholder refers to unknown task_id '{task_id}'")
+            raise ValueError(
+                f"Dependency placeholder refers to unknown task_id '{task_id}'"
+            )
 
         upstream = results_by_task[task_id]
 
@@ -49,8 +57,10 @@ def resolve_params(params: Any, results_by_task: Dict[str, Dict[str, Any]], deps
             for part in options.split(","):
                 k, _, v = part.partition("=")
                 if k.strip() == "top_k":
-                    try: top_k = int(v.strip())
-                    except: pass
+                    try:
+                        top_k = int(v.strip())
+                    except Exception:
+                        pass
 
         ids = _extract_doc_ids(upstream)
         if top_k is not None:
