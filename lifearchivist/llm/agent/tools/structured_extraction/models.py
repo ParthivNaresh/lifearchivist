@@ -50,7 +50,7 @@ class StructuredExtractionParams(BaseModel):
     max_input_chars: int = Field(250_000, ge=10_000, le=2_000_000)
     require_provenance: bool = Field(True)
 
-    # LLM steering knobs (hints; orchestrator may override)
+    # LLM steering knobs (hints; tactical_planner may override)
     model: Optional[str] = Field(default=None, description="Model hint/override")
     temperature: float = Field(0.0, ge=0.0, le=1.0)
     max_tokens: int = Field(800, ge=64, le=8192)
@@ -79,6 +79,10 @@ class StructuredExtractionParams(BaseModel):
         le=64,
         description="Max concurrent chunk fetches from the document service.",
     )
+
+    @classmethod
+    def get_priority_params(cls) -> List[str]:
+        return ["document_ids", "fields", "instructions"]
 
     @model_validator(mode="after")
     def _at_least_one_guidance(self) -> "StructuredExtractionParams":

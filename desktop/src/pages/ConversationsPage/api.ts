@@ -16,6 +16,7 @@ import type {
   SSESourceEvent,
   SSEChunkEvent,
   SSEMetadataEvent,
+  SSEAgentProgressEvent,
   SSECompleteEvent,
   SSEErrorEvent,
 } from './types';
@@ -147,6 +148,11 @@ export const conversationsApi = {
                   case 'metadata': {
                     const data = JSON.parse(currentData) as SSEMetadataEvent;
                     callbacks.onMetadata?.(data);
+                    break;
+                  }
+                  case 'agent_progress': {
+                    const data = JSON.parse(currentData) as SSEAgentProgressEvent;
+                    callbacks.onAgentProgress?.(data);
                     break;
                   }
                   case 'complete': {

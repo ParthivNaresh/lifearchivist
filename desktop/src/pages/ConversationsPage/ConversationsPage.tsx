@@ -36,6 +36,7 @@ const ConversationsPage: React.FC = () => {
     loading: conversationLoading,
     sending,
     error: conversationError,
+    agentProgress,
     sendMessage: _sendMessage,
     sendMessageStreaming,
     reload: reloadConversation,
@@ -199,7 +200,11 @@ const ConversationsPage: React.FC = () => {
             </div>
 
             {/* Messages */}
-            <MessageList messages={messages} loading={conversationLoading} />
+            <MessageList
+              messages={messages}
+              loading={conversationLoading}
+              agentProgress={agentProgress}
+            />
 
             {/* Error Display */}
             {conversationError && (

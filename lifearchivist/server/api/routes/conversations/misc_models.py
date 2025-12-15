@@ -178,6 +178,7 @@ class EventType(Enum):
     METADATA = "metadata"
     COMPLETE = "complete"
     ERROR = "error"
+    AGENT_PROGRESS = "agent_progress"
 
 
 @dataclass

@@ -37,6 +37,12 @@ class DocumentSearchParams(BaseModel):
         description="Maximum number of documents to return",
     )
 
+    instructions: Optional[str] = None
+
+    @classmethod
+    def get_priority_params(cls) -> List[str]:
+        return ["query", "search_method", "top_k", "instructions"]
+
     similarity_threshold: float = Field(
         0.5,
         ge=0.0,
@@ -85,7 +91,6 @@ class DocumentSearchParams(BaseModel):
     allow_filter_synthesis: bool = True
     allow_rerank: bool = True
     rerank_top_k: int = 50
-    instructions: Optional[str] = None
     model: Optional[str] = None
 
     @model_validator(mode="after")

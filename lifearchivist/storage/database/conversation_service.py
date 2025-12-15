@@ -342,7 +342,7 @@ class ConversationService:
                 )
             )
 
-    @track(operation="conversation_list")
+    # @track(operation="conversation_list")
     async def list_conversations(
         self,
         user_id: str = "default",

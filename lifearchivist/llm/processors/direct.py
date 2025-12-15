@@ -378,6 +378,41 @@ class DirectStreamProcessor(StreamProcessor):
         ):
             yield event
 
+    async def _stream_llm_only(
+        self, context: StreamContext, messages: List[LLMMessage], config: StreamConfig
+    ) -> AsyncGenerator[str, None]:
+        """Stream LLM response chunks only, without saving a new message."""
+        provider_manager = self.server.service_container.llm_provider_manager
+
+        accumulated_text = ""
+
+        try:
+            async with asyncio.timeout(config.response_timeout):
+                async for chunk in provider_manager.generate_stream(
+                    messages=messages,
+                    model=context.model,
+                    provider_id=context.provider_id,
+                    temperature=config.temperature,
+                    max_tokens=config.max_tokens,
+                ):
+                    accumulated_text += chunk.content
+                    yield SSEFormatter.format_event(
+                        EventType.CHUNK, {"text": chunk.content}
+                    )
+
+        except asyncio.TimeoutError:
+            context.accumulated_text = accumulated_text
+            async for event in self._handle_timeout(context, config):
+                yield event
+            return
+        except Exception as e:
+            context.accumulated_text = accumulated_text
+            async for event in self._handle_generation_error(e, context):
+                yield event
+            return
+
+        context.accumulated_text = accumulated_text
+
     async def _handle_timeout(
         self, context: StreamContext, config: StreamConfig
     ) -> AsyncGenerator[str, None]:

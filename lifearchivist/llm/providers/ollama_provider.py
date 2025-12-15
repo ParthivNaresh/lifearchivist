@@ -10,7 +10,7 @@ from typing import AsyncGenerator, Dict, List
 
 import aiohttp
 
-from ...utils.logx import log_event, track
+from ...utils.logx import log_event
 from ..base_provider import (
     BaseHTTPProvider,
     BaseLLMProvider,
@@ -332,11 +332,7 @@ class OllamaProvider(BaseHTTPProvider, BaseLLMProvider):
                 f"Failed to stream from Ollama at {self.config.base_url}: {e}"
             ) from e
 
-    @track(
-        operation="ollama_list_models",
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    # @track(operation="ollama_list_models")
     async def list_models(self) -> List[ModelInfo]:
         """
         List available Ollama models.

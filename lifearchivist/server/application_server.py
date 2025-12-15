@@ -12,7 +12,6 @@ from typing import Any, Dict, Optional
 from fastapi import WebSocket
 
 from ..config import get_settings
-from ..llm.agent import AgentToolRegistry
 from ..storage.vault_reconciliation import VaultReconciliationService
 from ..tools.exceptions import ToolExecutionError, ToolNotFoundError, ValidationError
 from ..tools.registry import ToolRegistry
@@ -438,7 +437,7 @@ class ApplicationServer:
         await self.tool_registry.register_all()
 
     async def _init_agent_orchestrator(self):
-        """Initialize agent tool registry and orchestrator."""
+        """Initialize agent orchestrator with hierarchical planning."""
         if not self.service_container:
             log_event(
                 "agent_orchestrator_init_skipped",
@@ -448,33 +447,14 @@ class ApplicationServer:
             return
 
         try:
-            document_service = None
-            search_service = None
-            metadata_service = None
-            if self.service_container.llamaindex_service:
-                document_service = (
-                    self.service_container.llamaindex_service.document_service
-                )
-                search_service = (
-                    self.service_container.llamaindex_service.search_service
-                )
-                metadata_service = (
-                    self.service_container.llamaindex_service.metadata_service
-                )
-
-            self.agent_tool_registry = AgentToolRegistry(
-                document_service=document_service,
-                search_service=search_service,
-                metadata_service=metadata_service,
-            )
-
-            self.service_container.init_agent_orchestrator(
-                tool_registry=self.agent_tool_registry
-            )
+            self.service_container.init_agent_orchestrator()
 
             # log_event(
             #     "agent_orchestrator_initialized",
-            #     {"agent_tools_registered": self.agent_tool_registry.count()},
+            #     {
+            #         "has_tactical_planner": hasattr(self.service_container, "tactical_planner"),
+            #         "has_phase_coordinator": hasattr(self.service_container, "phase_coordinator"),
+            #     },
             # )
         except Exception as e:
             log_event(

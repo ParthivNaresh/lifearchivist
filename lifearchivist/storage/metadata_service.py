@@ -323,7 +323,7 @@ class LlamaIndexMetadataService(MetadataService):
 
         return updated_nodes
 
-    @track(operation="query_documents_by_metadata")
+    # @track(operation="query_documents_by_metadata")
     async def query_documents_by_metadata(
         self,
         filters: Dict[str, Any],
@@ -339,26 +339,26 @@ class LlamaIndexMetadataService(MetadataService):
             if not self.doc_tracker:
                 return Success([])
 
-            log_event(
-                "metadata_query_started",
-                {
-                    "filter_keys": list(filters.keys()) if filters else [],
-                    "has_filters": bool(filters),
-                    "limit": limit,
-                    "offset": offset,
-                },
-            )
+            # log_event(
+            #     "metadata_query_started",
+            #     {
+            #         "filter_keys": list(filters.keys()) if filters else [],
+            #         "has_filters": bool(filters),
+            #         "limit": limit,
+            #         "offset": offset,
+            #     },
+            # )
 
             # Get matching document IDs from Redis
             matching_doc_ids = await self._get_matching_document_ids(filters)
 
-            log_event(
-                "metadata_query_candidates",
-                {
-                    "candidates_found": len(matching_doc_ids),
-                    "will_paginate": len(matching_doc_ids) > limit,
-                },
-            )
+            # log_event(
+            #     "metadata_query_candidates",
+            #     {
+            #         "candidates_found": len(matching_doc_ids),
+            #         "will_paginate": len(matching_doc_ids) > limit,
+            #     },
+            # )
 
             # Paginate FIRST to avoid building unnecessary documents
             paginated_doc_ids = matching_doc_ids[offset : offset + limit]
@@ -527,9 +527,7 @@ class LlamaIndexMetadataService(MetadataService):
             )
             return ""
 
-    @track(
-        operation="get_full_document_metadata", include_result=False
-    )  # Don't log full metadata (could be large)
+    # @track(operation="get_full_document_metadata", include_result=False)  # Don't log full metadata (could be large)
     async def get_full_document_metadata(
         self,
         document_id: str,

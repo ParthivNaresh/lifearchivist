@@ -111,6 +111,10 @@ class TextExtractionParams(BaseModel):
         description="Maximum tokens for LLM response",
     )
 
+    @classmethod
+    def get_priority_params(cls) -> List[str]:
+        return ["document_ids", "instructions", "style", "focus"]
+
     @model_validator(mode="after")
     def _validate_params(self) -> "TextExtractionParams":
         if self.max_output_length < 100:

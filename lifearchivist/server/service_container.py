@@ -16,16 +16,13 @@ from qdrant_client import QdrantClient
 
 from ..config.settings import Settings
 from ..llm import LLMProviderManager
-
-# if TYPE_CHECKING:
 from ..llm.agent import (
-    AgentOrchestrator,
-    AgentSpawner,
     AgentToolRegistry,
     ComplexityClassifier,
-    PlanValidator,
+    PhaseCoordinator,
     PromptBuilder,
-    TaskExecutor,
+    StrategicPlanner,
+    TacticalPlannerFactory,
 )
 from ..rag import ConversationRAGService
 from ..storage.bm25_index_service import BM25IndexService
@@ -617,11 +614,16 @@ class ServiceContainer:
         except Exception:
             return "postgresql://****:****@****:****/****"
 
-    def init_agent_orchestrator(self, tool_registry: "AgentToolRegistry") -> None:
+    def init_agent_orchestrator(self) -> None:
         """
-        Initialize agent orchestrator.
+        Initialize agent orchestrator with hierarchical planning support.
 
-        This is called separately after ServiceContainer is initialized.
+        Creates:
+        - AgentToolRegistry (shared across all tactical planners)
+        - TacticalPlannerFactory (creates isolated tactical planners per phase)
+        - StrategicPlanner
+        - PhaseCoordinator (hierarchical planner)
+        - Single TacticalPlanner for direct (non-hierarchical) queries
         """
         try:
             if not self._initialized:
@@ -634,10 +636,19 @@ class ServiceContainer:
                     "LLM provider manager must be initialized before agent orchestrator"
                 )
 
-            if self.llamaindex_service and self.llamaindex_service.document_service:
-                tool_registry.document_service = (
-                    self.llamaindex_service.document_service
-                )
+            document_service = None
+            search_service = None
+            metadata_service = None
+            if self.llamaindex_service:
+                document_service = self.llamaindex_service.document_service
+                search_service = self.llamaindex_service.search_service
+                metadata_service = self.llamaindex_service.metadata_service
+
+            tool_registry = AgentToolRegistry(
+                document_service=document_service,
+                search_service=search_service,
+                metadata_service=metadata_service,
+            )
             tool_registry.register_all()
             tool_registry.finalize()
 
@@ -648,62 +659,46 @@ class ServiceContainer:
                 prompt_builder=prompt_builder,
             )
 
-            agent_spawner = AgentSpawner(
-                llm_provider_manager=self.llm_provider_manager,
-                tool_registry=tool_registry,
-                prompt_builder=prompt_builder,
-                task_timeout_s=60.0,
-                max_retries=2,
-                max_history_messages=50,
-                max_dependent_bytes=256 * 1024,
-            )
-
-            per_tool_limits = {
-                "structured_extraction": 8,
-            }
-
             from typing import Any, Mapping
 
             def _observer(event: str, fields: Mapping[str, Any]) -> None:
-                # bridge to your telemetry/logging
                 try:
                     log_event(event, dict(fields))
                 except Exception:
                     pass
 
-            executor = TaskExecutor(
-                agent_spawner,
-                max_concurrency=32,
-                per_tool_limits=per_tool_limits,
-                fail_fast=True,
-                on_observe=_observer,
-            )
-
-            plan_validator = PlanValidator(
-                tool_registry=tool_registry,
-                max_tasks=20,
-                max_cost_usd=1.0,
-                max_time_seconds=300,
-            )
-
-            self.agent_orchestrator = AgentOrchestrator(
+            tactical_planner_factory = TacticalPlannerFactory(
                 llm_provider_manager=self.llm_provider_manager,
                 tool_registry=tool_registry,
-                complexity_classifier=complexity_classifier,
-                executor=executor,
                 prompt_builder=prompt_builder,
-                plan_validator=plan_validator,
+                complexity_classifier=complexity_classifier,
                 on_observe=_observer,
                 planning_model="qwen2.5:7b",
                 planning_temperature=0.2,
                 synthesis_model="qwen2.5:7b",
                 synthesis_temperature=0.7,
+                max_concurrency=32,
+                per_tool_limits={"structured_extraction": 8},
+                max_tasks=20,
+                max_cost_usd=1.0,
+                max_time_seconds=300,
             )
 
-            # log_event(
-            #     "agent_orchestrator_initialized",
-            #     {"tools_registered": tool_registry.count()},
-            # )
+            strategic_planner = StrategicPlanner(
+                llm_provider_manager=self.llm_provider_manager,
+                tool_registry=tool_registry,
+                prompt_builder=prompt_builder,
+                planning_model="qwen2.5:7b",
+                planning_temperature=0.2,
+                max_phases=7,
+            )
+
+            self.phase_coordinator = PhaseCoordinator(
+                strategic_planner=strategic_planner,
+                tactical_planner_factory=tactical_planner_factory,
+            )
+
+            self.tactical_planner = tactical_planner_factory.create()
 
         except Exception as e:
             raise ServiceInitializationError(

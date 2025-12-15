@@ -5,7 +5,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { conversationsApi } from './api';
 import { useConversationWebSocket } from '../../hooks/useConversationWebSocket';
-import type { Conversation, Message, SendMessageRequest, Citation } from './types';
+import type {
+  Conversation,
+  Message,
+  SendMessageRequest,
+  Citation,
+  AgentProgress,
+  SSEAgentProgressEvent,
+} from './types';
+
+const initialAgentProgress: AgentProgress = {
+  phases: [],
+  currentPhaseIndex: -1,
+  completedPhases: [],
+  isSynthesizing: false,
+  lastEvent: null,
+  error: null,
+};
 
 /**
  * Hook to manage conversations list
@@ -20,7 +36,6 @@ export function useConversations() {
       setLoading(true);
       setError(null);
       const result = await conversationsApi.list({ limit: 50 });
-      // Filter out system conversations
       const userConversations = result.conversations.filter((c) => c.model !== 'system');
       setConversations(userConversations);
     } catch (err) {
@@ -82,6 +97,22 @@ export function useConversation(conversationId: string | null) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agentProgress, setAgentProgress] = useState<AgentProgress>(initialAgentProgress);
+
+  const resetAgentProgress = useCallback(() => {
+    setAgentProgress(initialAgentProgress);
+  }, []);
+
+  const handleAgentProgress = useCallback((event: SSEAgentProgressEvent) => {
+    setAgentProgress({
+      phases: event.phases,
+      currentPhaseIndex: event.current_phase_index,
+      completedPhases: event.completed_phases,
+      isSynthesizing: event.is_synthesizing,
+      lastEvent: event.event,
+      error: event.error,
+    });
+  }, []);
 
   const handleMessageStatusUpdate = useCallback(
     (update: {
@@ -160,7 +191,6 @@ export function useConversation(conversationId: string | null) {
     async (content: string, contextLimit = 5) => {
       if (!conversationId) return;
 
-      // Create optimistic user message
       const optimisticUserMessage: Message = {
         id: `temp-${Date.now()}`,
         conversation_id: conversationId,
@@ -179,7 +209,6 @@ export function useConversation(conversationId: string | null) {
         metadata: {},
       };
 
-      // Add user message immediately (optimistic update)
       setMessages((prev) => [...prev, optimisticUserMessage]);
 
       try {
@@ -193,14 +222,12 @@ export function useConversation(conversationId: string | null) {
 
         const response = await conversationsApi.sendMessage(conversationId, request);
 
-        // Replace optimistic message with real one and add assistant response
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== optimisticUserMessage.id),
           response.user_message,
           response.assistant_message,
         ]);
 
-        // Auto-generate title from first message
         if (messages.length === 0 && conversation) {
           const shouldUpdateTitle =
             !conversation.title ||
@@ -208,10 +235,8 @@ export function useConversation(conversationId: string | null) {
             conversation.title.trim() === '';
 
           if (shouldUpdateTitle) {
-            // Generate title from first message (truncate to 50 chars)
             const generatedTitle = content.length > 50 ? content.substring(0, 47) + '...' : content;
 
-            // Update conversation title (fire and forget, don't block)
             conversationsApi
               .update(conversationId, { title: generatedTitle })
               .then((updated) => {
@@ -225,7 +250,6 @@ export function useConversation(conversationId: string | null) {
 
         return response;
       } catch (err) {
-        // Remove optimistic message on error
         setMessages((prev) => prev.filter((m) => m.id !== optimisticUserMessage.id));
         setError(err instanceof Error ? err.message : 'Failed to send message');
         throw err;
@@ -241,6 +265,8 @@ export function useConversation(conversationId: string | null) {
       if (!conversationId) return;
 
       const abortController = new AbortController();
+
+      resetAgentProgress();
 
       const optimisticUserMessage: Message = {
         id: `temp-user-${Date.now()}`,
@@ -278,9 +304,13 @@ export function useConversation(conversationId: string | null) {
         metadata: {},
       };
 
-      setMessages((prev) => [...prev, optimisticUserMessage, streamingAssistantMessage]);
+      const originalUserTempId = optimisticUserMessage.id;
+      const originalAssistantTempId = streamingAssistantMessage.id;
 
-      let currentAssistantId = streamingAssistantMessage.id;
+      let currentUserRealId: string | null = null;
+      let currentAssistantRealId: string | null = null;
+
+      setMessages((prev) => [...prev, optimisticUserMessage, streamingAssistantMessage]);
 
       try {
         setSending(true);
@@ -296,48 +326,33 @@ export function useConversation(conversationId: string | null) {
           request,
           {
             onUserMessage: (userMsg) => {
+              currentUserRealId = userMsg.id;
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === optimisticUserMessage.id
+                  m.id === originalUserTempId
                     ? { ...m, id: userMsg.id, created_at: userMsg.created_at }
                     : m
                 )
               );
             },
             onAssistantMessageCreated: (data) => {
-              console.log(
-                '[onAssistantMessageCreated] Received real ID:',
-                data.id,
-                'Old temp ID:',
-                streamingAssistantMessage.id
-              );
-              currentAssistantId = data.id;
+              currentAssistantRealId = data.id;
               setMessages((prev) =>
-                prev.map((m) => {
-                  if (m.id === streamingAssistantMessage.id) {
-                    return { ...m, id: data.id };
-                  }
-                  return m;
-                })
+                prev.map((m) => (m.id === originalAssistantTempId ? { ...m, id: data.id } : m))
               );
             },
+            onAgentProgress: handleAgentProgress,
             onChunk: (text) => {
-              console.log(
-                '[onChunk] Received text:',
-                text,
-                'currentAssistantId:',
-                currentAssistantId
-              );
+              const targetId = currentAssistantRealId ?? originalAssistantTempId;
               setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === currentAssistantId ? { ...m, content: m.content + text } : m
-                )
+                prev.map((m) => (m.id === targetId ? { ...m, content: m.content + text } : m))
               );
             },
             onSources: (sources) => {
+              const targetId = currentAssistantRealId ?? originalAssistantTempId;
               const citations: Citation[] = sources.map((source, index) => ({
                 id: `temp-citation-${index}`,
-                message_id: currentAssistantId,
+                message_id: targetId,
                 document_id: source.document_id,
                 chunk_id: source.chunk_id,
                 score: source.relevance_score,
@@ -346,28 +361,30 @@ export function useConversation(conversationId: string | null) {
                 created_at: new Date().toISOString(),
               }));
 
-              setMessages((prev) =>
-                prev.map((m) => (m.id === currentAssistantId ? { ...m, citations } : m))
-              );
+              setMessages((prev) => prev.map((m) => (m.id === targetId ? { ...m, citations } : m)));
             },
             onComplete: (data) => {
-              if (data.user_message && data.assistant_message) {
-                setMessages((prev) =>
-                  prev.map((m): Message => {
-                    if (m.id === optimisticUserMessage.id && data.user_message) {
-                      return data.user_message;
-                    }
-                    if (m.id === currentAssistantId && data.assistant_message) {
-                      return data.assistant_message;
-                    }
-                    return m;
-                  })
-                );
+              resetAgentProgress();
+
+              const { user_message: userMsg, assistant_message: assistantMsg } = data;
+
+              if (userMsg && assistantMsg) {
+                setMessages((prev) => {
+                  const withoutTemp = prev.filter(
+                    (m) =>
+                      m.id !== originalUserTempId &&
+                      m.id !== originalAssistantTempId &&
+                      m.id !== currentUserRealId &&
+                      m.id !== currentAssistantRealId &&
+                      m.id !== userMsg.id &&
+                      m.id !== assistantMsg.id
+                  );
+                  return [...withoutTemp, userMsg, assistantMsg];
+                });
               } else {
                 void loadConversation();
               }
 
-              // Auto-generate title from first message
               if (messages.length === 0 && conversation) {
                 const shouldUpdateTitle =
                   !conversation.title ||
@@ -390,25 +407,27 @@ export function useConversation(conversationId: string | null) {
               }
             },
             onError: (_errorMsg) => {
-              // Remove temporary assistant message - backend has saved the error message
-              setMessages((prev) => prev.filter((m) => m.id !== streamingAssistantMessage.id));
-              // Reload conversation to get the properly formatted error message from backend
+              resetAgentProgress();
+              const assistantIdToRemove = currentAssistantRealId ?? originalAssistantTempId;
+              setMessages((prev) => prev.filter((m) => m.id !== assistantIdToRemove));
               void loadConversation();
             },
           },
           abortController.signal
         );
       } catch (err) {
-        // Handle abort separately from other errors
         if (err instanceof Error && err.name === 'AbortError') {
           console.log('Stream aborted by user');
           return;
         }
 
-        // Remove temporary messages on error
         setMessages((prev) =>
           prev.filter(
-            (m) => m.id !== optimisticUserMessage.id && m.id !== streamingAssistantMessage.id
+            (m) =>
+              m.id !== originalUserTempId &&
+              m.id !== originalAssistantTempId &&
+              m.id !== currentUserRealId &&
+              m.id !== currentAssistantRealId
           )
         );
         setError(err instanceof Error ? err.message : 'Failed to send message');
@@ -417,10 +436,16 @@ export function useConversation(conversationId: string | null) {
         setSending(false);
       }
 
-      // Return abort function for cleanup
       return () => abortController.abort();
     },
-    [conversationId, messages.length, conversation, loadConversation]
+    [
+      conversationId,
+      messages.length,
+      conversation,
+      loadConversation,
+      resetAgentProgress,
+      handleAgentProgress,
+    ]
   );
 
   return {
@@ -429,6 +454,7 @@ export function useConversation(conversationId: string | null) {
     loading,
     sending,
     error,
+    agentProgress,
     sendMessage,
     sendMessageStreaming,
     reload: loadConversation,

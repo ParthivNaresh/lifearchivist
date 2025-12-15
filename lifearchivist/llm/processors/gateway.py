@@ -1,19 +1,134 @@
-from typing import Any, AsyncGenerator, Mapping, Optional
+import logging
+import time
+from typing import Any, AsyncGenerator, Dict, List, Mapping, Optional
 
 from ...server.api.routes.conversations.misc_models import EventType, StreamContext
 from ...server.api.routes.shared.exceptions import ServiceUnavailableError
 from ...utils.logx import log_event
 from ...utils.sse import SSEFormatter
-from ..agent import (
-    AgentToolRegistry,
-    ComplexityClassifier,
-)
+from ..agent import ComplexityClassifier
 from ..agent import ConversationContext as AgentConversationContext
-from ..agent import (
-    PromptBuilder,
-)
+from ..agent import PromptBuilder
 from ..processors.base import StreamProcessor
 from ..processors.direct import DirectStreamProcessor
+
+
+class AgentProgressTracker:
+
+    def __init__(self) -> None:
+        self.phases: List[Dict[str, Any]] = []
+        self.current_phase_index: int = -1
+        self.tasks: Dict[str, Dict[str, Any]] = {}
+        self.completed_phases: List[str] = []
+        self.is_synthesizing: bool = False
+
+    def set_strategic_plan(self, plan_data: Dict[str, Any]) -> Dict[str, Any]:
+        if plan_data.get("type") == "strategic":
+            self.phases = [
+                {
+                    "phase_id": p["phase_id"],
+                    "description": p["description"],
+                    "status": "pending",
+                    "tasks": [],
+                }
+                for p in plan_data.get("phases", [])
+            ]
+        return self._build_progress_event("plan_created")
+
+    def set_tactical_plan(self, plan_data: Dict[str, Any]) -> Dict[str, Any]:
+        if self.current_phase_index >= 0 and self.current_phase_index < len(
+            self.phases
+        ):
+            tasks = plan_data.get("tasks", [])
+            self.phases[self.current_phase_index]["tasks"] = [
+                {
+                    "task_id": t.get("task_id"),
+                    "tool": t.get("tool"),
+                    "description": t.get("description", ""),
+                    "status": "pending",
+                }
+                for t in tasks
+            ]
+            for t in tasks:
+                self.tasks[t.get("task_id", "")] = {
+                    "phase_index": self.current_phase_index,
+                    "status": "pending",
+                }
+        return self._build_progress_event("tactical_plan_created")
+
+    def start_phase(self, phase_id: str) -> Dict[str, Any]:
+        for i, phase in enumerate(self.phases):
+            if phase["phase_id"] == phase_id:
+                self.current_phase_index = i
+                phase["status"] = "running"
+                break
+        return self._build_progress_event("phase_started", phase_id=phase_id)
+
+    def complete_phase(self, phase_id: str) -> Dict[str, Any]:
+        for phase in self.phases:
+            if phase["phase_id"] == phase_id:
+                phase["status"] = "completed"
+                self.completed_phases.append(phase_id)
+                break
+        return self._build_progress_event("phase_completed", phase_id=phase_id)
+
+    def start_task(
+        self, task_id: str, tool_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        if task_id in self.tasks:
+            self.tasks[task_id]["status"] = "running"
+            phase_idx = self.tasks[task_id]["phase_index"]
+            for task in self.phases[phase_idx].get("tasks", []):
+                if task["task_id"] == task_id:
+                    task["status"] = "running"
+                    break
+        return self._build_progress_event(
+            "task_started", task_id=task_id, tool=tool_name
+        )
+
+    def complete_task(self, task_id: str) -> Dict[str, Any]:
+        if task_id in self.tasks:
+            self.tasks[task_id]["status"] = "completed"
+            phase_idx = self.tasks[task_id]["phase_index"]
+            for task in self.phases[phase_idx].get("tasks", []):
+                if task["task_id"] == task_id:
+                    task["status"] = "completed"
+                    break
+        return self._build_progress_event("task_completed", task_id=task_id)
+
+    def fail_task(self, task_id: str, error: str) -> Dict[str, Any]:
+        if task_id in self.tasks:
+            self.tasks[task_id]["status"] = "failed"
+            phase_idx = self.tasks[task_id]["phase_index"]
+            for task in self.phases[phase_idx].get("tasks", []):
+                if task["task_id"] == task_id:
+                    task["status"] = "failed"
+                    break
+        return self._build_progress_event("task_failed", task_id=task_id, error=error)
+
+    def start_synthesis(self) -> Dict[str, Any]:
+        self.is_synthesizing = True
+        return self._build_progress_event("synthesis_started")
+
+    def _build_progress_event(
+        self,
+        event: str,
+        phase_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+        tool: Optional[str] = None,
+        error: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        return {
+            "event": event,
+            "phase_id": phase_id,
+            "task_id": task_id,
+            "tool": tool,
+            "error": error,
+            "phases": self.phases,
+            "current_phase_index": self.current_phase_index,
+            "completed_phases": self.completed_phases,
+            "is_synthesizing": self.is_synthesizing,
+        }
 
 
 class GatewayStreamProcessor(StreamProcessor):
@@ -33,7 +148,6 @@ class GatewayStreamProcessor(StreamProcessor):
             if not getattr(self.server.service_container, attr, None):
                 raise ServiceUnavailableError(name)
 
-    # @track(operation="gateway_process")
     async def process(self, context: StreamContext) -> AsyncGenerator[str, None]:
         dsp = DirectStreamProcessor(self.server)
         processing_message_id: Optional[str] = None
@@ -84,15 +198,14 @@ class GatewayStreamProcessor(StreamProcessor):
             is_simple = classification.complexity.value == "simple"
 
             if is_simple:
-                # log_event(
-                #     "gateway_route_simple", {"conversation_id": context.conversation_id}
-                # )
                 await dsp._perform_search(context)
                 yield SSEFormatter.format_event(EventType.SOURCES, context.sources)
                 config = await dsp._get_stream_config(context)
                 messages = dsp._build_messages(context, config)
-                async for event in dsp._stream_response(context, messages, config):
+
+                async for event in dsp._stream_llm_only(context, messages, config):
                     yield event
+
                 if processing_message_id:
                     await dsp._finalize_processing_message(
                         processing_message_id, context.accumulated_text or ""
@@ -103,64 +216,68 @@ class GatewayStreamProcessor(StreamProcessor):
                         "completed",
                         content=context.accumulated_text,
                     )
-                # log_event(
-                #     "gateway_route_completed",
-                #     {"conversation_id": context.conversation_id, "path": "simple"},
-                # )
+
+                    msg_service = self.server.service_container.message_service
+                    msg_result = await msg_service.get_message_with_citations(
+                        processing_message_id
+                    )
+                    assistant_message = (
+                        msg_result.unwrap() if msg_result.is_success() else None
+                    )
+
+                    latency_ms = int((time.time() - context.start_time) * 1000)
+                    completion_data = {
+                        "user_message": context.user_message,
+                        "assistant_message": assistant_message,
+                        "latency_ms": latency_ms,
+                    }
+                    yield SSEFormatter.format_event(EventType.COMPLETE, completion_data)
                 return
 
-            tool_registry = AgentToolRegistry(
-                document_service=(
-                    self.server.service_container.llamaindex_service.document_service
-                    if self.server.service_container.llamaindex_service
-                    else None
-                ),
-                search_service=self.server.service_container.llamaindex_service.search_service,
-                metadata_service=self.server.service_container.llamaindex_service.metadata_service,
-            )
-            try:
-                if (
-                    not hasattr(self.server.service_container, "agent_orchestrator")
-                    or not self.server.service_container.agent_orchestrator
-                ):
-                    log_event(
-                        "agent_orchestrator_initializing",
-                        {"conversation_id": context.conversation_id},
-                    )
-                    self.server.service_container.init_agent_orchestrator(tool_registry)
-                orchestrator = self.server.service_container.agent_orchestrator
-                # log_event(
-                #     "agent_orchestrator_initialized",
-                #     {"conversation_id": context.conversation_id},
-                # )
-            except Exception as e:
+            if not self.server.service_container.phase_coordinator:
                 log_event(
-                    "agent_orchestrator_init_failed",
-                    {
-                        "conversation_id": context.conversation_id,
-                        "error": str(e),
-                        "error_type": type(e).__name__,
-                    },
+                    "phase_coordinator_not_initialized",
+                    {"conversation_id": context.conversation_id},
+                    level=logging.ERROR,
                 )
-                async for ev in dsp._handle_generation_error(e, context):
+                async for ev in dsp._handle_generation_error(
+                    Exception("Hierarchical planner not initialized"), context
+                ):
                     yield ev
                 return
 
+            coordinator = self.server.service_container.phase_coordinator
+            progress_tracker = AgentProgressTracker()
+
             accumulated = []
-            # log_event(
-            #     "gateway_route_agent", {"conversation_id": context.conversation_id}
-            # )
             yield SSEFormatter.format_event(
-                EventType.CONTEXT, {"note": "agent_orchestration_started"}
+                EventType.CONTEXT, {"note": "hierarchical_planning_started"}
             )
-            async for ev in orchestrator.process_query(
+            async for ev in coordinator.execute_query(
                 context.request.content, agent_ctx
             ):
                 et = ev.type.value if hasattr(ev, "type") else str(ev)
                 if et == "plan_created":
+                    plan_data = ev.data if isinstance(ev.data, dict) else {}
                     yield SSEFormatter.format_event(
-                        EventType.METADATA, {"plan": ev.data}
+                        EventType.METADATA, {"plan": plan_data}
                     )
+                    if plan_data.get("type") == "strategic":
+                        progress_event = progress_tracker.set_strategic_plan(plan_data)
+                        yield SSEFormatter.format_event(
+                            EventType.AGENT_PROGRESS, progress_event
+                        )
+                    elif plan_data.get("type") == "tactical":
+                        phase_id = plan_data.get("phase_id")
+                        if phase_id:
+                            progress_event = progress_tracker.start_phase(phase_id)
+                            yield SSEFormatter.format_event(
+                                EventType.AGENT_PROGRESS, progress_event
+                            )
+                        progress_event = progress_tracker.set_tactical_plan(plan_data)
+                        yield SSEFormatter.format_event(
+                            EventType.AGENT_PROGRESS, progress_event
+                        )
                 elif et == "plan_failed":
                     log_event(
                         "agent_plan_failed",
@@ -168,6 +285,32 @@ class GatewayStreamProcessor(StreamProcessor):
                             "conversation_id": context.conversation_id,
                             "error": getattr(ev, "data", {}),
                         },
+                    )
+                    error_data = ev.data if isinstance(ev.data, dict) else {}
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS,
+                        {
+                            "event": "plan_failed",
+                            "error": error_data.get("error", "Plan failed"),
+                            "phases": progress_tracker.phases,
+                            "current_phase_index": progress_tracker.current_phase_index,
+                            "completed_phases": progress_tracker.completed_phases,
+                            "is_synthesizing": False,
+                        },
+                    )
+                elif et == "task_started":
+                    task_data = ev.data if isinstance(ev.data, dict) else {}
+                    task_id = ev.task_id or task_data.get("task_id", "")
+                    tool_name = task_data.get("tool")
+                    progress_event = progress_tracker.start_task(task_id, tool_name)
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS, progress_event
+                    )
+                elif et == "task_completed":
+                    task_id = ev.task_id or ""
+                    progress_event = progress_tracker.complete_task(task_id)
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS, progress_event
                     )
                 elif et == "task_failed":
                     log_event(
@@ -178,10 +321,29 @@ class GatewayStreamProcessor(StreamProcessor):
                             "error": getattr(ev, "data", {}),
                         },
                     )
+                    task_id = ev.task_id or ""
+                    error_data = ev.data if isinstance(ev.data, dict) else {}
+                    progress_event = progress_tracker.fail_task(
+                        task_id, error_data.get("error", "Task failed")
+                    )
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS, progress_event
+                    )
+                elif et == "phase_completed":
+                    phase_data = ev.data if isinstance(ev.data, dict) else {}
+                    phase_id = phase_data.get("phase_id", "")
+                    progress_event = progress_tracker.complete_phase(phase_id)
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS, progress_event
+                    )
                 elif et == "synthesis_started":
                     log_event(
                         "agent_synthesis_started",
                         {"conversation_id": context.conversation_id},
+                    )
+                    progress_event = progress_tracker.start_synthesis()
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS, progress_event
                     )
                 elif et == "response_chunk":
                     if isinstance(ev.data, Mapping):
@@ -218,18 +380,22 @@ class GatewayStreamProcessor(StreamProcessor):
                     "completed",
                     content=context.accumulated_text,
                 )
-            # log_event(
-            #     "gateway_route_completed",
-            #     {"conversation_id": context.conversation_id, "path": "agent"},
-            # )
 
-            async for event in dsp._finalize_response(
-                context,
-                context.accumulated_text or "",
-                tokens=0,
-                finish_reason="stop",
-            ):
-                yield event
+                msg_service = self.server.service_container.message_service
+                msg_result = await msg_service.get_message_with_citations(
+                    processing_message_id
+                )
+                assistant_message = (
+                    msg_result.unwrap() if msg_result.is_success() else None
+                )
+
+                latency_ms = int((time.time() - context.start_time) * 1000)
+                completion_data = {
+                    "user_message": context.user_message,
+                    "assistant_message": assistant_message,
+                    "latency_ms": latency_ms,
+                }
+                yield SSEFormatter.format_event(EventType.COMPLETE, completion_data)
 
         except Exception as e:
             log_event(

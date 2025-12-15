@@ -1,7 +1,9 @@
 import json
 import re
 import unicodedata
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, cast
+
+from ..constants import MAX_JSON_CHARS
 
 
 class _LlmCallError(RuntimeError): ...
@@ -350,3 +352,52 @@ def sanitize_tool_output(
         return v
     except Exception:
         return value
+
+
+def extract_json_from_markdown(s: str) -> str:
+    s = s.strip()
+
+    if s.startswith("```"):
+        lines = s.split("\n")
+
+        if lines[0].strip() in ("```", "```json", "```JSON"):
+            lines = lines[1:]
+
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+
+        s = "\n".join(lines).strip()
+
+    return s
+
+
+def json_loads_strict(
+    s: str,
+    *,
+    allow_list: bool = False,
+    list_wrapper_key: str = "tasks",
+) -> Dict[str, Any]:
+    if len(s) > MAX_JSON_CHARS:
+        raise ValueError(f"LLM JSON exceeds {MAX_JSON_CHARS} chars")
+
+    s_clean = extract_json_from_markdown(s)
+
+    try:
+        parsed = json.loads(s_clean)
+
+        if isinstance(parsed, dict):
+            return cast(Dict[str, Any], parsed)
+
+        if allow_list and isinstance(parsed, list):
+            return {
+                list_wrapper_key: parsed,
+                "estimated_time_seconds": 0,
+                "estimated_cost_usd": 0.0,
+                "reasoning": "LLM returned list directly without wrapper object",
+            }
+
+        expected = "dict or list" if allow_list else "dict"
+        raise ValueError(f"Expected {expected}, got {type(parsed).__name__}")
+
+    except json.JSONDecodeError as e:
+        raise ValueError(f"JSON decode error at pos {e.pos}: {e.msg}") from e

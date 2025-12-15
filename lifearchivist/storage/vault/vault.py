@@ -298,12 +298,7 @@ class Vault:
 
         return total_cleaned
 
-    @track(
-        operation="vault_statistics",
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    # @track(operation="vault_statistics")
     async def get_vault_statistics(self) -> Dict[str, Any]:
         """
         Get comprehensive statistics about vault storage usage.
@@ -318,13 +313,13 @@ class Vault:
             - error: Error message if statistics collection fails
         """
         try:
-            log_event(
-                "vault_stats_collection_started",
-                {
-                    "vault_path": str(self.vault_path),
-                },
-                level=logging.DEBUG,
-            )
+            # log_event(
+            #     "vault_stats_collection_started",
+            #     {
+            #         "vault_path": str(self.vault_path),
+            #     },
+            #     level=logging.DEBUG,
+            # )
 
             directories = {
                 "content": self.content_dir,
@@ -347,16 +342,16 @@ class Vault:
             total_files = flat_stats.get("total_files", 0)
             total_mb = flat_stats.get("total_size_mb", 0.0)
 
-            log_event(
-                "vault_stats_collected",
-                {
-                    "total_files": total_files,
-                    "total_size_mb": round(total_mb, 2),
-                    "content_files": flat_stats.get("content_files", 0),
-                    "thumbnail_files": flat_stats.get("thumbnails_files", 0),
-                    "temp_files": flat_stats.get("temp_files", 0),
-                },
-            )
+            # log_event(
+            #     "vault_stats_collected",
+            #     {
+            #         "total_files": total_files,
+            #         "total_size_mb": round(total_mb, 2),
+            #         "content_files": flat_stats.get("content_files", 0),
+            #         "thumbnail_files": flat_stats.get("thumbnails_files", 0),
+            #         "temp_files": flat_stats.get("temp_files", 0),
+            #     },
+            # )
 
             return {
                 "vault_path": str(self.vault_path),

@@ -22,14 +22,20 @@ from .models import (
     ExecutionPlan,
     QueryComplexity,
 )
-from .orchestrator import AgentOrchestrator
+from .phase_coordinator import PhaseCoordinator
 from .plan_validator import PlanValidator
+from .strategic_planner import StrategicPlanner
+from .tactical_planner import TacticalPlanner
+from .tactical_planner_factory import TacticalPlannerFactory
 from .tool_registry import AgentToolRegistry
 from .tools import BaseAgentTool
 from .utils import PromptBuilder
 
 __all__ = [
-    "AgentOrchestrator",
+    "TacticalPlanner",
+    "StrategicPlanner",
+    "TacticalPlannerFactory",
+    "PhaseCoordinator",
     "AgentSpawner",
     "ComplexityClassifier",
     "TaskExecutor",

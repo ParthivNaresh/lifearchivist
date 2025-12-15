@@ -9,6 +9,7 @@ class AgentEventType(Enum):
     COMPLEXITY_CLASSIFIED = "complexity_classified"
     PLAN_CREATED = "plan_created"
     PLAN_VALIDATED = "plan_validated"
+    PHASE_COMPLETED = "phase_completed"
     TASK_STARTED = "task_started"
     TASK_PROGRESS = "task_progress"
     TASK_COMPLETED = "task_completed"
@@ -113,3 +114,7 @@ class AgentEvent:
     @classmethod
     def complexity_classified(cls, classification: Any) -> "AgentEvent":
         return cls(type=AgentEventType.COMPLEXITY_CLASSIFIED, data=classification)
+
+    @classmethod
+    def phase_completed(cls, phase_id: str) -> "AgentEvent":
+        return cls(type=AgentEventType.PHASE_COMPLETED, data={"phase_id": phase_id})

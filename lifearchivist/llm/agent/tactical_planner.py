@@ -9,13 +9,11 @@ from typing import (
     List,
     Mapping,
     Optional,
-    cast,
 )
 
 from ...llm import LLMMessage
 from ...utils.logx import log_event
 from .complexity_classifier import ComplexityClassifier
-from .constants import MAX_JSON_CHARS
 from .exceptions import PlanningError
 from .executor import TaskExecutor
 from .models.context import ConversationContext
@@ -23,21 +21,24 @@ from .models.events import AgentEvent, AgentEventType
 from .models.task import AgentTask, ExecutionPlan
 from .plan_validator import PlanValidator
 from .tool_registry import AgentToolRegistry
-from .utils.prompt_builder import PromptBuilder
+from .utils import PromptBuilder, json_loads_strict
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
 
 
-class AgentOrchestrator:
+class TacticalPlanner:
     """
-    Orchestrates:
-      1) complexity classification
-      2) plan creation (LLM)
-      3) validation
-      4) plan execution (streaming events)
-      5) synthesis (streaming chunks)
-    Emits only AgentEvents; never tears down the stream with exceptions.
+    Tactical Planner: Creates detailed task DAGs from goals.
+
+    Responsibilities:
+    - Convert goals (user queries or phase descriptions) into task DAGs
+    - Validate plans
+    - Execute tasks via executor
+    - Synthesize final responses
+
+    Can be used standalone (direct planning) or as part of hierarchical system
+    (tactical planning for phases).
     """
 
     def __init__(
@@ -49,15 +50,13 @@ class AgentOrchestrator:
         prompt_builder: PromptBuilder,
         plan_validator: PlanValidator,
         *,
-        on_observe: Optional[
-            Callable[[str, Mapping[str, Any]], None]
-        ] = None,  # callable(event_name: str, fields: dict)
+        on_observe: Optional[Callable[[str, Mapping[str, Any]], None]] = None,
         planning_model: str = "qwen2.5:7b",
         planning_temperature: float = 0.2,
         synthesis_model: str = "qwen2.5:7b",
         synthesis_temperature: float = 0.7,
-        max_plan_reasoning_chars: int = 2000,  # trim reasoning echoed in events
-        max_param_preview_chars: int = 256,  # trim per-param preview in events
+        max_plan_reasoning_chars: int = 2000,
+        max_param_preview_chars: int = 256,
     ):
         self.llm = llm_provider_manager
         self.tools = tool_registry
@@ -74,21 +73,17 @@ class AgentOrchestrator:
         self.max_plan_reasoning_chars = max_plan_reasoning_chars
         self.max_param_preview_chars = max_param_preview_chars
 
-    # @track(operation="process_query")
     async def process_query(
         self, query: str, context: ConversationContext
     ) -> AsyncGenerator[AgentEvent, None]:
         """
-        High-level pipeline that yields AgentEvents:
-        COMPLEXITY_CLASSIFIED -> (maybe ERROR) ->
-        PLAN_CREATED -> (TASK_*... -> PLAN_COMPLETED | PLAN_FAILED) ->
-        SYNTHESIS_* -> COMPLETE
+        Process query end-to-end: plan → execute → synthesize.
         """
         try:
-            plan = await self._create_execution_plan(query, context)
+            plan = await self.create_tactical_plan(query, context)
         except PlanningError as e:
             log_event(
-                "orchestrator_planning_error",
+                "tactical_planner_planning_error",
                 {
                     "conversation_id": context.conversation_id,
                     "error": str(e),
@@ -101,7 +96,7 @@ class AgentOrchestrator:
             return
         except Exception as e:
             log_event(
-                "orchestrator_planning_exception",
+                "tactical_planner_planning_exception",
                 {
                     "conversation_id": context.conversation_id,
                     "error": str(e),
@@ -133,7 +128,7 @@ class AgentOrchestrator:
 
         if plan_failed:
             log_event(
-                "orchestrator_execution_failed",
+                "tactical_planner_execution_failed",
                 {
                     "conversation_id": context.conversation_id,
                     "completed_tasks": len(task_results),
@@ -149,7 +144,7 @@ class AgentOrchestrator:
 
         if not plan_failed:
             log_event(
-                "------------------------------------------------ STARTING ORCHESTRATOR SYNTHESIS ------------------------------------------------"
+                "------------------------------------------------ STARTING TACTICAL PLANNER SYNTHESIS ------------------------------------------------"
             )
             yield AgentEvent.synthesis_started()
             try:
@@ -159,12 +154,12 @@ class AgentOrchestrator:
                     yield AgentEvent.response_chunk(chunk)
 
                 log_event(
-                    "------------------------------------------------ FINISHED ORCHESTRATOR SYNTHESIS ------------------------------------------------"
+                    "------------------------------------------------ FINISHED TACTICAL PLANNER SYNTHESIS ------------------------------------------------"
                 )
                 log_event(json.dumps({"Synthesized": chunks}, indent=2))
             except Exception as e:
                 log_event(
-                    "orchestrator_synthesis_failed",
+                    "tactical_planner_synthesis_failed",
                     {
                         "conversation_id": context.conversation_id,
                         "error": str(e),
@@ -177,20 +172,38 @@ class AgentOrchestrator:
 
         yield AgentEvent.complete()
 
-    async def _create_execution_plan(
-        self, query: str, context: ConversationContext
+    async def create_tactical_plan(
+        self,
+        query: str,
+        context: ConversationContext,
+        available_tools: Optional[List[Any]] = None,
     ) -> ExecutionPlan:
+        """
+        Create detailed task DAG from a goal (query or phase description).
+
+        Args:
+            query: Goal to accomplish
+            context: Conversation context
+            available_tools: Tools to use (defaults to all tools)
+
+        Returns:
+            ExecutionPlan with validated task DAG
+        """
         log_event(
-            "================================================ BEGINNING ORCHESTRATOR PLAN ================================================"
+            "================================================ TACTICAL PLANNING ================================================"
         )
         log_event("")
 
+        tools_to_use = (
+            available_tools if available_tools is not None else self.tools.list_tools()
+        )
+
         prompt = self.prompt_builder.build_planning_prompt(
-            query=query, context=context, available_tools=self.tools.list_tools()
+            query=query, context=context, available_tools=tools_to_use
         )
 
         log_event(
-            "------------------------------------------------ PLAN REQUEST PAYLOAD ------------------------------------------------"
+            "------------------------------------------------ TACTICAL PLAN REQUEST ------------------------------------------------"
         )
         log_event(prompt)
 
@@ -203,7 +216,7 @@ class AgentOrchestrator:
 
         if result.is_failure():
             log_event(
-                "orchestrator_llm_generate_failed",
+                "tactical_planner_llm_failed",
                 {
                     "conversation_id": context.conversation_id,
                     "error": result.error,
@@ -215,15 +228,17 @@ class AgentOrchestrator:
         response = result.unwrap()
 
         log_event(
-            "-------------------------------------- PLAN LLM RESPONSE --------------------------------------"
+            "-------------------------------------- TACTICAL PLAN LLM RESPONSE --------------------------------------"
         )
 
         try:
-            plan_data = self._json_loads_strict(response.content)
+            plan_data = json_loads_strict(
+                response.content, allow_list=True, list_wrapper_key="tasks"
+            )
             log_event(json.dumps(plan_data, indent=4))
         except Exception as e:
             log_event(
-                "orchestrator_json_parse_failed",
+                "tactical_planner_json_parse_failed",
                 {
                     "conversation_id": context.conversation_id,
                     "error": str(e),
@@ -231,7 +246,7 @@ class AgentOrchestrator:
                 },
                 level=logging.ERROR,
             )
-            raise PlanningError(f"Invalid plan JSON: {e}") from e
+            raise PlanningError(f"Invalid tactical plan JSON: {e}") from e
 
         try:
             raw_tasks = plan_data["tasks"]
@@ -257,14 +272,14 @@ class AgentOrchestrator:
                 reasoning=str(plan_data.get("reasoning", "")),
             )
             log_event(
-                "plan created",
+                "tactical_plan_created",
                 {
                     "tasks": [t.to_dict() for t in tasks],
                 },
             )
         except Exception as e:
             log_event(
-                "orchestrator_plan_construction_failed",
+                "tactical_plan_construction_failed",
                 {
                     "conversation_id": context.conversation_id,
                     "error": str(e),
@@ -272,7 +287,7 @@ class AgentOrchestrator:
                 },
                 level=logging.ERROR,
             )
-            raise PlanningError(f"Plan construction failed: {e}") from e
+            raise PlanningError(f"Tactical plan construction failed: {e}") from e
 
         self.validator.validate(plan)
 
@@ -284,17 +299,12 @@ class AgentOrchestrator:
         """
         Streams final answer text (already chunked by provider).
         """
-        log_event(
-            "================================================  STRUCTURED EXTRACTION  ================================================"
-        )
-        log_event("")
-
         prompt = self.prompt_builder.build_synthesis_prompt(
             query=query, plan=plan, results=task_results
         )
 
         log_event(
-            "-------------------------------------- REQUEST PAYLOAD --------------------------------------"
+            "-------------------------------------- SYNTHESIS PROMPT --------------------------------------"
         )
         log_event(prompt)
 
@@ -303,13 +313,11 @@ class AgentOrchestrator:
             model=self.synthesis_model,
             temperature=self.synthesis_temperature,
         ):
-            # Provider chunks typically have .content
             yield getattr(chunk, "content", str(chunk))
 
     def _summarize_plan(self, plan: ExecutionPlan) -> Dict[str, Any]:
         """
         Compact, JSON-safe plan summary for PLAN_CREATED event.
-        Prevents giant or non-serializable payloads.
         """
         return {
             "estimated_time_seconds": int(plan.estimated_time_seconds),
@@ -328,10 +336,6 @@ class AgentOrchestrator:
         }
 
     def _preview_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Produce a shallow, compact preview of parameters for event payloads.
-        Strings are trimmed; lists/dicts show sizes.
-        """
         preview: Dict[str, Any] = {}
         for k, v in params.items():
             if isinstance(v, str):
@@ -346,63 +350,9 @@ class AgentOrchestrator:
                 preview[k] = {"type": type(v).__name__}
         return preview
 
-    def _extract_json_from_markdown(self, s: str) -> str:
-        """
-        Extract JSON from markdown code blocks if present.
-
-        LLMs often wrap JSON in ```json or ``` blocks despite being asked for raw JSON.
-        This method strips those wrappers and returns the clean JSON string.
-        """
-        s = s.strip()
-
-        if s.startswith("```"):
-            lines = s.split("\n")
-
-            if lines[0].strip() in ("```", "```json", "```JSON"):
-                lines = lines[1:]
-
-            if lines and lines[-1].strip() == "```":
-                lines = lines[:-1]
-
-            s = "\n".join(lines).strip()
-
-        return s
-
-    def _json_loads_strict(self, s: str) -> Dict[str, Any]:
-        """
-        Strict JSON parse with markdown code block handling.
-
-        Handles cases where LLMs wrap JSON in markdown code blocks or return
-        a list instead of a dict with a "tasks" key.
-        """
-        if len(s) > MAX_JSON_CHARS:
-            raise ValueError(f"LLM JSON exceeds {MAX_JSON_CHARS} chars")
-
-        s_clean = self._extract_json_from_markdown(s)
-
-        try:
-            parsed = json.loads(s_clean)
-
-            if isinstance(parsed, list):
-                return {
-                    "tasks": parsed,
-                    "estimated_time_seconds": 0,
-                    "estimated_cost_usd": 0.0,
-                    "reasoning": "LLM returned task list directly without wrapper object",
-                }
-
-            if isinstance(parsed, dict):
-                return cast(Dict[str, Any], parsed)
-
-            raise ValueError(f"Expected dict or list, got {type(parsed).__name__}")
-
-        except json.JSONDecodeError as e:
-            raise ValueError(f"JSON decode error at pos {e.pos}: {e.msg}") from e
-
     def _observe(self, event: str, **fields: Any) -> None:
         if callable(self._obs):
             try:
                 self._obs(event, dict(fields))
             except Exception:
-                # Never let observability break control flow
                 pass

@@ -5,7 +5,7 @@ from ....utils.logx import log_event
 from .parsing import _compact_for_synthesis, sanitize_tool_output
 
 if TYPE_CHECKING:
-    from .. import BaseAgentTool
+    from ..tools.base import BaseAgentTool
 
     ToolLike = Union[Dict[str, Any], "BaseAgentTool"]
 else:
@@ -18,6 +18,136 @@ class PromptBuilder:
     Centralized, compact prompt templates for classification, planning, task execution, and synthesis.
     Prompts prefer small previews over full payloads to control token use.
     """
+
+    # ------------ Strategic Planning ------------
+    def build_strategic_planning_prompt(
+        self,
+        *,
+        query: str,
+        context: Any,
+        available_tools: Iterable[ToolLike],
+        max_phases: int = 7,
+    ) -> str:
+        tools_text = self._tools_as_text(available_tools, compact=True)
+        history_preview = self._preview(
+            self._maybe_get(context, "recent_messages"), 800
+        )
+
+        return f"""You are a strategic planner for a multi-tool agent system. Your job is to break down complex user queries into high-level phases.
+
+USER QUERY:
+{query}
+
+RECENT CONVERSATION (preview):
+{history_preview}
+
+AVAILABLE TOOLS (short descriptions):
+{tools_text}
+
+YOUR TASK:
+Analyze the user's query and create a strategic plan consisting of 3-7 high-level phases. Each phase represents a major step toward completing the user's request.
+
+PHASE DESIGN PRINCIPLES:
+1. Each phase should be a cohesive unit of work (e.g., "discover documents", "extract data", "generate report")
+2. Phases should have clear dependencies (which phases must complete before this one starts)
+3. Assign required_tools to each phase (which tools from the AVAILABLE TOOLS list are needed)
+4. Estimate complexity: "simple" (1-3 tasks), "medium" (4-8 tasks), "complex" (9+ tasks)
+5. Keep phases coarse-grained - detailed task planning happens later
+
+COMPLEXITY GUIDELINES:
+- "simple": Single tool, straightforward operation (e.g., search documents)
+- "medium": Multiple tool calls or moderate data processing (e.g., extract from multiple docs)
+- "complex": Many iterations, large data volumes, or sophisticated logic (e.g., aggregate 50+ documents)
+
+TOOL ASSIGNMENT:
+- List tool names that will be needed in this phase
+- Be inclusive - if a tool might be needed, include it
+- Tools will be filtered more precisely in detailed planning
+
+CONSTRAINTS:
+- Max phases: {max_phases}
+- Phase IDs must be lowercase with underscores (e.g., "discover_docs", "extract_data")
+- Dependencies must form a DAG (no cycles)
+
+EXAMPLE 1 - Simple Query ("Organize my blood tests"):
+{{
+  "strategy": "Search for blood test documents and extract key information",
+  "phases": [
+    {{
+      "phase_id": "search_documents",
+      "description": "Find all blood test related documents",
+      "required_tools": ["document_search"],
+      "depends_on": [],
+      "estimated_complexity": "simple"
+    }},
+    {{
+      "phase_id": "extract_results",
+      "description": "Extract test results, dates, and values from documents",
+      "required_tools": ["structured_extraction"],
+      "depends_on": ["search_documents"],
+      "estimated_complexity": "medium"
+    }}
+  ]
+}}
+
+EXAMPLE 2 - Complex Query ("Build financial health presentation"):
+{{
+  "strategy": "Multi-phase financial analysis: discover documents, extract data from different sources, aggregate, and generate presentation",
+  "phases": [
+    {{
+      "phase_id": "discover_financial_docs",
+      "description": "Search for all financial documents (bank statements, brokerage, tax docs)",
+      "required_tools": ["document_search"],
+      "depends_on": [],
+      "estimated_complexity": "simple"
+    }},
+    {{
+      "phase_id": "extract_banking_data",
+      "description": "Extract transaction data, balances, and trends from bank statements",
+      "required_tools": ["structured_extraction", "text_extraction"],
+      "depends_on": ["discover_financial_docs"],
+      "estimated_complexity": "complex"
+    }},
+    {{
+      "phase_id": "extract_investment_data",
+      "description": "Extract portfolio data, returns, and holdings from brokerage statements",
+      "required_tools": ["structured_extraction", "text_extraction"],
+      "depends_on": ["discover_financial_docs"],
+      "estimated_complexity": "complex"
+    }},
+    {{
+      "phase_id": "aggregate_financial_data",
+      "description": "Combine and analyze all financial data to compute net worth, trends, insights",
+      "required_tools": ["structured_extraction"],
+      "depends_on": ["extract_banking_data", "extract_investment_data"],
+      "estimated_complexity": "medium"
+    }},
+    {{
+      "phase_id": "generate_presentation",
+      "description": "Create presentation with charts, summaries, and recommendations",
+      "required_tools": ["text_extraction"],
+      "depends_on": ["aggregate_financial_data"],
+      "estimated_complexity": "medium"
+    }}
+  ]
+}}
+
+OUTPUT FORMAT:
+Return STRICT JSON (no markdown, no prose) matching this schema:
+{{
+  "strategy": "brief description of overall approach",
+  "phases": [
+    {{
+      "phase_id": "unique_lowercase_id",
+      "description": "what this phase accomplishes",
+      "required_tools": ["tool_name1", "tool_name2"],
+      "depends_on": ["other_phase_ids"],
+      "estimated_complexity": "simple" | "medium" | "complex"
+    }},
+    ...
+  ]
+}}
+"""
 
     # ------------ Complexity ------------
     def build_complexity_classification_prompt(
@@ -72,138 +202,191 @@ Output only the JSON object, nothing else.
             self._maybe_get(context, "recent_messages"), 1200
         )
 
-        return f"""You are a planner for a multi-tool agent. Plan a DAG of tasks to answer the user's query.
-    
-    USER QUERY:
-    {query}
-    
-    RECENT CONVERSATION (preview):
-    {history_preview}
-    
-    AVAILABLE TOOLS:
-    {tools_text}
-    
-    CRITICAL RULES:
-    1) ONLY use tools from the AVAILABLE TOOLS list above.
-    2) Each task MUST have a valid "tool_name" from the list.
-    3) Do NOT invent tools that don't exist; do NOT leave tool_name empty.
-    4) Respect tool contracts:
-       - If a tool states it REQUIRES LLM, set "requires_llm": true on that task.
-       - If a tool does not require LLM, you may set true or false based on need.
-    5) All parameters MUST match the tool's expected input schema.
-    6) All dependencies MUST form a DAG (no cycles).
-    
-    DEPENDENCY BINDING SYNTAX (VERY IMPORTANT):
-    - To pass outputs from an upstream task into a downstream task parameter, use a placeholder:
-        "<from TASK_ID>"
-    - You may optionally limit how many items you take from the upstream result:
-        "<from TASK_ID | top_k=N>"
-    - The placeholder MUST exactly match one of the above forms.
-    - If you use "<from TASK_ID...>", then TASK_ID MUST appear in "depends_on" for that task.
-    - Do NOT use any other templating or variable syntax.
-    
-    TOOL PARAMETER CHEATSHEET (follow exactly):
-    - document_search (LLM-only):
-        - requires_llm: true
-        - parameters:
-            {{
-              "query": string,
-              "search_method": "hybrid" | "semantic" | "keyword" | "metadata",
-              "top_k": integer (1-100),
-              "similarity_threshold": float (0..1)   // optional, recommended
-              "semantic_weight": float (0..1)        // optional, recommended for hybrid
-              "mime_types": [string]?,
-              "themes": [string]?,
-              "date_filter": {{"after": "YYYY-MM-DD"?, "before": "YYYY-MM-DD"?"}}?,
-              "status": string?,
-              "include_metadata": true/false?,
-              "include_text_preview": true/false?,
-              "instructions": string?,               // guidance to the search agent
-              "model": string?                       // optional model hint
-            }}
-    
-    - structured_extraction:
-        - requires_llm: true (recommended)
-        - parameters:
-            {{
-              "document_ids": ["<from SEARCH_TASK_ID>" | "<from SEARCH_TASK_ID | top_k=N>", ...]  // usually one placeholder list
-              "fields": [string, ...],
-              "max_total_chars": integer?,      // optional safety cap
-              "max_chunks_per_doc": integer?,   // optional per-doc cap
-              "model": string?                  // optional model hint
-            }}
-    
-    - text_extraction:
-        - requires_llm: true
-        - parameters:
-            {{
-              "document_ids": ["<from SEARCH_TASK_ID>" | "<from SEARCH_TASK_ID | top_k=N>", ...]  // usually one placeholder list
-              "instructions": string,           // what to extract/summarize
-              "style": "concise" | "detailed" | "bullet_points" | "narrative" | "technical" | "executive",
-              "focus": "overview" | "key_points" | "insights" | "recommendations" | "analysis" | "comparison"?,
-              "max_output_length": integer?,    // target word count
-              "include_citations": true/false?, // include document references
-              "model": string?                  // optional model hint
-            }}
-    
-    CONSTRAINTS:
-    - Max tasks: {max_tasks}
-    
-    EXAMPLE - Document Search (LLM) + Extraction:
-    {{
-      "tasks": [
+        has_provided_doc_ids = "DOCUMENT IDS FROM PREVIOUS PHASES" in query
+
+        base_prompt = f"""You are a planner for a multi-tool agent. Plan a DAG of tasks to answer the user's query.
+
+USER QUERY:
+{query}
+
+RECENT CONVERSATION (preview):
+{history_preview}
+
+AVAILABLE TOOLS:
+{tools_text}
+
+CRITICAL RULES:
+1) ONLY use tools from the AVAILABLE TOOLS list above.
+2) Each task MUST have a valid "tool_name" from the list.
+3) Do NOT invent tools that don't exist; do NOT leave tool_name empty.
+4) Respect tool contracts:
+   - If a tool states it REQUIRES LLM, set "requires_llm": true on that task.
+   - If a tool does not require LLM, you may set true or false based on need.
+5) All parameters MUST match the tool's expected input schema.
+6) All dependencies MUST form a DAG (no cycles).
+7) "depends_on" MUST ONLY reference task_ids defined in THIS PLAN - never reference external IDs or phase names.
+"""
+
+        if has_provided_doc_ids:
+            base_prompt += """
+IMPORTANT - DOCUMENT IDS ALREADY PROVIDED:
+The query above contains "DOCUMENT IDS FROM PREVIOUS PHASES" with actual document IDs.
+- Use these document IDs DIRECTLY in the "document_ids" parameter as a literal array of strings.
+- Do NOT use "<from ...>" placeholder syntax for these IDs.
+- Do NOT add any "depends_on" entries for these IDs - they are already resolved.
+- Example: "document_ids": ["abc123", "def456"] (use the actual IDs from the query)
+
+"""
+        else:
+            base_prompt += """
+DEPENDENCY BINDING SYNTAX (for multi-task plans):
+- To pass outputs from an upstream task INTO a downstream task parameter, use a placeholder:
+    "<from TASK_ID>"
+- You may optionally limit how many items you take from the upstream result:
+    "<from TASK_ID | top_k=N>"
+- The placeholder MUST exactly match one of the above forms.
+- If you use "<from TASK_ID...>", then TASK_ID MUST appear in "depends_on" for that task.
+- Do NOT use any other templating or variable syntax.
+
+CRITICAL - document_ids MUST BE AN ARRAY:
+- When using "<from TASK_ID>" for document_ids, it MUST be inside an array: ["<from TASK_ID>"]
+- WRONG: "document_ids": "<from search_docs>"
+- CORRECT: "document_ids": ["<from search_docs>"]
+
+"""
+
+        base_prompt += f"""TOOL PARAMETER CHEATSHEET (follow exactly):
+- document_search (LLM-only):
+    - requires_llm: true
+    - parameters:
         {{
-          "task_id": "search_docs",
-          "tool_name": "document_search",
-          "description": "Find relevant blood test documents",
-          "requires_llm": true,
-          "parameters": {{
-            "query": "blood test",
-            "search_method": "hybrid",
-            "top_k": 5,
-            "similarity_threshold": 0.3,
-            "semantic_weight": 0.6,
-            "instructions": "Prefer recent lab reports; exclude appointment reminders."
-          }},
-          "depends_on": []
-        }},
-        {{
-          "task_id": "extract_data",
-          "tool_name": "structured_extraction",
-          "description": "Extract test_type, date, results from the retrieved documents",
-          "requires_llm": true,
-          "parameters": {{
-            "document_ids": ["<from search_docs>"],
-            "fields": ["test_type", "date", "results"],
-            "max_total_chars": 200000,
-            "max_chunks_per_doc": 100
-          }},
-          "depends_on": ["search_docs"]
+          "query": string,
+          "search_method": "hybrid" | "semantic" | "keyword" | "metadata",
+          "top_k": integer (1-100),
+          "similarity_threshold": float (0..1)   // optional, recommended
+          "semantic_weight": float (0..1)        // optional, recommended for hybrid
+          "mime_types": [string]?,
+          "themes": [string]?,
+          "date_filter": {{"after": "YYYY-MM-DD"?, "before": "YYYY-MM-DD"?"}}?,
+          "status": string?,
+          "include_metadata": true/false?,
+          "include_text_preview": true/false?,
+          "instructions": string?,               // guidance to the search agent
+          "model": string?                       // optional model hint
         }}
-      ],
-      "estimated_time_seconds": 45,
-      "estimated_cost_usd": 0.02,
-      "reasoning": "Search first with LLM-chosen strategy; then extract structured fields with provenance."
-    }}
-    
-    OUTPUT FORMAT:
-    Return STRICT JSON (no markdown, no prose) matching this schema:
-    {{
-      "tasks": [
+
+- structured_extraction:
+    - requires_llm: true (recommended)
+    - parameters:
         {{
-          "task_id": "unique_id",
-          "tool_name": "MUST be from AVAILABLE TOOLS list",
-          "description": "what this task does",
-          "requires_llm": true/false,
-          "parameters": {{}},
-          "depends_on": ["other_task_ids"]
+          "document_ids": [string, ...]         // array of document ID strings
+          "fields": [string, ...],
+          "max_total_chars": integer?,      // optional safety cap
+          "max_chunks_per_doc": integer?,   // optional per-doc cap
+          "model": string?                  // optional model hint
         }}
-      ],
-      "estimated_time_seconds": number,
-      "estimated_cost_usd": number,
-      "reasoning": "brief explanation"
+
+- text_extraction:
+    - requires_llm: true
+    - parameters:
+        {{
+          "document_ids": [string, ...]         // array of document ID strings
+          "instructions": string,           // what to extract/summarize
+          "style": "concise" | "detailed" | "bullet_points" | "narrative" | "technical" | "executive",
+          "focus": "overview" | "key_points" | "insights" | "recommendations" | "analysis" | "comparison"?,
+          "max_output_length": integer?,    // target word count
+          "include_citations": true/false?, // include document references
+          "model": string?                  // optional model hint
+        }}
+
+CONSTRAINTS:
+- Max tasks: {max_tasks}
+"""
+
+        if has_provided_doc_ids:
+            base_prompt += """
+EXAMPLE - Using Pre-Provided Document IDs:
+{{
+  "tasks": [
+    {{
+      "task_id": "extract_data",
+      "tool_name": "structured_extraction",
+      "description": "Extract gross pay information from the documents",
+      "requires_llm": true,
+      "parameters": {{
+        "document_ids": ["doc_abc123", "doc_def456"],
+        "fields": ["gross_pay", "pay_date", "employer"],
+        "max_total_chars": 200000,
+        "max_chunks_per_doc": 100
+      }},
+      "depends_on": []
     }}
-    """
+  ],
+  "estimated_time_seconds": 30,
+  "estimated_cost_usd": 0.01,
+  "reasoning": "Extract structured fields from the provided documents."
+}}
+"""
+        else:
+            base_prompt += """
+EXAMPLE - Document Search (LLM) + Extraction:
+{{
+  "tasks": [
+    {{
+      "task_id": "search_docs",
+      "tool_name": "document_search",
+      "description": "Find relevant blood test documents",
+      "requires_llm": true,
+      "parameters": {{
+        "query": "blood test",
+        "search_method": "hybrid",
+        "top_k": 5,
+        "similarity_threshold": 0.3,
+        "semantic_weight": 0.6,
+        "instructions": "Prefer recent lab reports; exclude appointment reminders."
+      }},
+      "depends_on": []
+    }},
+    {{
+      "task_id": "extract_data",
+      "tool_name": "structured_extraction",
+      "description": "Extract test_type, date, results from the retrieved documents",
+      "requires_llm": true,
+      "parameters": {{
+        "document_ids": ["<from search_docs>"],
+        "fields": ["test_type", "date", "results"],
+        "max_total_chars": 200000,
+        "max_chunks_per_doc": 100
+      }},
+      "depends_on": ["search_docs"]
+    }}
+  ],
+  "estimated_time_seconds": 45,
+  "estimated_cost_usd": 0.02,
+  "reasoning": "Search first with LLM-chosen strategy; then extract structured fields with provenance."
+}}
+"""
+
+        base_prompt += """
+OUTPUT FORMAT:
+Return STRICT JSON (no markdown, no prose) matching this schema:
+{{
+  "tasks": [
+    {{
+      "task_id": "unique_id",
+      "tool_name": "MUST be from AVAILABLE TOOLS list",
+      "description": "what this task does",
+      "requires_llm": true/false,
+      "parameters": {{}},
+      "depends_on": ["other_task_ids_from_THIS_plan_only"]
+    }}
+  ],
+  "estimated_time_seconds": number,
+  "estimated_cost_usd": number,
+  "reasoning": "brief explanation"
+}}
+"""
+        return base_prompt
 
     # ------------ Task (LLM-assisted tools) ------------
     def build_agent_prompt(self, *, task, tool, context: Dict[str, Any]) -> str:
@@ -309,22 +492,48 @@ INSTRUCTIONS:
         )
 
     # ------------ Helpers ------------
-    def _tools_as_text(self, tools: Iterable[ToolLike]) -> str:
+    def _tools_as_text(
+        self, tools: Iterable[ToolLike], *, compact: bool = False
+    ) -> str:
         """
         Accepts either tool objects (with .descriptor()) or plain descriptors.
-        Emits a compact, deterministic list.
+        Emits a compact, deterministic list optimized for token efficiency.
         """
         lines: List[str] = []
         for tool in tools:
             d = self._tool_descriptor(tool)
             name = d.get("name", "")
             rllm = d.get("requires_llm", False)
-            summary = d.get("summary") or ""
-            schema = d.get("input_schema") or {}
-            prop_keys = list(schema.get("properties", {}).keys())
-            lines.append(
-                f"- {name} (requires_llm={rllm}) — {summary} | params={prop_keys}"
-            )
+
+            if compact:
+                summary = d.get("summary_short") or (d.get("summary") or "")[:140]
+                priority_params = d.get("priority_params", [])
+
+                if not priority_params:
+                    schema = d.get("input_schema") or {}
+                    required = schema.get("required", [])
+                    props = schema.get("properties", {})
+                    priority_params = (
+                        required[:4] if required else list(props.keys())[:4]
+                    )
+
+                params_str = ", ".join(priority_params[:4])
+                if len(priority_params) > 4:
+                    params_str += ", ..."
+
+                line = f"- {name} (llm={str(rllm).lower()}): {summary}"
+                if params_str:
+                    line += f" | {params_str}"
+            else:
+                summary = d.get("summary") or ""
+                schema = d.get("input_schema") or {}
+                prop_keys = list(schema.get("properties", {}).keys())
+                line = (
+                    f"- {name} (requires_llm={rllm}) — {summary} | params={prop_keys}"
+                )
+
+            lines.append(line)
+
         return "\n".join(lines) if lines else "No tools available"
 
     def _tool_descriptor(self, tool: ToolLike) -> Dict[str, Any]:

@@ -1,12 +1,13 @@
 import asyncio
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 from .....llm import LLMMessage
 from .....llm.agent.exceptions import ToolExecutionError
 from .....llm.agent.tools.base import BaseAgentTool
+from .....llm.agent.tools.chunk_utils import gather_document_chunks
 from .....llm.agent.tools.text_extraction.models import (
     TextExtractionMetrics,
     TextExtractionParams,
@@ -20,8 +21,8 @@ from .....llm.agent.utils.prompt_builder import _build_text_extraction_system_me
 from .....utils.logx import log_event
 
 if TYPE_CHECKING:
-    from llm import LLMProviderManager
-    from storage.document_service import LlamaIndexDocumentService
+    from .....llm import LLMProviderManager
+    from .....storage.document_service import LlamaIndexDocumentService
 
 
 class TextExtractionTool(BaseAgentTool):
@@ -46,6 +47,9 @@ class TextExtractionTool(BaseAgentTool):
         "and focus areas (overview, key points, insights, recommendations, analysis, comparison). "
         "Ideal for document summarization and content analysis tasks."
     )
+    summary_short = (
+        "Summarize and analyze documents as prose with configurable style and focus"
+    )
     requires_llm = True
     input_model = TextExtractionParams
 
@@ -63,7 +67,7 @@ class TextExtractionTool(BaseAgentTool):
         This tool requires an LLM; non-LLM execution is not supported.
         """
         raise ToolExecutionError(
-            f"{self.name} requires LLM; use execute_with_llm via the orchestrator."
+            f"{self.name} requires LLM; use execute_with_llm via the tactical_planner."
         )
 
     async def execute_with_llm(
@@ -95,9 +99,10 @@ class TextExtractionTool(BaseAgentTool):
         )
 
         metrics = TextExtractionMetrics()
-        raw_chunks = await self._gather_chunks(
+        raw_chunks = await gather_document_chunks(
+            document_service=self.document_service,
             document_ids=p.document_ids,
-            max_chunks=p.max_chunks_per_doc,
+            max_chunks_per_doc=p.max_chunks_per_doc,
             max_chars_per_chunk=p.max_chars_per_chunk,
             max_total_chars=p.max_total_chars,
             fetch_concurrency=p.fetch_concurrency,
@@ -243,78 +248,6 @@ class TextExtractionTool(BaseAgentTool):
     def _assert_ready(self) -> None:
         if self.document_service is None:
             raise ToolExecutionError(f"{self.name}: document_service is not configured")
-
-    async def _gather_chunks(
-        self,
-        *,
-        document_ids: Sequence[str],
-        max_chunks: int,
-        max_chars_per_chunk: int,
-        max_total_chars: int,
-        fetch_concurrency: int,
-        metrics: TextExtractionMetrics,
-    ) -> List[Dict[str, str]]:
-        """
-        Fetch chunks per document asynchronously with bounded concurrency.
-        Enforces per-chunk and total character budgets.
-        """
-        sem = asyncio.Semaphore(fetch_concurrency)
-        all_chunks: List[Dict[str, str]] = []
-
-        async def _fetch_one(doc_id: str) -> List[Dict[str, str]]:
-            async with sem:
-                doc_service = self.document_service
-                if doc_service is None:
-                    return []
-                try:
-                    chunks_result = await doc_service.get_document_chunks(
-                        doc_id, limit=max_chunks
-                    )
-                except Exception:
-                    return []
-
-                if hasattr(chunks_result, "is_failure") and chunks_result.is_failure():
-                    return []
-
-                data = (
-                    chunks_result.unwrap()
-                    if hasattr(chunks_result, "unwrap")
-                    else chunks_result
-                )
-                raw_chunks = (
-                    (data or {}).get("chunks", []) if isinstance(data, dict) else data
-                )
-
-                out: List[Dict[str, str]] = []
-                for ch in raw_chunks or []:
-                    text = (
-                        ch.get("text")
-                        if isinstance(ch, dict)
-                        else getattr(ch, "text", "")
-                    ) or ""
-                    if not text:
-                        continue
-                    if len(text) > max_chars_per_chunk:
-                        text = text[:max_chars_per_chunk]
-                    out.append({"doc_id": doc_id, "text": text})
-                return out
-
-        per_doc_lists = await asyncio.gather(
-            *[_fetch_one(doc_id) for doc_id in document_ids],
-            return_exceptions=False,
-        )
-
-        metrics.documents_seen = len(document_ids)
-        running_chars = 0
-        for chunk_list in per_doc_lists:
-            for ch in chunk_list:
-                t = ch["text"]
-                if running_chars + len(t) > max_total_chars:
-                    return all_chunks
-                all_chunks.append(ch)
-                running_chars += len(t)
-
-        return all_chunks
 
     async def _call_llm_generate(
         self,

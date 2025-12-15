@@ -46,6 +46,7 @@ class DocumentSearchTool(BaseAgentTool):
         "and metadata (structured filter) search methods. "
         "Returns document IDs, scores, and metadata for use in downstream tasks."
     )
+    summary_short = "Find documents using semantic, keyword, hybrid, or metadata search"
     requires_llm = True
     input_model = DocumentSearchParams
 

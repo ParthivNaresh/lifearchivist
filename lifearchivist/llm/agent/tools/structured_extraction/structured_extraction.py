@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -8,6 +8,7 @@ from .....llm import LLMMessage
 from .....llm.agent.exceptions import ToolExecutionError
 from .....llm.agent.schema_builder import SchemaBuilder
 from .....llm.agent.tools.base import BaseAgentTool
+from .....llm.agent.tools.chunk_utils import gather_document_chunks
 from .....llm.agent.tools.structured_extraction.models import (
     ExtractionMetrics,
     StructuredExtractionParams,
@@ -18,12 +19,14 @@ from .....llm.agent.utils.parsing import (
     _unwrap_result_or_raise,
     clean_extraction_chunks,
 )
+from .....llm.agent.utils.prompt_builder import (
+    _build_structured_extraction_system_message,
+)
 from .....utils.logx import log_event
-from ...utils.prompt_builder import _build_structured_extraction_system_message
 
 if TYPE_CHECKING:
-    from llm import LLMProviderManager
-    from storage.document_service import LlamaIndexDocumentService
+    from .....llm import LLMProviderManager
+    from .....storage.document_service import LlamaIndexDocumentService
 
 
 class StructuredExtractionTool(BaseAgentTool):
@@ -42,6 +45,9 @@ class StructuredExtractionTool(BaseAgentTool):
         "Extracts structured information from specified documents. "
         "Performs targeted retrieval, compacts context under a strict budget, "
         "and synthesizes a STRICT JSON result with per-field provenance."
+    )
+    summary_short = (
+        "Extract structured JSON data from documents with field-level provenance"
     )
     requires_llm = True
     input_model = StructuredExtractionParams
@@ -68,7 +74,7 @@ class StructuredExtractionTool(BaseAgentTool):
         This tool requires an LLM; non-LLM execution is not supported.
         """
         raise ToolExecutionError(
-            f"{self.name} requires LLM; use execute_with_llm via the orchestrator."
+            f"{self.name} requires LLM; use execute_with_llm via the tactical_planner."
         )
 
     async def execute_with_llm(
@@ -99,13 +105,15 @@ class StructuredExtractionTool(BaseAgentTool):
         )
 
         metrics = ExtractionMetrics()
-        raw_chunks = await self._gather_chunks(
+        raw_chunks = await gather_document_chunks(
+            document_service=self.document_service,
             document_ids=p.document_ids,
-            max_chunks=p.max_chunks_per_doc,
+            max_chunks_per_doc=p.max_chunks_per_doc,
             max_chars_per_chunk=p.max_chars_per_chunk,
             max_total_chars=p.max_total_chars,
             fetch_concurrency=p.fetch_concurrency,
             metrics=metrics,
+            logger=self.log,
         )
 
         chunks = clean_extraction_chunks(
@@ -207,88 +215,6 @@ class StructuredExtractionTool(BaseAgentTool):
     def _assert_ready(self) -> None:
         if self.document_service is None:
             raise ToolExecutionError(f"{self.name}: document_service is not configured")
-
-    async def _gather_chunks(
-        self,
-        *,
-        document_ids: Sequence[str],
-        max_chunks: int,
-        max_chars_per_chunk: int,
-        max_total_chars: int,
-        fetch_concurrency: int,
-        metrics: ExtractionMetrics,
-    ) -> List[Dict[str, str]]:
-        """
-        Fetch chunks per document asynchronously (bounded by a semaphore),
-        trim each chunk to a per-chunk char budget, and enforce an overall
-        max_total_chars cap (greedy, stable order).
-        """
-        sem = asyncio.Semaphore(fetch_concurrency)
-        all_chunks: List[Dict[str, str]] = []
-
-        async def _fetch_one(doc_id: str) -> List[Dict[str, str]]:
-            async with sem:
-                doc_service = self.document_service
-                if doc_service is None:
-                    self.log.warning(
-                        "Document service not configured; skipping %s", doc_id
-                    )
-                    return []
-                try:
-                    chunks_result = await doc_service.get_document_chunks(
-                        doc_id, limit=max_chunks
-                    )
-                except Exception as e:
-                    self.log.warning("Failed to fetch chunks for %s: %s", doc_id, e)
-                    return []
-
-                # Support Result-like or raw list/dict responses
-                if hasattr(chunks_result, "is_failure") and chunks_result.is_failure():
-                    self.log.warning("Chunk fetch failure for %s", doc_id)
-                    return []
-
-                data = (
-                    chunks_result.unwrap()
-                    if hasattr(chunks_result, "unwrap")
-                    else chunks_result
-                )
-                raw_chunks = (
-                    (data or {}).get("chunks", []) if isinstance(data, dict) else data
-                )
-
-                out: List[Dict[str, str]] = []
-                for ch in raw_chunks or []:
-                    text = (
-                        ch.get("text")
-                        if isinstance(ch, dict)
-                        else getattr(ch, "text", "")
-                    ) or ""
-                    if not text:
-                        continue
-                    if len(text) > max_chars_per_chunk:
-                        text = text[:max_chars_per_chunk]
-                    out.append({"doc_id": doc_id, "text": text})
-                return out
-
-        per_doc_lists = await asyncio.gather(
-            *[_fetch_one(doc_id) for doc_id in document_ids],
-            return_exceptions=False,
-        )
-
-        metrics.documents_seen = len(document_ids)
-        running_chars = 0
-        for chunk_list in per_doc_lists:
-            for ch in chunk_list:
-                t = ch["text"]
-                if running_chars + len(t) > max_total_chars:
-                    # Stop at first overflow to preserve determinism
-                    return all_chunks
-                all_chunks.append(ch)
-                running_chars += len(t)
-
-        metrics.chunks_used = len(all_chunks)
-        metrics.chars_used = running_chars
-        return all_chunks
 
     async def _call_llm_generate(
         self,

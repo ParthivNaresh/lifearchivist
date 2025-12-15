@@ -332,7 +332,7 @@ class MessageService:
                 )
             )
 
-    @track(operation="messages_get")
+    # @track(operation="messages_get")
     async def get_messages(
         self,
         conversation_id: str,

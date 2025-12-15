@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -17,18 +17,26 @@ class BaseAgentTool(ABC):
 
     name: str
     description: Optional[str] = None
+    summary_short: Optional[str] = None
     requires_llm: bool = False
     input_model: Optional[ParamsModel] = None
 
     def descriptor(self) -> Dict[str, Any]:
         schema: Dict[str, Any] = {}
+        priority_params: List[str] = []
+
         if self.input_model is not None:
             schema = self.input_model.model_json_schema()
+            if hasattr(self.input_model, "get_priority_params"):
+                priority_params = self.input_model.get_priority_params()
+
         return {
             "name": self.name,
             "requires_llm": self.requires_llm,
-            "input_schema": schema,  # planner still expects "input_schema"
+            "input_schema": schema,
             "summary": self.description or "",
+            "summary_short": self.summary_short or (self.description or "")[:140],
+            "priority_params": priority_params,
         }
 
     # --- Preferred typed API
