@@ -10,7 +10,6 @@ from lifearchivist.server.api.routes.shared.exceptions import ServiceUnavailable
 from .base import StreamProcessor
 from .direct import DirectStreamProcessor
 from .gateway import GatewayStreamProcessor
-from .rag import RAGStreamProcessor
 
 
 class StreamingService:
@@ -42,7 +41,4 @@ class StreamingService:
         """Get appropriate stream processor."""
         if self.server.service_container and self.server.service_container.rag_service:
             return GatewayStreamProcessor(self.server)
-            return RAGStreamProcessor(
-                self.server.service_container.rag_service, self.server
-            )
         return DirectStreamProcessor(self.server)

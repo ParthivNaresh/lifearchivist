@@ -98,6 +98,9 @@ class TextExtractionTool(BaseAgentTool):
             else TextExtractionParams.model_validate(params.model_dump())
         )
 
+        if self.document_service is None:
+            raise ToolExecutionError(f"{self.name}: document_service is not configured")
+
         metrics = TextExtractionMetrics()
         raw_chunks = await gather_document_chunks(
             document_service=self.document_service,
@@ -175,7 +178,7 @@ class TextExtractionTool(BaseAgentTool):
         log_event("SYSTEM")
         log_event(system_content)
         log_event("USER")
-        log_event({"prompt": prompt})
+        log_event("text_extraction_prompt", {"prompt": prompt})
         log_event(json.dumps({"user_instructions": p.instructions}, indent=2))
         log_event(
             json.dumps(

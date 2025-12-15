@@ -180,10 +180,11 @@ def _unwrap_result_or_raise(result) -> Any:
 
 
 def _response_text(resp: Any) -> str:
-    # Your LLMResponse has .content. Fall back to str if needed.
     for attr in ("content", "text"):
-        if hasattr(resp, attr) and getattr(resp, attr) is not None:
-            return getattr(resp, attr)
+        if hasattr(resp, attr):
+            val = getattr(resp, attr)
+            if val is not None:
+                return str(val)
     return str(resp)
 
 
@@ -241,7 +242,7 @@ def _deep_sanitize(obj: Any) -> Any:
     return obj
 
 
-def clean_extracted_text(text: str, *, normalize_unicode: bool = True) -> str:
+def clean_extracted_text(text: Any, *, normalize_unicode: bool = True) -> str:
     """
     Clean extracted text by removing control characters, null bytes, and normalizing whitespace.
 
@@ -283,7 +284,7 @@ def clean_extracted_text(text: str, *, normalize_unicode: bool = True) -> str:
 
 
 def clean_extraction_chunks(
-    chunks: List[dict[str, str]],
+    chunks: Any,
     *,
     text_key: str = "text",
     normalize_unicode: bool = True,

@@ -61,7 +61,11 @@ class SchemaBuilder:
 
         Returns schema for: {extractions: <schema>, provenance: [...]}
         """
-        wrapped = {
+        required_fields: List[str] = ["extractions"]
+        if require_provenance:
+            required_fields.append("provenance")
+
+        wrapped: Dict[str, Any] = {
             "type": "object",
             "properties": {
                 "extractions": extraction_schema,
@@ -78,11 +82,8 @@ class SchemaBuilder:
                     },
                 },
             },
-            "required": ["extractions"],
+            "required": required_fields,
         }
-
-        if require_provenance:
-            wrapped["required"].append("provenance")
 
         return wrapped
 
@@ -114,7 +115,7 @@ class SchemaBuilder:
         return "\n".join(parts)
 
     @staticmethod
-    def validate_schema(schema: Dict[str, Any]) -> bool:
+    def validate_schema(schema: Any) -> bool:
         """
         Basic validation that a schema is well-formed.
         """
@@ -162,4 +163,7 @@ class SchemaBuilder:
             item_desc = SchemaBuilder.get_schema_description(items)
             return f"Array of {item_desc}"
 
-        return schema_type.capitalize()
+        if isinstance(schema_type, str):
+            return schema_type.capitalize()
+
+        return str(schema_type).capitalize()

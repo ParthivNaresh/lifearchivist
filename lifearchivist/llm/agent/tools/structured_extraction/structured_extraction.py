@@ -104,6 +104,9 @@ class StructuredExtractionTool(BaseAgentTool):
             else StructuredExtractionParams.model_validate(params.model_dump())
         )
 
+        if self.document_service is None:
+            raise ToolExecutionError(f"{self.name}: document_service is not configured")
+
         metrics = ExtractionMetrics()
         raw_chunks = await gather_document_chunks(
             document_service=self.document_service,
@@ -163,7 +166,7 @@ class StructuredExtractionTool(BaseAgentTool):
         log_event("SYSTEM")
         log_event(system_content)
         log_event("USER")
-        log_event({"prompt": prompt})
+        log_event("structured_extraction_prompt", {"prompt": prompt})
         log_event(json.dumps({"extraction_instructions": instructions}, indent=2))
         log_event(
             json.dumps(

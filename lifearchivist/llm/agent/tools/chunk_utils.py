@@ -1,9 +1,6 @@
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Protocol, Sequence
-
-if TYPE_CHECKING:
-    from ....storage.document_service import LlamaIndexDocumentService
+from typing import Any, Dict, List, Optional, Protocol, Sequence
 
 
 class ChunkMetrics(Protocol):
@@ -14,7 +11,7 @@ class ChunkMetrics(Protocol):
 
 async def gather_document_chunks(
     *,
-    document_service: "LlamaIndexDocumentService",
+    document_service: Any,
     document_ids: Sequence[str],
     max_chunks_per_doc: int,
     max_chars_per_chunk: int,
@@ -42,17 +39,22 @@ async def gather_document_chunks(
                     logger.warning("Chunk fetch failure for %s", doc_id)
                 return []
 
-            data = (
+            data: Any = (
                 chunks_result.unwrap()
                 if hasattr(chunks_result, "unwrap")
                 else chunks_result
             )
-            raw_chunks = (
-                (data or {}).get("chunks", []) if isinstance(data, dict) else data
-            )
+
+            raw_chunks: List[Any]
+            if isinstance(data, dict):
+                raw_chunks = data.get("chunks", []) or []
+            elif isinstance(data, list):
+                raw_chunks = data
+            else:
+                raw_chunks = []
 
             out: List[Dict[str, str]] = []
-            for ch in raw_chunks or []:
+            for ch in raw_chunks:
                 text = (
                     ch.get("text") if isinstance(ch, dict) else getattr(ch, "text", "")
                 ) or ""
@@ -63,7 +65,7 @@ async def gather_document_chunks(
                 out.append({"doc_id": doc_id, "text": text})
             return out
 
-    per_doc_lists = await asyncio.gather(
+    per_doc_lists: List[List[Dict[str, str]]] = await asyncio.gather(
         *[_fetch_one(doc_id) for doc_id in document_ids],
         return_exceptions=False,
     )

@@ -446,13 +446,10 @@ INSTRUCTIONS:
                 if tid == "search_docs":
                     val = sanitize_tool_output(val)
 
-                # use existing extraction-aware compactor
-                compacted = _compact_for_synthesis(tid, val)
+                compacted_value: Any = _compact_for_synthesis(tid, val)
 
-                # if worst-case compactor returned a giant string but original was a dict,
-                # try a safer dict-preserving fallback for readability
-                if isinstance(compacted, str) and isinstance(val, dict):
-                    safe = {}
+                if isinstance(compacted_value, str) and isinstance(val, dict):
+                    safe: Dict[str, Any] = {}
                     for k, v in val.items():
                         if k == "documents" and isinstance(v, list):
                             safe["documents"] = v[:5]
@@ -460,9 +457,9 @@ INSTRUCTIONS:
                             safe[k] = v[:600]
                         else:
                             safe[k] = v
-                    compacted = safe
+                    compacted_value = safe
 
-                compacted_results[tid] = compacted
+                compacted_results[tid] = compacted_value
 
             except Exception:
                 compacted_results[tid] = str(payload)[:20000] + "…"

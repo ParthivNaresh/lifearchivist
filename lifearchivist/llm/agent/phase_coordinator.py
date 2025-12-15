@@ -272,8 +272,17 @@ class PhaseCoordinator:
         log_event(
             "================================================ PHASE COORDINATOR EXECUTION PLAN ================================================"
         )
-        log_event(execution_plan.tasks)
-        log_event(execution_plan.to_dict())
+        log_event(
+            "phase_coordinator_execution_plan",
+            {
+                "task_count": len(execution_plan.tasks),
+                "tasks": [t.task_id for t in execution_plan.tasks],
+            },
+        )
+        log_event(
+            "phase_coordinator_execution_plan_details",
+            execution_plan.to_dict(),
+        )
 
         execution_plan.reasoning = (
             f"Phase {phase_number}/{total_phases}: {phase.description}\n"
@@ -439,7 +448,7 @@ class PhaseCoordinator:
         """
         Filter available tools based on phase requirements.
         """
-        all_tools = tactical_planner.tools.list_tools()
+        all_tools: List[Any] = list(tactical_planner.tools.list_tools())
 
         if not phase.required_tools:
             return all_tools

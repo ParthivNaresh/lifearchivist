@@ -71,13 +71,13 @@ class DocumentSearchTool(BaseAgentTool):
               - metrics: Search performance metrics
               - query_info: Information about the search query
         """
-        self._assert_ready_llm_friendly(method=params.search_method)
-
         p = (
             params
             if isinstance(params, DocumentSearchParams)
             else DocumentSearchParams.model_validate(params.model_dump())
         )
+
+        self._assert_ready_llm_friendly(method=p.search_method)
 
         metrics = SearchMetrics()
 
@@ -126,8 +126,8 @@ class DocumentSearchTool(BaseAgentTool):
     async def execute_with_llm(
         self, *, llm_provider, prompt: str, params: BaseModel, context: Dict[str, Any]
     ) -> Any:
-        self._assert_ready_llm_friendly(params.search_method)
         p = DocumentSearchParams.model_validate(params.model_dump())
+        self._assert_ready_llm_friendly(p.search_method)
 
         # 1) Call LLM to propose a strategy
         strategy_request = {
@@ -401,6 +401,9 @@ class DocumentSearchTool(BaseAgentTool):
         self, params: DocumentSearchParams, metrics: SearchMetrics
     ) -> List[Dict[str, Any]]:
         """Execute semantic (vector) search."""
+        if self.search_service is None:
+            raise ToolExecutionError("search_service is not configured")
+
         filters = self._build_metadata_filters(params)
         metrics.filters_applied = len(filters)
         metrics.search_method_used = "semantic"
@@ -415,7 +418,7 @@ class DocumentSearchTool(BaseAgentTool):
         if result.is_failure():
             raise ToolExecutionError(f"Semantic search failed: {result.error}")
 
-        documents = result.unwrap()
+        documents: List[Dict[str, Any]] = result.unwrap()
         metrics.documents_found = len(documents)
         metrics.avg_score = self._calculate_avg_score(documents)
 
@@ -425,6 +428,9 @@ class DocumentSearchTool(BaseAgentTool):
         self, params: DocumentSearchParams, metrics: SearchMetrics
     ) -> List[Dict[str, Any]]:
         """Execute keyword (BM25) search."""
+        if self.search_service is None:
+            raise ToolExecutionError("search_service is not configured")
+
         filters = self._build_metadata_filters(params)
         metrics.filters_applied = len(filters)
         metrics.search_method_used = "keyword"
@@ -438,7 +444,7 @@ class DocumentSearchTool(BaseAgentTool):
         if result.is_failure():
             raise ToolExecutionError(f"Keyword search failed: {result.error}")
 
-        documents = result.unwrap()
+        documents: List[Dict[str, Any]] = result.unwrap()
         metrics.documents_found = len(documents)
         metrics.avg_score = self._calculate_avg_score(documents)
 
@@ -448,6 +454,9 @@ class DocumentSearchTool(BaseAgentTool):
         self, params: DocumentSearchParams, metrics: SearchMetrics
     ) -> List[Dict[str, Any]]:
         """Execute hybrid (semantic + keyword) search."""
+        if self.search_service is None:
+            raise ToolExecutionError("search_service is not configured")
+
         filters = self._build_metadata_filters(params)
         metrics.filters_applied = len(filters)
         metrics.search_method_used = "hybrid"
@@ -462,7 +471,7 @@ class DocumentSearchTool(BaseAgentTool):
         if result.is_failure():
             raise ToolExecutionError(f"Hybrid search failed: {result.error}")
 
-        documents = result.unwrap()
+        documents: List[Dict[str, Any]] = result.unwrap()
         metrics.documents_found = len(documents)
         metrics.avg_score = self._calculate_avg_score(documents)
 
@@ -472,6 +481,9 @@ class DocumentSearchTool(BaseAgentTool):
         self, params: DocumentSearchParams, metrics: SearchMetrics
     ) -> List[Dict[str, Any]]:
         """Execute metadata-only search (no text query)."""
+        if self.metadata_service is None:
+            raise ToolExecutionError("metadata_service is not configured")
+
         filters = self._build_metadata_filters(params)
         metrics.filters_applied = len(filters)
         metrics.search_method_used = "metadata"
@@ -488,9 +500,9 @@ class DocumentSearchTool(BaseAgentTool):
         if result.is_failure():
             raise ToolExecutionError(f"Metadata search failed: {result.error}")
 
-        raw_documents = result.unwrap()
+        raw_documents: List[Dict[str, Any]] = result.unwrap()
 
-        documents = [
+        documents: List[Dict[str, Any]] = [
             {
                 "document_id": doc.get("document_id"),
                 "score": 1.0,
@@ -569,8 +581,8 @@ class DocumentSearchTool(BaseAgentTool):
         if not documents:
             return 0.0
 
-        scores = [doc.get("score", 0.0) for doc in documents]
-        return round(sum(scores) / len(scores), 3)
+        scores: List[float] = [float(doc.get("score", 0.0)) for doc in documents]
+        return float(round(sum(scores) / len(scores), 3))
 
     def _has_filters(self, params: DocumentSearchParams) -> bool:
         """Check if any filters are applied."""
