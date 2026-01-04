@@ -8,6 +8,7 @@ import {
   FileText,
   Database,
   Cog,
+  Ban,
 } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import type {
@@ -67,6 +68,8 @@ const getStatusIcon = (status: AgentTaskStatus | AgentPhaseStatus): React.ReactN
       return <Loader2 className="h-3 w-3 animate-spin text-blue-500" />;
     case 'failed':
       return <AlertCircle className="h-3 w-3 text-red-500" />;
+    case 'cancelled':
+      return <Ban className="h-3 w-3 text-amber-500" />;
     default:
       return <Circle className="h-3 w-3 text-muted-foreground/40" />;
   }
@@ -76,6 +79,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const isActive = task.status === 'running';
   const isCompleted = task.status === 'completed';
   const isFailed = task.status === 'failed';
+  const isCancelled = task.status === 'cancelled';
 
   return (
     <div
@@ -83,21 +87,23 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         'flex items-center gap-2 py-1.5 px-2 rounded text-xs transition-all duration-300',
         isActive && 'bg-blue-500/15 border border-blue-500/30',
         isCompleted && 'opacity-60',
-        isFailed && 'bg-red-500/15 border border-red-500/30'
+        isFailed && 'bg-red-500/15 border border-red-500/30',
+        isCancelled && 'bg-amber-500/15 border border-amber-500/30 opacity-70'
       )}
     >
       <span className="flex-shrink-0">{getStatusIcon(task.status)}</span>
-      <span className={cn('flex-shrink-0', isActive && 'text-blue-400')}>
+      <span className={cn('flex-shrink-0', isActive && 'text-blue-400', isCancelled && 'text-amber-400')}>
         {getToolIcon(task.tool)}
       </span>
       <span
         className={cn(
           'truncate flex-1',
           isActive && 'text-blue-300 font-medium',
-          isFailed && 'text-red-400'
+          isFailed && 'text-red-400',
+          isCancelled && 'text-amber-400'
         )}
       >
-        {isActive ? getToolLabel(task.tool) : task.description || getToolLabel(task.tool)}
+        {isCancelled ? 'Cancelled' : isActive ? getToolLabel(task.tool) : task.description || getToolLabel(task.tool)}
       </span>
     </div>
   );
@@ -221,6 +227,25 @@ const ErrorIndicator: React.FC<{ error: string }> = ({ error }) => {
   );
 };
 
+const CancelledIndicator: React.FC<{ completedCount: number; totalCount: number }> = ({
+  completedCount,
+  totalCount,
+}) => {
+  return (
+    <div className="flex items-start gap-3 text-sm p-4 bg-amber-500/10 rounded-lg border border-amber-500/30">
+      <Ban className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+      <div>
+        <span className="font-medium text-amber-300">Request cancelled</span>
+        <p className="text-xs text-amber-400/80 mt-1">
+          {completedCount > 0
+            ? `Completed ${completedCount} of ${totalCount} phases before cancellation`
+            : 'Cancelled before any phases completed'}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const determinePhaseState = (
   index: number,
   phase: AgentPhase,
@@ -251,10 +276,14 @@ const determinePhaseState = (
 };
 
 export const AgentProgressIndicator: React.FC<AgentProgressIndicatorProps> = ({ progress }) => {
-  const { phases, completedPhases, isSynthesizing, error } = progress;
+  const { phases, completedPhases, isSynthesizing, isCancelled, error } = progress;
 
-  if (error) {
+  if (error && !isCancelled) {
     return <ErrorIndicator error={error} />;
+  }
+
+  if (isCancelled) {
+    return <CancelledIndicator completedCount={completedPhases.length} totalCount={phases.length} />;
   }
 
   if (phases.length === 0 && !isSynthesizing) {

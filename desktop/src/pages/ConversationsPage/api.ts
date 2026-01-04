@@ -18,6 +18,7 @@ import type {
   SSEMetadataEvent,
   SSEAgentProgressEvent,
   SSECompleteEvent,
+  SSECancelledEvent,
   SSEErrorEvent,
 } from './types';
 
@@ -159,6 +160,11 @@ export const conversationsApi = {
                     const data = JSON.parse(currentData) as SSECompleteEvent;
                     callbacks.onComplete?.(data);
                     break;
+                  }
+                  case 'cancelled': {
+                    const data = JSON.parse(currentData) as SSECancelledEvent;
+                    callbacks.onCancelled?.(data);
+                    return;
                   }
                   case 'error': {
                     const data = JSON.parse(currentData) as SSEErrorEvent;

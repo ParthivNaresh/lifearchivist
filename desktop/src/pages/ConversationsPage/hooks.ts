@@ -2,7 +2,7 @@
  * React hooks for conversations
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { conversationsApi } from './api';
 import { useConversationWebSocket } from '../../hooks/useConversationWebSocket';
 import type {
@@ -12,6 +12,7 @@ import type {
   Citation,
   AgentProgress,
   SSEAgentProgressEvent,
+  SSECancelledEvent,
 } from './types';
 
 const initialAgentProgress: AgentProgress = {
@@ -19,6 +20,7 @@ const initialAgentProgress: AgentProgress = {
   currentPhaseIndex: -1,
   completedPhases: [],
   isSynthesizing: false,
+  isCancelled: false,
   lastEvent: null,
   error: null,
 };
@@ -99,20 +101,41 @@ export function useConversation(conversationId: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [agentProgress, setAgentProgress] = useState<AgentProgress>(initialAgentProgress);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const resetAgentProgress = useCallback(() => {
     setAgentProgress(initialAgentProgress);
   }, []);
 
   const handleAgentProgress = useCallback((event: SSEAgentProgressEvent) => {
+    const isCancelled =
+      event.event === 'plan_cancelled' ||
+      event.event === 'phase_cancelled' ||
+      event.event === 'task_cancelled';
+
     setAgentProgress({
       phases: event.phases,
       currentPhaseIndex: event.current_phase_index,
       completedPhases: event.completed_phases,
       isSynthesizing: event.is_synthesizing,
+      isCancelled,
       lastEvent: event.event,
       error: event.error,
     });
   }, []);
+
+  const handleCancelled = useCallback(
+    (_data: SSECancelledEvent) => {
+      setAgentProgress((prev) => ({
+        ...prev,
+        isCancelled: true,
+        lastEvent: 'plan_cancelled',
+      }));
+      void loadConversation();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   const handleMessageStatusUpdate = useCallback(
     (update: {
@@ -260,11 +283,26 @@ export function useConversation(conversationId: string | null) {
     [conversationId, messages.length, conversation]
   );
 
+  const cancelRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setAgentProgress((prev) => ({
+        ...prev,
+        isCancelled: true,
+      }));
+    }
+  }, []);
+
   const sendMessageStreaming = useCallback(
     async (content: string, contextLimit = 5) => {
       if (!conversationId) return;
 
-      const abortController = new AbortController();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
 
       resetAgentProgress();
 
@@ -364,6 +402,7 @@ export function useConversation(conversationId: string | null) {
               setMessages((prev) => prev.map((m) => (m.id === targetId ? { ...m, citations } : m)));
             },
             onComplete: (data) => {
+              abortControllerRef.current = null;
               resetAgentProgress();
 
               const { user_message: userMsg, assistant_message: assistantMsg } = data;
@@ -406,18 +445,52 @@ export function useConversation(conversationId: string | null) {
                 }
               }
             },
+            onCancelled: (data) => {
+              abortControllerRef.current = null;
+              handleCancelled(data);
+              const assistantIdToUpdate = currentAssistantRealId ?? originalAssistantTempId;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantIdToUpdate
+                    ? {
+                        ...m,
+                        status: 'cancelled' as const,
+                        content: m.content || '(Request cancelled)',
+                      }
+                    : m
+                )
+              );
+            },
             onError: (_errorMsg) => {
+              abortControllerRef.current = null;
               resetAgentProgress();
               const assistantIdToRemove = currentAssistantRealId ?? originalAssistantTempId;
               setMessages((prev) => prev.filter((m) => m.id !== assistantIdToRemove));
               void loadConversation();
             },
           },
-          abortController.signal
+          signal
         );
       } catch (err) {
+        abortControllerRef.current = null;
+
         if (err instanceof Error && err.name === 'AbortError') {
-          console.log('Stream aborted by user');
+          setAgentProgress((prev) => ({
+            ...prev,
+            isCancelled: true,
+          }));
+          const assistantIdToUpdate = currentAssistantRealId ?? originalAssistantTempId;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantIdToUpdate
+                ? {
+                    ...m,
+                    status: 'cancelled' as const,
+                    content: m.content || '(Request cancelled)',
+                  }
+                : m
+            )
+          );
           return;
         }
 
@@ -435,8 +508,6 @@ export function useConversation(conversationId: string | null) {
       } finally {
         setSending(false);
       }
-
-      return () => abortController.abort();
     },
     [
       conversationId,
@@ -445,8 +516,18 @@ export function useConversation(conversationId: string | null) {
       loadConversation,
       resetAgentProgress,
       handleAgentProgress,
+      handleCancelled,
     ]
   );
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     conversation,
@@ -457,6 +538,7 @@ export function useConversation(conversationId: string | null) {
     agentProgress,
     sendMessage,
     sendMessageStreaming,
+    cancelRequest,
     reload: loadConversation,
   };
 }

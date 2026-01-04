@@ -10,16 +10,20 @@ class AgentEventType(Enum):
     PLAN_CREATED = "plan_created"
     PLAN_VALIDATED = "plan_validated"
     PHASE_COMPLETED = "phase_completed"
+    PHASE_CANCELLED = "phase_cancelled"
     TASK_STARTED = "task_started"
     TASK_PROGRESS = "task_progress"
     TASK_COMPLETED = "task_completed"
     TASK_FAILED = "task_failed"
     TASK_SKIPPED = "task_skipped"
+    TASK_CANCELLED = "task_cancelled"
     SYNTHESIS_STARTED = "synthesis_started"
     RESPONSE_CHUNK = "response_chunk"
     PLAN_COMPLETED = "plan_completed"
     PLAN_FAILED = "plan_failed"
+    PLAN_CANCELLED = "plan_cancelled"
     COMPLETE = "complete"
+    CANCELLED = "cancelled"
     ERROR = "error"
 
 
@@ -118,3 +122,23 @@ class AgentEvent:
     @classmethod
     def phase_completed(cls, phase_id: str) -> "AgentEvent":
         return cls(type=AgentEventType.PHASE_COMPLETED, data={"phase_id": phase_id})
+
+    @classmethod
+    def phase_cancelled(cls, phase_id: str, reason: str = "User requested cancellation") -> "AgentEvent":
+        return cls(type=AgentEventType.PHASE_CANCELLED, data={"phase_id": phase_id, "reason": reason})
+
+    @classmethod
+    def task_cancelled(cls, task, reason: str = "User requested cancellation") -> "AgentEvent":
+        return cls(
+            type=AgentEventType.TASK_CANCELLED,
+            data={"reason": reason},
+            task_id=task.task_id if hasattr(task, "task_id") else str(task),
+        )
+
+    @classmethod
+    def plan_cancelled(cls, reason: str = "User requested cancellation") -> "AgentEvent":
+        return cls(type=AgentEventType.PLAN_CANCELLED, data={"reason": reason})
+
+    @classmethod
+    def cancelled(cls, reason: str = "User requested cancellation") -> "AgentEvent":
+        return cls(type=AgentEventType.CANCELLED, data={"reason": reason})

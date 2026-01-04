@@ -14,6 +14,7 @@ from typing import (
 from ...llm import LLMMessage
 from ...utils.logx import log_event
 from .complexity_classifier import ComplexityClassifier
+from .constants import AgentModelDefaults, AgentPromptLimits
 from .exceptions import PlanningError
 from .executor import TaskExecutor
 from .models.context import ConversationContext
@@ -51,12 +52,12 @@ class TacticalPlanner:
         plan_validator: PlanValidator,
         *,
         on_observe: Optional[Callable[[str, Mapping[str, Any]], None]] = None,
-        planning_model: str = "qwen2.5:7b",
-        planning_temperature: float = 0.2,
-        synthesis_model: str = "qwen2.5:7b",
-        synthesis_temperature: float = 0.7,
-        max_plan_reasoning_chars: int = 2000,
-        max_param_preview_chars: int = 256,
+        planning_model: str = AgentModelDefaults.PLANNING_MODEL,
+        planning_temperature: float = AgentModelDefaults.PLANNING_TEMPERATURE,
+        synthesis_model: str = AgentModelDefaults.SYNTHESIS_MODEL,
+        synthesis_temperature: float = AgentModelDefaults.SYNTHESIS_TEMPERATURE,
+        max_plan_reasoning_chars: int = AgentPromptLimits.MAX_PLAN_REASONING_CHARS,
+        max_param_preview_chars: int = AgentPromptLimits.MAX_PARAM_PREVIEW_CHARS,
     ):
         self.llm = llm_provider_manager
         self.tools = tool_registry

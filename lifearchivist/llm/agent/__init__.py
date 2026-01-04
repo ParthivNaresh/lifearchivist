@@ -1,5 +1,16 @@
 from .agent_spawner import AgentSpawner
+from .cancellation import CancellationReason, CancellationScope, CancellationToken
 from .complexity_classifier import ComplexityClassifier
+from .constants import (
+    DEFAULT_AGENT_CONFIG,
+    AgentConfig,
+    AgentExecutionConfig,
+    AgentExecutionDefaults,
+    AgentModelConfig,
+    AgentModelDefaults,
+    AgentPromptLimits,
+    AgentToolLimits,
+)
 from .exceptions import (
     AgentError,
     CircularDependencyError,
@@ -60,4 +71,15 @@ __all__ = [
     "ResourceLimitError",
     "InvalidTaskError",
     "CircularDependencyError",
+    "AgentConfig",
+    "AgentModelConfig",
+    "AgentExecutionConfig",
+    "AgentModelDefaults",
+    "AgentExecutionDefaults",
+    "AgentToolLimits",
+    "AgentPromptLimits",
+    "DEFAULT_AGENT_CONFIG",
+    "CancellationToken",
+    "CancellationScope",
+    "CancellationReason",
 ]

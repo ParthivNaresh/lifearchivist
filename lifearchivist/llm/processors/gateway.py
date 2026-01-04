@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, Mapping, Optional
@@ -9,6 +10,8 @@ from ...utils.sse import SSEFormatter
 from ..agent import ComplexityClassifier
 from ..agent import ConversationContext as AgentConversationContext
 from ..agent import PromptBuilder
+from ..agent.cancellation import CancellationReason, CancellationToken
+from ..agent.models.events import AgentEventType
 from ..processors.base import StreamProcessor
 from ..processors.direct import DirectStreamProcessor
 
@@ -21,6 +24,8 @@ class AgentProgressTracker:
         self.tasks: Dict[str, Dict[str, Any]] = {}
         self.completed_phases: List[str] = []
         self.is_synthesizing: bool = False
+        self.is_cancelled: bool = False
+        self.cancellation_reason: Optional[str] = None
 
     def set_strategic_plan(self, plan_data: Dict[str, Any]) -> Dict[str, Any]:
         if plan_data.get("type") == "strategic":
@@ -110,6 +115,33 @@ class AgentProgressTracker:
         self.is_synthesizing = True
         return self._build_progress_event("synthesis_started")
 
+    def cancel_task(self, task_id: str, reason: str) -> Dict[str, Any]:
+        if task_id in self.tasks:
+            self.tasks[task_id]["status"] = "cancelled"
+            phase_idx = self.tasks[task_id]["phase_index"]
+            for task in self.phases[phase_idx].get("tasks", []):
+                if task["task_id"] == task_id:
+                    task["status"] = "cancelled"
+                    break
+        return self._build_progress_event("task_cancelled", task_id=task_id, error=reason)
+
+    def cancel_phase(self, phase_id: str, reason: str) -> Dict[str, Any]:
+        for phase in self.phases:
+            if phase["phase_id"] == phase_id:
+                phase["status"] = "cancelled"
+                break
+        return self._build_progress_event("phase_cancelled", phase_id=phase_id, error=reason)
+
+    def cancel_plan(self, reason: str) -> Dict[str, Any]:
+        self.is_cancelled = True
+        self.cancellation_reason = reason
+        for phase in self.phases:
+            if phase["status"] == "running":
+                phase["status"] = "cancelled"
+            elif phase["status"] == "pending":
+                phase["status"] = "cancelled"
+        return self._build_progress_event("plan_cancelled", error=reason)
+
     def _build_progress_event(
         self,
         event: str,
@@ -173,6 +205,7 @@ class GatewayStreamProcessor(StreamProcessor):
                 recent_messages=[],
                 user_preferences={},
                 metadata={"route": "gateway"},
+                cancellation_token=context.cancellation_token,
             )
             classification = await classifier.classify(
                 context.request.content, agent_ctx
@@ -256,6 +289,27 @@ class GatewayStreamProcessor(StreamProcessor):
             async for ev in coordinator.execute_query(
                 context.request.content, agent_ctx
             ):
+                if context.is_cancelled:
+                    log_event(
+                        "gateway_detected_cancellation_in_loop",
+                        {"conversation_id": context.conversation_id},
+                    )
+                    latency_ms = int((time.time() - context.start_time) * 1000)
+                    yield SSEFormatter.format_event(
+                        EventType.CANCELLED,
+                        {
+                            "reason": "Request was cancelled",
+                            "latency_ms": latency_ms,
+                            "completed_phases": progress_tracker.completed_phases,
+                        },
+                    )
+                    if processing_message_id:
+                        await dsp._mark_message_failed(processing_message_id)
+                        await dsp._broadcast_message_status(
+                            context.conversation_id, processing_message_id, "cancelled"
+                        )
+                    return
+
                 et = ev.type.value if hasattr(ev, "type") else str(ev)
                 if et == "plan_created":
                     plan_data = ev.data if isinstance(ev.data, dict) else {}
@@ -354,6 +408,74 @@ class GatewayStreamProcessor(StreamProcessor):
                         chunk = str(ev.data)
                     accumulated.append(chunk)
                     yield SSEFormatter.format_event(EventType.CHUNK, {"text": chunk})
+                elif et == "task_cancelled":
+                    log_event(
+                        "agent_task_cancelled",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "task_id": ev.task_id,
+                        },
+                    )
+                    task_id = ev.task_id or ""
+                    event_data = ev.data if isinstance(ev.data, dict) else {}
+                    reason = event_data.get("reason", "Cancelled")
+                    progress_event = progress_tracker.cancel_task(task_id, reason)
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS, progress_event
+                    )
+                elif et == "phase_cancelled":
+                    log_event(
+                        "agent_phase_cancelled",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "phase_id": ev.data.get("phase_id") if ev.data else None,
+                        },
+                    )
+                    event_data = ev.data if isinstance(ev.data, dict) else {}
+                    phase_id = event_data.get("phase_id", "")
+                    reason = event_data.get("reason", "Cancelled")
+                    progress_event = progress_tracker.cancel_phase(phase_id, reason)
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS, progress_event
+                    )
+                elif et == "plan_cancelled":
+                    log_event(
+                        "agent_plan_cancelled",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "reason": ev.data.get("reason") if ev.data else None,
+                        },
+                    )
+                    event_data = ev.data if isinstance(ev.data, dict) else {}
+                    reason = event_data.get("reason", "Cancelled")
+                    progress_event = progress_tracker.cancel_plan(reason)
+                    yield SSEFormatter.format_event(
+                        EventType.AGENT_PROGRESS, progress_event
+                    )
+                elif et == "cancelled":
+                    log_event(
+                        "agent_cancelled",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "reason": ev.data.get("reason") if ev.data else None,
+                        },
+                    )
+                    event_data = ev.data if isinstance(ev.data, dict) else {}
+                    latency_ms = int((time.time() - context.start_time) * 1000)
+                    yield SSEFormatter.format_event(
+                        EventType.CANCELLED,
+                        {
+                            "reason": event_data.get("reason", "User requested cancellation"),
+                            "latency_ms": latency_ms,
+                            "completed_phases": progress_tracker.completed_phases,
+                        },
+                    )
+                    if processing_message_id:
+                        await dsp._mark_message_failed(processing_message_id)
+                        await dsp._broadcast_message_status(
+                            context.conversation_id, processing_message_id, "cancelled"
+                        )
+                    return
                 elif et == "error":
                     log_event(
                         "agent_error",
@@ -396,6 +518,27 @@ class GatewayStreamProcessor(StreamProcessor):
                     "latency_ms": latency_ms,
                 }
                 yield SSEFormatter.format_event(EventType.COMPLETE, completion_data)
+
+        except asyncio.CancelledError:
+            log_event(
+                "gateway_cancelled",
+                {
+                    "conversation_id": context.conversation_id,
+                },
+            )
+            latency_ms = int((time.time() - context.start_time) * 1000)
+            yield SSEFormatter.format_event(
+                EventType.CANCELLED,
+                {
+                    "reason": "Request was cancelled",
+                    "latency_ms": latency_ms,
+                },
+            )
+            if processing_message_id:
+                await dsp._mark_message_failed(processing_message_id)
+                await dsp._broadcast_message_status(
+                    context.conversation_id, processing_message_id, "cancelled"
+                )
 
         except Exception as e:
             log_event(

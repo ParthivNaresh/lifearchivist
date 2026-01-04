@@ -58,11 +58,28 @@ class TaskExecutor:
     ) -> AsyncGenerator[AgentEvent, None]:
         """
         Drives plan execution and yields AgentEvents as they occur.
-        Terminates with PLAN_COMPLETED or PLAN_FAILED; never raises to the caller for normal flow.
+        Terminates with PLAN_COMPLETED, PLAN_FAILED, or PLAN_CANCELLED.
+        Never raises to the caller for normal flow.
+        Properly handles cancellation via context.cancellation_token.
         """
         state = _PlanState()
+        cancelled = False
+
         try:
             while not state.terminated and not self._is_plan_complete(plan, state):
+                if context.is_cancelled:
+                    log_event(
+                        "executor_cancellation_detected",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "completed": len(state.completed),
+                            "running": len(state.running),
+                        },
+                    )
+                    cancelled = True
+                    state.terminated = True
+                    break
+
                 for ev in self._skip_due_to_failed_or_skipped_deps(plan, state):
                     log_event(
                         "executor_task_skipped",
@@ -108,16 +125,8 @@ class TaskExecutor:
                     state.terminated = True
                     break
 
-                for ev in await self._wait_one_and_process(plan, state):
+                for ev in await self._wait_one_and_process(plan, state, context):
                     if ev.type == AgentEventType.TASK_COMPLETED:
-                        # log_event(
-                        #     "executor_task_completed",
-                        #     {
-                        #         "conversation_id": context.conversation_id,
-                        #         "task_id": ev.task_id,
-                        #         "completed_count": len(state.completed),
-                        #     },
-                        # )
                         self._observe("task_completed", task_id=ev.task_id)
                     elif ev.type == AgentEventType.TASK_FAILED:
                         log_event(
@@ -135,6 +144,15 @@ class TaskExecutor:
                             task_id=ev.task_id,
                             error=ev.data.get("error") if ev.data else None,
                         )
+                    elif ev.type == AgentEventType.TASK_CANCELLED:
+                        log_event(
+                            "executor_task_cancelled",
+                            {
+                                "conversation_id": context.conversation_id,
+                                "task_id": ev.task_id,
+                            },
+                        )
+                        self._observe("task_cancelled", task_id=ev.task_id)
                     elif ev.type == AgentEventType.PLAN_FAILED:
                         log_event(
                             "executor_plan_failed",
@@ -148,9 +166,30 @@ class TaskExecutor:
                             "plan_failed",
                             message=ev.data.get("error") if ev.data else None,
                         )
+                    elif ev.type == AgentEventType.PLAN_CANCELLED:
+                        log_event(
+                            "executor_plan_cancelled",
+                            {
+                                "conversation_id": context.conversation_id,
+                            },
+                        )
+                        self._observe("plan_cancelled")
+                        cancelled = True
                     yield ev
 
-            if not state.terminated:
+            if cancelled:
+                log_event(
+                    "executor_plan_cancelled_final",
+                    {
+                        "conversation_id": context.conversation_id,
+                        "completed": len(state.completed),
+                        "failed": len(state.failed),
+                        "skipped": len(state.skipped),
+                    },
+                )
+                self._observe("plan_cancelled", completed_count=len(state.completed))
+                yield AgentEvent.plan_cancelled("Execution was cancelled")
+            elif not state.terminated:
                 log_event(
                     "executor_plan_completed",
                     {
@@ -163,6 +202,17 @@ class TaskExecutor:
                 )
                 self._observe("plan_completed", results_count=len(state.results))
                 yield AgentEvent.plan_completed(state.results)
+
+        except asyncio.CancelledError:
+            log_event(
+                "executor_cancelled_error",
+                {
+                    "conversation_id": context.conversation_id,
+                    "running_count": len(state.running),
+                },
+            )
+            self._observe("cancelled_error")
+            yield AgentEvent.plan_cancelled("Execution was cancelled")
 
         finally:
             if state.running:
@@ -251,7 +301,7 @@ class TaskExecutor:
         return events
 
     async def _wait_one_and_process(
-        self, plan: ExecutionPlan, state: _PlanState
+        self, plan: ExecutionPlan, state: _PlanState, context: ConversationContext
     ) -> List[AgentEvent]:
         """
         Waits for the next finished task and updates state, emitting events.

@@ -179,6 +179,7 @@ class EventType(Enum):
     COMPLETE = "complete"
     ERROR = "error"
     AGENT_PROGRESS = "agent_progress"
+    CANCELLED = "cancelled"
 
 
 @dataclass
@@ -194,10 +195,17 @@ class StreamContext:
     user_message: Optional[Dict[str, Any]] = None
     sources: Optional[List[Dict[str, Any]]] = None
     accumulated_text: Optional[str] = None
+    cancellation_token: Optional[Any] = None
 
     def __post_init__(self) -> None:
         if self.sources is None:
             self.sources = []
+
+    @property
+    def is_cancelled(self) -> bool:
+        if self.cancellation_token is None:
+            return False
+        return self.cancellation_token.is_cancelled
 
 
 @dataclass

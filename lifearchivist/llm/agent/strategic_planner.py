@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 from ...llm import LLMMessage
 from ...utils.logx import log_event
+from .constants import AgentExecutionDefaults, AgentModelDefaults
 from .exceptions import PlanningError
 from .models.context import ConversationContext
 from .models.strategic_plan import PhaseComplexity, StrategicPhase, StrategicPlan
@@ -33,9 +34,9 @@ class StrategicPlanner:
         tool_registry: AgentToolRegistry,
         prompt_builder: PromptBuilder,
         *,
-        planning_model: str = "qwen2.5:7b",
-        planning_temperature: float = 0.2,
-        max_phases: int = 7,
+        planning_model: str = AgentModelDefaults.PLANNING_MODEL,
+        planning_temperature: float = AgentModelDefaults.PLANNING_TEMPERATURE,
+        max_phases: int = AgentExecutionDefaults.MAX_PHASES,
     ):
         self.llm = llm_provider_manager
         self.tools = tool_registry

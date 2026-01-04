@@ -39,6 +39,7 @@ const ConversationsPage: React.FC = () => {
     agentProgress,
     sendMessage: _sendMessage,
     sendMessageStreaming,
+    cancelRequest,
     reload: reloadConversation,
   } = useConversation(selectedConversationId);
 
@@ -216,7 +217,9 @@ const ConversationsPage: React.FC = () => {
             {/* Input */}
             <MessageInput
               onSend={(content) => void handleSendMessage(content)}
-              disabled={sending}
+              onCancel={cancelRequest}
+              disabled={false}
+              isSending={sending}
             />
           </>
         ) : (

@@ -194,9 +194,9 @@ export interface SSEErrorEvent {
   recoverable?: boolean;
 }
 
-export type AgentTaskStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type AgentTaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
-export type AgentPhaseStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type AgentPhaseStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export interface AgentTask {
   task_id: string;
@@ -217,11 +217,14 @@ export type AgentProgressEventType =
   | 'tactical_plan_created'
   | 'phase_started'
   | 'phase_completed'
+  | 'phase_cancelled'
   | 'task_started'
   | 'task_completed'
   | 'task_failed'
+  | 'task_cancelled'
   | 'synthesis_started'
-  | 'plan_failed';
+  | 'plan_failed'
+  | 'plan_cancelled';
 
 export interface SSEAgentProgressEvent {
   event: AgentProgressEventType;
@@ -240,8 +243,15 @@ export interface AgentProgress {
   currentPhaseIndex: number;
   completedPhases: string[];
   isSynthesizing: boolean;
+  isCancelled: boolean;
   lastEvent: AgentProgressEventType | null;
   error: string | null;
+}
+
+export interface SSECancelledEvent {
+  reason: string;
+  latency_ms: number;
+  completed_phases?: string[];
 }
 
 export interface SSECallbacks {
@@ -254,6 +264,7 @@ export interface SSECallbacks {
   onMetadata?: (metadata: SSEMetadataEvent) => void;
   onAgentProgress?: (progress: SSEAgentProgressEvent) => void;
   onComplete?: (data: SSECompleteEvent) => void;
+  onCancelled?: (data: SSECancelledEvent) => void;
   onError?: (error: string) => void;
 }
 

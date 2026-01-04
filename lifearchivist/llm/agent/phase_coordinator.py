@@ -1,14 +1,17 @@
+import asyncio
 import json
 import logging
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from ...utils.logx import log_event
+from .cancellation import CancellationScope
 from .exceptions import PlanningError
 from .models.context import ConversationContext
 from .models.events import AgentEvent, AgentEventType
 from .models.strategic_plan import StrategicPhase, StrategicPlan
 from .strategic_planner import StrategicPlanner
 from .tactical_planner_factory import TacticalPlannerFactory
+from .tools.base import BaseAgentTool
 
 
 class PhaseCoordinator:
@@ -47,6 +50,7 @@ class PhaseCoordinator:
         Execute query using hierarchical planning.
 
         Sequential execution of all phases with isolated tactical planners.
+        Properly handles cancellation at all stages.
 
         Args:
             query: User's query
@@ -59,10 +63,285 @@ class PhaseCoordinator:
             "================================================ PHASE COORDINATOR STARTS ================================================"
         )
         log_event("")
+
+        current_phase_id: Optional[str] = None
+
         try:
-            strategic_plan = await self.strategic_planner.create_strategic_plan(
+            if context.is_cancelled:
+                log_event(
+                    "phase_coordinator_cancelled_before_start",
+                    {"conversation_id": context.conversation_id},
+                )
+                yield AgentEvent.plan_cancelled("Cancelled before execution started")
+                yield AgentEvent.cancelled()
+                return
+
+            strategic_plan = await self._create_strategic_plan_with_cancellation(
                 query, context
             )
+            if strategic_plan is None:
+                return
+
+            log_event(
+                "phase_coordinator_strategic_plan_created",
+                {
+                    "strategy": strategic_plan.strategy,
+                    "phase_count": len(strategic_plan.phases),
+                    "phases": [p.phase_id for p in strategic_plan.phases],
+                },
+            )
+
+            yield AgentEvent(
+                type=AgentEventType.PLAN_CREATED,
+                data={
+                    "type": "strategic",
+                    "strategy": strategic_plan.strategy,
+                    "phase_count": len(strategic_plan.phases),
+                    "phases": [
+                        {
+                            "phase_id": p.phase_id,
+                            "description": p.description,
+                            "complexity": p.estimated_complexity.value,
+                            "required_tools": p.required_tools,
+                        }
+                        for p in strategic_plan.phases
+                    ],
+                    "estimated_time_seconds": strategic_plan.estimated_time_seconds,
+                    "estimated_cost_usd": strategic_plan.estimated_cost_usd,
+                },
+            )
+
+            phase_results: Dict[str, Any] = {}
+            completed_phases: set[str] = set()
+
+            for phase_idx, phase in enumerate(strategic_plan.phases, 1):
+                current_phase_id = phase.phase_id
+
+                if context.is_cancelled:
+                    log_event(
+                        "phase_coordinator_cancelled_before_phase",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "phase_id": phase.phase_id,
+                        },
+                    )
+                    yield AgentEvent.phase_cancelled(phase.phase_id)
+                    yield AgentEvent.plan_cancelled(f"Cancelled before phase {phase.phase_id}")
+                    yield AgentEvent.cancelled()
+                    return
+
+                log_event(
+                    "phase_coordinator_executing_phase",
+                    {
+                        "phase_id": phase.phase_id,
+                        "phase_number": phase_idx,
+                        "total_phases": len(strategic_plan.phases),
+                        "description": phase.description,
+                    },
+                )
+
+                if not phase.is_ready(completed_phases):
+                    missing = phase.missing_deps(completed_phases)
+                    error_msg = f"Phase {phase.phase_id} dependencies not met: {missing}"
+                    log_event(
+                        "phase_coordinator_dependency_error",
+                        {
+                            "phase_id": phase.phase_id,
+                            "missing_dependencies": missing,
+                        },
+                        level=logging.ERROR,
+                    )
+                    yield AgentEvent.plan_failed(error_msg)
+                    yield AgentEvent.complete()
+                    return
+
+                log_event(
+                    f"================================================ EXECUTING PHASE {phase} ================================================"
+                )
+                log_event("")
+
+                try:
+                    phase_task_results: Dict[str, Any] = {}
+                    async for ev in self._execute_phase_streaming(
+                        phase=phase,
+                        phase_number=phase_idx,
+                        total_phases=len(strategic_plan.phases),
+                        query=query,
+                        context=context,
+                        previous_results=phase_results,
+                    ):
+                        yield ev
+                        if ev.type == AgentEventType.TASK_COMPLETED and ev.task_id:
+                            phase_task_results[ev.task_id] = ev.data
+                        if ev.type == AgentEventType.PLAN_FAILED:
+                            raise PlanningError(f"Phase {phase.phase_id} execution failed")
+                        if ev.type == AgentEventType.PLAN_CANCELLED:
+                            yield AgentEvent.cancelled()
+                            return
+
+                    phase_results[phase.phase_id] = phase_task_results
+                    completed_phases.add(phase.phase_id)
+
+                    yield AgentEvent.phase_completed(phase.phase_id)
+
+                    log_event(
+                        "phase_coordinator_phase_completed",
+                        {
+                            "phase_id": phase.phase_id,
+                            "phase_number": phase_idx,
+                            "total_phases": len(strategic_plan.phases),
+                        },
+                    )
+
+                except asyncio.CancelledError:
+                    log_event(
+                        "phase_coordinator_phase_cancelled",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "phase_id": phase.phase_id,
+                        },
+                    )
+                    yield AgentEvent.phase_cancelled(phase.phase_id)
+                    yield AgentEvent.plan_cancelled(f"Phase {phase.phase_id} was cancelled")
+                    yield AgentEvent.cancelled()
+                    return
+
+                except PlanningError:
+                    raise
+
+                except Exception as e:
+                    log_event(
+                        "phase_coordinator_phase_execution_failed",
+                        {
+                            "phase_id": phase.phase_id,
+                            "error": str(e),
+                            "error_type": type(e).__name__,
+                        },
+                        level=logging.ERROR,
+                    )
+                    yield AgentEvent.plan_failed(
+                        f"Phase {phase.phase_id} execution failed: {e}"
+                    )
+                    yield AgentEvent.complete()
+                    return
+
+            current_phase_id = None
+
+            log_event(
+                "phase_coordinator_all_phases_completed",
+                {
+                    "total_phases": len(strategic_plan.phases),
+                    "completed_phases": len(completed_phases),
+                },
+            )
+
+            if context.is_cancelled:
+                log_event(
+                    "phase_coordinator_cancelled_before_synthesis",
+                    {"conversation_id": context.conversation_id},
+                )
+                yield AgentEvent.plan_cancelled("Cancelled before synthesis")
+                yield AgentEvent.cancelled()
+                return
+
+            log_event(
+                "------------------------------------------------ STARTING PHASE COORDINATOR SYNTHESIS ------------------------------------------------"
+            )
+            yield AgentEvent.synthesis_started()
+
+            try:
+                synthesis_planner = self.tactical_planner_factory.create()
+
+                async for chunk in synthesis_planner._synthesize_response(
+                    query=query,
+                    plan=self._create_synthetic_execution_plan(strategic_plan),
+                    task_results=phase_results,
+                ):
+                    if context.is_cancelled:
+                        log_event(
+                            "phase_coordinator_synthesis_cancelled",
+                            {"conversation_id": context.conversation_id},
+                        )
+                        yield AgentEvent.plan_cancelled("Synthesis cancelled")
+                        yield AgentEvent.cancelled()
+                        return
+                    yield AgentEvent.response_chunk(chunk)
+
+                log_event(
+                    "------------------------------------------------ FINISHED PHASE COORDINATOR SYNTHESIS ------------------------------------------------"
+                )
+            except asyncio.CancelledError:
+                log_event(
+                    "phase_coordinator_synthesis_cancelled",
+                    {"conversation_id": context.conversation_id},
+                )
+                yield AgentEvent.plan_cancelled("Synthesis was cancelled")
+                yield AgentEvent.cancelled()
+                return
+            except Exception as e:
+                log_event(
+                    "phase_coordinator_synthesis_failed",
+                    {
+                        "conversation_id": context.conversation_id,
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                    },
+                    level=logging.ERROR,
+                )
+                yield AgentEvent.error(f"Synthesis failed: {e}")
+
+            yield AgentEvent.complete()
+
+        except asyncio.CancelledError:
+            log_event(
+                "phase_coordinator_cancelled",
+                {
+                    "conversation_id": context.conversation_id,
+                    "current_phase": current_phase_id,
+                },
+            )
+            if current_phase_id:
+                yield AgentEvent.phase_cancelled(current_phase_id)
+            yield AgentEvent.plan_cancelled("Execution was cancelled")
+            yield AgentEvent.cancelled()
+
+        except PlanningError as e:
+            log_event(
+                "phase_coordinator_planning_error",
+                {
+                    "conversation_id": context.conversation_id,
+                    "error": str(e),
+                },
+                level=logging.ERROR,
+            )
+            yield AgentEvent.plan_failed(str(e))
+            yield AgentEvent.complete()
+
+        except Exception as e:
+            log_event(
+                "phase_coordinator_unexpected_error",
+                {
+                    "conversation_id": context.conversation_id,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                },
+                level=logging.ERROR,
+            )
+            yield AgentEvent.error(f"Unexpected error: {e}")
+            yield AgentEvent.complete()
+
+    async def _create_strategic_plan_with_cancellation(
+        self, query: str, context: ConversationContext
+    ) -> Optional[StrategicPlan]:
+        try:
+            context.check_cancelled()
+            return await self.strategic_planner.create_strategic_plan(query, context)
+        except asyncio.CancelledError:
+            log_event(
+                "phase_coordinator_strategic_planning_cancelled",
+                {"conversation_id": context.conversation_id},
+            )
+            return None
         except PlanningError as e:
             log_event(
                 "phase_coordinator_strategic_planning_failed",
@@ -72,9 +351,7 @@ class PhaseCoordinator:
                 },
                 level=logging.ERROR,
             )
-            yield AgentEvent.plan_failed(f"Strategic planning failed: {e}")
-            yield AgentEvent.complete()
-            return
+            raise
         except Exception as e:
             log_event(
                 "phase_coordinator_strategic_planning_exception",
@@ -85,158 +362,7 @@ class PhaseCoordinator:
                 },
                 level=logging.ERROR,
             )
-            yield AgentEvent.plan_failed(f"Strategic planning exception: {e}")
-            yield AgentEvent.complete()
-            return
-
-        log_event(
-            "phase_coordinator_strategic_plan_created",
-            {
-                "strategy": strategic_plan.strategy,
-                "phase_count": len(strategic_plan.phases),
-                "phases": [p.phase_id for p in strategic_plan.phases],
-            },
-        )
-
-        yield AgentEvent(
-            type=AgentEventType.PLAN_CREATED,
-            data={
-                "type": "strategic",
-                "strategy": strategic_plan.strategy,
-                "phase_count": len(strategic_plan.phases),
-                "phases": [
-                    {
-                        "phase_id": p.phase_id,
-                        "description": p.description,
-                        "complexity": p.estimated_complexity.value,
-                        "required_tools": p.required_tools,
-                    }
-                    for p in strategic_plan.phases
-                ],
-                "estimated_time_seconds": strategic_plan.estimated_time_seconds,
-                "estimated_cost_usd": strategic_plan.estimated_cost_usd,
-            },
-        )
-
-        phase_results: Dict[str, Any] = {}
-        completed_phases: set[str] = set()
-
-        for phase_idx, phase in enumerate(strategic_plan.phases, 1):
-            log_event(
-                "phase_coordinator_executing_phase",
-                {
-                    "phase_id": phase.phase_id,
-                    "phase_number": phase_idx,
-                    "total_phases": len(strategic_plan.phases),
-                    "description": phase.description,
-                },
-            )
-
-            if not phase.is_ready(completed_phases):
-                missing = phase.missing_deps(completed_phases)
-                error_msg = f"Phase {phase.phase_id} dependencies not met: {missing}"
-                log_event(
-                    "phase_coordinator_dependency_error",
-                    {
-                        "phase_id": phase.phase_id,
-                        "missing_dependencies": missing,
-                    },
-                    level=logging.ERROR,
-                )
-                yield AgentEvent.plan_failed(error_msg)
-                yield AgentEvent.complete()
-                return
-
-            log_event(
-                f"================================================ EXECUTING PHASE {phase} ================================================"
-            )
-            log_event("")
-
-            try:
-                phase_task_results: Dict[str, Any] = {}
-                async for ev in self._execute_phase_streaming(
-                    phase=phase,
-                    phase_number=phase_idx,
-                    total_phases=len(strategic_plan.phases),
-                    query=query,
-                    context=context,
-                    previous_results=phase_results,
-                ):
-                    yield ev
-                    if ev.type == AgentEventType.TASK_COMPLETED and ev.task_id:
-                        phase_task_results[ev.task_id] = ev.data
-                    if ev.type == AgentEventType.PLAN_FAILED:
-                        raise PlanningError(f"Phase {phase.phase_id} execution failed")
-
-                phase_results[phase.phase_id] = phase_task_results
-                completed_phases.add(phase.phase_id)
-
-                yield AgentEvent.phase_completed(phase.phase_id)
-
-                log_event(
-                    "phase_coordinator_phase_completed",
-                    {
-                        "phase_id": phase.phase_id,
-                        "phase_number": phase_idx,
-                        "total_phases": len(strategic_plan.phases),
-                    },
-                )
-
-            except Exception as e:
-                log_event(
-                    "phase_coordinator_phase_execution_failed",
-                    {
-                        "phase_id": phase.phase_id,
-                        "error": str(e),
-                        "error_type": type(e).__name__,
-                    },
-                    level=logging.ERROR,
-                )
-                yield AgentEvent.plan_failed(
-                    f"Phase {phase.phase_id} execution failed: {e}"
-                )
-                yield AgentEvent.complete()
-                return
-
-        log_event(
-            "phase_coordinator_all_phases_completed",
-            {
-                "total_phases": len(strategic_plan.phases),
-                "completed_phases": len(completed_phases),
-            },
-        )
-
-        log_event(
-            "------------------------------------------------ STARTING PHASE COORDINATOR SYNTHESIS ------------------------------------------------"
-        )
-        yield AgentEvent.synthesis_started()
-
-        try:
-            synthesis_planner = self.tactical_planner_factory.create()
-
-            async for chunk in synthesis_planner._synthesize_response(
-                query=query,
-                plan=self._create_synthetic_execution_plan(strategic_plan),
-                task_results=phase_results,
-            ):
-                yield AgentEvent.response_chunk(chunk)
-
-            log_event(
-                "------------------------------------------------ FINISHED PHASE COORDINATOR SYNTHESIS ------------------------------------------------"
-            )
-        except Exception as e:
-            log_event(
-                "phase_coordinator_synthesis_failed",
-                {
-                    "conversation_id": context.conversation_id,
-                    "error": str(e),
-                    "error_type": type(e).__name__,
-                },
-                level=logging.ERROR,
-            )
-            yield AgentEvent.error(f"Synthesis failed: {e}")
-
-        yield AgentEvent.complete()
+            raise PlanningError(f"Strategic planning exception: {e}") from e
 
     async def _execute_phase_streaming(
         self,

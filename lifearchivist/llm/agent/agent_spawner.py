@@ -10,18 +10,15 @@ from pydantic import BaseModel
 
 from ...utils.logx import log_event, track
 from ..resolver import resolve_params
+from .constants import AgentExecutionDefaults
 from .exceptions import ToolExecutionError
-from .models import (  # adjust to your package layout
+from .models import (
     AgentTask,
     ConversationContext,
     ResultEnvelope,
 )
 from .tool_registry import AgentToolRegistry
 from .types import DEFAULT_RETRIABLE
-
-if TYPE_CHECKING:
-    from llm import LLMProviderManager
-
 from .utils.parsing import (
     _PLACEHOLDER_PATTERN,
     _approx_size,
@@ -30,6 +27,9 @@ from .utils.parsing import (
     sanitize_tool_output,
 )
 from .utils.prompt_builder import PromptBuilder
+
+if TYPE_CHECKING:
+    from llm import LLMProviderManager
 
 
 @asynccontextmanager
@@ -58,13 +58,13 @@ class AgentSpawner:
         tool_registry: AgentToolRegistry,
         prompt_builder: "PromptBuilder",
         *,
-        task_timeout_s: float | None = 60.0,
-        max_retries: int = 2,
-        max_history_messages: int = 50,
-        max_dependent_bytes: int = 256 * 1024,  # soft cap (warn when exceeded)
+        task_timeout_s: float | None = AgentExecutionDefaults.TASK_TIMEOUT_SECONDS,
+        max_retries: int = AgentExecutionDefaults.MAX_RETRIES,
+        max_history_messages: int = AgentExecutionDefaults.MAX_HISTORY_MESSAGES,
+        max_dependent_bytes: int = AgentExecutionDefaults.MAX_DEPENDENT_BYTES,
         retriable_exceptions: Optional[Iterable[type[BaseException]]] = None,
-        backoff_base_s: float = 0.5,
-        backoff_max_s: float = 5.0,
+        backoff_base_s: float = AgentExecutionDefaults.BACKOFF_BASE_SECONDS,
+        backoff_max_s: float = AgentExecutionDefaults.BACKOFF_MAX_SECONDS,
         logger: Optional[logging.Logger] = None,
     ):
         self.llm = llm_provider_manager

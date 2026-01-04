@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional
 
 from .agent_spawner import AgentSpawner
 from .complexity_classifier import ComplexityClassifier
+from .constants import AgentExecutionDefaults, AgentModelDefaults, AgentToolLimits
 from .executor import TaskExecutor
 from .plan_validator import PlanValidator
 from .tool_registry import AgentToolRegistry
@@ -32,15 +33,15 @@ class TacticalPlannerFactory:
         complexity_classifier: ComplexityClassifier,
         *,
         on_observe: Optional[Callable[[str, Mapping[str, Any]], None]] = None,
-        planning_model: str = "qwen2.5:7b",
-        planning_temperature: float = 0.2,
-        synthesis_model: str = "qwen2.5:7b",
-        synthesis_temperature: float = 0.7,
-        max_concurrency: int = 32,
+        planning_model: str = AgentModelDefaults.PLANNING_MODEL,
+        planning_temperature: float = AgentModelDefaults.PLANNING_TEMPERATURE,
+        synthesis_model: str = AgentModelDefaults.SYNTHESIS_MODEL,
+        synthesis_temperature: float = AgentModelDefaults.SYNTHESIS_TEMPERATURE,
+        max_concurrency: int = AgentExecutionDefaults.MAX_CONCURRENCY,
         per_tool_limits: Optional[dict[str, int]] = None,
-        max_tasks: int = 20,
-        max_cost_usd: float = 1.0,
-        max_time_seconds: int = 300,
+        max_tasks: int = AgentExecutionDefaults.MAX_TASKS,
+        max_cost_usd: float = AgentExecutionDefaults.MAX_COST_USD,
+        max_time_seconds: int = AgentExecutionDefaults.MAX_TIME_SECONDS,
     ):
         self.llm_provider_manager = llm_provider_manager
         self.tool_registry = tool_registry
@@ -52,7 +53,7 @@ class TacticalPlannerFactory:
         self.synthesis_model = synthesis_model
         self.synthesis_temperature = synthesis_temperature
         self.max_concurrency = max_concurrency
-        self.per_tool_limits = per_tool_limits or {"structured_extraction": 8}
+        self.per_tool_limits = per_tool_limits or AgentToolLimits.get_per_tool_limits()
         self.max_tasks = max_tasks
         self.max_cost_usd = max_cost_usd
         self.max_time_seconds = max_time_seconds
@@ -70,10 +71,6 @@ class TacticalPlannerFactory:
             llm_provider_manager=self.llm_provider_manager,
             tool_registry=self.tool_registry,
             prompt_builder=self.prompt_builder,
-            task_timeout_s=60.0,
-            max_retries=2,
-            max_history_messages=50,
-            max_dependent_bytes=256 * 1024,
         )
 
         executor = TaskExecutor(

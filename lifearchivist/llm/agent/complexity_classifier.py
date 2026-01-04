@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from ...llm import LLMMessage
 from ...utils.logx import log_event
+from .constants import AgentModelDefaults
 from .models.query import ComplexityClassification, QueryComplexity
 
 if TYPE_CHECKING:
@@ -18,11 +19,13 @@ class ComplexityClassifier:
         self,
         llm_provider_manager: "LLMProviderManager",
         prompt_builder: "PromptBuilder",
-        model: str = "qwen2.5:7b",
+        model: str = AgentModelDefaults.CLASSIFICATION_MODEL,
+        temperature: float = AgentModelDefaults.CLASSIFICATION_TEMPERATURE,
     ):
         self.llm = llm_provider_manager
         self.prompt_builder = prompt_builder
         self.model = model
+        self.temperature = temperature
 
     # @track(operation="complexity_classify")
     async def classify(
@@ -46,7 +49,7 @@ class ComplexityClassifier:
         result = await self.llm.generate(
             messages=[LLMMessage(role="user", content=prompt)],
             model=self.model,
-            temperature=0.0,
+            temperature=self.temperature,
             response_format={"type": "json_object"},
         )
 

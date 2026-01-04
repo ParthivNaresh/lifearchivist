@@ -17,6 +17,9 @@ from qdrant_client import QdrantClient
 from ..config.settings import Settings
 from ..llm import LLMProviderManager
 from ..llm.agent import (
+    AgentExecutionDefaults,
+    AgentModelDefaults,
+    AgentToolLimits,
     AgentToolRegistry,
     ComplexityClassifier,
     PhaseCoordinator,
@@ -673,24 +676,24 @@ class ServiceContainer:
                 prompt_builder=prompt_builder,
                 complexity_classifier=complexity_classifier,
                 on_observe=_observer,
-                planning_model="qwen2.5:7b",
-                planning_temperature=0.2,
-                synthesis_model="qwen2.5:7b",
-                synthesis_temperature=0.7,
-                max_concurrency=32,
-                per_tool_limits={"structured_extraction": 8},
-                max_tasks=20,
-                max_cost_usd=1.0,
-                max_time_seconds=300,
+                planning_model=AgentModelDefaults.PLANNING_MODEL,
+                planning_temperature=AgentModelDefaults.PLANNING_TEMPERATURE,
+                synthesis_model=AgentModelDefaults.SYNTHESIS_MODEL,
+                synthesis_temperature=AgentModelDefaults.SYNTHESIS_TEMPERATURE,
+                max_concurrency=AgentExecutionDefaults.MAX_CONCURRENCY,
+                per_tool_limits=AgentToolLimits.get_per_tool_limits(),
+                max_tasks=AgentExecutionDefaults.MAX_TASKS,
+                max_cost_usd=AgentExecutionDefaults.MAX_COST_USD,
+                max_time_seconds=AgentExecutionDefaults.MAX_TIME_SECONDS,
             )
 
             strategic_planner = StrategicPlanner(
                 llm_provider_manager=self.llm_provider_manager,
                 tool_registry=tool_registry,
                 prompt_builder=prompt_builder,
-                planning_model="qwen2.5:7b",
-                planning_temperature=0.2,
-                max_phases=7,
+                planning_model=AgentModelDefaults.PLANNING_MODEL,
+                planning_temperature=AgentModelDefaults.PLANNING_TEMPERATURE,
+                max_phases=AgentExecutionDefaults.MAX_PHASES,
             )
 
             self.phase_coordinator = PhaseCoordinator(

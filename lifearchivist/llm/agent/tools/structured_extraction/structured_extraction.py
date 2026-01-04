@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from pydantic import BaseModel
 
 from .....llm import LLMMessage
+from .....llm.agent.constants import AgentModelDefaults
 from .....llm.agent.exceptions import ToolExecutionError
 from .....llm.agent.schema_builder import SchemaBuilder
 from .....llm.agent.tools.base import BaseAgentTool
@@ -158,7 +159,7 @@ class StructuredExtractionTool(BaseAgentTool):
             ),
         ]
 
-        model_to_use = p.model or "qwen2.5:7b"
+        model_to_use = p.model or AgentModelDefaults.TOOL_EXECUTION_MODEL
 
         log_event(
             "-------------------------------------- REQUEST PAYLOAD --------------------------------------"
