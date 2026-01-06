@@ -90,7 +90,10 @@ class CancellationToken:
                 )
 
         for child in self._children:
-            child.cancel(CancellationReason.PARENT_CANCELLED, f"Parent cancelled: {self._message}")
+            child.cancel(
+                CancellationReason.PARENT_CANCELLED,
+                f"Parent cancelled: {self._message}",
+            )
 
     def create_child(self) -> "CancellationToken":
         child = CancellationToken(_parent=self)
@@ -122,7 +125,9 @@ class CancellationToken:
             "is_cancelled": self.is_cancelled,
             "reason": self.reason.value if self.reason else None,
             "message": self.message,
-            "cancelled_at": self.cancelled_at.isoformat() if self.cancelled_at else None,
+            "cancelled_at": (
+                self.cancelled_at.isoformat() if self.cancelled_at else None
+            ),
         }
 
 

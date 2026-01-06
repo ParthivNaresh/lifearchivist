@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from .....llm import LLMMessage
 from .....llm.agent.constants import AgentModelDefaults
 from .....llm.agent.exceptions import ToolExecutionError
+from .....llm.agent.prompts import ToolPromptBuilders
 from .....llm.agent.schema_builder import SchemaBuilder
 from .....llm.agent.tools.base import BaseAgentTool
 from .....llm.agent.tools.chunk_utils import gather_document_chunks
@@ -19,9 +20,6 @@ from .....llm.agent.utils.parsing import (
     _response_text,
     _unwrap_result_or_raise,
     clean_extraction_chunks,
-)
-from .....llm.agent.utils.prompt_builder import (
-    _build_structured_extraction_system_message,
 )
 from .....utils.logx import log_event
 
@@ -143,7 +141,7 @@ class StructuredExtractionTool(BaseAgentTool):
             "documents": [{"doc_id": c["doc_id"], "text": c["text"]} for c in chunks],
         }
 
-        system_content = _build_structured_extraction_system_message(
+        system_content = ToolPromptBuilders.structured_extraction_system(
             full_schema, instructions
         )
 

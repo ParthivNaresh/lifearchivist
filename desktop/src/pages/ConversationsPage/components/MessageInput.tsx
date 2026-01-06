@@ -55,7 +55,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
-  const isInputDisabled = disabled || isSending;
+  const isInputDisabled = Boolean(disabled) || isSending;
   const canSubmit = message.trim().length > 0 && !isInputDisabled;
 
   return (

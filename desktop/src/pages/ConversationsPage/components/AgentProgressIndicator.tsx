@@ -92,7 +92,13 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
       )}
     >
       <span className="flex-shrink-0">{getStatusIcon(task.status)}</span>
-      <span className={cn('flex-shrink-0', isActive && 'text-blue-400', isCancelled && 'text-amber-400')}>
+      <span
+        className={cn(
+          'flex-shrink-0',
+          isActive && 'text-blue-400',
+          isCancelled && 'text-amber-400'
+        )}
+      >
         {getToolIcon(task.tool)}
       </span>
       <span
@@ -103,7 +109,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
           isCancelled && 'text-amber-400'
         )}
       >
-        {isCancelled ? 'Cancelled' : isActive ? getToolLabel(task.tool) : task.description || getToolLabel(task.tool)}
+        {isCancelled
+          ? 'Cancelled'
+          : isActive
+            ? getToolLabel(task.tool)
+            : task.description || getToolLabel(task.tool)}
       </span>
     </div>
   );
@@ -283,7 +293,9 @@ export const AgentProgressIndicator: React.FC<AgentProgressIndicatorProps> = ({ 
   }
 
   if (isCancelled) {
-    return <CancelledIndicator completedCount={completedPhases.length} totalCount={phases.length} />;
+    return (
+      <CancelledIndicator completedCount={completedPhases.length} totalCount={phases.length} />
+    );
   }
 
   if (phases.length === 0 && !isSynthesizing) {

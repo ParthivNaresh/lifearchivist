@@ -21,26 +21,15 @@ from .models.context import ConversationContext
 from .models.events import AgentEvent, AgentEventType
 from .models.task import AgentTask, ExecutionPlan
 from .plan_validator import PlanValidator
+from .prompts import SynthesisPromptBuilder, TacticalPromptBuilder
 from .tool_registry import AgentToolRegistry
-from .utils import PromptBuilder, json_loads_strict
+from .utils.parsing import json_loads_strict
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
 
 
 class TacticalPlanner:
-    """
-    Tactical Planner: Creates detailed task DAGs from goals.
-
-    Responsibilities:
-    - Convert goals (user queries or phase descriptions) into task DAGs
-    - Validate plans
-    - Execute tasks via executor
-    - Synthesize final responses
-
-    Can be used standalone (direct planning) or as part of hierarchical system
-    (tactical planning for phases).
-    """
 
     def __init__(
         self,
@@ -48,7 +37,6 @@ class TacticalPlanner:
         tool_registry: AgentToolRegistry,
         complexity_classifier: ComplexityClassifier,
         executor: TaskExecutor,
-        prompt_builder: PromptBuilder,
         plan_validator: PlanValidator,
         *,
         on_observe: Optional[Callable[[str, Mapping[str, Any]], None]] = None,
@@ -63,7 +51,6 @@ class TacticalPlanner:
         self.tools = tool_registry
         self.classifier = complexity_classifier
         self.executor = executor
-        self.prompt_builder = prompt_builder
         self.validator = plan_validator
 
         self._obs = on_observe
@@ -77,9 +64,6 @@ class TacticalPlanner:
     async def process_query(
         self, query: str, context: ConversationContext
     ) -> AsyncGenerator[AgentEvent, None]:
-        """
-        Process query end-to-end: plan → execute → synthesize.
-        """
         try:
             plan = await self.create_tactical_plan(query, context)
         except PlanningError as e:
@@ -179,17 +163,6 @@ class TacticalPlanner:
         context: ConversationContext,
         available_tools: Optional[List[Any]] = None,
     ) -> ExecutionPlan:
-        """
-        Create detailed task DAG from a goal (query or phase description).
-
-        Args:
-            query: Goal to accomplish
-            context: Conversation context
-            available_tools: Tools to use (defaults to all tools)
-
-        Returns:
-            ExecutionPlan with validated task DAG
-        """
         log_event(
             "================================================ TACTICAL PLANNING ================================================"
         )
@@ -199,8 +172,10 @@ class TacticalPlanner:
             available_tools if available_tools is not None else self.tools.list_tools()
         )
 
-        prompt = self.prompt_builder.build_planning_prompt(
-            query=query, context=context, available_tools=tools_to_use
+        prompt = TacticalPromptBuilder.build(
+            query=query,
+            context=context,
+            available_tools=tools_to_use,
         )
 
         log_event(
@@ -295,12 +270,13 @@ class TacticalPlanner:
         return plan
 
     async def _synthesize_response(
-        self, query: str, plan: ExecutionPlan, task_results: Dict[str, Any]
+        self,
+        query: str,
+        plan: ExecutionPlan,
+        task_results: Dict[str, Any],
+        context: Optional[ConversationContext] = None,
     ) -> AsyncGenerator[str, None]:
-        """
-        Streams final answer text (already chunked by provider).
-        """
-        prompt = self.prompt_builder.build_synthesis_prompt(
+        prompt = SynthesisPromptBuilder.build(
             query=query, plan=plan, results=task_results
         )
 
@@ -314,12 +290,15 @@ class TacticalPlanner:
             model=self.synthesis_model,
             temperature=self.synthesis_temperature,
         ):
+            if context is not None and context.is_cancelled:
+                log_event(
+                    "synthesis_cancelled_during_stream",
+                    {"conversation_id": context.conversation_id},
+                )
+                return
             yield getattr(chunk, "content", str(chunk))
 
     def _summarize_plan(self, plan: ExecutionPlan) -> Dict[str, Any]:
-        """
-        Compact, JSON-safe plan summary for PLAN_CREATED event.
-        """
         return {
             "estimated_time_seconds": int(plan.estimated_time_seconds),
             "estimated_cost_usd": float(plan.estimated_cost_usd),

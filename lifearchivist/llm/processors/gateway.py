@@ -9,9 +9,6 @@ from ...utils.logx import log_event
 from ...utils.sse import SSEFormatter
 from ..agent import ComplexityClassifier
 from ..agent import ConversationContext as AgentConversationContext
-from ..agent import PromptBuilder
-from ..agent.cancellation import CancellationReason, CancellationToken
-from ..agent.models.events import AgentEventType
 from ..processors.base import StreamProcessor
 from ..processors.direct import DirectStreamProcessor
 
@@ -123,14 +120,18 @@ class AgentProgressTracker:
                 if task["task_id"] == task_id:
                     task["status"] = "cancelled"
                     break
-        return self._build_progress_event("task_cancelled", task_id=task_id, error=reason)
+        return self._build_progress_event(
+            "task_cancelled", task_id=task_id, error=reason
+        )
 
     def cancel_phase(self, phase_id: str, reason: str) -> Dict[str, Any]:
         for phase in self.phases:
             if phase["phase_id"] == phase_id:
                 phase["status"] = "cancelled"
                 break
-        return self._build_progress_event("phase_cancelled", phase_id=phase_id, error=reason)
+        return self._build_progress_event(
+            "phase_cancelled", phase_id=phase_id, error=reason
+        )
 
     def cancel_plan(self, reason: str) -> Dict[str, Any]:
         self.is_cancelled = True
@@ -193,7 +194,6 @@ class GatewayStreamProcessor(StreamProcessor):
 
             classifier = ComplexityClassifier(
                 llm_provider_manager=self.server.service_container.llm_provider_manager,
-                prompt_builder=PromptBuilder(),
             )
             log_event(
                 "complexity_classification_started",
@@ -465,7 +465,9 @@ class GatewayStreamProcessor(StreamProcessor):
                     yield SSEFormatter.format_event(
                         EventType.CANCELLED,
                         {
-                            "reason": event_data.get("reason", "User requested cancellation"),
+                            "reason": event_data.get(
+                                "reason", "User requested cancellation"
+                            ),
                             "latency_ms": latency_ms,
                             "completed_phases": progress_tracker.completed_phases,
                         },

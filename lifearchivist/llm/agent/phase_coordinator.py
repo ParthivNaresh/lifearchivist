@@ -4,36 +4,16 @@ import logging
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from ...utils.logx import log_event
-from .cancellation import CancellationScope
 from .exceptions import PlanningError
 from .models.context import ConversationContext
 from .models.events import AgentEvent, AgentEventType
 from .models.strategic_plan import StrategicPhase, StrategicPlan
+from .models.task import ExecutionPlan
 from .strategic_planner import StrategicPlanner
 from .tactical_planner_factory import TacticalPlannerFactory
-from .tools.base import BaseAgentTool
 
 
 class PhaseCoordinator:
-    """
-    Coordinates multi-phase query execution using hierarchical planning.
-
-    Responsibilities:
-    - Create strategic plan (high-level phases)
-    - Execute each phase using isolated tactical planner instances
-    - Manage phase dependencies and result passing
-    - Aggregate results across phases
-    - Synthesize final response
-
-    Architecture:
-        User Query → Strategic Planner → Phases
-        For each phase:
-            Phase → NEW Tactical Planner → Tasks → Executor → Results
-        All Results → Synthesizer → Final Answer
-
-    Each phase gets its own TacticalPlanner instance for complete isolation.
-    This enables parallel execution and prevents state pollution.
-    """
 
     def __init__(
         self,
@@ -46,19 +26,6 @@ class PhaseCoordinator:
     async def execute_query(
         self, query: str, context: ConversationContext
     ) -> AsyncGenerator[AgentEvent, None]:
-        """
-        Execute query using hierarchical planning.
-
-        Sequential execution of all phases with isolated tactical planners.
-        Properly handles cancellation at all stages.
-
-        Args:
-            query: User's query
-            context: Conversation context
-
-        Yields:
-            AgentEvent objects for streaming progress
-        """
         log_event(
             "================================================ PHASE COORDINATOR STARTS ================================================"
         )
@@ -126,7 +93,9 @@ class PhaseCoordinator:
                         },
                     )
                     yield AgentEvent.phase_cancelled(phase.phase_id)
-                    yield AgentEvent.plan_cancelled(f"Cancelled before phase {phase.phase_id}")
+                    yield AgentEvent.plan_cancelled(
+                        f"Cancelled before phase {phase.phase_id}"
+                    )
                     yield AgentEvent.cancelled()
                     return
 
@@ -142,7 +111,9 @@ class PhaseCoordinator:
 
                 if not phase.is_ready(completed_phases):
                     missing = phase.missing_deps(completed_phases)
-                    error_msg = f"Phase {phase.phase_id} dependencies not met: {missing}"
+                    error_msg = (
+                        f"Phase {phase.phase_id} dependencies not met: {missing}"
+                    )
                     log_event(
                         "phase_coordinator_dependency_error",
                         {
@@ -174,7 +145,9 @@ class PhaseCoordinator:
                         if ev.type == AgentEventType.TASK_COMPLETED and ev.task_id:
                             phase_task_results[ev.task_id] = ev.data
                         if ev.type == AgentEventType.PLAN_FAILED:
-                            raise PlanningError(f"Phase {phase.phase_id} execution failed")
+                            raise PlanningError(
+                                f"Phase {phase.phase_id} execution failed"
+                            )
                         if ev.type == AgentEventType.PLAN_CANCELLED:
                             yield AgentEvent.cancelled()
                             return
@@ -202,7 +175,9 @@ class PhaseCoordinator:
                         },
                     )
                     yield AgentEvent.phase_cancelled(phase.phase_id)
-                    yield AgentEvent.plan_cancelled(f"Phase {phase.phase_id} was cancelled")
+                    yield AgentEvent.plan_cancelled(
+                        f"Phase {phase.phase_id} was cancelled"
+                    )
                     yield AgentEvent.cancelled()
                     return
 
@@ -256,6 +231,7 @@ class PhaseCoordinator:
                     query=query,
                     plan=self._create_synthetic_execution_plan(strategic_plan),
                     task_results=phase_results,
+                    context=context,
                 ):
                     if context.is_cancelled:
                         log_event(
@@ -443,13 +419,6 @@ class PhaseCoordinator:
         original_query: str,
         previous_results: Dict[str, Any],
     ) -> str:
-        """
-        Build query for tactical planner based on phase description and context.
-
-        When previous phases have produced document IDs, we inject them directly
-        so the tactical planner can use them in parameters without needing
-        cross-phase dependency references.
-        """
         query_parts = [phase.description]
 
         if previous_results:
@@ -472,12 +441,6 @@ class PhaseCoordinator:
     def _extract_document_ids_from_results(
         self, phase_results: Dict[str, Any]
     ) -> List[str]:
-        """
-        Extract document IDs from previous phase results.
-
-        Searches through phase results for document search outputs and extracts
-        the document_id values for use in downstream phases.
-        """
         document_ids: List[str] = []
         seen: set[str] = set()
 
@@ -491,9 +454,6 @@ class PhaseCoordinator:
         return document_ids
 
     def _extract_ids_from_value(self, value: Any) -> List[str]:
-        """
-        Recursively extract document_id values from a nested structure.
-        """
         ids: List[str] = []
 
         if isinstance(value, dict):
@@ -517,9 +477,6 @@ class PhaseCoordinator:
     def _summarize_previous_results(
         self, phase_results: Dict[str, Any], max_chars: int = 2000
     ) -> Optional[str]:
-        """
-        Create a compact summary of previous phase results for context.
-        """
         if not phase_results:
             return None
 
@@ -554,9 +511,6 @@ class PhaseCoordinator:
         return summary
 
     def _count_documents(self, value: Any) -> int:
-        """
-        Count documents in a result structure.
-        """
         if isinstance(value, dict):
             if "documents" in value and isinstance(value["documents"], list):
                 return len(value["documents"])
@@ -571,9 +525,6 @@ class PhaseCoordinator:
     def _filter_tools_for_phase(
         self, phase: StrategicPhase, tactical_planner: Any
     ) -> List[Any]:
-        """
-        Filter available tools based on phase requirements.
-        """
         all_tools: List[Any] = list(tactical_planner.tools.list_tools())
 
         if not phase.required_tools:
@@ -581,12 +532,9 @@ class PhaseCoordinator:
 
         return [tool for tool in all_tools if tool.name in phase.required_tools]
 
-    def _create_synthetic_execution_plan(self, strategic_plan: StrategicPlan) -> Any:
-        """
-        Create a synthetic execution plan for synthesis that represents the strategic plan.
-        """
-        from .models.task import ExecutionPlan
-
+    def _create_synthetic_execution_plan(
+        self, strategic_plan: StrategicPlan
+    ) -> ExecutionPlan:
         return ExecutionPlan(
             tasks=[],
             estimated_time_seconds=strategic_plan.estimated_time_seconds,

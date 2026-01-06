@@ -6,11 +6,10 @@ from ...llm import LLMMessage
 from ...utils.logx import log_event
 from .constants import AgentModelDefaults
 from .models.query import ComplexityClassification, QueryComplexity
+from .prompts import ClassificationPromptBuilder
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
-
-    from .utils.prompt_builder import PromptBuilder
 
 
 class ComplexityClassifier:
@@ -18,16 +17,13 @@ class ComplexityClassifier:
     def __init__(
         self,
         llm_provider_manager: "LLMProviderManager",
-        prompt_builder: "PromptBuilder",
         model: str = AgentModelDefaults.CLASSIFICATION_MODEL,
         temperature: float = AgentModelDefaults.CLASSIFICATION_TEMPERATURE,
     ):
         self.llm = llm_provider_manager
-        self.prompt_builder = prompt_builder
         self.model = model
         self.temperature = temperature
 
-    # @track(operation="complexity_classify")
     async def classify(
         self, query: str, context: Any | None = None
     ) -> ComplexityClassification:
@@ -42,9 +38,7 @@ class ComplexityClassifier:
             },
         )
 
-        prompt = self.prompt_builder.build_complexity_classification_prompt(
-            query=query, context=context
-        )
+        prompt = ClassificationPromptBuilder.build(query=query, context=context)
 
         result = await self.llm.generate(
             messages=[LLMMessage(role="user", content=prompt)],

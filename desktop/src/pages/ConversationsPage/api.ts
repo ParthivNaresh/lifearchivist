@@ -22,6 +22,11 @@ import type {
   SSEErrorEvent,
 } from './types';
 
+interface CancelResponse {
+  success: boolean;
+  message: string;
+}
+
 export const conversationsApi = {
   async create(data: CreateConversationRequest): Promise<Conversation> {
     const result = await apiClient.post<ConversationResponse>('/api/conversations', data);
@@ -54,6 +59,13 @@ export const conversationsApi = {
     return await apiClient.post<SendMessageResponse>(
       `/api/conversations/${conversationId}/messages`,
       data
+    );
+  },
+
+  async cancelStream(conversationId: string): Promise<CancelResponse> {
+    return await apiClient.post<CancelResponse>(
+      `/api/conversations/${conversationId}/messages/cancel`,
+      {}
     );
   },
 
@@ -93,12 +105,10 @@ export const conversationsApi = {
 
         if (done) break;
 
-        // Decode chunk and add to buffer
         buffer += decoder.decode(value, { stream: true });
 
-        // Process complete SSE messages
         const lines = buffer.split('\n');
-        buffer = lines.pop() ?? ''; // Keep incomplete line in buffer
+        buffer = lines.pop() ?? '';
 
         let currentEvent = '';
         let currentData = '';
@@ -109,10 +119,8 @@ export const conversationsApi = {
           } else if (line.startsWith('data: ')) {
             currentData = line.substring(6);
 
-            // Process the event when we have both event and data
             if (currentEvent && currentData) {
               try {
-                // Parse data based on event type for proper typing
                 switch (currentEvent) {
                   case 'user_message': {
                     const data = JSON.parse(currentData) as SSEUserMessageEvent;
@@ -142,7 +150,6 @@ export const conversationsApi = {
                   case 'chunk': {
                     const data = JSON.parse(currentData) as SSEChunkEvent;
                     callbacks.onChunk?.(data.text);
-                    // Yield to event loop to allow React to render
                     await new Promise((resolve) => setTimeout(resolve, 0));
                     break;
                   }

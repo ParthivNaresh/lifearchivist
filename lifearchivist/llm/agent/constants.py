@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import Final
 
-
 MAX_JSON_CHARS: Final[int] = 200_000
 QWEN_25_7B: Final[str] = "qwen2.5:7b"
+
 
 class AgentModelDefaults:
     PLANNING_MODEL: Final[str] = QWEN_25_7B
@@ -102,8 +102,10 @@ class AgentConfig:
             model=AgentModelConfig(
                 planning_model=planning_model or AgentModelDefaults.PLANNING_MODEL,
                 synthesis_model=synthesis_model or AgentModelDefaults.SYNTHESIS_MODEL,
-                classification_model=classification_model or AgentModelDefaults.CLASSIFICATION_MODEL,
-                tool_execution_model=tool_execution_model or AgentModelDefaults.TOOL_EXECUTION_MODEL,
+                classification_model=classification_model
+                or AgentModelDefaults.CLASSIFICATION_MODEL,
+                tool_execution_model=tool_execution_model
+                or AgentModelDefaults.TOOL_EXECUTION_MODEL,
             ),
             execution=AgentExecutionConfig(),
         )

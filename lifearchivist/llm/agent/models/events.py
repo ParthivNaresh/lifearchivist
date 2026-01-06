@@ -124,11 +124,18 @@ class AgentEvent:
         return cls(type=AgentEventType.PHASE_COMPLETED, data={"phase_id": phase_id})
 
     @classmethod
-    def phase_cancelled(cls, phase_id: str, reason: str = "User requested cancellation") -> "AgentEvent":
-        return cls(type=AgentEventType.PHASE_CANCELLED, data={"phase_id": phase_id, "reason": reason})
+    def phase_cancelled(
+        cls, phase_id: str, reason: str = "User requested cancellation"
+    ) -> "AgentEvent":
+        return cls(
+            type=AgentEventType.PHASE_CANCELLED,
+            data={"phase_id": phase_id, "reason": reason},
+        )
 
     @classmethod
-    def task_cancelled(cls, task, reason: str = "User requested cancellation") -> "AgentEvent":
+    def task_cancelled(
+        cls, task, reason: str = "User requested cancellation"
+    ) -> "AgentEvent":
         return cls(
             type=AgentEventType.TASK_CANCELLED,
             data={"reason": reason},
@@ -136,7 +143,9 @@ class AgentEvent:
         )
 
     @classmethod
-    def plan_cancelled(cls, reason: str = "User requested cancellation") -> "AgentEvent":
+    def plan_cancelled(
+        cls, reason: str = "User requested cancellation"
+    ) -> "AgentEvent":
         return cls(type=AgentEventType.PLAN_CANCELLED, data={"reason": reason})
 
     @classmethod

@@ -6,7 +6,6 @@ from .constants import AgentExecutionDefaults, AgentModelDefaults, AgentToolLimi
 from .executor import TaskExecutor
 from .plan_validator import PlanValidator
 from .tool_registry import AgentToolRegistry
-from .utils.prompt_builder import PromptBuilder
 
 if TYPE_CHECKING:
     from ...llm import LLMProviderManager
@@ -14,22 +13,11 @@ if TYPE_CHECKING:
 
 
 class TacticalPlannerFactory:
-    """
-    Factory for creating TacticalPlanner (AgentOrchestrator) instances.
-
-    Each phase gets its own isolated TacticalPlanner with its own:
-    - Executor (with independent concurrency limits)
-    - Agent spawner
-    - Plan validator
-
-    This ensures phase isolation and enables parallel execution.
-    """
 
     def __init__(
         self,
         llm_provider_manager: "LLMProviderManager",
         tool_registry: AgentToolRegistry,
-        prompt_builder: PromptBuilder,
         complexity_classifier: ComplexityClassifier,
         *,
         on_observe: Optional[Callable[[str, Mapping[str, Any]], None]] = None,
@@ -45,7 +33,6 @@ class TacticalPlannerFactory:
     ):
         self.llm_provider_manager = llm_provider_manager
         self.tool_registry = tool_registry
-        self.prompt_builder = prompt_builder
         self.complexity_classifier = complexity_classifier
         self.on_observe = on_observe
         self.planning_model = planning_model
@@ -59,18 +46,11 @@ class TacticalPlannerFactory:
         self.max_time_seconds = max_time_seconds
 
     def create(self) -> "TacticalPlanner":
-        """
-        Create a new TacticalPlanner instance with isolated resources.
-
-        Returns:
-            Fresh TacticalPlanner instance
-        """
         from .tactical_planner import TacticalPlanner
 
         agent_spawner = AgentSpawner(
             llm_provider_manager=self.llm_provider_manager,
             tool_registry=self.tool_registry,
-            prompt_builder=self.prompt_builder,
         )
 
         executor = TaskExecutor(
@@ -93,7 +73,6 @@ class TacticalPlannerFactory:
             tool_registry=self.tool_registry,
             complexity_classifier=self.complexity_classifier,
             executor=executor,
-            prompt_builder=self.prompt_builder,
             plan_validator=plan_validator,
             on_observe=self.on_observe,
             planning_model=self.planning_model,

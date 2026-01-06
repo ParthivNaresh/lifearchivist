@@ -19,7 +19,7 @@ from .....llm.agent.utils.parsing import (
 )
 from .....utils.logx import log_event
 from .....utils.result import Result
-from ...utils.prompt_builder import _build_document_search_system_message
+from ...prompts import ToolPromptBuilders
 
 if TYPE_CHECKING:
     from storage.metadata_service import MetadataService
@@ -167,8 +167,7 @@ class DocumentSearchTool(BaseAgentTool):
             "user_filters_present": false
         }
         """
-        # TODO: MOVE INTO MAPPING SYSTEM IN PROMPT BUILDER
-        system_content = _build_document_search_system_message()
+        system_content = ToolPromptBuilders.document_search_system()
 
         messages: List[LLMMessage] = [
             LLMMessage(

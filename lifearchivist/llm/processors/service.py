@@ -1,8 +1,6 @@
 import asyncio
-
-
 import time
-from typing import Any, AsyncGenerator
+from typing import TYPE_CHECKING, Any, AsyncGenerator
 
 from lifearchivist.llm.agent.cancellation import CancellationReason, CancellationToken
 from lifearchivist.server.api.routes.conversations.misc_models import StreamContext
@@ -13,12 +11,12 @@ from lifearchivist.server.api.routes.shared.exceptions import ServiceUnavailable
 from lifearchivist.utils.logx import log_event
 
 from .base import StreamProcessor
-from .direct import DirectStreamProcessor
-from .gateway import GatewayStreamProcessor
+
+if TYPE_CHECKING:
+    pass
 
 
 class StreamingService:
-    """Main service for handling streaming."""
 
     def __init__(self, server: Any):
         self.server = server
@@ -34,12 +32,6 @@ class StreamingService:
         request: SendMessageRequest,
         cancellation_token: CancellationToken,
     ) -> AsyncGenerator[str, None]:
-        """
-        Create and process stream with external cancellation token.
-
-        This method allows the caller to provide a cancellation token that can be
-        triggered externally (e.g., when client disconnects).
-        """
         context = StreamContext(
             conversation_id=conversation_id,
             request=request,
@@ -80,7 +72,9 @@ class StreamingService:
             raise
 
     def _get_processor(self) -> StreamProcessor:
-        """Get appropriate stream processor."""
+        from .direct import DirectStreamProcessor
+        from .gateway import GatewayStreamProcessor
+
         if self.server.service_container and self.server.service_container.rag_service:
             return GatewayStreamProcessor(self.server)
         return DirectStreamProcessor(self.server)

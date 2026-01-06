@@ -283,16 +283,25 @@ export function useConversation(conversationId: string | null) {
     [conversationId, messages.length, conversation]
   );
 
-  const cancelRequest = useCallback(() => {
+  const cancelRequest = useCallback(async () => {
+    if (!conversationId) return;
+
+    setAgentProgress((prev) => ({
+      ...prev,
+      isCancelled: true,
+    }));
+
+    try {
+      await conversationsApi.cancelStream(conversationId);
+    } catch (err) {
+      console.warn('Failed to cancel stream on server:', err);
+    }
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
-      setAgentProgress((prev) => ({
-        ...prev,
-        isCancelled: true,
-      }));
     }
-  }, []);
+  }, [conversationId]);
 
   const sendMessageStreaming = useCallback(
     async (content: string, contextLimit = 5) => {

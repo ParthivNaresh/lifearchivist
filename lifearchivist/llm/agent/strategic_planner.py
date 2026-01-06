@@ -8,31 +8,20 @@ from .constants import AgentExecutionDefaults, AgentModelDefaults
 from .exceptions import PlanningError
 from .models.context import ConversationContext
 from .models.strategic_plan import PhaseComplexity, StrategicPhase, StrategicPlan
+from .prompts import StrategicPromptBuilder
 from .tool_registry import AgentToolRegistry
-from .utils import PromptBuilder, json_loads_strict
+from .utils.parsing import json_loads_strict
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
 
 
 class StrategicPlanner:
-    """
-    Strategic Planner creates high-level phases for complex queries.
-
-    Responsibilities:
-    - Analyze user query and break it into 3-7 coarse-grained phases
-    - Assign required tools to each phase
-    - Establish phase dependencies
-    - Estimate complexity per phase
-
-    Each phase will later be planned in detail by a tactical planner.
-    """
 
     def __init__(
         self,
         llm_provider_manager: "LLMProviderManager",
         tool_registry: AgentToolRegistry,
-        prompt_builder: PromptBuilder,
         *,
         planning_model: str = AgentModelDefaults.PLANNING_MODEL,
         planning_temperature: float = AgentModelDefaults.PLANNING_TEMPERATURE,
@@ -40,7 +29,6 @@ class StrategicPlanner:
     ):
         self.llm = llm_provider_manager
         self.tools = tool_registry
-        self.prompt_builder = prompt_builder
         self.planning_model = planning_model
         self.planning_temperature = planning_temperature
         self.max_phases = max_phases
@@ -48,25 +36,12 @@ class StrategicPlanner:
     async def create_strategic_plan(
         self, query: str, context: ConversationContext
     ) -> StrategicPlan:
-        """
-        Create a strategic plan by calling LLM with high-level tool descriptions.
-
-        Args:
-            query: User's query
-            context: Conversation context
-
-        Returns:
-            StrategicPlan with phases and dependencies
-
-        Raises:
-            PlanningError: If strategic planning fails
-        """
         log_event(
             "================================================ STRATEGIC PLANNING ================================================"
         )
         log_event("")
 
-        prompt = self.prompt_builder.build_strategic_planning_prompt(
+        prompt = StrategicPromptBuilder.build(
             query=query,
             context=context,
             available_tools=self.tools.list_tools(),
@@ -144,18 +119,6 @@ class StrategicPlanner:
             raise PlanningError(f"Strategic plan construction failed: {e}") from e
 
     def _build_strategic_plan(self, plan_data: Dict[str, Any]) -> StrategicPlan:
-        """
-        Build StrategicPlan from parsed JSON data.
-
-        Args:
-            plan_data: Parsed JSON from LLM
-
-        Returns:
-            StrategicPlan instance
-
-        Raises:
-            PlanningError: If plan data is invalid
-        """
         if "phases" not in plan_data:
             raise PlanningError("Strategic plan must include 'phases' key")
 

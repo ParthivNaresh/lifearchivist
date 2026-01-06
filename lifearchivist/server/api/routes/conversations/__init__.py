@@ -1,15 +1,3 @@
-"""
-Conversation API routes.
-
-Provides REST endpoints for conversation management:
-- Create conversations
-- List conversations
-- Get conversation details
-- Update conversations
-- Archive conversations
-- Send messages (standard and streaming)
-"""
-
 from fastapi import APIRouter
 
 from . import (
@@ -17,6 +5,7 @@ from . import (
     create,
     get,
     list,
+    messages_cancel,
     messages_list,
     messages_send,
     messages_stream,
@@ -32,6 +21,7 @@ router.include_router(update.router)
 router.include_router(archive.router)
 router.include_router(messages_send.router)
 router.include_router(messages_stream.router)
+router.include_router(messages_cancel.router)
 router.include_router(messages_list.router)
 
 __all__ = ["router"]

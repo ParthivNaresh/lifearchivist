@@ -8,6 +8,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Set,
     cast,
 )
 
@@ -23,17 +24,14 @@ from .models.plan import _PlanState
 from .models.task import AgentTask
 
 
-class TaskExecutor:
-    """
-    Concurrent execution of an ExecutionPlan with streaming events.
+class _CancellationSentinel:
+    pass
 
-    Key properties:
-      - Capacity-aware scheduling: never creates more asyncio tasks than allowed
-      - Per-tool concurrency limits (optional) and a global limit
-      - Fail-fast: emits PLAN_FAILED and terminates cleanly (no exception tearing down the generator)
-      - Skips propagate on both FAILED and SKIPPED upstream deps
-      - Deadlock diagnostics include unmet dependencies per task
-    """
+
+CANCELLATION_SENTINEL = _CancellationSentinel()
+
+
+class TaskExecutor:
 
     def __init__(
         self,
@@ -42,26 +40,20 @@ class TaskExecutor:
         max_concurrency: int = 32,
         per_tool_limits: Optional[Dict[str, int]] = None,
         fail_fast: bool = True,
-        on_observe: Optional[
-            Callable[[str, Mapping[str, Any]], None]
-        ] = None,  # callable(event: str, fields: dict)
+        on_observe: Optional[Callable[[str, Mapping[str, Any]], None]] = None,
+        cancellation_poll_interval: float = 0.1,
     ):
         self.spawner = agent_spawner
         self.max_concurrency = max_concurrency
         self.per_tool_limits = per_tool_limits or {}
         self.fail_fast = fail_fast
         self._obs = on_observe
+        self._cancellation_poll_interval = cancellation_poll_interval
 
     @track(operation="execute_plan")
     async def execute_plan(
         self, plan: ExecutionPlan, context: ConversationContext
     ) -> AsyncGenerator[AgentEvent, None]:
-        """
-        Drives plan execution and yields AgentEvents as they occur.
-        Terminates with PLAN_COMPLETED, PLAN_FAILED, or PLAN_CANCELLED.
-        Never raises to the caller for normal flow.
-        Properly handles cancellation via context.cancellation_token.
-        """
         state = _PlanState()
         cancelled = False
 
@@ -125,7 +117,22 @@ class TaskExecutor:
                     state.terminated = True
                     break
 
-                for ev in await self._wait_one_and_process(plan, state, context):
+                result = await self._wait_one_or_cancellation(plan, state, context)
+
+                if result is CANCELLATION_SENTINEL:
+                    log_event(
+                        "executor_cancellation_during_wait",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "running": len(state.running),
+                        },
+                    )
+                    await self._cancel_all(state)
+                    cancelled = True
+                    state.terminated = True
+                    break
+
+                for ev in result:
                     if ev.type == AgentEventType.TASK_COMPLETED:
                         self._observe("task_completed", task_id=ev.task_id)
                     elif ev.type == AgentEventType.TASK_FAILED:
@@ -225,10 +232,6 @@ class TaskExecutor:
                 )
             await self._cancel_all(state)
 
-    # ----------------------------
-    # Scheduling & flow helpers
-    # ----------------------------
-
     def _is_plan_complete(self, plan: ExecutionPlan, state: _PlanState) -> bool:
         done = len(state.completed | state.failed | state.skipped)
         return done >= len(plan.tasks)
@@ -255,13 +258,8 @@ class TaskExecutor:
     def _schedule_ready_tasks(
         self, plan: ExecutionPlan, state: _PlanState, context: ConversationContext
     ) -> List[AgentEvent]:
-        """
-        Schedules ready tasks without exceeding global/per-tool capacities.
-        Avoids creating unbounded asyncio tasks (memory-safe).
-        """
         events: List[AgentEvent] = []
 
-        # Calculate capacity headroom
         global_headroom = self.max_concurrency - len(state.running)
         if global_headroom <= 0:
             return events
@@ -275,22 +273,18 @@ class TaskExecutor:
             if t.task_id not in seen
         ]
 
-        # Short-circuit if no ready tasks
         if not ready:
             return events
 
-        # Deterministic ordering: stable by task_id (or add heuristic here)
         for task in ready:
             if global_headroom <= 0:
                 break
 
-            # Per-tool headroom check
             limit = self.per_tool_limits.get(task.tool_name)
             running_for_tool = state.running_per_tool.get(task.tool_name, 0)
             if limit is not None and running_for_tool >= limit:
                 continue
 
-            # Schedule a single task
             fut = asyncio.create_task(self._run_task(task, state, context))
             state.running[task.task_id] = fut
             state.running_per_tool[task.tool_name] = running_for_tool + 1
@@ -300,25 +294,50 @@ class TaskExecutor:
 
         return events
 
-    async def _wait_one_and_process(
+    async def _wait_one_or_cancellation(
         self, plan: ExecutionPlan, state: _PlanState, context: ConversationContext
-    ) -> List[AgentEvent]:
-        """
-        Waits for the next finished task and updates state, emitting events.
-        With fail_fast=True, emits PLAN_FAILED and marks termination; does not raise.
-        """
+    ) -> List[AgentEvent] | _CancellationSentinel:
         if not state.running:
             return []
 
-        # Wait for the first completion
-        done, _ = await asyncio.wait(
-            state.running.values(), return_when=asyncio.FIRST_COMPLETED
-        )
+        async def cancellation_monitor() -> _CancellationSentinel:
+            while not context.is_cancelled:
+                await asyncio.sleep(self._cancellation_poll_interval)
+            return CANCELLATION_SENTINEL
+
+        monitor_task = asyncio.create_task(cancellation_monitor())
+        all_tasks: Set[asyncio.Task[Any]] = set(state.running.values()) | {monitor_task}
+
+        try:
+            done, _ = await asyncio.wait(all_tasks, return_when=asyncio.FIRST_COMPLETED)
+
+            if monitor_task in done:
+                monitor_task.cancel()
+                try:
+                    await monitor_task
+                except asyncio.CancelledError:
+                    pass
+                return CANCELLATION_SENTINEL
+
+            return self._process_completed_tasks(done, plan, state)
+
+        finally:
+            if not monitor_task.done():
+                monitor_task.cancel()
+                try:
+                    await monitor_task
+                except asyncio.CancelledError:
+                    pass
+
+    def _process_completed_tasks(
+        self,
+        done: Set[asyncio.Task[Any]],
+        plan: ExecutionPlan,
+        state: _PlanState,
+    ) -> List[AgentEvent]:
         events: List[AgentEvent] = []
 
         for fut in done:
-            # Identify which task finished
-            # We must scan running to find its id (or maintain a reverse map)
             finished_id = None
             for tid, task_fut in list(state.running.items()):
                 if task_fut is fut:
@@ -326,51 +345,41 @@ class TaskExecutor:
                     break
 
             if finished_id is None:
-                # Shouldn't happen, but guard anyway
                 continue
 
             agent_task = plan.task_by_id(finished_id)
-            # Decrement per-tool running counter
             tool_name = agent_task.tool_name
             state.running_per_tool[tool_name] = max(
                 0, state.running_per_tool.get(tool_name, 1) - 1
             )
-            # Remove from running map
             del state.running[finished_id]
 
-            # Extract result envelope, handling exceptions
             try:
-                result: ResultEnvelope = await fut
+                result: ResultEnvelope = fut.result()
             except asyncio.CancelledError:
-                # Treat as failure event
                 state.failed.add(finished_id)
-                events.append(AgentEvent.task_failed(agent_task, "Cancelled"))
+                events.append(AgentEvent.task_cancelled(agent_task))
                 if self.fail_fast and not state.terminated:
-                    await self._cancel_all(state)
                     events.append(
-                        AgentEvent.plan_failed(f"Task {finished_id} cancelled")
+                        AgentEvent.plan_cancelled(f"Task {finished_id} cancelled")
                     )
                     state.terminated = True
                 continue
             except Exception as exc:
-                # Unexpected exception path
                 state.failed.add(finished_id)
                 events.append(AgentEvent.task_failed(agent_task, str(exc)))
                 if self.fail_fast and not state.terminated:
-                    await self._cancel_all(state)
                     events.append(
                         AgentEvent.plan_failed(f"Task {finished_id} failed: {exc}")
                     )
                     state.terminated = True
                 continue
 
-            # Process the envelope
             if result.status != "ok":
                 state.failed.add(finished_id)
                 msg = f"{result.error_type}: {result.error_message}"
                 events.append(AgentEvent.task_failed(agent_task, msg))
                 if self.fail_fast and not state.terminated:
-                    await self._cancel_all(state)
                     events.append(
                         AgentEvent.plan_failed(
                             f"Task {finished_id} failed: {result.error_message}"
@@ -379,7 +388,6 @@ class TaskExecutor:
                     state.terminated = True
                 continue
 
-            # Success path
             state.completed.add(finished_id)
             state.results[finished_id] = result.value
             events.append(AgentEvent.task_completed(agent_task, result.value))
@@ -389,9 +397,6 @@ class TaskExecutor:
     async def _run_task(
         self, task: AgentTask, state: _PlanState, context: ConversationContext
     ) -> ResultEnvelope:
-        """
-        Delegates execution to the spawner. All timeout/retry policies are enforced by the spawner.
-        """
         res = await self.spawner.spawn_and_execute(task, state.results, context)
         return cast(ResultEnvelope, res)
 
@@ -433,5 +438,4 @@ class TaskExecutor:
             try:
                 self._obs(event, fields)
             except Exception:
-                # never let observability break control flow
                 pass

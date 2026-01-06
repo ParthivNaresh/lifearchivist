@@ -23,7 +23,6 @@ from ..llm.agent import (
     AgentToolRegistry,
     ComplexityClassifier,
     PhaseCoordinator,
-    PromptBuilder,
     StrategicPlanner,
     TacticalPlannerFactory,
 )
@@ -655,11 +654,8 @@ class ServiceContainer:
             tool_registry.register_all()
             tool_registry.finalize()
 
-            prompt_builder = PromptBuilder()
-
             complexity_classifier = ComplexityClassifier(
                 llm_provider_manager=self.llm_provider_manager,
-                prompt_builder=prompt_builder,
             )
 
             from typing import Any, Mapping
@@ -673,7 +669,6 @@ class ServiceContainer:
             tactical_planner_factory = TacticalPlannerFactory(
                 llm_provider_manager=self.llm_provider_manager,
                 tool_registry=tool_registry,
-                prompt_builder=prompt_builder,
                 complexity_classifier=complexity_classifier,
                 on_observe=_observer,
                 planning_model=AgentModelDefaults.PLANNING_MODEL,
@@ -690,7 +685,6 @@ class ServiceContainer:
             strategic_planner = StrategicPlanner(
                 llm_provider_manager=self.llm_provider_manager,
                 tool_registry=tool_registry,
-                prompt_builder=prompt_builder,
                 planning_model=AgentModelDefaults.PLANNING_MODEL,
                 planning_temperature=AgentModelDefaults.PLANNING_TEMPERATURE,
                 max_phases=AgentExecutionDefaults.MAX_PHASES,

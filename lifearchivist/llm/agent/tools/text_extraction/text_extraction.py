@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from .....llm import LLMMessage
 from .....llm.agent.constants import AgentModelDefaults
 from .....llm.agent.exceptions import ToolExecutionError
+from .....llm.agent.prompts import ToolPromptBuilders
 from .....llm.agent.tools.base import BaseAgentTool
 from .....llm.agent.tools.chunk_utils import gather_document_chunks
 from .....llm.agent.tools.text_extraction.models import (
@@ -18,7 +19,6 @@ from .....llm.agent.utils.parsing import (
     _unwrap_result_or_raise,
     clean_extraction_chunks,
 )
-from .....llm.agent.utils.prompt_builder import _build_text_extraction_system_message
 from .....utils.logx import log_event
 
 if TYPE_CHECKING:
@@ -152,7 +152,7 @@ class TextExtractionTool(BaseAgentTool):
             "documents": [{"doc_id": c["doc_id"], "text": c["text"]} for c in chunks],
         }
 
-        system_content = _build_text_extraction_system_message(
+        system_content = ToolPromptBuilders.text_extraction_system(
             style=p.style.value,
             focus=p.focus.value if p.focus else None,
             max_output_length=p.max_output_length,

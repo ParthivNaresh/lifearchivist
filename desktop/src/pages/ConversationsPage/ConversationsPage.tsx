@@ -217,7 +217,7 @@ const ConversationsPage: React.FC = () => {
             {/* Input */}
             <MessageInput
               onSend={(content) => void handleSendMessage(content)}
-              onCancel={cancelRequest}
+              onCancel={() => void cancelRequest()}
               disabled={false}
               isSending={sending}
             />

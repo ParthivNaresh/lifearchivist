@@ -35,12 +35,20 @@ from .models import (
 )
 from .phase_coordinator import PhaseCoordinator
 from .plan_validator import PlanValidator
+from .prompts import (
+    BasePromptBuilder,
+    ClassificationPromptBuilder,
+    StrategicPromptBuilder,
+    SynthesisPromptBuilder,
+    TacticalPromptBuilder,
+    TaskPromptBuilder,
+    ToolPromptBuilders,
+)
 from .strategic_planner import StrategicPlanner
 from .tactical_planner import TacticalPlanner
 from .tactical_planner_factory import TacticalPlannerFactory
 from .tool_registry import AgentToolRegistry
 from .tools import BaseAgentTool
-from .utils import PromptBuilder
 
 __all__ = [
     "TacticalPlanner",
@@ -51,7 +59,13 @@ __all__ = [
     "ComplexityClassifier",
     "TaskExecutor",
     "PlanValidator",
-    "PromptBuilder",
+    "BasePromptBuilder",
+    "ClassificationPromptBuilder",
+    "StrategicPromptBuilder",
+    "SynthesisPromptBuilder",
+    "TacticalPromptBuilder",
+    "TaskPromptBuilder",
+    "ToolPromptBuilders",
     "AgentToolRegistry",
     "BaseAgentTool",
     "ConversationContext",

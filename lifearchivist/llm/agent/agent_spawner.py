@@ -17,6 +17,7 @@ from .models import (
     ConversationContext,
     ResultEnvelope,
 )
+from .prompts import TaskPromptBuilder
 from .tool_registry import AgentToolRegistry
 from .types import DEFAULT_RETRIABLE
 from .utils.parsing import (
@@ -26,7 +27,6 @@ from .utils.parsing import (
     _safe_preview,
     sanitize_tool_output,
 )
-from .utils.prompt_builder import PromptBuilder
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
@@ -34,7 +34,6 @@ if TYPE_CHECKING:
 
 @asynccontextmanager
 async def _maybe_timeout(seconds: float | None):
-    """Async context manager that applies an asyncio timeout when provided."""
     if seconds is None:
         yield
     else:
@@ -43,20 +42,11 @@ async def _maybe_timeout(seconds: float | None):
 
 
 class AgentSpawner:
-    """
-    Runs a single AgentTask by invoking the appropriate tool, with:
-      - timeouts & bounded retries
-      - LLM/non-LLM routing
-      - Pydantic-typed parameter validation
-      - normalized ResultEnvelope contract
-      - trimmed context (history, dependent results audit)
-    """
 
     def __init__(
         self,
         llm_provider_manager: "LLMProviderManager",
         tool_registry: AgentToolRegistry,
-        prompt_builder: "PromptBuilder",
         *,
         task_timeout_s: float | None = AgentExecutionDefaults.TASK_TIMEOUT_SECONDS,
         max_retries: int = AgentExecutionDefaults.MAX_RETRIES,
@@ -69,7 +59,6 @@ class AgentSpawner:
     ):
         self.llm = llm_provider_manager
         self.tools = tool_registry
-        self.prompt_builder = prompt_builder
 
         self.task_timeout_s = task_timeout_s
         self.max_retries = max_retries
@@ -91,10 +80,23 @@ class AgentSpawner:
         previous_results: dict[str, Any],
         context: ConversationContext,
     ) -> ResultEnvelope:
-        """
-        Execute a task through its tool. Always returns a ResultEnvelope.
-        Cancellation propagates (asyncio.CancelledError is not swallowed).
-        """
+        if context.is_cancelled:
+            log_event(
+                "spawner_task_cancelled_before_start",
+                {
+                    "conversation_id": context.conversation_id,
+                    "task_id": task.task_id,
+                },
+            )
+            return ResultEnvelope(
+                task_id=task.task_id,
+                status="error",
+                error_type="Cancelled",
+                error_message="Task cancelled before execution",
+                attempts=0,
+                duration_ms=0,
+            )
+
         log_event(
             "spawner_execute_started",
             {
@@ -128,8 +130,8 @@ class AgentSpawner:
 
         task_ctx = self._build_task_context(task, previous_results, context)
 
-        tool_requires = tool.requires_llm  # True for document_search
-        task_requires = task.requires_llm  # may be None/True/False
+        tool_requires = tool.requires_llm
+        task_requires = task.requires_llm
 
         if tool_requires and task_requires is False:
             raise ValueError(
@@ -151,11 +153,10 @@ class AgentSpawner:
                     try:
                         resolved_params = resolve_params(
                             task.parameters,
-                            previous_results,  # upstream task_id -> result payload
-                            task.depends_on or [],  # enforce dependency visibility
+                            previous_results,
+                            task.depends_on or [],
                         )
                     except Exception as e:
-                        # Treat as non-retriable: bad plan wiring / missing deps should fail fast
                         log_event(
                             "spawner_param_resolution_failed",
                             {
@@ -170,11 +171,9 @@ class AgentSpawner:
                         )
                         raise
 
-                    # Guard: if any "<from ..." placeholders survive resolution, fail early
                     try:
                         params_str = json.dumps(resolved_params, ensure_ascii=False)
                     except Exception:
-                        # Fallback stringify if non-serializable
                         params_str = str(resolved_params)
 
                     if _PLACEHOLDER_PATTERN.search(params_str):
@@ -349,17 +348,12 @@ class AgentSpawner:
         *,
         typed_params: BaseModel,
     ) -> Any:
-        """
-        Invoke tool in LLM or non-LLM mode using Pydantic-typed parameters.
-        """
         if requires_llm:
             if not hasattr(tool, "execute_with_llm"):
                 raise ToolExecutionError(
                     f"Tool '{task.tool_name}' requires LLM but has no 'execute_with_llm' implementation"
                 )
-            prompt = self.prompt_builder.build_agent_prompt(
-                task=task, tool=tool, context=task_ctx
-            )
+            prompt = TaskPromptBuilder.build(task=task, tool=tool, context=task_ctx)
 
             return await tool.execute_with_llm(
                 llm_provider=self.llm,
@@ -368,7 +362,6 @@ class AgentSpawner:
                 context=task_ctx,
             )
 
-        # Non-LLM path: typed only
         if not hasattr(tool, "execute_typed"):
             raise ToolExecutionError(
                 f"Tool '{task.tool_name}' is missing 'execute_typed' implementation"
@@ -381,18 +374,12 @@ class AgentSpawner:
         previous_results: dict[str, Any],
         context: ConversationContext,
     ) -> dict[str, Any]:
-        """
-        Construct the context passed to tools. History is trimmed; dependent
-        results are included and size-audited (soft cap with logging).
-        """
-        # Trim conversation history
         history = (
             context.recent_messages[-self.max_history_messages :]
             if self.max_history_messages
             else context.recent_messages
         )
 
-        # Include dependent results (soft size cap: warn when exceeded)
         deps: dict[str, Any] = {}
         total_bytes = 0
         log_event(
@@ -426,11 +413,9 @@ class AgentSpawner:
             "conversation_history": history,
             "user_preferences": context.user_preferences,
             "dependent_bytes_estimate": total_bytes,
-            # could also pass: conversation_id/user_id/trace ids here for observability
         }
 
     def _compute_backoff(self, attempt: int) -> float:
-        """Exponential backoff with jitter, capped at backoff_max_s."""
         base = self.backoff_base_s * (2 ** (attempt - 1))
-        jitter = 0.2 * base * (2 * random.random() - 1)  # ±20%
+        jitter = 0.2 * base * (2 * random.random() - 1)
         return float(min(self.backoff_max_s, max(0.0, base + jitter)))
