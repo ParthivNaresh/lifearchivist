@@ -170,7 +170,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.extract.extract_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractTextTool</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.tools.file_import.file_import_tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileImportTool</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">track</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTool</span>
 
 
@@ -197,9 +196,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">activity_manager</span> <span class="o">=</span> <span class="n">activity_manager</span></div>
 
 
+    <span class="c1"># @track(operation=&quot;tool_registration_batch&quot;)</span>
 <div class="viewcode-block" id="ToolRegistry.register_all">
 <a class="viewcode-back" href="../../../api/lifearchivist.tools.html#lifearchivist.tools.registry.ToolRegistry.register_all">[docs]</a>
-    <span class="nd">@track</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="s2">&quot;tool_registration_batch&quot;</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">register_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register all available tools.&quot;&quot;&quot;</span>
         <span class="c1"># LlamaIndex service should already be initialized by MCP server</span>
@@ -331,7 +330,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+    <p>&#169; Copyright 2026, Life Archivist Contributors.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

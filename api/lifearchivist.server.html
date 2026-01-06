@@ -663,6 +663,18 @@ failed to initialize.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="lifearchivist.server.ServiceContainer.init_agent_orchestrator">
+<span class="sig-name descname"><span class="pre">init_agent_orchestrator</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/server/service_container.html#ServiceContainer.init_agent_orchestrator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.server.ServiceContainer.init_agent_orchestrator" title="Link to this definition"></a></dt>
+<dd><p>Initialize agent orchestrator with hierarchical planning support.</p>
+<p>Creates:
+- AgentToolRegistry (shared across all tactical planners)
+- TacticalPlannerFactory (creates isolated tactical planners per phase)
+- StrategicPlanner
+- PhaseCoordinator (hierarchical planner)
+- Single TacticalPlanner for direct (non-hierarchical) queries</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="lifearchivist.server.ServiceContainer.init_rag_service">
 <span class="sig-name descname"><span class="pre">init_rag_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">activity_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ActivityManager</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/lifearchivist/server/service_container.html#ServiceContainer.init_rag_service"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lifearchivist.server.ServiceContainer.init_rag_service" title="Link to this definition"></a></dt>
 <dd><p>Initialize RAG service with dependencies.</p>
@@ -791,7 +803,7 @@ to allow passing in the ActivityManager from ApplicationServer.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+    <p>&#169; Copyright 2026, Life Archivist Contributors.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

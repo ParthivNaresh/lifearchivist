@@ -194,7 +194,7 @@
     <span class="n">embedding_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="s2">&quot;all-MiniLM-L6-v2&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Embedding model&quot;</span>
     <span class="p">)</span>
-    <span class="n">llm_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">&quot;llama3.2:1b&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;LLM model for Ollama&quot;</span><span class="p">)</span>
+    <span class="n">llm_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">&quot;qwen2.5:7b&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;LLM model for Ollama&quot;</span><span class="p">)</span>
     <span class="n">whisper_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">&quot;base.en&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whisper model for audio&quot;</span><span class="p">)</span>
     <span class="n">ocr_lang</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">&quot;eng&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;OCR language&quot;</span><span class="p">)</span>
 
@@ -296,7 +296,7 @@
 
     <span class="c1"># Import development formatter</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging.structured</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_development_formatter</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logx.structured</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_development_formatter</span>
 
         <span class="n">formatter</span> <span class="o">=</span> <span class="n">create_development_formatter</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
@@ -350,7 +350,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+    <p>&#169; Copyright 2026, Life Archivist Contributors.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

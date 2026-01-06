@@ -183,7 +183,8 @@
     <span class="n">create_success_response</span><span class="p">,</span>
     <span class="n">is_text_extraction_supported</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">...utils.logx</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
 
 
 <div class="viewcode-block" id="FileImportTool">
@@ -397,12 +398,11 @@
                         <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
 
-            <span class="n">theme_result</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">theme_result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">if</span> <span class="n">extracted_text</span><span class="p">:</span>
-                <span class="n">theme_result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_themes</span><span class="p">(</span>
-                    <span class="n">file_id</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">,</span> <span class="n">display_path</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">theme_result</span><span class="p">:</span>
+                <span class="n">tr</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_themes</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">extracted_text</span><span class="p">,</span> <span class="n">display_path</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">tr</span><span class="p">:</span>
+                    <span class="n">theme_result</span> <span class="o">=</span> <span class="n">tr</span>
                     <span class="c1"># Classify subthemes if we have a primary theme</span>
                     <span class="n">theme</span> <span class="o">=</span> <span class="n">theme_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;theme&quot;</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">theme</span> <span class="ow">and</span> <span class="n">theme</span> <span class="o">!=</span> <span class="s2">&quot;Unclassified&quot;</span><span class="p">:</span>
@@ -413,7 +413,9 @@
                             <span class="n">theme_result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subtheme_result</span><span class="p">)</span>
 
             <span class="c1"># Build custom metadata dictionary with all enrichments</span>
-            <span class="n">custom_metadata_dict</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">metadata</span><span class="p">}</span>  <span class="c1"># Start with user-provided metadata</span>
+            <span class="n">custom_metadata_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">metadata</span>
+            <span class="p">)</span>  <span class="c1"># Start with user-provided metadata</span>
 
             <span class="c1"># Add document internal metadata (PDF/DOCX dates, author, etc.)</span>
             <span class="k">if</span> <span class="n">document_metadata</span><span class="p">:</span>
@@ -956,7 +958,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+    <p>&#169; Copyright 2026, Life Archivist Contributors.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

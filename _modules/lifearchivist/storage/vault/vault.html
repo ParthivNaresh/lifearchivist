@@ -184,7 +184,9 @@
     <span class="n">get_comprehensive_directory_stats</span><span class="p">,</span>
     <span class="n">safe_get_file_size</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logx</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">...utils.logx</span><span class="w"> </span><span class="kn">import</span> <span class="n">track</span>
 
 
 <div class="viewcode-block" id="Vault">
@@ -220,13 +222,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">exports_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span> <span class="o">/</span> <span class="s2">&quot;exports&quot;</span></div>
 
 
+    <span class="c1"># @track(operation=&quot;vault_initialization&quot;)</span>
 <div class="viewcode-block" id="Vault.initialize">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.initialize">[docs]</a>
-    <span class="nd">@track</span><span class="p">(</span>
-        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;vault_initialization&quot;</span><span class="p">,</span>
-        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;low_frequency&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create vault directory structure if it doesn&#39;t exist.</span>
@@ -245,13 +243,13 @@
             <span class="p">(</span><span class="s2">&quot;exports&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exports_dir</span><span class="p">),</span>
         <span class="p">]</span>
 
-        <span class="n">log_event</span><span class="p">(</span>
-            <span class="s2">&quot;vault_init_started&quot;</span><span class="p">,</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
-                <span class="s2">&quot;directories_to_create&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">directories</span><span class="p">),</span>
-            <span class="p">},</span>
-        <span class="p">)</span>
+        <span class="c1"># log_event(</span>
+        <span class="c1">#     &quot;vault_init_started&quot;,</span>
+        <span class="c1">#     {</span>
+        <span class="c1">#         &quot;vault_path&quot;: str(self.vault_path),</span>
+        <span class="c1">#         &quot;directories_to_create&quot;: len(directories),</span>
+        <span class="c1">#     },</span>
+        <span class="c1"># )</span>
 
         <span class="n">created_count</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">existing_count</span> <span class="o">=</span> <span class="mi">0</span>
@@ -286,17 +284,17 @@
                 <span class="p">)</span>
                 <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to create vault directory </span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
 
-        <span class="n">log_event</span><span class="p">(</span>
-            <span class="s2">&quot;vault_initialized&quot;</span><span class="p">,</span>
-            <span class="p">{</span>
-                <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
-                <span class="s2">&quot;directories_created&quot;</span><span class="p">:</span> <span class="n">created_count</span><span class="p">,</span>
-                <span class="s2">&quot;directories_existing&quot;</span><span class="p">:</span> <span class="n">existing_count</span><span class="p">,</span>
-            <span class="p">},</span>
-        <span class="p">)</span></div>
 
+        <span class="c1"># log_event(</span>
+        <span class="c1">#     &quot;vault_initialized&quot;,</span>
+        <span class="c1">#     {</span>
+        <span class="c1">#         &quot;vault_path&quot;: str(self.vault_path),</span>
+        <span class="c1">#         &quot;directories_created&quot;: created_count,</span>
+        <span class="c1">#         &quot;directories_existing&quot;: existing_count,</span>
+        <span class="c1">#     },</span>
+        <span class="c1"># )</span>
 
 <div class="viewcode-block" id="Vault.clear_all_files">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.clear_all_files">[docs]</a>
@@ -477,14 +475,9 @@
 
         <span class="k">return</span> <span class="n">total_cleaned</span>
 
+    <span class="c1"># @track(operation=&quot;vault_statistics&quot;)</span>
 <div class="viewcode-block" id="Vault.get_vault_statistics">
 <a class="viewcode-back" href="../../../../api/lifearchivist.storage.vault.html#lifearchivist.storage.Vault.get_vault_statistics">[docs]</a>
-    <span class="nd">@track</span><span class="p">(</span>
-        <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;vault_statistics&quot;</span><span class="p">,</span>
-        <span class="n">include_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">frequency</span><span class="o">=</span><span class="s2">&quot;medium_frequency&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_vault_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get comprehensive statistics about vault storage usage.</span>
@@ -499,13 +492,13 @@
 <span class="sd">            - error: Error message if statistics collection fails</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">log_event</span><span class="p">(</span>
-                <span class="s2">&quot;vault_stats_collection_started&quot;</span><span class="p">,</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
-                <span class="p">},</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="c1"># log_event(</span>
+            <span class="c1">#     &quot;vault_stats_collection_started&quot;,</span>
+            <span class="c1">#     {</span>
+            <span class="c1">#         &quot;vault_path&quot;: str(self.vault_path),</span>
+            <span class="c1">#     },</span>
+            <span class="c1">#     level=logging.DEBUG,</span>
+            <span class="c1"># )</span>
 
             <span class="n">directories</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">content_dir</span><span class="p">,</span>
@@ -528,16 +521,16 @@
             <span class="n">total_files</span> <span class="o">=</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
             <span class="n">total_mb</span> <span class="o">=</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;total_size_mb&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
 
-            <span class="n">log_event</span><span class="p">(</span>
-                <span class="s2">&quot;vault_stats_collected&quot;</span><span class="p">,</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;total_files&quot;</span><span class="p">:</span> <span class="n">total_files</span><span class="p">,</span>
-                    <span class="s2">&quot;total_size_mb&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">total_mb</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
-                    <span class="s2">&quot;content_files&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-                    <span class="s2">&quot;thumbnail_files&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;thumbnails_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-                    <span class="s2">&quot;temp_files&quot;</span><span class="p">:</span> <span class="n">flat_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temp_files&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-                <span class="p">},</span>
-            <span class="p">)</span>
+            <span class="c1"># log_event(</span>
+            <span class="c1">#     &quot;vault_stats_collected&quot;,</span>
+            <span class="c1">#     {</span>
+            <span class="c1">#         &quot;total_files&quot;: total_files,</span>
+            <span class="c1">#         &quot;total_size_mb&quot;: round(total_mb, 2),</span>
+            <span class="c1">#         &quot;content_files&quot;: flat_stats.get(&quot;content_files&quot;, 0),</span>
+            <span class="c1">#         &quot;thumbnail_files&quot;: flat_stats.get(&quot;thumbnails_files&quot;, 0),</span>
+            <span class="c1">#         &quot;temp_files&quot;: flat_stats.get(&quot;temp_files&quot;, 0),</span>
+            <span class="c1">#     },</span>
+            <span class="c1"># )</span>
 
             <span class="k">return</span> <span class="p">{</span>
                 <span class="s2">&quot;vault_path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vault_path</span><span class="p">),</span>
@@ -1035,7 +1028,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+    <p>&#169; Copyright 2026, Life Archivist Contributors.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

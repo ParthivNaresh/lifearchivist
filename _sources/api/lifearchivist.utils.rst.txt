@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   lifearchivist.utils.logging
+   lifearchivist.utils.logx
 
 Module contents
 ---------------

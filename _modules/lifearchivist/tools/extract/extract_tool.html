@@ -174,7 +174,9 @@
     <span class="n">_extract_text_by_type</span><span class="p">,</span>
     <span class="n">_get_extraction_method</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span><span class="p">,</span> <span class="n">track</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifearchivist.utils.logx</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_event</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">...utils.logx</span><span class="w"> </span><span class="kn">import</span> <span class="n">track</span>
 
 
 <div class="viewcode-block" id="ExtractTextTool">
@@ -227,7 +229,6 @@
         <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;mime_type_detection&quot;</span><span class="p">,</span>
         <span class="n">include_args</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;file_id&quot;</span><span class="p">],</span>
         <span class="n">track_performance</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">emit_events</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Silent operation - will log specific events manually</span>
     <span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_file_info</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_hash</span><span class="p">:</span> <span class="nb">str</span>
@@ -312,9 +313,13 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">file_id</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;File ID is required&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Resolve file path and MIME type</span>
+        <span class="c1"># Resolve file path and MIME type (coerce Optionals to strings)</span>
+        <span class="n">file_path_arg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">file_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">mime_type_arg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">mime_type</span><span class="p">)</span> <span class="k">if</span> <span class="n">mime_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">file_hash_arg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_hash</span><span class="p">)</span> <span class="k">if</span> <span class="n">file_hash</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
         <span class="n">actual_file_path</span><span class="p">,</span> <span class="n">resolved_mime_type</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_file_info</span><span class="p">(</span>
-            <span class="n">file_id</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">mime_type</span><span class="p">,</span> <span class="n">file_hash</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">file_id</span><span class="p">),</span> <span class="n">file_path_arg</span><span class="p">,</span> <span class="n">mime_type_arg</span><span class="p">,</span> <span class="n">file_hash_arg</span>
         <span class="p">)</span>
 
         <span class="c1"># Get file size for logging</span>
@@ -388,7 +393,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, Life Archivist Contributors.</p>
+    <p>&#169; Copyright 2026, Life Archivist Contributors.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
