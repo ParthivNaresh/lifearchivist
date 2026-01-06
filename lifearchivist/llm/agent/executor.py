@@ -119,7 +119,7 @@ class TaskExecutor:
 
                 result = await self._wait_one_or_cancellation(plan, state, context)
 
-                if result is CANCELLATION_SENTINEL:
+                if isinstance(result, _CancellationSentinel):
                     log_event(
                         "executor_cancellation_during_wait",
                         {

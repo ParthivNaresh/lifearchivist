@@ -205,7 +205,7 @@ class StreamContext:
     def is_cancelled(self) -> bool:
         if self.cancellation_token is None:
             return False
-        return self.cancellation_token.is_cancelled
+        return bool(self.cancellation_token.is_cancelled)
 
 
 @dataclass

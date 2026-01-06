@@ -13,6 +13,10 @@ from .strategic_planner import StrategicPlanner
 from .tactical_planner_factory import TacticalPlannerFactory
 
 
+def _check_cancelled(context: ConversationContext) -> bool:
+    return context.is_cancelled
+
+
 class PhaseCoordinator:
 
     def __init__(
@@ -34,7 +38,7 @@ class PhaseCoordinator:
         current_phase_id: Optional[str] = None
 
         try:
-            if context.is_cancelled:
+            if _check_cancelled(context):
                 log_event(
                     "phase_coordinator_cancelled_before_start",
                     {"conversation_id": context.conversation_id},
@@ -84,7 +88,7 @@ class PhaseCoordinator:
             for phase_idx, phase in enumerate(strategic_plan.phases, 1):
                 current_phase_id = phase.phase_id
 
-                if context.is_cancelled:
+                if _check_cancelled(context):
                     log_event(
                         "phase_coordinator_cancelled_before_phase",
                         {
@@ -210,7 +214,7 @@ class PhaseCoordinator:
                 },
             )
 
-            if context.is_cancelled:
+            if _check_cancelled(context):
                 log_event(
                     "phase_coordinator_cancelled_before_synthesis",
                     {"conversation_id": context.conversation_id},
@@ -233,7 +237,7 @@ class PhaseCoordinator:
                     task_results=phase_results,
                     context=context,
                 ):
-                    if context.is_cancelled:
+                    if _check_cancelled(context):
                         log_event(
                             "phase_coordinator_synthesis_cancelled",
                             {"conversation_id": context.conversation_id},
@@ -310,7 +314,8 @@ class PhaseCoordinator:
         self, query: str, context: ConversationContext
     ) -> Optional[StrategicPlan]:
         try:
-            context.check_cancelled()
+            if _check_cancelled(context):
+                return None
             return await self.strategic_planner.create_strategic_plan(query, context)
         except asyncio.CancelledError:
             log_event(
