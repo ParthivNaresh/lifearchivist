@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     embedding_model: str = Field(
         default="all-MiniLM-L6-v2", description="Embedding model"
     )
-    llm_model: str = Field(default="llama3.2:1b", description="LLM model for Ollama")
+    llm_model: str = Field(default="qwen2.5:7b", description="LLM model for Ollama")
     whisper_model: str = Field(default="base.en", description="Whisper model for audio")
     ocr_lang: str = Field(default="eng", description="OCR language")
 
@@ -122,7 +122,7 @@ def configure_logging(level: str = "INFO") -> None:
 
     # Import development formatter
     try:
-        from ..utils.logging.structured import create_development_formatter
+        from ..utils.logx.structured import create_development_formatter
 
         formatter = create_development_formatter()
     except ImportError:

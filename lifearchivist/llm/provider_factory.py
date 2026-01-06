@@ -11,7 +11,7 @@ from typing import Optional
 from redis.asyncio import Redis
 
 from ..storage.credential_service import CredentialService
-from ..utils.logging import log_event
+from ..utils.logx import log_event
 from .constants import (
     ErrorMessages,
     HealthMonitorDefaults,
@@ -95,13 +95,13 @@ class ProviderManagerFactory:
             health_monitor=health_monitor,
         )
 
-        log_event(
-            "provider_manager_created",
-            {
-                "cost_tracking": enable_cost_tracking,
-                "health_monitoring": enable_health_monitoring,
-            },
-        )
+        # log_event(
+        #     "provider_manager_created",
+        #     {
+        #         "cost_tracking": enable_cost_tracking,
+        #         "health_monitoring": enable_health_monitoring,
+        #     },
+        # )
 
         return manager
 
@@ -131,7 +131,7 @@ class ProviderManagerFactory:
             health_monitor=None,
         )
 
-        log_event("provider_manager_created_minimal")
+        # log_event("provider_manager_created_minimal")
 
         return manager
 
@@ -231,16 +231,23 @@ class ProviderManagerFactory:
 
         init_result = await manager.initialize()
         if init_result.is_failure():
-            error_msg = init_result.error_or(ErrorMessages.UNKNOWN_ERROR)
+            # Results API: pull message from FailurePayload
+            init_err = init_result.unwrap_error()
+            error_msg = getattr(init_err, "message", None) or str(init_err)
             raise RuntimeError(
-                ErrorMessages.MANAGER_INIT_FAILED.format(error=error_msg)
+                ErrorMessages.MANAGER_INIT_FAILED.format(
+                    error=error_msg or ErrorMessages.UNKNOWN_ERROR
+                )
             )
 
         loader = ProviderLoader(credential_service)
         load_result = await loader.load_all_providers(user_id)
 
         if load_result.is_failure():
-            error_msg = load_result.error_or(ErrorMessages.UNKNOWN_ERROR)
+            load_err = load_result.unwrap_error()
+            error_msg = (
+                getattr(load_err, "message", None) or ErrorMessages.UNKNOWN_ERROR
+            )
             log_event(
                 "provider_factory_load_failed",
                 {
@@ -256,7 +263,10 @@ class ProviderManagerFactory:
         for provider in providers:
             add_result = await manager.add_provider(provider)
             if add_result.is_failure():
-                error_msg = add_result.error_or(ErrorMessages.UNKNOWN_ERROR)
+                add_err = add_result.unwrap_error()
+                error_msg = (
+                    getattr(add_err, "message", None) or ErrorMessages.UNKNOWN_ERROR
+                )
                 log_event(
                     "provider_factory_add_failed",
                     {
@@ -271,13 +281,13 @@ class ProviderManagerFactory:
                 manager, credential_service, user_id
             )
 
-        log_event(
-            "provider_factory_created_with_providers",
-            {
-                "providers_loaded": len(providers),
-                "user_id": user_id,
-            },
-        )
+        # log_event(
+        #     "provider_factory_created_with_providers",
+        #     {
+        #         "providers_loaded": len(providers),
+        #         "user_id": user_id,
+        #     },
+        # )
 
         return manager
 
@@ -332,14 +342,21 @@ class ProviderManagerFactory:
                         },
                     )
                 else:
-                    error_msg = store_result.error_or(ErrorMessages.UNKNOWN_ERROR)
+                    store_err = store_result.unwrap_error()
+                    error_msg = (
+                        getattr(store_err, "message", None)
+                        or ErrorMessages.UNKNOWN_ERROR
+                    )
                     log_event(
                         "default_ollama_provider_store_failed",
                         {"error": error_msg},
                         level=logging.WARNING,
                     )
             else:
-                error_msg = add_result.error_or(ErrorMessages.UNKNOWN_ERROR)
+                add_err2 = add_result.unwrap_error()
+                error_msg = (
+                    getattr(add_err2, "message", None) or ErrorMessages.UNKNOWN_ERROR
+                )
                 log_event(
                     "default_ollama_provider_add_failed",
                     {"error": error_msg},

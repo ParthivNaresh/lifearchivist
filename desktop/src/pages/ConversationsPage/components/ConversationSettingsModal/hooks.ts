@@ -4,7 +4,7 @@ import type { AvailableModels } from './types';
 
 export const useModelSettings = (open: boolean) => {
   const [availableModels, setAvailableModels] = useState<AvailableModels | null>(null);
-  const [currentModel, setCurrentModel] = useState<string>('llama3.2:1b');
+  const [currentModel, setCurrentModel] = useState<string>('qwen2.5:7b');
   const [saving, setSaving] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
 
@@ -13,7 +13,7 @@ export const useModelSettings = (open: boolean) => {
       Promise.all([settingsApi.getModels(), settingsApi.getSettings()])
         .then(([modelsRes, settingsRes]) => {
           setAvailableModels(modelsRes);
-          setCurrentModel(settingsRes.llm_model ?? 'llama3.2:1b');
+          setCurrentModel(settingsRes.llm_model ?? 'qwen2.5:7b');
         })
         .catch((_err) => {
           console.error('Failed to fetch models:', _err);

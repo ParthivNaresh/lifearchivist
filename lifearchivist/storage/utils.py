@@ -10,8 +10,9 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from lifearchivist.utils.logging import log_event
-from lifearchivist.utils.result import Failure
+from lifearchivist.utils.logx import log_event
+
+from ..utils.result import Failure, FailurePayload
 
 
 class MetadataFilterUtils:
@@ -112,7 +113,7 @@ class MetadataFilterUtils:
         """
         import logging
 
-        from lifearchivist.utils.logging import log_event
+        from lifearchivist.utils.logx import log_event
 
         log_event(
             "unknown_filter_operator",
@@ -674,7 +675,7 @@ class ContextBuilder:
         filters: Optional[Dict[str, Any]],
     ) -> Tuple[
         Optional[List[Dict[str, Any]]],
-        Optional[Failure[str]],
+        Optional[Failure[List[Dict[str, Any]], FailurePayload]],
     ]:
         """
         Retrieve chunks using search service.
@@ -688,7 +689,7 @@ class ContextBuilder:
         Returns:
             Tuple of (source_chunks, error_result) where error_result is a Failure if retrieval failed
         """
-        from lifearchivist.utils.logging import log_event
+        from lifearchivist.utils.logx import log_event
 
         log_event(
             "context_retrieval_method",
@@ -712,7 +713,7 @@ class ContextBuilder:
             return None, search_result
 
         search_results = search_result.value
-        source_chunks = []
+        source_chunks: List[Dict[str, Any]] = []
 
         for result in search_results:
             source_chunks.append(
@@ -746,7 +747,7 @@ class ContextBuilder:
         """
         from llama_index.core import QueryBundle
 
-        from lifearchivist.utils.logging import log_event
+        from lifearchivist.utils.logx import log_event
 
         log_event(
             "context_retrieval_method",
@@ -795,7 +796,7 @@ class ContextBuilder:
         Returns:
             Enriched source chunks
         """
-        from lifearchivist.utils.logging import log_event
+        from lifearchivist.utils.logx import log_event
 
         if not metadata_service:
             return source_chunks

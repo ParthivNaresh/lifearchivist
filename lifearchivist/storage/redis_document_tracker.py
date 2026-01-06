@@ -15,8 +15,7 @@ from typing import Any, Awaitable, Dict, List, Optional, Set, Tuple, cast
 
 import redis.asyncio as redis
 
-from lifearchivist.utils.logging import log_event, track
-
+from ..utils.logx import log_event, track
 from .constants import NOT_INITIALIZED_REDIS_DOCUMENT_TRACKER_SERVICE
 
 
@@ -78,11 +77,7 @@ class RedisDocumentTracker:
         self.max_retries = 3
         self.retry_delay = 0.1  # seconds
 
-    @track(
-        operation="redis_tracker_initialize",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="redis_tracker_initialize")
     async def initialize(self) -> None:
         """
         Initialize Redis connection and verify connectivity.
@@ -110,17 +105,6 @@ class RedisDocumentTracker:
             await self.redis_client.ping()
 
             self._initialized = True
-
-            doc_count = await self.get_document_count()
-
-            log_event(
-                "redis_tracker_initialized",
-                {
-                    "redis_url": self.redis_url,
-                    "document_count": doc_count,
-                },
-            )
-
         except Exception as e:
             log_event(
                 "redis_tracker_init_failed",
@@ -151,17 +135,12 @@ class RedisDocumentTracker:
             await self.redis_client.aclose()
             self._initialized = False
 
-            log_event(
-                "redis_tracker_closed",
-                {"redis_url": self.redis_url},
-            )
+            # log_event(
+            #     "redis_tracker_closed",
+            #     {"redis_url": self.redis_url},
+            # )
 
-    @track(
-        operation="redis_add_document",
-        include_args=["document_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="redis_add_document")
     async def add_document(self, document_id: str, node_ids: List[str]) -> None:
         """
         Add a document and its nodes to the tracker atomically.
@@ -197,12 +176,7 @@ class RedisDocumentTracker:
             pipe.incr(count_key)
             await pipe.execute()
 
-    @track(
-        operation="redis_get_node_ids",
-        include_args=["document_id"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="redis_get_node_ids")
     async def get_node_ids(self, document_id: str) -> Optional[List[str]]:
         """
         Get node IDs for a document.
@@ -223,12 +197,7 @@ class RedisDocumentTracker:
 
         return list(node_ids) if node_ids else None
 
-    @track(
-        operation="redis_remove_document",
-        include_args=["document_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="redis_remove_document")
     async def remove_document(self, document_id: str) -> bool:
         """
         Remove a document and all its data atomically.
@@ -272,12 +241,7 @@ class RedisDocumentTracker:
 
         return True
 
-    @track(
-        operation="redis_document_exists",
-        include_args=["document_id"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="redis_document_exists")
     async def document_exists(self, document_id: str) -> bool:
         """
         Check if a document exists in the tracker.
@@ -302,11 +266,7 @@ class RedisDocumentTracker:
 
         return bool(exists)
 
-    @track(
-        operation="redis_get_document_count",
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="redis_get_document_count")
     async def get_document_count(self) -> int:
         """
         Get total count of tracked documents.
@@ -326,11 +286,7 @@ class RedisDocumentTracker:
 
         return int(count) if count else 0
 
-    @track(
-        operation="redis_get_all_document_ids",
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    # @track(operation="redis_get_all_document_ids")
     async def get_all_document_ids(self) -> List[str]:
         """
         Get all document IDs.
@@ -350,12 +306,7 @@ class RedisDocumentTracker:
 
         return sorted(members) if members else []
 
-    @track(
-        operation="redis_store_full_metadata",
-        include_args=["document_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="redis_store_full_metadata")
     async def store_full_metadata(
         self, document_id: str, metadata: Dict[str, Any]
     ) -> None:
@@ -392,12 +343,7 @@ class RedisDocumentTracker:
                         pipe.sadd(index_key, document_id)
                 await pipe.execute()
 
-    @track(
-        operation="redis_get_full_metadata",
-        include_args=["document_id"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="redis_get_full_metadata")
     async def get_full_metadata(self, document_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve complete metadata for a document.
@@ -432,12 +378,7 @@ class RedisDocumentTracker:
 
         return deserialized
 
-    @track(
-        operation="redis_update_full_metadata",
-        include_args=["document_id", "merge_mode"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    @track(operation="redis_update_full_metadata")
     async def update_full_metadata(
         self,
         document_id: str,
@@ -588,11 +529,7 @@ class RedisDocumentTracker:
         result_list: List[str] = sorted(result) if result else []
         return result_list
 
-    @track(
-        operation="redis_clear_all",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="redis_clear_all")
     async def clear_all(self) -> Dict[str, Any]:
         """
         Clear all tracked documents and metadata.

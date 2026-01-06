@@ -15,7 +15,7 @@ from lifearchivist.tools.theme_classifier.rules import (
     TERTIARY_FILENAME_KEYWORD_DEFINITIONS,
     TERTIARY_STATISTICAL_KEYWORD_DEFINITIONS,
 )
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 
 
 class ThemeClassifier:

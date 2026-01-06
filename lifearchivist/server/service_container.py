@@ -8,7 +8,7 @@ ensuring all services are properly initialized before use and cleaned up on shut
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 import asyncpg
 import redis.asyncio as redis
@@ -16,18 +16,25 @@ from qdrant_client import QdrantClient
 
 from ..config.settings import Settings
 from ..llm import LLMProviderManager
+from ..llm.agent import (
+    AgentExecutionDefaults,
+    AgentModelDefaults,
+    AgentToolLimits,
+    AgentToolRegistry,
+    ComplexityClassifier,
+    PhaseCoordinator,
+    StrategicPlanner,
+    TacticalPlannerFactory,
+)
+from ..rag import ConversationRAGService
 from ..storage.bm25_index_service import BM25IndexService
 from ..storage.credential_service import CredentialService
 from ..storage.database import ConversationService, MessageService
+from ..storage.llamaindex_service import LlamaIndexService
 from ..storage.redis_document_tracker import RedisDocumentTracker
 from ..storage.vault.vault import Vault
-from ..utils.logging import log_event
-
-if TYPE_CHECKING:
-    # Import for type checking only to avoid runtime circular import
-    from ..rag import ConversationRAGService
-    from ..storage.llamaindex_service import LlamaIndexService
-    from .activity_manager import ActivityManager
+from ..utils.logx import log_event
+from .activity_manager import ActivityManager
 
 
 @dataclass
@@ -135,15 +142,15 @@ class ServiceContainer:
             return
 
         try:
-            log_event(
-                "service_container_init_start",
-                {
-                    "redis_url": self.config.redis_url,
-                    "qdrant_url": self.config.qdrant_url,
-                    "database_url": self._mask_db_password(self.config.database_url),
-                    "vault_path": str(self.config.vault_path),
-                },
-            )
+            # log_event(
+            #     "service_container_init_start",
+            #     {
+            #         "redis_url": self.config.redis_url,
+            #         "qdrant_url": self.config.qdrant_url,
+            #         "database_url": self._mask_db_password(self.config.database_url),
+            #         "vault_path": str(self.config.vault_path),
+            #     },
+            # )
 
             # Phase 1: External connections
             await self._init_redis()
@@ -166,30 +173,30 @@ class ServiceContainer:
             self._init_conversation_service()
             self._init_message_service()
 
-            # Note: RAG service will be initialized later with activity_manager from ApplicationServer
+            # Note: Agent orchestrator and RAG service will be initialized later from ApplicationServer
 
             self._initialized = True
 
-            log_event(
-                "service_container_initialized",
-                {
-                    "services": [
-                        "redis",
-                        "qdrant",
-                        "database",
-                        "vault",
-                        "doc_tracker",
-                        "bm25",
-                        "credential_service",
-                        "llm_provider_manager",
-                        "llamaindex",
-                        "conversation",
-                        "message",
-                        "rag_service",
-                    ],
-                    "status": "ready",
-                },
-            )
+            # log_event(
+            #     "service_container_initialized",
+            #     {
+            #         "services": [
+            #             "redis",
+            #             "qdrant",
+            #             "database",
+            #             "vault",
+            #             "doc_tracker",
+            #             "bm25",
+            #             "credential_service",
+            #             "llm_provider_manager",
+            #             "llamaindex",
+            #             "conversation",
+            #             "message",
+            #             "rag_service",
+            #         ],
+            #         "status": "ready",
+            #     },
+            # )
 
         except Exception as e:
             log_event(
@@ -233,7 +240,7 @@ class ServiceContainer:
         if self.bm25_service:
             try:
                 await self.bm25_service.close()
-                log_event("bm25_service_cleaned_up")
+                # log_event("bm25_service_cleaned_up")
             except Exception as e:
                 log_event(
                     "bm25_cleanup_error",
@@ -309,7 +316,7 @@ class ServiceContainer:
             # Test connection
             await self.redis_client.ping()
 
-            log_event("redis_initialized", {"url": self.config.redis_url})
+            # log_event("redis_initialized", {"url": self.config.redis_url})
 
         except Exception as e:
             raise ServiceInitializationError(
@@ -334,15 +341,15 @@ class ServiceContainer:
             )
 
             # Test connection by getting collections (synchronous HTTP call)
-            collections = self.qdrant_client.get_collections()
+            _ = self.qdrant_client.get_collections()
 
-            log_event(
-                "qdrant_initialized",
-                {
-                    "url": self.config.qdrant_url,
-                    "collections": len(collections.collections),
-                },
-            )
+            # log_event(
+            #     "qdrant_initialized",
+            #     {
+            #         "url": self.config.qdrant_url,
+            #         "collections": len(collections.collections),
+            #     },
+            # )
 
         except Exception as e:
             raise ServiceInitializationError(
@@ -377,21 +384,21 @@ class ServiceContainer:
 
             # Test connection
             async with self.db_pool.acquire() as conn:
-                version = await conn.fetchval("SELECT version()")
-                pool_size = self.db_pool.get_size()
+                _ = await conn.fetchval("SELECT version()")
+                _ = self.db_pool.get_size()
 
-                log_event(
-                    "database_initialized",
-                    {
-                        "url": self._mask_db_password(self.config.database_url),
-                        "pool_min_size": 5,
-                        "pool_max_size": 20,
-                        "pool_current_size": pool_size,
-                        "postgres_version": (
-                            version.split(",")[0] if version else "unknown"
-                        ),
-                    },
-                )
+                # log_event(
+                #     "database_initialized",
+                #     {
+                #         "url": self._mask_db_password(self.config.database_url),
+                #         "pool_min_size": 5,
+                #         "pool_max_size": 20,
+                #         "pool_current_size": pool_size,
+                #         "postgres_version": (
+                #             version.split(",")[0] if version else "unknown"
+                #         ),
+                #     },
+                # )
 
         except asyncpg.InvalidCatalogNameError:
             # Database doesn't exist - provide helpful error
@@ -415,7 +422,7 @@ class ServiceContainer:
             self.vault = Vault(self.config.vault_path)
             await self.vault.initialize()
 
-            log_event("vault_initialized", {"path": str(self.config.vault_path)})
+            # log_event("vault_initialized", {"path": str(self.config.vault_path)})
 
         except Exception as e:
             raise ServiceInitializationError(
@@ -427,11 +434,6 @@ class ServiceContainer:
         try:
             self.doc_tracker = RedisDocumentTracker(redis_url=self.config.redis_url)
             await self.doc_tracker.initialize()
-
-            doc_count = await self.doc_tracker.get_document_count()
-
-            log_event("doc_tracker_initialized", {"document_count": doc_count})
-
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize document tracker: {str(e)}"
@@ -446,11 +448,6 @@ class ServiceContainer:
                 remove_stop_words=True,
             )
             await self.bm25_service.initialize()
-
-            doc_count = self.bm25_service.get_document_count()
-
-            log_event("bm25_initialized", {"document_count": doc_count})
-
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize BM25 service: {str(e)}"
@@ -475,16 +472,6 @@ class ServiceContainer:
                     "LlamaIndex service failed to construct"
                 )
             await li.ensure_initialized()
-
-            # Get document count for logging
-            count_result = await li.get_document_count()
-            if count_result.is_success() and hasattr(count_result, "value"):
-                doc_count = count_result.value
-            else:
-                doc_count = 0
-
-            log_event("llamaindex_initialized", {"document_count": doc_count})
-
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize LlamaIndex service: {str(e)}"
@@ -502,7 +489,7 @@ class ServiceContainer:
 
             self.conversation_service = ConversationService(db_pool=self.db_pool)
 
-            log_event("conversation_service_initialized")
+            # log_event("conversation_service_initialized")
 
         except Exception as e:
             raise ServiceInitializationError(
@@ -521,7 +508,7 @@ class ServiceContainer:
 
             self.message_service = MessageService(db_pool=self.db_pool)
 
-            log_event("message_service_initialized")
+            # log_event("message_service_initialized")
 
         except Exception as e:
             raise ServiceInitializationError(
@@ -544,7 +531,7 @@ class ServiceContainer:
 
             self.credential_service = CredentialService(redis_client=self.redis_client)
 
-            log_event("credential_service_initialized")
+            # log_event("credential_service_initialized")
 
         except Exception as e:
             raise ServiceInitializationError(
@@ -575,20 +562,6 @@ class ServiceContainer:
                     enable_health_monitoring=True,
                 )
             )
-
-            provider_count = self.llm_provider_manager.registry.count()
-            default_provider = self.llm_provider_manager.registry.get_default_id()
-
-            log_event(
-                "llm_provider_manager_initialized",
-                {
-                    "providers_loaded": provider_count,
-                    "default_provider": default_provider,
-                    "cost_tracking": True,
-                    "health_monitoring": True,
-                },
-            )
-
         except Exception as e:
             raise ServiceInitializationError(
                 f"Failed to initialize LLM provider manager: {str(e)}"
@@ -643,6 +616,92 @@ class ServiceContainer:
         except Exception:
             return "postgresql://****:****@****:****/****"
 
+    def init_agent_orchestrator(self) -> None:
+        """
+        Initialize agent orchestrator with hierarchical planning support.
+
+        Creates:
+        - AgentToolRegistry (shared across all tactical planners)
+        - TacticalPlannerFactory (creates isolated tactical planners per phase)
+        - StrategicPlanner
+        - PhaseCoordinator (hierarchical planner)
+        - Single TacticalPlanner for direct (non-hierarchical) queries
+        """
+        try:
+            if not self._initialized:
+                raise ServiceInitializationError(
+                    "ServiceContainer must be initialized before agent orchestrator"
+                )
+
+            if not self.llm_provider_manager:
+                raise ServiceInitializationError(
+                    "LLM provider manager must be initialized before agent orchestrator"
+                )
+
+            document_service = None
+            search_service = None
+            metadata_service = None
+            if self.llamaindex_service:
+                document_service = self.llamaindex_service.document_service
+                search_service = self.llamaindex_service.search_service
+                metadata_service = self.llamaindex_service.metadata_service
+
+            tool_registry = AgentToolRegistry(
+                document_service=document_service,
+                search_service=search_service,
+                metadata_service=metadata_service,
+            )
+            tool_registry.register_all()
+            tool_registry.finalize()
+
+            complexity_classifier = ComplexityClassifier(
+                llm_provider_manager=self.llm_provider_manager,
+            )
+
+            from typing import Any, Mapping
+
+            def _observer(event: str, fields: Mapping[str, Any]) -> None:
+                try:
+                    log_event(event, dict(fields))
+                except Exception:
+                    pass
+
+            tactical_planner_factory = TacticalPlannerFactory(
+                llm_provider_manager=self.llm_provider_manager,
+                tool_registry=tool_registry,
+                complexity_classifier=complexity_classifier,
+                on_observe=_observer,
+                planning_model=AgentModelDefaults.PLANNING_MODEL,
+                planning_temperature=AgentModelDefaults.PLANNING_TEMPERATURE,
+                synthesis_model=AgentModelDefaults.SYNTHESIS_MODEL,
+                synthesis_temperature=AgentModelDefaults.SYNTHESIS_TEMPERATURE,
+                max_concurrency=AgentExecutionDefaults.MAX_CONCURRENCY,
+                per_tool_limits=AgentToolLimits.get_per_tool_limits(),
+                max_tasks=AgentExecutionDefaults.MAX_TASKS,
+                max_cost_usd=AgentExecutionDefaults.MAX_COST_USD,
+                max_time_seconds=AgentExecutionDefaults.MAX_TIME_SECONDS,
+            )
+
+            strategic_planner = StrategicPlanner(
+                llm_provider_manager=self.llm_provider_manager,
+                tool_registry=tool_registry,
+                planning_model=AgentModelDefaults.PLANNING_MODEL,
+                planning_temperature=AgentModelDefaults.PLANNING_TEMPERATURE,
+                max_phases=AgentExecutionDefaults.MAX_PHASES,
+            )
+
+            self.phase_coordinator = PhaseCoordinator(
+                strategic_planner=strategic_planner,
+                tactical_planner_factory=tactical_planner_factory,
+            )
+
+            self.tactical_planner = tactical_planner_factory.create()
+
+        except Exception as e:
+            raise ServiceInitializationError(
+                f"Failed to initialize agent orchestrator: {str(e)}"
+            ) from e
+
     def init_rag_service(
         self, activity_manager: Optional["ActivityManager"] = None
     ) -> None:
@@ -696,10 +755,10 @@ class ServiceContainer:
                 activity_manager=activity_manager,
             )
 
-            log_event(
-                "rag_service_initialized",
-                {"has_activity_manager": activity_manager is not None},
-            )
+            # log_event(
+            #     "rag_service_initialized",
+            #     {"has_activity_manager": activity_manager is not None},
+            # )
 
         except Exception as e:
             raise ServiceInitializationError(

@@ -7,8 +7,7 @@ Optimized for high-performance batch processing.
 
 from typing import Callable, Dict, List, Optional
 
-from lifearchivist.utils.logging import track
-
+from ..utils.logx import track
 from .base_subtheme_classifier import BaseSubthemeClassifier
 from .financial_subtheme_classifier import FinancialSubthemeClassifier
 from .healthcare_subtheme_classifier import HealthcareSubthemeClassifier

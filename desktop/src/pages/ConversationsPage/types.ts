@@ -194,6 +194,66 @@ export interface SSEErrorEvent {
   recoverable?: boolean;
 }
 
+export type AgentTaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export type AgentPhaseStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export interface AgentTask {
+  task_id: string;
+  tool: string | null;
+  description: string;
+  status: AgentTaskStatus;
+}
+
+export interface AgentPhase {
+  phase_id: string;
+  description: string;
+  status: AgentPhaseStatus;
+  tasks: AgentTask[];
+}
+
+export type AgentProgressEventType =
+  | 'plan_created'
+  | 'tactical_plan_created'
+  | 'phase_started'
+  | 'phase_completed'
+  | 'phase_cancelled'
+  | 'task_started'
+  | 'task_completed'
+  | 'task_failed'
+  | 'task_cancelled'
+  | 'synthesis_started'
+  | 'plan_failed'
+  | 'plan_cancelled';
+
+export interface SSEAgentProgressEvent {
+  event: AgentProgressEventType;
+  phase_id: string | null;
+  task_id: string | null;
+  tool: string | null;
+  error: string | null;
+  phases: AgentPhase[];
+  current_phase_index: number;
+  completed_phases: string[];
+  is_synthesizing: boolean;
+}
+
+export interface AgentProgress {
+  phases: AgentPhase[];
+  currentPhaseIndex: number;
+  completedPhases: string[];
+  isSynthesizing: boolean;
+  isCancelled: boolean;
+  lastEvent: AgentProgressEventType | null;
+  error: string | null;
+}
+
+export interface SSECancelledEvent {
+  reason: string;
+  latency_ms: number;
+  completed_phases?: string[];
+}
+
 export interface SSECallbacks {
   onUserMessage?: (message: SSEUserMessageEvent) => void;
   onAssistantMessageCreated?: (data: SSEAssistantMessageCreatedEvent) => void;
@@ -202,7 +262,9 @@ export interface SSECallbacks {
   onSources?: (sources: SSESourceEvent[]) => void;
   onChunk?: (text: string) => void;
   onMetadata?: (metadata: SSEMetadataEvent) => void;
+  onAgentProgress?: (progress: SSEAgentProgressEvent) => void;
   onComplete?: (data: SSECompleteEvent) => void;
+  onCancelled?: (data: SSECancelledEvent) => void;
   onError?: (error: string) => void;
 }
 

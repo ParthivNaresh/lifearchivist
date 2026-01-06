@@ -4,9 +4,9 @@ Background task management for integrated enrichment processing.
 
 import asyncio
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 from lifearchivist.workers.enrichment_worker import EnrichmentWorker
 
 
@@ -32,12 +32,12 @@ class BackgroundTaskManager:
 
             self.enabled = True
 
-            log_event(
-                "background_tasks_started",
-                {
-                    "enrichment_worker": True,
-                },
-            )
+            # log_event(
+            #     "background_tasks_started",
+            #     {
+            #         "enrichment_worker": True,
+            #     },
+            # )
 
         except Exception as e:
             log_event(
@@ -100,11 +100,11 @@ class BackgroundTaskManager:
 
         self.enabled = False
 
-        log_event("background_tasks_stopped", {})
+        # log_event("background_tasks_stopped", {})
 
     async def get_status(self):
         """Get status of background tasks."""
-        status = {
+        status: Dict[str, Any] = {
             "enabled": self.enabled,
             "enrichment_worker": None,
         }

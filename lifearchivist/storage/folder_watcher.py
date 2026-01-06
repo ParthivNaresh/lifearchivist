@@ -30,7 +30,7 @@ from lifearchivist.server.api.routes.folder_watch.misc_models import (
     WatchedFolder,
 )
 from lifearchivist.storage.redis_folder_watch_store import RedisFolderWatchStore
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 
 from .constants import NOT_INITIALIZED_FOLDER_WATCHER_SERVICE
 
@@ -144,15 +144,15 @@ class FolderWatcherService:
 
             self._initialized = True
 
-            log_event(
-                "folder_watcher_service_initialized",
-                {
-                    "max_folders": self.max_folders,
-                    "ingestion_concurrency": self.ingestion_concurrency,
-                    "debounce_seconds": self.debounce_seconds,
-                    "resumed_folders": len(self.watched_folders),
-                },
-            )
+            # log_event(
+            #     "folder_watcher_service_initialized",
+            #     {
+            #         "max_folders": self.max_folders,
+            #         "ingestion_concurrency": self.ingestion_concurrency,
+            #         "debounce_seconds": self.debounce_seconds,
+            #         "resumed_folders": len(self.watched_folders),
+            #     },
+            # )
 
         except Exception as e:
             logger.error(

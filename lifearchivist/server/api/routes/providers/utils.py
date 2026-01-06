@@ -275,7 +275,7 @@ async def _get_ollama_fallback(llm_manager: Any) -> Tuple[str, str]:
         Tuple of (provider_id, model_id)
     """
     fallback_provider_id = "ollama-default"
-    fallback_model = "llama3.2:1b"
+    fallback_model = "qwen2.5:7b"
 
     ollama_provider = llm_manager.get_provider("ollama-default")
     if ollama_provider:

@@ -4,7 +4,7 @@ from typing import Final
 
 class ProviderDefaults:
     OLLAMA_BASE_URL: Final[str] = "http://localhost:11434"
-    OLLAMA_TIMEOUT: Final[int] = 300
+    OLLAMA_TIMEOUT: Final[int] = 3000
     OLLAMA_DEFAULT_ID: Final[str] = "ollama-default"
 
     OPENAI_BASE_URL: Final[str] = "https://api.openai.com/v1"

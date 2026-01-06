@@ -9,12 +9,11 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional, Tuple, cast
 
-from ..llm import LLMProviderManager
-from ..llm.base_provider import LLMMessage
+from ..llm import LLMMessage, LLMProviderManager
 from ..server.api.dependencies import get_server
 from ..storage.database import ConversationService, MessageService
-from ..utils.logging import log_event, track
-from ..utils.result import Failure, Result, Success
+from ..utils.logx import log_event, track
+from ..utils.result import FailurePayload, Result, Success, fail
 from .prompts import PromptBuilder
 from .types import (
     Citation,
@@ -75,7 +74,7 @@ class ConversationRAGService:
         self,
         conversation_id: str,
         message_content: str,
-    ) -> Result[Tuple[Dict, StreamEvent], StreamEvent]:
+    ) -> Result[Tuple[Dict, StreamEvent], FailurePayload]:
         """
         Validate conversation and save user message.
 
@@ -90,11 +89,19 @@ class ConversationRAGService:
             conversation_id
         )
         if conversation_result.is_failure():
-            return Failure(
-                StreamEvent.error(
-                    "ConversationNotFound",
-                    f"Conversation {conversation_id} not found",
-                    sequence=self._next_sequence(),
+            return fail(
+                FailurePayload(
+                    message=f"Conversation {conversation_id} not found",
+                    error_type="ConversationNotFound",
+                    status_code=404,
+                    recoverable=False,
+                    details={
+                        "event": StreamEvent.error(
+                            "ConversationNotFound",
+                            f"Conversation {conversation_id} not found",
+                            sequence=self._next_sequence(),
+                        )
+                    },
                 )
             )
 
@@ -107,11 +114,19 @@ class ConversationRAGService:
         )
 
         if user_msg_result.is_failure():
-            return Failure(
-                StreamEvent.error(
-                    "MessageSaveFailed",
-                    "Failed to save user message",
-                    sequence=self._next_sequence(),
+            return fail(
+                FailurePayload(
+                    message="Failed to save user message",
+                    error_type="MessageSaveFailed",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "event": StreamEvent.error(
+                            "MessageSaveFailed",
+                            "Failed to save user message",
+                            sequence=self._next_sequence(),
+                        )
+                    },
                 )
             )
 
@@ -139,13 +154,13 @@ class ConversationRAGService:
         message = result.unwrap()
         message_id = str(message["id"])
 
-        log_event(
-            "message_processing_started",
-            {
-                "message_id": message_id,
-                "conversation_id": conversation_id,
-            },
-        )
+        # log_event(
+        #     "message_processing_started",
+        #     {
+        #         "message_id": message_id,
+        #         "conversation_id": conversation_id,
+        #     },
+        # )
 
         return message_id
 
@@ -175,16 +190,16 @@ class ConversationRAGService:
                 content=content,
                 metadata=metadata,
             )
-
-            log_event(
-                "message_status_broadcasted",
-                {
-                    "message_id": message_id,
-                    "conversation_id": conversation_id,
-                    "status": status,
-                    "stage": stage,
-                },
-            )
+            #
+            # log_event(
+            #     "message_status_broadcasted",
+            #     {
+            #         "message_id": message_id,
+            #         "conversation_id": conversation_id,
+            #         "status": status,
+            #         "stage": stage,
+            #     },
+            # )
         except Exception as e:
             log_event(
                 "message_status_broadcast_failed",
@@ -201,20 +216,25 @@ class ConversationRAGService:
         )
 
         if result.is_failure():
+            err = result.unwrap_error()  # FailurePayload
             log_event(
                 "message_finalization_failed",
-                {"message_id": message_id, "error": result.error},
+                {
+                    "message_id": message_id,
+                    "error": err.message,
+                    "error_type": err.error_type,
+                },
                 level=logging.WARNING,
             )
             return
 
-        log_event(
-            "message_processing_completed",
-            {
-                "message_id": message_id,
-                "content_length": len(content),
-            },
-        )
+        # log_event(
+        #     "message_processing_completed",
+        #     {
+        #         "message_id": message_id,
+        #         "content_length": len(content),
+        #     },
+        # )
 
     async def _mark_message_failed(self, message_id: str) -> None:
         """Mark message as failed."""
@@ -224,9 +244,14 @@ class ConversationRAGService:
         )
 
         if result.is_failure():
+            err = result.unwrap_error()
             log_event(
                 "message_failure_marking_failed",
-                {"message_id": message_id, "error": result.error},
+                {
+                    "message_id": message_id,
+                    "error": err.message,
+                    "error_type": err.error_type,
+                },
                 level=logging.WARNING,
             )
             return
@@ -260,11 +285,13 @@ class ConversationRAGService:
         )
 
         if result.is_failure():
+            err = result.unwrap_error()
             log_event(
                 "citations_add_failed",
                 {
                     "message_id": message_id,
-                    "error": str(result.error),
+                    "error": err.message,
+                    "error_type": err.error_type,
                 },
                 level=logging.WARNING,
             )
@@ -292,7 +319,7 @@ class ConversationRAGService:
         Returns:
             Tuple of (context_text, citations, events_to_yield)
         """
-        events = []
+        events: List[StreamEvent] = []
 
         is_document_query = self._classify_intent(message_content)
         events.append(
@@ -336,10 +363,11 @@ class ConversationRAGService:
                 )
                 log_event("rag_sources_event_yielded")
             else:
-                error_msg = context_result.error_or("Context retrieval failed")
+                fp = context_result.unwrap_error()
+                error_msg = fp.message or "Context retrieval failed"
                 log_event(
                     "rag_context_retrieval_failed",
-                    {"error": error_msg},
+                    {"error": error_msg, "error_type": fp.error_type},
                     level=logging.WARNING,
                 )
 
@@ -603,8 +631,17 @@ class ConversationRAGService:
         )
 
         if validation_result.is_failure():
-            failure_result = cast(Failure[StreamEvent], validation_result)
-            return None, None, failure_result.error
+            # pull the StreamEvent we stashed in FailurePayload.details["event"]
+            fp = validation_result.unwrap_error()
+            event = cast(Optional[StreamEvent], (fp.details or {}).get("event"))
+            # fall back to a generic error event if somehow missing
+            if event is None:
+                event = StreamEvent.error(
+                    fp.error_type or "ValidationFailed",
+                    fp.message,
+                    sequence=self._next_sequence(),
+                )
+            return None, None, event
 
         conversation, user_message_event = validation_result.unwrap()
         processing_message_id = await self._create_processing_message(conversation_id)
@@ -808,12 +845,7 @@ class ConversationRAGService:
             ):
                 yield event
 
-    @track(
-        operation="rag_process_message",
-        include_args=["conversation_id"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    @track(operation="rag_process_message")
     async def process_message_with_rag(
         self,
         conversation_id: str,
@@ -995,7 +1027,7 @@ class ConversationRAGService:
         self,
         query: str,
         config: ContextConfig,
-    ) -> Result[Tuple[str, List[Citation]], str]:
+    ) -> Result[Tuple[str, List[Citation]], FailurePayload]:
         """
         Retrieve relevant context from documents.
 
@@ -1015,7 +1047,8 @@ class ConversationRAGService:
             )
 
             if search_result.is_failure():
-                return cast(Result[Tuple[str, List[Citation]], str], search_result)
+                fp = search_result.unwrap_error()
+                return fail(fp)
 
             source_chunks = search_result.unwrap()
 
@@ -1031,7 +1064,7 @@ class ConversationRAGService:
                 },
             )
 
-            citations = []
+            citations: List[Citation] = []
             for i, chunk in enumerate(source_chunks):
                 try:
                     score = chunk.get("score", 0)
@@ -1097,9 +1130,13 @@ class ConversationRAGService:
             return Success((context_text, citations))
 
         except Exception as e:
-            return Failure(
-                error=f"Context retrieval failed: {str(e)}",
-                error_type="ContextRetrievalError",
+            return fail(
+                FailurePayload(
+                    message=f"Context retrieval failed: {str(e)}",
+                    error_type="ContextRetrievalError",
+                    status_code=500,
+                    recoverable=False,
+                )
             )
 
     async def _get_conversation_history(
@@ -1263,9 +1300,10 @@ class ConversationRAGService:
             )
 
             if result.is_failure():
+                err = result.unwrap_error()
                 log_event(
                     "message_save_failed",
-                    {"error": str(result.error)},
+                    {"error": err.message, "error_type": err.error_type},
                     level=logging.ERROR,
                 )
                 return
@@ -1292,11 +1330,13 @@ class ConversationRAGService:
                 )
 
                 if citations_result.is_failure():
+                    cerr = citations_result.unwrap_error()
                     log_event(
                         "citations_save_failed",
                         {
                             "message_id": message_id,
-                            "error": str(citations_result.error),
+                            "error": cerr.message,
+                            "error_type": cerr.error_type,
                         },
                         level=logging.WARNING,
                     )

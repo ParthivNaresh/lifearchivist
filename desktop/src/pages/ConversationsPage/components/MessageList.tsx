@@ -5,13 +5,15 @@
 import { useEffect, useRef } from 'react';
 import { User, Bot, Search, FileCheck, Sparkles } from 'lucide-react';
 import { cn } from '../../../utils/cn';
-import type { Message } from '../types';
+import type { Message, AgentProgress } from '../types';
 import { ErrorMessage } from './ErrorMessage';
 import { getErrorMetadata } from '../utils/metadata';
+import { AgentProgressIndicator } from './AgentProgressIndicator';
 
 interface MessageListProps {
   messages: Message[];
   loading?: boolean;
+  agentProgress?: AgentProgress;
   onRetryMessage?: (messageId: string) => void;
 }
 
@@ -181,13 +183,32 @@ const MessageContent: React.FC<MessageContentProps> = ({ message }) => {
   return <CompletedMessageView message={message} />;
 };
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
+interface AgentProgressMessageProps {
+  progress: AgentProgress;
+}
+
+const AgentProgressMessage: React.FC<AgentProgressMessageProps> = ({ progress }) => {
+  return (
+    <div className="flex gap-3 justify-start">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+        <Bot className="h-5 w-5 text-primary" />
+      </div>
+      <AgentProgressIndicator progress={progress} />
+    </div>
+  );
+};
+
+const hasActiveAgentProgress = (progress: AgentProgress | undefined): boolean => {
+  if (!progress) return false;
+  return progress.phases.length > 0 || progress.isSynthesizing;
+};
+
+export const MessageList: React.FC<MessageListProps> = ({ messages, loading, agentProgress }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, agentProgress]);
 
   if (loading) {
     return (
@@ -209,10 +230,20 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, loading }) =
     );
   }
 
+  const showAgentProgress = hasActiveAgentProgress(agentProgress);
+  const lastMessage = messages[messages.length - 1];
+  const isLastMessageProcessing = lastMessage?.status === 'processing' && !lastMessage?.content;
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.filter(Boolean).map((message) => {
+      {messages.filter(Boolean).map((message, index) => {
         const isError = isErrorMessage(message);
+        const isLastProcessingMessage =
+          index === messages.length - 1 && message.status === 'processing' && !message.content;
+
+        if (isLastProcessingMessage && showAgentProgress) {
+          return null;
+        }
 
         return (
           <div
@@ -235,6 +266,11 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, loading }) =
           </div>
         );
       })}
+
+      {showAgentProgress && isLastMessageProcessing && agentProgress && (
+        <AgentProgressMessage progress={agentProgress} />
+      )}
+
       <div ref={bottomRef} />
     </div>
   );

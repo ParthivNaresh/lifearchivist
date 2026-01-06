@@ -49,7 +49,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected: session_id={session_id}")
-        await cleanup_connection(session_id, server, websocket)
+        cleanup_connection(session_id, server, websocket)
 
     except Exception as e:
         logger.error(f"WebSocket error for session {session_id}: {e}", exc_info=True)
@@ -60,4 +60,4 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         except Exception:
             pass
         finally:
-            await cleanup_connection(session_id, server, websocket)
+            cleanup_connection(session_id, server, websocket)

@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from lifearchivist.tools.subtheme_classifier.models import SubthemeResult
 from lifearchivist.tools.subtheme_classifier.rules.base import SubthemeRule
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 
 
 class BaseSubthemeClassifier:

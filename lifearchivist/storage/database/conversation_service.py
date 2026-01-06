@@ -15,13 +15,12 @@ from typing import Any, Dict, List, Optional
 import asyncpg
 
 from ...config import get_settings
-from ...utils.logging import log_event, track
+from ...utils.logx import log_event, track
 from ...utils.result import (
+    FailurePayload,
     Result,
     Success,
-    internal_error,
-    not_found_error,
-    validation_error,
+    fail,
 )
 from .utils import (
     build_conversation_updates,
@@ -81,7 +80,7 @@ class ConversationService:
 
     def _validate_conversation_params(
         self, temperature: float, max_tokens: int
-    ) -> Optional[Result[Dict[str, Any], str]]:
+    ) -> Optional[Result[Dict[str, Any], FailurePayload]]:
         """
         Validate temperature and max_tokens parameters.
 
@@ -94,11 +93,27 @@ class ConversationService:
         """
         temp_error = validate_temperature(temperature)
         if temp_error:
-            return validation_error(temp_error, context={"temperature": temperature})
+            return fail(
+                FailurePayload(
+                    message=temp_error,
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"temperature": temperature},
+                )
+            )
 
         tokens_error = validate_max_tokens(max_tokens)
         if tokens_error:
-            return validation_error(tokens_error, context={"max_tokens": max_tokens})
+            return fail(
+                FailurePayload(
+                    message=tokens_error,
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"max_tokens": max_tokens},
+                )
+            )
 
         return None
 
@@ -151,13 +166,7 @@ class ConversationService:
 
         return data
 
-    @track(
-        operation="conversation_create",
-        include_args=["user_id", "model", "provider_id"],
-        include_result=True,
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="conversation_create")
     async def create_conversation(
         self,
         user_id: str = "default",
@@ -169,7 +178,7 @@ class ConversationService:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Create a new conversation.
 
@@ -220,9 +229,14 @@ class ConversationService:
                 record = await conn.fetchrow(query, *values)
 
             if not record:
-                return internal_error(
-                    "Failed to create conversation",
-                    context={"user_id": user_id},
+                return fail(
+                    FailurePayload(
+                        message="Failed to create conversation",
+                        error_type="InternalError",
+                        status_code=500,
+                        recoverable=False,
+                        details={"user_id": user_id},
+                    )
                 )
 
             conversation = record_to_dict(record)
@@ -239,9 +253,14 @@ class ConversationService:
             return Success(conversation)
 
         except asyncpg.UniqueViolationError as e:
-            return internal_error(
-                f"Duplicate conversation: {str(e)}",
-                context={"user_id": user_id},
+            return fail(
+                FailurePayload(
+                    message=f"Duplicate conversation: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"user_id": user_id},
+                )
             )
         except Exception as e:
             log_event(
@@ -249,20 +268,20 @@ class ConversationService:
                 {"error": str(e), "error_type": type(e).__name__},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to create conversation: {str(e)}",
-                context={"user_id": user_id, "error_type": type(e).__name__},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to create conversation: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"user_id": user_id, "error_type": type(e).__name__},
+                )
             )
 
-    @track(
-        operation="conversation_get",
-        include_args=["conversation_id"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="conversation_get")
     async def get_conversation(
         self, conversation_id: str
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get conversation by ID.
 
@@ -285,16 +304,27 @@ class ConversationService:
                 record = await conn.fetchrow(query, conv_uuid)
 
             if not record:
-                return not_found_error(
-                    f"Conversation '{conversation_id}' not found",
-                    context={"conversation_id": conversation_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Conversation '{conversation_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"conversation_id": conversation_id},
+                    )
                 )
 
             return Success(record_to_dict(record))
 
         except ValueError as e:
-            return validation_error(
-                str(e), context={"conversation_id": conversation_id}
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"conversation_id": conversation_id},
+                )
             )
         except Exception as e:
             log_event(
@@ -302,24 +332,24 @@ class ConversationService:
                 {"conversation_id": conversation_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to get conversation: {str(e)}",
-                context={"conversation_id": conversation_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to get conversation: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"conversation_id": conversation_id},
+                )
             )
 
-    @track(
-        operation="conversation_list",
-        include_args=["user_id", "limit", "offset"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    # @track(operation="conversation_list")
     async def list_conversations(
         self,
         user_id: str = "default",
         limit: int = 50,
         offset: int = 0,
         include_archived: bool = False,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         List conversations for a user.
 
@@ -335,15 +365,25 @@ class ConversationService:
         try:
             # Validate pagination
             if limit < 1 or limit > 100:
-                return validation_error(
-                    "Limit must be between 1 and 100",
-                    context={"limit": limit},
+                return fail(
+                    FailurePayload(
+                        message="Limit must be between 1 and 100",
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"limit": limit},
+                    )
                 )
 
             if offset < 0:
-                return validation_error(
-                    "Offset must be non-negative",
-                    context={"offset": offset},
+                return fail(
+                    FailurePayload(
+                        message="Offset must be non-negative",
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"offset": offset},
+                    )
                 )
 
             # Build query
@@ -389,17 +429,17 @@ class ConversationService:
                 {"user_id": user_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to list conversations: {str(e)}",
-                context={"user_id": user_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to list conversations: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"user_id": user_id},
+                )
             )
 
-    @track(
-        operation="conversation_update",
-        include_args=["conversation_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="conversation_update")
     async def update_conversation(
         self,
         conversation_id: str,
@@ -411,7 +451,7 @@ class ConversationService:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Update conversation fields.
 
@@ -435,15 +475,27 @@ class ConversationService:
             if temperature is not None:
                 error_msg = validate_temperature(temperature)
                 if error_msg:
-                    return validation_error(
-                        error_msg, context={"temperature": temperature}
+                    return fail(
+                        FailurePayload(
+                            message=error_msg,
+                            error_type="ValidationError",
+                            status_code=400,
+                            recoverable=True,
+                            details={"temperature": temperature},
+                        )
                     )
 
             if max_tokens is not None:
                 error_msg = validate_max_tokens(max_tokens)
                 if error_msg:
-                    return validation_error(
-                        error_msg, context={"max_tokens": max_tokens}
+                    return fail(
+                        FailurePayload(
+                            message=error_msg,
+                            error_type="ValidationError",
+                            status_code=400,
+                            recoverable=True,
+                            details={"max_tokens": max_tokens},
+                        )
                     )
 
             updates = build_conversation_updates(
@@ -458,9 +510,14 @@ class ConversationService:
             )
 
             if not updates:
-                return validation_error(
-                    "No updates provided",
-                    context={"conversation_id": conversation_id},
+                return fail(
+                    FailurePayload(
+                        message="No updates provided",
+                        error_type="ValidationError",
+                        status_code=400,
+                        recoverable=True,
+                        details={"conversation_id": conversation_id},
+                    )
                 )
 
             query, values = build_update_query(
@@ -472,9 +529,14 @@ class ConversationService:
                 record = await conn.fetchrow(query, *values)
 
             if not record:
-                return not_found_error(
-                    f"Conversation '{conversation_id}' not found",
-                    context={"conversation_id": conversation_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Conversation '{conversation_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"conversation_id": conversation_id},
+                    )
                 )
 
             log_event(
@@ -488,8 +550,14 @@ class ConversationService:
             return Success(record_to_dict(record))
 
         except ValueError as e:
-            return validation_error(
-                str(e), context={"conversation_id": conversation_id}
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"conversation_id": conversation_id},
+                )
             )
         except Exception as e:
             log_event(
@@ -497,20 +565,20 @@ class ConversationService:
                 {"conversation_id": conversation_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to update conversation: {str(e)}",
-                context={"conversation_id": conversation_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to update conversation: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"conversation_id": conversation_id},
+                )
             )
 
-    @track(
-        operation="conversation_archive",
-        include_args=["conversation_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="conversation_archive")
     async def archive_conversation(
         self, conversation_id: str
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Archive (soft delete) a conversation.
 
@@ -535,9 +603,14 @@ class ConversationService:
                 record = await conn.fetchrow(query, conv_uuid)
 
             if not record:
-                return not_found_error(
-                    f"Conversation '{conversation_id}' not found or already archived",
-                    context={"conversation_id": conversation_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Conversation '{conversation_id}' not found or already archived",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"conversation_id": conversation_id},
+                    )
                 )
 
             log_event(
@@ -548,8 +621,14 @@ class ConversationService:
             return Success(record_to_dict(record))
 
         except ValueError as e:
-            return validation_error(
-                str(e), context={"conversation_id": conversation_id}
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"conversation_id": conversation_id},
+                )
             )
         except Exception as e:
             log_event(
@@ -557,14 +636,20 @@ class ConversationService:
                 {"conversation_id": conversation_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to archive conversation: {str(e)}",
-                context={"conversation_id": conversation_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to archive conversation: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"conversation_id": conversation_id},
+                )
             )
 
+    @track(operation="conversation_delete")
     async def delete_conversation(
         self, conversation_id: str
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Permanently delete a conversation and all its messages.
 
@@ -590,9 +675,14 @@ class ConversationService:
                 record = await conn.fetchrow(query, conv_uuid)
 
             if not record:
-                return not_found_error(
-                    f"Conversation '{conversation_id}' not found",
-                    context={"conversation_id": conversation_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Conversation '{conversation_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"conversation_id": conversation_id},
+                    )
                 )
 
             log_event(
@@ -609,8 +699,14 @@ class ConversationService:
             )
 
         except ValueError as e:
-            return validation_error(
-                str(e), context={"conversation_id": conversation_id}
+            return fail(
+                FailurePayload(
+                    message=str(e),
+                    error_type="ValidationError",
+                    status_code=400,
+                    recoverable=True,
+                    details={"conversation_id": conversation_id},
+                )
             )
         except Exception as e:
             log_event(
@@ -618,7 +714,12 @@ class ConversationService:
                 {"conversation_id": conversation_id, "error": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to delete conversation: {str(e)}",
-                context={"conversation_id": conversation_id},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to delete conversation: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"conversation_id": conversation_id},
+                )
             )

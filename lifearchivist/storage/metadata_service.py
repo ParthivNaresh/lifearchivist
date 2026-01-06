@@ -14,13 +14,14 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from lifearchivist.storage.utils import MetadataFilterUtils, StorageConstants
-from lifearchivist.utils.logging import log_event, track
 from lifearchivist.utils.result import (
+    FailurePayload,
     Result,
     Success,
-    internal_error,
-    not_found_error,
+    fail,
 )
+
+from ..utils.logx import log_event, track
 
 
 class MetadataService(ABC):
@@ -32,7 +33,7 @@ class MetadataService(ABC):
         document_id: str,
         metadata_updates: Dict[str, Any],
         merge_mode: str = "update",
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Update metadata for a document.
 
@@ -52,7 +53,7 @@ class MetadataService(ABC):
         filters: Dict[str, Any],
         limit: int = 100,
         offset: int = 0,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Query documents based on metadata filters.
 
@@ -70,7 +71,7 @@ class MetadataService(ABC):
     async def get_full_document_metadata(
         self,
         document_id: str,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Retrieve the full metadata for a document.
 
@@ -86,7 +87,7 @@ class MetadataService(ABC):
     async def get_document_analysis(
         self,
         document_id: str,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get comprehensive analysis of a document including metadata.
 
@@ -118,19 +119,13 @@ class LlamaIndexMetadataService(MetadataService):
         self.doc_tracker = doc_tracker
         self.qdrant_client = qdrant_client
 
-    @track(
-        operation="update_document_metadata",
-        include_args=["document_id", "merge_mode"],
-        include_result=True,
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="update_document_metadata")
     async def update_document_metadata(
         self,
         document_id: str,
         metadata_updates: Dict[str, Any],
         merge_mode: str = "update",
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Update metadata for a document in Redis (full) and Qdrant (minimal).
 
@@ -145,16 +140,26 @@ class LlamaIndexMetadataService(MetadataService):
             if not self.doc_tracker or not await self.doc_tracker.document_exists(
                 document_id
             ):
-                return not_found_error(
-                    f"Document '{document_id}' not found",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Document '{document_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             node_ids = await self.doc_tracker.get_node_ids(document_id)
             if not node_ids:
-                return not_found_error(
-                    f"No nodes found for document '{document_id}'",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"No nodes found for document '{document_id}'",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             log_event(
@@ -209,9 +214,17 @@ class LlamaIndexMetadataService(MetadataService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to update metadata: {str(e)}",
-                context={"document_id": document_id, "error_type": type(e).__name__},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to update metadata: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
     def _update_qdrant_metadata(
@@ -310,19 +323,13 @@ class LlamaIndexMetadataService(MetadataService):
 
         return updated_nodes
 
-    @track(
-        operation="query_documents_by_metadata",
-        include_args=["limit", "offset"],
-        include_result=True,
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    # @track(operation="query_documents_by_metadata")
     async def query_documents_by_metadata(
         self,
         filters: Dict[str, Any],
         limit: int = 100,
         offset: int = 0,
-    ) -> Result[List[Dict[str, Any]], str]:
+    ) -> Result[List[Dict[str, Any]], FailurePayload]:
         """
         Query documents based on metadata filters.
 
@@ -332,26 +339,26 @@ class LlamaIndexMetadataService(MetadataService):
             if not self.doc_tracker:
                 return Success([])
 
-            log_event(
-                "metadata_query_started",
-                {
-                    "filter_keys": list(filters.keys()) if filters else [],
-                    "has_filters": bool(filters),
-                    "limit": limit,
-                    "offset": offset,
-                },
-            )
+            # log_event(
+            #     "metadata_query_started",
+            #     {
+            #         "filter_keys": list(filters.keys()) if filters else [],
+            #         "has_filters": bool(filters),
+            #         "limit": limit,
+            #         "offset": offset,
+            #     },
+            # )
 
             # Get matching document IDs from Redis
             matching_doc_ids = await self._get_matching_document_ids(filters)
 
-            log_event(
-                "metadata_query_candidates",
-                {
-                    "candidates_found": len(matching_doc_ids),
-                    "will_paginate": len(matching_doc_ids) > limit,
-                },
-            )
+            # log_event(
+            #     "metadata_query_candidates",
+            #     {
+            #         "candidates_found": len(matching_doc_ids),
+            #         "will_paginate": len(matching_doc_ids) > limit,
+            #     },
+            # )
 
             # Paginate FIRST to avoid building unnecessary documents
             paginated_doc_ids = matching_doc_ids[offset : offset + limit]
@@ -410,15 +417,17 @@ class LlamaIndexMetadataService(MetadataService):
         except Exception as e:
             log_event(
                 "metadata_query_failed",
-                {
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
+                {"error_type": type(e).__name__, "error_message": str(e)},
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to query documents: {str(e)}",
-                context={"error_type": type(e).__name__},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to query documents: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={"error_type": type(e).__name__},
+                )
             )
 
     async def _get_matching_document_ids(self, filters: Dict[str, Any]) -> List[str]:
@@ -518,17 +527,11 @@ class LlamaIndexMetadataService(MetadataService):
             )
             return ""
 
-    @track(
-        operation="get_full_document_metadata",
-        include_args=["document_id"],
-        include_result=False,  # Don't log full metadata (could be large)
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="get_full_document_metadata", include_result=False)  # Don't log full metadata (could be large)
     async def get_full_document_metadata(
         self,
         document_id: str,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Retrieve the full metadata for a document from Redis.
 
@@ -536,9 +539,14 @@ class LlamaIndexMetadataService(MetadataService):
         """
         try:
             if not self.doc_tracker:
-                return internal_error(
-                    "Document tracker not initialized",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message="Document tracker not initialized",
+                        error_type="InternalError",
+                        status_code=500,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             # Get full metadata from Redis (source of truth)
@@ -551,9 +559,14 @@ class LlamaIndexMetadataService(MetadataService):
 
             # If not found, check if document exists at all
             if not await self.doc_tracker.document_exists(document_id):
-                return not_found_error(
-                    f"Document '{document_id}' not found",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Document '{document_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             # Document exists but has no metadata (shouldn't happen)
@@ -563,9 +576,14 @@ class LlamaIndexMetadataService(MetadataService):
                 level=logging.WARNING,
             )
 
-            return not_found_error(
-                f"Metadata not found for document '{document_id}'",
-                context={"document_id": document_id, "reason": "metadata_missing"},
+            return fail(
+                FailurePayload(
+                    message=f"Metadata not found for document '{document_id}'",
+                    error_type="NotFoundError",
+                    status_code=404,
+                    recoverable=False,
+                    details={"document_id": document_id, "reason": "metadata_missing"},
+                )
             )
 
         except Exception as e:
@@ -577,22 +595,24 @@ class LlamaIndexMetadataService(MetadataService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to retrieve metadata: {str(e)}",
-                context={"document_id": document_id, "error_type": type(e).__name__},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to retrieve metadata: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
-    @track(
-        operation="get_document_analysis",
-        include_args=["document_id"],
-        include_result=True,
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    @track(operation="get_document_analysis")
     async def get_document_analysis(
         self,
         document_id: str,
-    ) -> Result[Dict[str, Any], str]:
+    ) -> Result[Dict[str, Any], FailurePayload]:
         """
         Get comprehensive analysis of a document.
 
@@ -601,29 +621,44 @@ class LlamaIndexMetadataService(MetadataService):
         """
         try:
             if not self.qdrant_client:
-                return internal_error(
-                    "Qdrant client not initialized",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message="Qdrant client not initialized",
+                        error_type="InternalError",
+                        status_code=500,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             # Check if document exists
             if not self.doc_tracker or not await self.doc_tracker.document_exists(
                 document_id
             ):
-                return not_found_error(
-                    f"Document '{document_id}' not found",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"Document '{document_id}' not found",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             node_ids = await self.doc_tracker.get_node_ids(document_id)
             if not node_ids:
-                return not_found_error(
-                    f"No nodes found for document '{document_id}'",
-                    context={"document_id": document_id},
+                return fail(
+                    FailurePayload(
+                        message=f"No nodes found for document '{document_id}'",
+                        error_type="NotFoundError",
+                        status_code=404,
+                        recoverable=False,
+                        details={"document_id": document_id},
+                    )
                 )
 
             # Get FULL metadata for this document
-            metadata_result: Result[Dict[str, Any], str] = (
+            metadata_result: Result[Dict[str, Any], FailurePayload] = (
                 await self.get_full_document_metadata(document_id)
             )
             if metadata_result.is_failure():
@@ -666,9 +701,17 @@ class LlamaIndexMetadataService(MetadataService):
                 },
                 level=logging.ERROR,
             )
-            return internal_error(
-                f"Failed to analyze document: {str(e)}",
-                context={"document_id": document_id, "error_type": type(e).__name__},
+            return fail(
+                FailurePayload(
+                    message=f"Failed to analyze document: {str(e)}",
+                    error_type="InternalError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "document_id": document_id,
+                        "error_type": type(e).__name__,
+                    },
+                )
             )
 
     def _collect_document_metrics(

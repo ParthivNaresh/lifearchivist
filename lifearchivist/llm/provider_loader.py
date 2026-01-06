@@ -9,7 +9,7 @@ import logging
 from typing import Dict, List, cast
 
 from ..storage.credential_service import CredentialService
-from ..utils.logging import log_event, track
+from ..utils.logx import log_event
 from ..utils.result import Failure, Result, Success
 from .base_provider import BaseLLMProvider, ProviderType
 from .provider_config import BaseProviderConfig
@@ -42,12 +42,7 @@ class ProviderLoader:
         """
         self.credential_service = credential_service
 
-    @track(
-        operation="provider_loader_load_provider",
-        include_args=["provider_id"],
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="provider_loader_load_provider")
     async def load_provider(
         self,
         provider_id: str,
@@ -81,19 +76,20 @@ class ProviderLoader:
         )
 
         if metadata_result.is_failure():
+            failure = cast(Failure, metadata_result)
             log_event(
                 "provider_load_metadata_failed",
                 {
                     "provider_id": provider_id,
-                    "error": metadata_result.error,
+                    "error": failure.error,
                 },
                 level=logging.ERROR,
             )
             return Failure(
-                error=f"Failed to retrieve provider metadata: {metadata_result.error}",
-                error_type=metadata_result.error_type,
-                status_code=metadata_result.status_code,
-                context={"provider_id": provider_id},
+                error=f"Failed to retrieve provider metadata: {failure.error}",
+                error_type=failure.error_type,
+                status_code=failure.status_code,
+                details={"provider_id": provider_id},
             )
 
         provider_data = metadata_result.unwrap()
@@ -115,22 +111,23 @@ class ProviderLoader:
                 error=f"Invalid provider type: {provider_data.get('provider_type')}",
                 error_type="InvalidProviderType",
                 status_code=400,
-                context={"provider_id": provider_id},
+                details={"provider_id": provider_id},
             )
 
         # Get decrypted, typed config
         config_result = await self.credential_service.get_provider_config(provider_id)
 
         if config_result.is_failure():
+            failure = cast(Failure, config_result)
             log_event(
                 "provider_load_config_failed",
                 {
                     "provider_id": provider_id,
-                    "error": config_result.error,
+                    "error": failure.error,
                 },
                 level=logging.ERROR,
             )
-            return cast(Result[BaseLLMProvider, str], config_result)
+            return cast(Result[BaseLLMProvider, str], failure)
 
         config = config_result.unwrap()
 
@@ -146,21 +143,17 @@ class ProviderLoader:
 
         provider = provider_result.unwrap()
 
-        log_event(
-            "provider_loaded",
-            {
-                "provider_id": provider_id,
-                "provider_type": provider_type.value,
-            },
-        )
+        # log_event(
+        #     "provider_loaded",
+        #     {
+        #         "provider_id": provider_id,
+        #         "provider_type": provider_type.value,
+        #     },
+        # )
 
         return Success(provider)
 
-    @track(
-        operation="provider_loader_load_all",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="provider_loader_load_all")
     async def load_all_providers(
         self,
         user_id: str = "default",
@@ -189,18 +182,19 @@ class ProviderLoader:
         list_result = await self.credential_service.list_providers(user_id)
 
         if list_result.is_failure():
+            failure = cast(Failure, list_result)
             log_event(
                 "provider_load_all_list_failed",
                 {
                     "user_id": user_id,
-                    "error": list_result.error,
+                    "error": failure.error,
                 },
                 level=logging.ERROR,
             )
             return Failure(
-                error=f"Failed to list providers: {list_result.error}",
-                error_type=list_result.error_type,
-                status_code=list_result.status_code,
+                error=f"Failed to list providers: {failure.error}",
+                error_type=failure.error_type,
+                status_code=failure.status_code,
             )
 
         provider_data_list = list_result.unwrap()
@@ -233,26 +227,26 @@ class ProviderLoader:
             if result.is_success():
                 providers.append(result.unwrap())
             else:
-                # Log but continue - don't let one bad provider break everything
+                failure = cast(Failure, result)
                 log_event(
                     "provider_load_all_individual_failed",
                     {
                         "provider_id": provider_id,
-                        "error": result.error,
+                        "error": failure.error,
                     },
                     level=logging.WARNING,
                 )
                 failed_count += 1
 
-        log_event(
-            "provider_load_all_complete",
-            {
-                "user_id": user_id,
-                "loaded": len(providers),
-                "failed": failed_count,
-                "total": len(provider_data_list),
-            },
-        )
+        # log_event(
+        #     "provider_load_all_complete",
+        #     {
+        #         "user_id": user_id,
+        #         "loaded": len(providers),
+        #         "failed": failed_count,
+        #         "total": len(provider_data_list),
+        #     },
+        # )
 
         return Success(providers)
 
@@ -289,7 +283,7 @@ class ProviderLoader:
                 error=f"No provider class registered for type: {provider_type.value}",
                 error_type="ProviderClassNotFound",
                 status_code=500,
-                context={
+                details={
                     "provider_id": provider_id,
                     "provider_type": provider_type.value,
                 },
@@ -299,14 +293,14 @@ class ProviderLoader:
         try:
             provider = provider_class(provider_id, config)
 
-            log_event(
-                "provider_instantiated",
-                {
-                    "provider_id": provider_id,
-                    "provider_type": provider_type.value,
-                    "provider_class": provider_class.__name__,
-                },
-            )
+            # log_event(
+            #     "provider_instantiated",
+            #     {
+            #         "provider_id": provider_id,
+            #         "provider_type": provider_type.value,
+            #         "provider_class": provider_class.__name__,
+            #     },
+            # )
 
             return Success(provider)
 
@@ -325,7 +319,7 @@ class ProviderLoader:
                 error=f"Failed to instantiate provider: {e}",
                 error_type="ProviderInstantiationError",
                 status_code=500,
-                context={
+                details={
                     "provider_id": provider_id,
                     "provider_type": provider_type.value,
                     "original_error": str(e),
@@ -365,16 +359,17 @@ class ProviderLoader:
                 {"provider_id": provider_id},
             )
         else:
+            failure = cast(Failure, result)
             log_event(
                 "provider_reload_failed",
                 {
                     "provider_id": provider_id,
-                    "error": result.error,
+                    "error": failure.error,
                 },
                 level=logging.ERROR,
             )
 
-        return cast(Result[BaseLLMProvider, str], result)
+        return result
 
     def validate_config(
         self,
@@ -413,7 +408,7 @@ class ProviderLoader:
                 error=f"Invalid configuration: {e}",
                 error_type="ConfigValidationError",
                 status_code=400,
-                context={
+                details={
                     "provider_type": provider_type.value,
                     "error": str(e),
                 },

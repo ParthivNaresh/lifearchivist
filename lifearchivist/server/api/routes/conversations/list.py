@@ -156,7 +156,8 @@ async def list_conversations(
         )
 
         if result.is_failure():
-            raise InternalServerError("List conversations", Exception(result.error))
+            error_msg = result.unwrap_error().message
+            raise InternalServerError("List conversations", Exception(error_msg))
 
         data = result.unwrap()
 

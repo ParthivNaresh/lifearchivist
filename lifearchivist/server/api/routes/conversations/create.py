@@ -146,7 +146,8 @@ async def create_conversation(
         )
 
         if result.is_failure():
-            raise InternalServerError("Create conversation", Exception(result.error))
+            error_msg = result.unwrap_error().message
+            raise InternalServerError("Create conversation", Exception(error_msg))
 
         conversation_dict = result.unwrap()
 

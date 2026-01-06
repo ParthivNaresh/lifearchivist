@@ -18,7 +18,7 @@ from openpyxl import load_workbook
 from PIL import Image
 from pypdf import PdfReader
 
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 
 
 def parse_pdf_date(pdf_date_string: Optional[str]) -> Optional[str]:

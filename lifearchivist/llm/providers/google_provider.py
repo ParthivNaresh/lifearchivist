@@ -10,7 +10,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import aiohttp
 
-from ...utils.logging import log_event, track
+from ...utils.logx import log_event, track
 from ..base_provider import (
     BaseHTTPProvider,
     BaseLLMProvider,

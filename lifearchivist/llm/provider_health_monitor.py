@@ -16,7 +16,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional, cast
 
-from ..utils.logging import log_event, track
+from ..utils.logx import log_event
 from .base_provider import BaseLLMProvider
 from .provider_registry import ProviderRegistry
 
@@ -104,14 +104,14 @@ class ProviderHealthMonitor:
         self._monitoring_task = asyncio.create_task(self._monitoring_loop())
         await asyncio.sleep(0)
 
-        log_event(
-            "health_monitor_started",
-            {
-                "check_interval": self.check_interval,
-                "failure_threshold": self.failure_threshold,
-                "auto_disable": self.auto_disable,
-            },
-        )
+        # log_event(
+        #     "health_monitor_started",
+        #     {
+        #         "check_interval": self.check_interval,
+        #         "failure_threshold": self.failure_threshold,
+        #         "auto_disable": self.auto_disable,
+        #     },
+        # )
 
     async def stop(self) -> None:
         """
@@ -156,11 +156,7 @@ class ProviderHealthMonitor:
             log_event("health_monitor_cancelled")
             raise
 
-    @track(
-        operation="health_check_all_providers",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="health_check_all_providers")
     async def _check_all_providers(self) -> None:
         """Check health of all registered providers."""
         providers = self.registry.list_all()
@@ -173,32 +169,27 @@ class ProviderHealthMonitor:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Log summary
-        healthy = sum(
+        _ = sum(
             1
             for r in results
             if isinstance(r, HealthCheck) and r.status == HealthStatus.HEALTHY
         )
-        unhealthy = sum(
+        _ = sum(
             1
             for r in results
             if isinstance(r, HealthCheck) and r.status == HealthStatus.UNHEALTHY
         )
 
-        log_event(
-            "health_check_completed",
-            {
-                "total_providers": len(providers),
-                "healthy": healthy,
-                "unhealthy": unhealthy,
-            },
-        )
+        # log_event(
+        #     "health_check_completed",
+        #     {
+        #         "total_providers": len(providers),
+        #         "healthy": healthy,
+        #         "unhealthy": unhealthy,
+        #     },
+        # )
 
-    @track(
-        operation="health_check_provider",
-        include_args=["provider_id"],
-        track_performance=True,
-        frequency="medium_frequency",
-    )
+    # @track(operation="health_check_provider")
     async def _check_provider(self, provider: BaseLLMProvider) -> HealthCheck:
         """
         Check health of a single provider.
@@ -245,15 +236,15 @@ class ProviderHealthMonitor:
             if status == HealthStatus.UNHEALTHY:
                 self._handle_unhealthy_provider(provider, health_check)
 
-            log_event(
-                "provider_health_checked",
-                {
-                    "provider_id": provider_id,
-                    "status": status.value,
-                    "response_time_ms": response_time,
-                    "consecutive_failures": consecutive_failures,
-                },
-            )
+            # log_event(
+            #     "provider_health_checked",
+            #     {
+            #         "provider_id": provider_id,
+            #         "status": status.value,
+            #         "response_time_ms": response_time,
+            #         "consecutive_failures": consecutive_failures,
+            #     },
+            # )
 
             return health_check
 

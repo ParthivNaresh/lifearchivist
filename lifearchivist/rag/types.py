@@ -252,6 +252,7 @@ class StreamEvent:
         | IntentData
         | AssistantMessageCreatedData
         | List[Citation]
+        | Dict[str, Any]
     )
     timestamp: datetime = field(default_factory=datetime.utcnow)
     sequence_number: int = 0

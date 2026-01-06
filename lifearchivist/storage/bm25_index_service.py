@@ -18,8 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import redis.asyncio as redis
 from rank_bm25 import BM25Okapi
 
-from lifearchivist.utils.logging import log_event, track
+from lifearchivist.utils.logx import log_event
 
+from ..utils.logx import track
 from .constants import NOT_INITIALIZED_BM25_INDEX_SERVICE
 
 
@@ -188,11 +189,7 @@ class BM25IndexService:
         # Connection state
         self._initialized = False
 
-    @track(
-        operation="bm25_initialize",
-        track_performance=True,
-        frequency="low_frequency",
-    )
+    # @track(operation="bm25_initialize")
     async def initialize(self) -> None:
         """
         Initialize Redis connection and load existing index.
@@ -224,15 +221,15 @@ class BM25IndexService:
 
             self._initialized = True
 
-            log_event(
-                "bm25_initialized",
-                {
-                    "redis_url": self.redis_url,
-                    "documents_indexed": len(self.document_ids),
-                    "use_stemming": self.tokenizer.use_stemming,
-                    "remove_stop_words": self.tokenizer.remove_stop_words,
-                },
-            )
+            # log_event(
+            #     "bm25_initialized",
+            #     {
+            #         "redis_url": self.redis_url,
+            #         "documents_indexed": len(self.document_ids),
+            #         "use_stemming": self.tokenizer.use_stemming,
+            #         "remove_stop_words": self.tokenizer.remove_stop_words,
+            #     },
+            # )
 
         except Exception as e:
             log_event(
@@ -265,7 +262,7 @@ class BM25IndexService:
             await self.redis_client.aclose()
             self._initialized = False
 
-            log_event("bm25_closed", {"redis_url": self.redis_url})
+            # log_event("bm25_closed", {"redis_url": self.redis_url})
 
     @track(
         operation="bm25_add_document",
@@ -394,12 +391,7 @@ class BM25IndexService:
             )
             return False
 
-    @track(
-        operation="bm25_search",
-        include_args=["top_k", "min_score"],
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(operation="bm25_search")
     async def search(
         self,
         query: str,
@@ -458,16 +450,16 @@ class BM25IndexService:
         # Return top-k
         top_results = results[:top_k]
 
-        log_event(
-            "bm25_search_completed",
-            {
-                "query_preview": query[:50],
-                "query_tokens": len(query_tokens),
-                "results_found": len(results),
-                "results_returned": len(top_results),
-                "top_score": top_results[0][1] if top_results else 0,
-            },
-        )
+        # log_event(
+        #     "bm25_search_completed",
+        #     {
+        #         "query_preview": query[:50],
+        #         "query_tokens": len(query_tokens),
+        #         "results_found": len(results),
+        #         "results_returned": len(top_results),
+        #         "top_score": top_results[0][1] if top_results else 0,
+        #     },
+        # )
 
         return top_results
 
@@ -601,13 +593,13 @@ class BM25IndexService:
                 if self.corpus:
                     self.bm25 = BM25Okapi(self.corpus)
 
-                log_event(
-                    "bm25_index_loaded",
-                    {
-                        "documents": len(self.document_ids),
-                        "corpus_size_kb": round(len(corpus_bytes) / 1024, 2),
-                    },
-                )
+                # log_event(
+                #     "bm25_index_loaded",
+                #     {
+                #         "documents": len(self.document_ids),
+                #         "corpus_size_kb": round(len(corpus_bytes) / 1024, 2),
+                #     },
+                # )
             else:
                 log_event(
                     "bm25_no_existing_index",

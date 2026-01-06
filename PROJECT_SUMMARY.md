@@ -25,7 +25,7 @@ Life Archivist is a local-first, privacy-preserving personal knowledge managemen
 **Vector Storage & AI**
 - Qdrant for vector storage
 - LlamaIndex 0.13.2 (QdrantVectorStore integration)
-- Ollama (local LLM inference) with llama3.2 models
+- Ollama (local LLM inference) with qwen2.5:7b models
 - Sentence Transformers (all-MiniLM-L6-v2, 384 dimensions)
 
 **Document Processing**

@@ -36,8 +36,10 @@ const ConversationsPage: React.FC = () => {
     loading: conversationLoading,
     sending,
     error: conversationError,
+    agentProgress,
     sendMessage: _sendMessage,
     sendMessageStreaming,
+    cancelRequest,
     reload: reloadConversation,
   } = useConversation(selectedConversationId);
 
@@ -199,7 +201,11 @@ const ConversationsPage: React.FC = () => {
             </div>
 
             {/* Messages */}
-            <MessageList messages={messages} loading={conversationLoading} />
+            <MessageList
+              messages={messages}
+              loading={conversationLoading}
+              agentProgress={agentProgress}
+            />
 
             {/* Error Display */}
             {conversationError && (
@@ -211,7 +217,9 @@ const ConversationsPage: React.FC = () => {
             {/* Input */}
             <MessageInput
               onSend={(content) => void handleSendMessage(content)}
-              disabled={sending}
+              onCancel={() => void cancelRequest()}
+              disabled={false}
+              isSending={sending}
             />
           </>
         ) : (

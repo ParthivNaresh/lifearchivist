@@ -1,397 +1,262 @@
-"""
-Result type for explicit error handling.
-
-This module provides a Result type that represents either a successful operation
-(Success) or a failed operation (Failure). This pattern makes error handling
-explicit and provides consistent response formats for APIs and UIs.
-
-Example:
-    >>> result = Success({"user_id": 123})
-    >>> if result.is_success():
-    ...     print(result.value)
-    {"user_id": 123}
-
-    >>> result = Failure("User not found", error_type="NotFoundError")
-    >>> result.to_dict()
-    {"success": False, "error": "User not found", "error_type": "NotFoundError"}
-"""
+from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, Optional, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 T = TypeVar("T")
+U = TypeVar("U")
 E = TypeVar("E")
+R = TypeVar("R")
 
 
-@dataclass
-class Success(Generic[T]):
+@dataclass(frozen=True)
+class FailurePayload:
     """
-    Represents a successful operation with a value.
-
-    Attributes:
-        value: The successful result value
-        metadata: Optional metadata about the operation
+    A normalized error structure that's API/HTTP friendly.
     """
 
-    value: T
-    metadata: Optional[Dict[str, Any]] = None
+    message: str
+    error_type: str = "InternalError"
+    status_code: int = 500
+    recoverable: bool = False
+    details: Optional[Mapping[str, Any]] = None
 
+    def to_public_dict(self) -> Dict[str, Any]:
+        d: Dict[str, Any] = {
+            "success": False,
+            "error": self.message,
+            "error_type": self.error_type,
+            "status_code": self.status_code,
+            "recoverable": self.recoverable,
+        }
+        if self.details:
+            d["details"] = dict(self.details)
+        return d
+
+
+class Result(Generic[T, E]):
+    """
+    Discriminated union for explicit error handling.
+
+    Use:
+        if result.is_success():
+            # narrowed to Success[T, E]
+            value = result.value
+        else:
+            # narrowed to Failure[T, E]
+            log(result.error)
+    """
+
+    # ---- Narrowing checks (critical for mypy) ----
     def is_success(self) -> bool:
-        """Check if this is a success result."""
-        return True
+        return isinstance(self, Success)
 
     def is_failure(self) -> bool:
-        """Check if this is a failure result."""
-        return False
+        return isinstance(self, Failure)
 
+    # ---- Mapping ----
+    def map(self, f: Callable[[T], U]) -> Result[U, E]:
+        if isinstance(self, Success):
+            return Success(f(self.value))
+        return cast(Result[U, E], self)
+
+    def map_error(self, f: Callable[[E], U]) -> Result[T, U]:
+        if isinstance(self, Failure):
+            return Failure(
+                f(self.error),
+                error_type=self.error_type,
+                status_code=self.status_code,
+                recoverable=self.recoverable,
+                details=self.details,
+            )
+        return cast(Result[T, U], self)
+
+    # ---- Flat-map / and_then ----
+    def and_then(self, f: Callable[[T], Result[U, E]]) -> Result[U, E]:
+        if isinstance(self, Success):
+            return f(self.value)
+        return cast(Result[U, E], self)
+
+    # ---- Folding ----
+    def fold(self, on_success: Callable[[T], R], on_failure: Callable[[E], R]) -> R:
+        if isinstance(self, Success):
+            return on_success(self.value)
+        return on_failure(cast(Failure[T, E], self).error)
+
+    # ---- Unwraps ----
     def unwrap(self) -> T:
-        """
-        Get the success value.
+        if isinstance(self, Success):
+            success: Success[T, E] = self
+            return success.value
+        raise RuntimeError(
+            f"unwrap() called on Failure: {cast(Failure[T, E], self).error}"
+        )
 
-        Returns:
-            The wrapped value
-        """
-        return self.value
+    def unwrap_error(self) -> E:
+        if isinstance(self, Failure):
+            failure: Failure[T, E] = self
+            return failure.error
+        raise RuntimeError("unwrap_error() called on Success")
 
-    def unwrap_or(self, default: T) -> T:
-        """
-        Get the success value or a default.
-
-        Args:
-            default: Value to return if this is a Failure
-
-        Returns:
-            The wrapped value (always, since this is Success)
-        """
-        return self.value
-
-    def unwrap_or_else(self, func: Callable[[Any], T]) -> T:
-        """
-        Get the success value or compute a default.
-
-        Args:
-            func: Function to call if this is a Failure
-
-        Returns:
-            The wrapped value (always, since this is Success)
-        """
-        return self.value
-
-    def map(self, func: Callable[[T], Any]) -> "Result":
-        """
-        Transform the success value.
-
-        Args:
-            func: Function to apply to the value
-
-        Returns:
-            Success with transformed value
-        """
-        try:
-            return Success(func(self.value), metadata=self.metadata)
-        except Exception as e:
-            return Failure(
-                error=str(e),
-                error_type=type(e).__name__,
-                context={"original_value": str(self.value)},
-            )
-
-    def and_then(self, func: Callable[[T], "Result"]) -> "Result":
-        """
-        Chain operations that return Results.
-
-        Args:
-            func: Function that takes the value and returns a Result
-
-        Returns:
-            The result of calling func with the value
-        """
-        try:
-            return func(self.value)
-        except Exception as e:
-            return Failure(
-                error=str(e),
-                error_type=type(e).__name__,
-                context={"original_value": str(self.value)},
-            )
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert to dictionary for JSON serialization.
-
-        Returns:
-            Dictionary with success=True and data field
-        """
-        result = {"success": True, "data": self.value}
-        if self.metadata:
-            result["metadata"] = self.metadata
-        return result
-
-    def __bool__(self) -> bool:
-        """Make Success truthy."""
-        return True
-
-    def __repr__(self) -> str:
-        """String representation."""
-        return f"Success({self.value})"
-
-    def error_or(self, default: E) -> E:
-        """
-        Get error value or default (always returns default for Success).
-
-        Args:
-            default: Default error value to return
-
-        Returns:
-            The default value (always, since this is Success)
-        """
+    # ---- Defaults / coercions ----
+    def get_or_else(self, default: T) -> T:
+        if isinstance(self, Success):
+            success: Success[T, E] = self
+            return success.value
         return default
 
+    # ---- Introspection helpers ----
+    def to_dict(self) -> Dict[str, Any]:
+        if isinstance(self, Success):
+            return {"success": True, "value": self.value}
+        failure = cast(Failure[T, E], self)
+        e = failure.error
+        if isinstance(e, FailurePayload):
+            return e.to_public_dict()
+        out: Dict[str, Any] = {"success": False, "error": e}
+        for k in ("error_type", "status_code", "recoverable", "details"):
+            v = getattr(failure, k, None)
+            if v is not None:
+                out[k] = v
+        return out
 
-@dataclass
-class Failure(Generic[E]):
+    # ---- Exception bridge ----
+    def raise_if_failure(
+        self, exc_factory: Optional[Callable[[E], Exception]] = None
+    ) -> None:
+        if isinstance(self, Failure):
+            e = self.error
+            if exc_factory is None:
+                if isinstance(e, FailurePayload):
+                    raise RuntimeError(f"{e.error_type}: {e.message}")
+                raise RuntimeError(str(e))
+            raise exc_factory(e)
+
+    # Convenience property so `bool(Result)` means “success”
+    def __bool__(self) -> bool:
+        return self.is_success()
+
+
+# -----------------------------
+# Success / Failure branches
+# -----------------------------
+@dataclass(frozen=True)
+class Success(Result[T, E]):
+    value: T
+    metadata: Optional[Mapping[str, Any]] = None
+
+
+@dataclass(frozen=True)
+class Failure(Result[T, E]):
     """
-    Represents a failed operation with an error.
+    Failure can carry either:
+      - a structured FailurePayload in `.error` (recommended), or
+      - a plain error type E (e.g., str).
 
-    Attributes:
-        error: The error message
-        error_type: Type/category of error (e.g., "ValidationError")
-        context: Additional context about the error
-        recoverable: Whether the operation can be retried
-        status_code: HTTP status code hint for API responses
+    Optional metadata fields are kept to preserve your current usage.
     """
 
     error: E
-    error_type: str = "UnknownError"
-    context: Optional[Dict[str, Any]] = None
-    recoverable: bool = False
-    status_code: int = 500
-
-    def is_success(self) -> bool:
-        """Check if this is a success result."""
-        return False
-
-    def is_failure(self) -> bool:
-        """Check if this is a failure result."""
-        return True
-
-    def unwrap(self) -> Any:
-        """
-        Attempt to get the value (will raise).
-
-        Raises:
-            RuntimeError: Always, since this is a Failure
-        """
-        raise RuntimeError(f"Called unwrap on Failure: {self.error}")
-
-    def unwrap_or(self, default: Any) -> Any:
-        """
-        Get a default value since this is a failure.
-
-        Args:
-            default: Value to return
-
-        Returns:
-            The default value
-        """
-        return default
-
-    def unwrap_or_else(self, func: Callable[[E], Any]) -> Any:
-        """
-        Compute a default value from the error.
-
-        Args:
-            func: Function to call with the error
-
-        Returns:
-            Result of calling func with the error
-        """
-        return func(self.error)
-
-    def map(self, func: Callable) -> "Result":
-        """
-        No-op for Failure (preserves the error).
-
-        Args:
-            func: Function that would transform a success value
-
-        Returns:
-            This Failure unchanged
-        """
-        return self
-
-    def and_then(self, func: Callable) -> "Result":
-        """
-        No-op for Failure (preserves the error).
-
-        Args:
-            func: Function that would chain another operation
-
-        Returns:
-            This Failure unchanged
-        """
-        return self
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert to dictionary for JSON serialization.
-
-        Returns:
-            Dictionary with success=False and error fields
-        """
-        result = {
-            "success": False,
-            "error": str(self.error),
-            "error_type": self.error_type,
-        }
-        if self.context:
-            result["context"] = self.context
-        if self.recoverable:
-            result["recoverable"] = True
-        return result
-
-    def __bool__(self) -> bool:
-        """Make Failure falsy."""
-        return False
-
-    def __repr__(self) -> str:
-        """String representation."""
-        return f"Failure({self.error_type}: {self.error})"
-
-    def error_or(self, default: E) -> E:
-        """
-        Get error value or default.
-
-        Args:
-            default: Default error value (unused for Failure)
-
-        Returns:
-            The error value
-        """
-        return self.error
+    error_type: Optional[str] = None
+    status_code: Optional[int] = None
+    recoverable: Optional[bool] = None
+    details: Optional[Mapping[str, Any]] = None
 
 
-# Type alias for Result
-Result = Union[Success[T], Failure[E]]
+# -----------------------------
+# Constructors / helpers
+# -----------------------------
+def ok(value: T) -> Success[T, Any]:
+    return Success(value)
 
 
-# Common error types with predefined status codes
-class ErrorType:
-    """Common error types with HTTP status codes."""
-
-    VALIDATION_ERROR = ("ValidationError", 400, True)
-    NOT_FOUND_ERROR = ("NotFoundError", 404, False)
-    CONFLICT_ERROR = ("ConflictError", 409, True)
-    AUTHENTICATION_ERROR = ("AuthenticationError", 401, False)
-    AUTHORIZATION_ERROR = ("AuthorizationError", 403, False)
-    RATE_LIMIT_ERROR = ("RateLimitError", 429, True)
-    INTERNAL_ERROR = ("InternalError", 500, False)
-    SERVICE_UNAVAILABLE = ("ServiceUnavailable", 503, True)
-    TIMEOUT_ERROR = ("TimeoutError", 504, True)
-    STORAGE_ERROR = ("StorageError", 500, True)
-    INDEX_ERROR = ("IndexError", 500, True)
-    NETWORK_ERROR = ("NetworkError", 503, True)
-
-
-def validation_error(message: str, context: Optional[Dict[str, Any]] = None) -> Failure:
-    """Create a validation error result."""
-    error_type, status_code, recoverable = ErrorType.VALIDATION_ERROR
-    return Failure(
-        error=message,
-        error_type=error_type,
-        context=context,
-        recoverable=recoverable,
-        status_code=status_code,
-    )
-
-
-def not_found_error(message: str, context: Optional[Dict[str, Any]] = None) -> Failure:
-    """Create a not found error result."""
-    error_type, status_code, recoverable = ErrorType.NOT_FOUND_ERROR
-    return Failure(
-        error=message,
-        error_type=error_type,
-        context=context,
-        recoverable=recoverable,
-        status_code=status_code,
-    )
-
-
-def internal_error(message: str, context: Optional[Dict[str, Any]] = None) -> Failure:
-    """Create an internal error result."""
-    error_type, status_code, recoverable = ErrorType.INTERNAL_ERROR
-    return Failure(
-        error=message,
-        error_type=error_type,
-        context=context,
-        recoverable=recoverable,
-        status_code=status_code,
-    )
-
-
-def storage_error(message: str, context: Optional[Dict[str, Any]] = None) -> Failure:
-    """Create a storage error result."""
-    error_type, status_code, recoverable = ErrorType.STORAGE_ERROR
-    return Failure(
-        error=message,
-        error_type=error_type,
-        context=context,
-        recoverable=recoverable,
-        status_code=status_code,
-    )
-
-
-def service_unavailable(
-    message: str, context: Optional[Dict[str, Any]] = None
-) -> Failure:
-    """Create a service unavailable error result."""
-    error_type, status_code, recoverable = ErrorType.SERVICE_UNAVAILABLE
-    return Failure(
-        error=message,
-        error_type=error_type,
-        context=context,
-        recoverable=recoverable,
-        status_code=status_code,
-    )
-
-
-# Utility functions for working with Results
-def collect_results(results: list[Result]) -> Result[list, str]:
+def fail(
+    message_or_payload: Union[str, FailurePayload, E],
+    *,
+    error_type: Optional[str] = None,
+    status_code: Optional[int] = None,
+    recoverable: Optional[bool] = None,
+    details: Optional[Mapping[str, Any]] = None,
+) -> Failure[Any, Any]:
     """
-    Collect multiple Results into a single Result.
+    Flexible failure constructor.
 
-    If all are Success, returns Success with list of values.
-    If any are Failure, returns the first Failure.
-
-    Args:
-        results: List of Result objects
-
-    Returns:
-        Success with list of values, or first Failure
+    Examples:
+        fail("Not found", error_type="NotFoundError", status_code=404)
+        fail(FailurePayload("Not found", "NotFoundError", 404))
     """
-    values = []
-    for result in results:
-        if result.is_failure():
-            return result
-        values.append(result.unwrap())
+    if isinstance(message_or_payload, FailurePayload):
+        return Failure(
+            message_or_payload,  # E is FailurePayload
+            error_type=message_or_payload.error_type,
+            status_code=message_or_payload.status_code,
+            recoverable=message_or_payload.recoverable,
+            details=message_or_payload.details,
+        )
+    return Failure(message_or_payload, error_type, status_code, recoverable, details)
+
+
+def from_exception(
+    exc: BaseException,
+    *,
+    error_type: str = "InternalError",
+    status_code: int = 500,
+    recoverable: bool = False,
+    details: Optional[Mapping[str, Any]] = None,
+) -> Failure[Any, FailurePayload]:
+    payload = FailurePayload(
+        message=str(exc),
+        error_type=error_type,
+        status_code=status_code,
+        recoverable=recoverable,
+        details=details,
+    )
+    return Failure(
+        payload,
+        error_type=payload.error_type,
+        status_code=payload.status_code,
+        recoverable=payload.recoverable,
+        details=payload.details,
+    )
+
+
+# -----------------------------
+# Batch helpers
+# -----------------------------
+def combine_all(results: Iterable[Result[T, E]]) -> Result[List[T], E]:
+    """
+    Turn an iterable of Result[T, E] into Result[List[T], E]
+    (fail fast on the first Failure).
+    """
+    values: List[T] = []
+    for r in results:
+        if isinstance(r, Success):
+            values.append(r.value)
+        else:
+            return cast(Result[List[T], E], r)
     return Success(values)
 
 
-def partition_results(results: list[Result]) -> tuple[list, list]:
-    """
-    Partition Results into successes and failures.
-
-    Args:
-        results: List of Result objects
-
-    Returns:
-        Tuple of (success_values, failures)
-    """
-    successes = []
-    failures = []
-    for result in results:
-        if result.is_success():
-            successes.append(result.unwrap())
+def partition(results: Iterable[Result[T, E]]) -> Tuple[List[T], List[Failure[T, E]]]:
+    """Split into (all success values, all failures)."""
+    ok_values: List[T] = []
+    errors: List[Failure[T, E]] = []
+    for r in results:
+        if isinstance(r, Success):
+            ok_values.append(r.value)
         else:
-            failures.append(result)
-    return successes, failures
+            errors.append(cast(Failure[T, E], r))
+    return ok_values, errors

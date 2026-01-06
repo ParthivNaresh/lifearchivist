@@ -6,7 +6,7 @@ Handles formatting of context, conversation history, and system prompts.
 
 from typing import List, Optional
 
-from ..llm.base_provider import LLMMessage
+from ..llm import LLMMessage
 from ..server.api.prompt_utils import PromptFormatter
 
 

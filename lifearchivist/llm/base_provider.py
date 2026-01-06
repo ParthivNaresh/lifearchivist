@@ -9,9 +9,18 @@ import asyncio
 import json
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Callable, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    cast,
+)
 
 import aiohttp
 
@@ -58,6 +67,22 @@ class LLMMessage:
             raise ValueError(
                 f"Invalid role '{self.role}'. Must be one of: {valid_roles}"
             )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to a plain dict, ensuring JSON-serializable fields."""
+        d = asdict(self)
+        # Defensive cleanup: ensure metadata is JSON-safe
+        if self.metadata is not None:
+            try:
+                json.dumps(self.metadata)
+            except TypeError:
+                # Fall back to string representation for non-serializable values
+                d["metadata"] = {k: str(v) for k, v in self.metadata.items()}
+        return d
+
+    def to_json(self, **kwargs) -> str:
+        """Return a JSON string representation."""
+        return json.dumps(self.to_dict(), **kwargs)
 
 
 @dataclass
@@ -185,7 +210,7 @@ class BaseHTTPProvider:
         )
 
     def _create_timeout(
-        self, total: int, connect: int = 10, sock_read: int = 30
+        self, total: int, connect: int = 10, sock_read: Optional[int] = None
     ) -> aiohttp.ClientTimeout:
         """
         Create timeout configuration.
@@ -193,11 +218,14 @@ class BaseHTTPProvider:
         Args:
             total: Total request timeout in seconds
             connect: Connection timeout in seconds
-            sock_read: Socket read timeout in seconds
+            sock_read: Socket read timeout in seconds (defaults to total if not specified)
 
         Returns:
             Configured ClientTimeout
         """
+        if sock_read is None:
+            sock_read = total
+
         return aiohttp.ClientTimeout(
             total=total,
             connect=connect,
@@ -281,7 +309,7 @@ class BaseHTTPProvider:
         Raises:
             RuntimeError: Always raises with formatted error message
         """
-        from ..utils.logging import log_event
+        from ..utils.logx import log_event
 
         log_event(
             error_log_event,
@@ -341,7 +369,7 @@ class BaseHTTPProvider:
             data = json.loads(data_str)
             return chunk_parser(data)
         except json.JSONDecodeError as e:
-            from ..utils.logging import log_event
+            from ..utils.logx import log_event
 
             log_event(
                 f"{error_log_event}_parse_error",
@@ -414,7 +442,7 @@ class BaseHTTPProvider:
                             break
 
         except aiohttp.ClientError as e:
-            from ..utils.logging import log_event
+            from ..utils.logx import log_event
 
             log_event(
                 f"{error_log_event}_connection_error",
@@ -656,7 +684,7 @@ class BaseHTTPProvider:
                 return result
             return None
         except json.JSONDecodeError as e:
-            from ..utils.logging import log_event
+            from ..utils.logx import log_event
 
             log_event(
                 f"{error_log_event}_parse_error",
@@ -790,7 +818,7 @@ class BaseHTTPProvider:
                         yield chunk_obj
 
         except aiohttp.ClientError as e:
-            from ..utils.logging import log_event
+            from ..utils.logx import log_event
 
             log_event(
                 f"{error_log_event}_connection_error",
@@ -932,7 +960,11 @@ class BaseLLMProvider(ABC):
             RuntimeError: If streaming fails
             ValueError: If parameters are invalid
         """
-        pass
+        from typing import TYPE_CHECKING
+
+        if TYPE_CHECKING:  # help type-checkers see this as a generator
+            yield cast(LLMStreamChunk, None)
+        raise NotImplementedError
 
     @abstractmethod
     async def list_models(self) -> List[ModelInfo]:

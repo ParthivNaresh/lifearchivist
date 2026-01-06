@@ -9,7 +9,7 @@ from typing import Any, Awaitable, Dict, Optional, cast
 
 import redis.asyncio as redis
 
-from lifearchivist.utils.logging import log_event, track
+from ..utils.logx import log_event, track
 
 
 class EnrichmentQueue:
@@ -30,12 +30,12 @@ class EnrichmentQueue:
                 self.redis_url, encoding="utf-8", decode_responses=True
             )
             await self.redis_client.ping()
-            log_event(
-                "enrichment_queue_initialized",
-                {
-                    "redis_url": self.redis_url,
-                },
-            )
+            # log_event(
+            #     "enrichment_queue_initialized",
+            #     {
+            #         "redis_url": self.redis_url,
+            #     },
+            # )
         except Exception as e:
             log_event(
                 "enrichment_queue_init_failed",
@@ -111,11 +111,11 @@ class EnrichmentQueue:
             )
             return False
 
-    @track(
-        operation="dequeue_enrichment_task",
-        track_performance=True,
-        frequency="high_frequency",
-    )
+    # @track(
+    #     operation="dequeue_enrichment_task",
+    #     track_performance=True,
+    #     frequency="high_frequency",
+    # )
     async def get_next_task(self) -> Optional[Dict[str, Any]]:
         """Get the next task from the queue."""
         if not self.redis_client:
@@ -125,7 +125,7 @@ class EnrichmentQueue:
             client = self._client()
             task_json = await cast(
                 Awaitable[Optional[str]],
-                client.brpoplpush(self.queue_key, self.processing_key, 0),
+                client.brpoplpush(self.queue_key, self.processing_key, 1),
             )
 
             if task_json:
@@ -351,4 +351,4 @@ class EnrichmentQueue:
         """Clean up Redis connection."""
         if self.redis_client:
             await self.redis_client.aclose()
-            log_event("enrichment_queue_closed", {})
+            # log_event("enrichment_queue_closed", {})

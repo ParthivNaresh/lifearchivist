@@ -83,7 +83,7 @@ export const ProviderDeleteConfirmDialog: React.FC<ProviderDeleteConfirmDialogPr
                     ) : (
                       <>
                         (Ollama) with the model{' '}
-                        <span className="font-mono text-xs">llama3.2:1b</span>
+                        <span className="font-mono text-xs">qwen2.5:7b</span>
                       </>
                     )}
                     .

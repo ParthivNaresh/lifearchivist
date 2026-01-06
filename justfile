@@ -37,17 +37,13 @@ setup: install services init-models
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 🐳 Docker Services Management
-# ───────────────────────────────────────────────────────────────────────# Start development services (Postgres, Qdrant, Redis, Ollama)
+# ───────────────────────────────────────────────────────────────────────# Start development services (Postgres, Qdrant, Redis) - Using local Ollama
 services:
     @echo "🐳 Starting Docker services..."
-    docker-compose up -d postgres ollama
-    @echo "🔍 Checking if llama3.2:1b model is available..."
-    @docker exec lifearchivist-ollama-1 ollama list 2>/dev/null | grep -q "llama3.2:1b" || \
-        (echo "📥 Model not found, pulling llama3.2:1b (this may take a few minutes)..." && \
-         docker exec -it lifearchivist-ollama-1 ollama pull llama3.2:1b) || \
-        echo "✅ Model llama3.2:1b already available"
-    docker-compose up -d postgres qdrant redis ollama
-    @echo "✅ All services started (Postgres, Qdrant, Redis, Ollama)"
+    docker-compose up -d postgres qdrant redis
+    @echo "✅ Services started (Postgres, Qdrant, Redis)"
+    @echo "💡 Using local Ollama - ensure 'ollama serve' is running"
+    @echo "💡 Verify models with: ollama list"
 
 # Stop development services
 services-stop:
@@ -55,7 +51,7 @@ services-stop:
 
 # Initialize Ollama models (run once after first setup)
 init-models:
-    docker exec lifearchivist-ollama-1 ollama pull llama3.2:3b
+    docker exec lifearchivist-ollama-1 ollama pull qwen2.5:7b
     docker exec lifearchivist-ollama-1 ollama list
 
 # Debug: check Docker containers and service health

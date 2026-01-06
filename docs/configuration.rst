@@ -33,7 +33,7 @@ Model Settings
 .. code-block:: bash
 
    # LLM Configuration
-   LIFEARCH_LLM_MODEL=llama3.2:3b
+   LIFEARCH_LLM_MODEL=qwen2.5:7b
    LIFEARCH_EMBEDDING_MODEL=all-MiniLM-L6-v2
    
    # Ollama settings
@@ -118,7 +118,7 @@ You can also use a YAML configuration file:
      vault: /path/to/vault
    
    models:
-     llm: llama3.2:3b
+     llm: qwen2.5:7b
      embedding: all-MiniLM-L6-v2
    
    services:

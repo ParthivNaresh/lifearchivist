@@ -84,9 +84,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Email: parthivnaresh@gmail.com
 
 ---
-
-<div align="center">
-
-Built with modern Python tooling and best practices for local-first, privacy-preserving personal knowledge management.
-
-</div>

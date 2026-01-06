@@ -60,13 +60,13 @@ export const ConversationSettingsModal: React.FC<ConversationSettingsModalProps>
         return {
           id: 'ollama-default',
           name: 'Ollama',
-          model: firstModel?.id ?? 'llama3.2:1b',
+          model: firstModel?.id ?? 'qwen2.5:7b',
         };
       }
       return {
         id: 'ollama-default',
         name: 'Ollama',
-        model: 'llama3.2:1b',
+        model: 'qwen2.5:7b',
       };
     }
 
@@ -78,7 +78,7 @@ export const ConversationSettingsModal: React.FC<ConversationSettingsModalProps>
     return {
       id: currentDefault.id,
       name: currentDefault.name ?? currentDefault.type,
-      model: firstModel?.id ?? 'llama3.2:1b',
+      model: firstModel?.id ?? 'qwen2.5:7b',
     };
   }, [providers, allModels, deleteConfirmState]);
 

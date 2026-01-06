@@ -10,8 +10,8 @@ Responsible for:
 import logging
 from typing import Dict, List, Optional
 
-from ..utils.logging import log_event
-from ..utils.result import Failure, Result, Success
+from ..utils.logx import log_event
+from ..utils.result import Failure, FailurePayload, Result, Success, fail
 from .base_provider import BaseLLMProvider, ProviderType
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class ProviderRegistry:
         self,
         provider: BaseLLMProvider,
         set_as_default: bool = False,
-    ) -> Result[None, str]:
+    ) -> Result[None, FailurePayload]:
         """
         Register a provider instance.
 
@@ -66,11 +66,14 @@ class ProviderRegistry:
             ValueError: If provider_id already exists
         """
         if provider.provider_id in self._providers:
-            return Failure(
-                error=f"Provider already registered: {provider.provider_id}",
-                error_type="DuplicateProvider",
-                status_code=409,
-                context={"provider_id": provider.provider_id},
+            return fail(
+                FailurePayload(
+                    message=f"Provider already registered: {provider.provider_id}",
+                    error_type="DuplicateProvider",
+                    status_code=409,
+                    recoverable=False,
+                    details={"provider_id": provider.provider_id},
+                )
             )
 
         # Initialize provider before registration
@@ -87,14 +90,17 @@ class ProviderRegistry:
                 },
                 level=logging.ERROR,
             )
-            return Failure(
-                error=f"Failed to initialize provider: {e}",
-                error_type="InitializationError",
-                status_code=500,
-                context={
-                    "provider_id": provider.provider_id,
-                    "original_error": str(e),
-                },
+            return fail(
+                FailurePayload(
+                    message=f"Failed to initialize provider: {e}",
+                    error_type="InitializationError",
+                    status_code=500,
+                    recoverable=False,
+                    details={
+                        "provider_id": provider.provider_id,
+                        "original_error": str(e),
+                    },
+                )
             )
 
         # Register provider after successful initialization
@@ -104,15 +110,15 @@ class ProviderRegistry:
         if set_as_default or self._default_provider_id is None:
             self._default_provider_id = provider.provider_id
 
-        log_event(
-            "provider_registered",
-            {
-                "provider_id": provider.provider_id,
-                "provider_type": provider.provider_type.value,
-                "is_default": provider.provider_id == self._default_provider_id,
-                "initialized": provider.is_initialized,
-            },
-        )
+        # log_event(
+        #     "provider_registered",
+        #     {
+        #         "provider_id": provider.provider_id,
+        #         "provider_type": provider.provider_type.value,
+        #         "is_default": provider.provider_id == self._default_provider_id,
+        #         "initialized": provider.is_initialized,
+        #     },
+        # )
 
         return Success(None)
 

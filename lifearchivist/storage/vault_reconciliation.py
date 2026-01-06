@@ -8,7 +8,7 @@ The policy is simple: if a vault file is missing, remove the orphaned metadata.
 import logging
 from typing import Any, Dict, List, Optional
 
-from lifearchivist.utils.logging import log_event
+from lifearchivist.utils.logx import log_event
 
 
 class VaultReconciliationService:
@@ -53,10 +53,10 @@ class VaultReconciliationService:
             # Get all documents from Redis
             all_doc_ids = await self.doc_tracker.get_all_document_ids()
 
-            log_event(
-                "vault_reconciliation_started",
-                {"total_documents": len(all_doc_ids)},
-            )
+            # log_event(
+            #     "vault_reconciliation_started",
+            #     {"total_documents": len(all_doc_ids)},
+            # )
 
             for doc_id in all_doc_ids:
                 try:
@@ -93,25 +93,25 @@ class VaultReconciliationService:
             }
 
             # Log completion
-            if cleaned_documents:
-                log_event(
-                    "vault_reconciliation_completed_with_cleanup",
-                    {
-                        "checked": len(all_doc_ids),
-                        "cleaned": len(cleaned_documents),
-                        "errors": len(errors),
-                    },
-                    level=logging.WARNING,
-                )
-            else:
-                log_event(
-                    "vault_reconciliation_completed",
-                    {
-                        "checked": len(all_doc_ids),
-                        "status": "consistent",
-                        "errors": len(errors),
-                    },
-                )
+            # if cleaned_documents:
+            #     log_event(
+            #         "vault_reconciliation_completed_with_cleanup",
+            #         {
+            #             "checked": len(all_doc_ids),
+            #             "cleaned": len(cleaned_documents),
+            #             "errors": len(errors),
+            #         },
+            #         level=logging.WARNING,
+            #     )
+            # else:
+            #     log_event(
+            #         "vault_reconciliation_completed",
+            #         {
+            #             "checked": len(all_doc_ids),
+            #             "status": "consistent",
+            #             "errors": len(errors),
+            #         },
+            #     )
 
             return result
 
