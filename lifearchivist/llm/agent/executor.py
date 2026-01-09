@@ -300,34 +300,18 @@ class TaskExecutor:
         if not state.running:
             return []
 
-        async def cancellation_monitor() -> _CancellationSentinel:
-            while not context.is_cancelled:
-                await asyncio.sleep(self._cancellation_poll_interval)
-            return CANCELLATION_SENTINEL
-
-        monitor_task = asyncio.create_task(cancellation_monitor())
-        all_tasks: Set[asyncio.Task[Any]] = set(state.running.values()) | {monitor_task}
-
-        try:
-            done, _ = await asyncio.wait(all_tasks, return_when=asyncio.FIRST_COMPLETED)
-
-            if monitor_task in done:
-                monitor_task.cancel()
-                try:
-                    await monitor_task
-                except asyncio.CancelledError:
-                    pass
+        while True:
+            if context.is_cancelled:
                 return CANCELLATION_SENTINEL
 
-            return self._process_completed_tasks(done, plan, state)
+            done, _ = await asyncio.wait(
+                state.running.values(),
+                timeout=self._cancellation_poll_interval,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
 
-        finally:
-            if not monitor_task.done():
-                monitor_task.cancel()
-                try:
-                    await monitor_task
-                except asyncio.CancelledError:
-                    pass
+            if done:
+                return self._process_completed_tasks(done, plan, state)
 
     def _process_completed_tasks(
         self,

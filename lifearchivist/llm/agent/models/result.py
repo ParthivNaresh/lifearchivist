@@ -14,7 +14,12 @@ class ResultEnvelope:
 
     @classmethod
     def ok(
-        cls, task_id: str, value: Any, *, attempts: int = 1, duration_ms: int = 0
+        cls,
+        task_id: str,
+        value: Any,
+        *,
+        attempts: int = 1,
+        duration_ms: int = 0,
     ) -> "ResultEnvelope":
         return cls(
             task_id=task_id,
@@ -26,29 +31,48 @@ class ResultEnvelope:
 
     @classmethod
     def error(
-        cls, task_id: str, exc_or_msg: Any, *, attempts: int = 1, duration_ms: int = 0
+        cls,
+        task_id: str,
+        error_type: str,
+        error_message: str,
+        *,
+        attempts: int = 1,
+        duration_ms: int = 0,
     ) -> "ResultEnvelope":
-        if isinstance(exc_or_msg, BaseException):
-            return cls(
-                task_id=task_id,
-                status="error",
-                error_type=type(exc_or_msg).__name__,
-                error_message=str(exc_or_msg),
-                attempts=attempts,
-                duration_ms=duration_ms,
-            )
         return cls(
             task_id=task_id,
             status="error",
-            error_type="Error",
-            error_message=str(exc_or_msg),
+            error_type=error_type,
+            error_message=error_message,
+            attempts=attempts,
+            duration_ms=duration_ms,
+        )
+
+    @classmethod
+    def from_exception(
+        cls,
+        task_id: str,
+        exc: BaseException,
+        *,
+        attempts: int = 1,
+        duration_ms: int = 0,
+    ) -> "ResultEnvelope":
+        return cls(
+            task_id=task_id,
+            status="error",
+            error_type=type(exc).__name__,
+            error_message=str(exc),
             attempts=attempts,
             duration_ms=duration_ms,
         )
 
     @classmethod
     def cancelled(
-        cls, task_id: str, *, attempts: int = 1, duration_ms: int = 0
+        cls,
+        task_id: str,
+        *,
+        attempts: int = 1,
+        duration_ms: int = 0,
     ) -> "ResultEnvelope":
         return cls(
             task_id=task_id,

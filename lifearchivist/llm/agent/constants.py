@@ -24,6 +24,7 @@ class AgentExecutionDefaults:
     MAX_COST_USD: Final[float] = 1.0
     MAX_TIME_SECONDS: Final[int] = 300
 
+    PHASE_TIMEOUT_SECONDS: Final[float] = 120.0
     TASK_TIMEOUT_SECONDS: Final[float] = 60.0
     MAX_RETRIES: Final[int] = 2
     MAX_HISTORY_MESSAGES: Final[int] = 50

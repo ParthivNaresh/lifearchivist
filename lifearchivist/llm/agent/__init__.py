@@ -13,6 +13,7 @@ from .constants import (
 )
 from .exceptions import (
     AgentError,
+    AgentTimeoutError,
     CircularDependencyError,
     ExecutionError,
     ExtractionError,
@@ -20,7 +21,6 @@ from .exceptions import (
     PlanningError,
     ResourceLimitError,
     TaskExecutionError,
-    TimeoutError,
     ToolExecutionError,
 )
 from .executor import TaskExecutor
@@ -31,6 +31,7 @@ from .models import (
     ComplexityClassification,
     ConversationContext,
     ExecutionPlan,
+    PhaseResult,
     QueryComplexity,
 )
 from .phase_coordinator import PhaseCoordinator
@@ -44,6 +45,7 @@ from .prompts import (
     TaskPromptBuilder,
     ToolPromptBuilders,
 )
+from .strategic_plan_validator import StrategicPlanValidator
 from .strategic_planner import StrategicPlanner
 from .tactical_planner import TacticalPlanner
 from .tactical_planner_factory import TacticalPlannerFactory
@@ -59,6 +61,7 @@ __all__ = [
     "ComplexityClassifier",
     "TaskExecutor",
     "PlanValidator",
+    "StrategicPlanValidator",
     "BasePromptBuilder",
     "ClassificationPromptBuilder",
     "StrategicPromptBuilder",
@@ -75,13 +78,14 @@ __all__ = [
     "QueryComplexity",
     "AgentTask",
     "ExecutionPlan",
+    "PhaseResult",
     "AgentError",
     "PlanningError",
     "ExecutionError",
     "TaskExecutionError",
     "ToolExecutionError",
     "ExtractionError",
-    "TimeoutError",
+    "AgentTimeoutError",
     "ResourceLimitError",
     "InvalidTaskError",
     "CircularDependencyError",

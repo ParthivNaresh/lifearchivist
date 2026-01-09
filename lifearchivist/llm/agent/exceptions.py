@@ -22,7 +22,7 @@ class ExtractionError(ToolExecutionError):
     pass
 
 
-class TimeoutError(AgentError):
+class AgentTimeoutError(AgentError):
     pass
 
 

@@ -649,8 +649,12 @@ Each phase gets completely isolated resources:
 | File | Purpose |
 |------|---------|
 | `complexity_classifier.py` | Query classification |
-| `plan_validator.py` | Plan validation |
-| `utils/prompt_builder.py` | Prompt generation |
+| `plan_validator.py` | Task-level plan validation (uses shared DAG validator) |
+| `strategic_plan_validator.py` | Phase-level plan validation (uses shared DAG validator) |
+| `cancellation.py` | CancellationToken and CancellationScope for graceful cancellation |
+| `schema_builder.py` | JSON schema building utilities for structured extraction |
+| `utils/dag_validator.py` | Shared DAG validation utilities (cycle detection, reachability) |
+| `utils/parsing.py` | JSON parsing, sanitization, and text cleaning utilities |
 
 ### Models
 | File | Models |
@@ -659,6 +663,20 @@ Each phase gets completely isolated resources:
 | `models/task.py` | `AgentTask`, `ExecutionPlan` |
 | `models/context.py` | `ConversationContext` |
 | `models/events.py` | `AgentEvent`, `AgentEventType` |
+| `models/result.py` | `ResultEnvelope` |
+| `models/plan.py` | `_PlanState` (executor internal state) |
+| `models/validation.py` | `ValidationResult` |
+
+### Prompts
+| File | Purpose |
+|------|---------|
+| `prompts/base.py` | `BasePromptBuilder` with shared utilities |
+| `prompts/classification.py` | `ClassificationPromptBuilder` for complexity classification |
+| `prompts/strategic.py` | `StrategicPromptBuilder` for phase decomposition |
+| `prompts/tactical.py` | `TacticalPromptBuilder` for task DAG generation |
+| `prompts/synthesis.py` | `SynthesisPromptBuilder` for final response generation |
+| `prompts/task.py` | `TaskPromptBuilder` for individual task execution |
+| `prompts/tool_prompts.py` | `ToolPromptBuilders` for tool-specific system prompts |
 
 ### Tools
 | File | Tool |
@@ -707,6 +725,47 @@ self.phase_coordinator = PhaseCoordinator(
 # 5. Create single tactical planner for direct queries (optional)
 self.tactical_planner = tactical_planner_factory.create()
 ```
+
+---
+
+## Known Issues & Future Improvements
+
+### Critical Issues (Should Fix Before v1.0)
+
+1. **Parameter Resolution Only Supports Document Search Output**
+   - **Location:** `lifearchivist/llm/resolver.py`
+   - **Issue:** The `resolve_params` function assumes all upstream task outputs follow the `document_search` format (`{"documents": [{"document_id": "..."}]}`). Tasks like `structured_extraction` or `text_extraction` produce different output structures, causing downstream tasks to fail with "No document_ids available".
+   - **Fix:** Generalize the resolver to handle different output types, or support field path syntax (e.g., `<from task_a.extractions>`).
+
+2. **TimeoutError Exception Shadows Built-in**
+   - **Location:** `lifearchivist/llm/agent/exceptions.py`
+   - **Issue:** Custom `TimeoutError` class shadows Python's built-in `TimeoutError`, causing potential confusion when catching timeout exceptions.
+   - **Fix:** Rename to `AgentTimeoutError` or similar.
+
+### High Priority Issues
+
+1. **Synthesis Uses Empty ExecutionPlan**
+   - **Location:** `phase_coordinator.py:_create_synthetic_execution_plan()`
+   - **Issue:** The synthesis step creates an `ExecutionPlan` with empty `tasks` list. The synthesis prompt builder receives no task information about what was actually executed.
+   - **Fix:** Pass actual executed tasks from all phases, or modify synthesis to not require ExecutionPlan.
+
+2. **Unbounded Memory in Multi-Phase Execution**
+   - **Location:** `phase_coordinator.py`
+   - **Issue:** `phase_results` dictionary accumulates all phase outputs before synthesis. Large extractions could cause memory pressure.
+   - **Fix:** Implement incremental summarization or streaming result compaction.
+
+5. **Hardcoded Default Model**
+   - **Location:** `constants.py`
+   - **Issue:** `QWEN_25_7B` is hardcoded as default for all operations. Should use provider manager's model selection.
+   - **Fix:** Make model selection dynamic based on available providers.
+
+### Future Enhancements
+
+- **Parallel Phase Execution:** Currently phases execute sequentially. Phases without dependencies could run in parallel.
+- **Phase Caching:** Cache phase results for repeated queries to avoid redundant work.
+- **Adaptive Concurrency:** Dynamically adjust concurrency limits based on system load.
+- **Tool Streaming:** Support streaming results from tools for real-time feedback.
+- **Plan Revision:** Allow LLM to revise plans based on intermediate results.
 
 ---
 
