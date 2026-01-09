@@ -1,9 +1,7 @@
 import asyncio
 import json
 import logging
-import random
 import time
-from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, Iterable, Optional
 
 from pydantic import BaseModel
@@ -20,6 +18,7 @@ from .models import (
 from .prompts import TaskPromptBuilder
 from .tool_registry import AgentToolRegistry
 from .types import DEFAULT_RETRIABLE
+from .utils.async_utils import compute_exponential_backoff, maybe_timeout
 from .utils.parsing import (
     _PLACEHOLDER_PATTERN,
     _approx_size,
@@ -30,15 +29,6 @@ from .utils.parsing import (
 
 if TYPE_CHECKING:
     from llm import LLMProviderManager
-
-
-@asynccontextmanager
-async def _maybe_timeout(seconds: float | None):
-    if seconds is None:
-        yield
-    else:
-        async with asyncio.timeout(seconds):
-            yield
 
 
 class AgentSpawner:
@@ -80,6 +70,26 @@ class AgentSpawner:
         previous_results: dict[str, Any],
         context: ConversationContext,
     ) -> ResultEnvelope:
+        early_exit = self._check_early_exit(task, context)
+        if early_exit is not None:
+            return early_exit
+
+        tool = self.tools.get_tool(task.tool_name)
+        if not tool:
+            return self._handle_tool_not_found(task, context)
+
+        task_ctx = self._build_task_context(task, previous_results, context)
+        requires_llm = self._resolve_llm_requirement(task, tool)
+
+        return await self._execute_with_retries(
+            task, tool, task_ctx, requires_llm, previous_results, context
+        )
+
+    def _check_early_exit(
+        self,
+        task: AgentTask,
+        context: ConversationContext,
+    ) -> Optional[ResultEnvelope]:
         if context.is_cancelled:
             log_event(
                 "spawner_task_cancelled_before_start",
@@ -88,13 +98,11 @@ class AgentSpawner:
                     "task_id": task.task_id,
                 },
             )
-            return ResultEnvelope(
-                task_id=task.task_id,
-                status="error",
-                error_type="Cancelled",
-                error_message="Task cancelled before execution",
+            return ResultEnvelope.error(
+                task.task_id,
+                "Cancelled",
+                "Task cancelled before execution",
                 attempts=0,
-                duration_ms=0,
             )
 
         log_event(
@@ -107,29 +115,29 @@ class AgentSpawner:
                 "depends_on_count": len(task.depends_on),
             },
         )
+        return None
 
-        tool = self.tools.get_tool(task.tool_name)
-        if not tool:
-            log_event(
-                "spawner_tool_not_found",
-                {
-                    "conversation_id": context.conversation_id,
-                    "task_id": task.task_id,
-                    "tool_name": task.tool_name,
-                },
-                level=logging.ERROR,
-            )
-            return ResultEnvelope(
-                task_id=task.task_id,
-                status="error",
-                error_type="ToolNotFound",
-                error_message=f"Tool not found: {task.tool_name}",
-                attempts=1,
-                duration_ms=0,
-            )
+    def _handle_tool_not_found(
+        self,
+        task: AgentTask,
+        context: ConversationContext,
+    ) -> ResultEnvelope:
+        log_event(
+            "spawner_tool_not_found",
+            {
+                "conversation_id": context.conversation_id,
+                "task_id": task.task_id,
+                "tool_name": task.tool_name,
+            },
+            level=logging.ERROR,
+        )
+        return ResultEnvelope.error(
+            task.task_id,
+            "ToolNotFound",
+            f"Tool not found: {task.tool_name}",
+        )
 
-        task_ctx = self._build_task_context(task, previous_results, context)
-
+    def _resolve_llm_requirement(self, task: AgentTask, tool: Any) -> bool:
         tool_requires = tool.requires_llm
         task_requires = task.requires_llm
 
@@ -139,8 +147,17 @@ class AgentSpawner:
                 f"but task.requires_llm=False. Either set requires_llm=True or use a different tool."
             )
 
-        requires_llm = task_requires if task_requires is not None else tool_requires
+        return task_requires if task_requires is not None else tool_requires
 
+    async def _execute_with_retries(
+        self,
+        task: AgentTask,
+        tool: Any,
+        task_ctx: dict[str, Any],
+        requires_llm: bool,
+        previous_results: dict[str, Any],
+        context: ConversationContext,
+    ) -> ResultEnvelope:
         attempts = 0
         start_ns = time.perf_counter_ns()
         last_exc: Optional[BaseException] = None
@@ -149,104 +166,11 @@ class AgentSpawner:
             attempts += 1
 
             try:
-                async with _maybe_timeout(self.task_timeout_s):
-                    try:
-                        resolved_params = resolve_params(
-                            task.parameters,
-                            previous_results,
-                            task.depends_on or [],
-                        )
-                    except Exception as e:
-                        log_event(
-                            "spawner_param_resolution_failed",
-                            {
-                                "conversation_id": context.conversation_id,
-                                "task_id": task.task_id,
-                                "tool_name": task.tool_name,
-                                "error": str(e),
-                                "depends_on": task.depends_on,
-                                "params_preview": _safe_preview(task.parameters, 600),
-                            },
-                            level=logging.ERROR,
-                        )
-                        raise
-
-                    try:
-                        params_str = json.dumps(resolved_params, ensure_ascii=False)
-                    except Exception:
-                        params_str = str(resolved_params)
-
-                    if _PLACEHOLDER_PATTERN.search(params_str):
-                        msg = (
-                            "Unresolved dependency placeholder remains in parameters. "
-                            "Ensure all '<from task_id>' references point to completed dependencies."
-                        )
-                        log_event(
-                            "spawner_unresolved_placeholders",
-                            {
-                                "conversation_id": context.conversation_id,
-                                "task_id": task.task_id,
-                                "tool_name": task.tool_name,
-                                "params_preview": _json_preview(params_str, 1500),
-                            },
-                            level=logging.ERROR,
-                        )
-                        raise ValueError(msg)
-
-                    model = getattr(tool, "input_model", None)
-                    if model is None:
-                        raise ToolExecutionError(
-                            f"Tool '{task.tool_name}' missing input_model (Pydantic BaseModel)"
-                        )
-                    typed_params: BaseModel = model.model_validate(resolved_params)
-
-                    value = await self._invoke_tool(
-                        tool=tool,
-                        task=task,
-                        task_ctx=task_ctx,
-                        requires_llm=requires_llm,
-                        typed_params=typed_params,
-                    )
-
-                    log_event(
-                        "spawner_task_value_summary_pre_sanitized",
-                        {"value": value},
-                    )
-
-                    value = sanitize_tool_output(value)
-
-                    log_event(
-                        "spawner_task_value_summary_post_sanitized",
-                        {"value": value},
-                    )
-
-                duration_ms = (time.perf_counter_ns() - start_ns) // 1_000_000
-
-                log_event(
-                    "spawner_execute_success",
-                    {
-                        "conversation_id": context.conversation_id,
-                        "task_id": task.task_id,
-                        "tool_name": task.tool_name,
-                        "attempts": attempts,
-                        "duration_ms": duration_ms,
-                        "requires_llm": requires_llm,
-                    },
+                value = await self._execute_single_attempt(
+                    task, tool, task_ctx, requires_llm, previous_results, context
                 )
-
-                if isinstance(value, ResultEnvelope):
-                    if value.attempts < attempts:
-                        value.attempts = attempts
-                    if not value.duration_ms:
-                        value.duration_ms = duration_ms
-                    return value
-
-                return ResultEnvelope(
-                    task_id=task.task_id,
-                    status="ok",
-                    value=value,
-                    attempts=attempts,
-                    duration_ms=duration_ms,
+                return self._finalize_success(
+                    task, value, attempts, start_ns, requires_llm, context
                 )
 
             except asyncio.CancelledError:
@@ -263,42 +187,11 @@ class AgentSpawner:
 
             except self.retriable_exceptions as e:
                 last_exc = e
-                if attempts <= self.max_retries:
-                    delay = self._compute_backoff(attempts)
-                    log_event(
-                        "spawner_retriable_error",
-                        {
-                            "conversation_id": context.conversation_id,
-                            "task_id": task.task_id,
-                            "attempt": attempts,
-                            "max_retries": self.max_retries,
-                            "error_type": type(e).__name__,
-                            "error": str(e),
-                            "backoff_seconds": delay,
-                        },
-                        level=logging.WARNING,
-                    )
-                    self.log.warning(
-                        "Retriable error on task %s (attempt %d/%d): %s; backing off %.2fs",
-                        task.task_id,
-                        attempts,
-                        self.max_retries,
-                        type(e).__name__,
-                        delay,
-                    )
-                    await asyncio.sleep(delay)
-                    continue
-                log_event(
-                    "spawner_retries_exhausted",
-                    {
-                        "conversation_id": context.conversation_id,
-                        "task_id": task.task_id,
-                        "attempts": attempts,
-                        "error_type": type(e).__name__,
-                        "error": str(e),
-                    },
-                    level=logging.ERROR,
+                should_retry = await self._handle_retriable_error(
+                    task, e, attempts, context
                 )
+                if should_retry:
+                    continue
                 break
 
             except Exception as e:
@@ -316,7 +209,196 @@ class AgentSpawner:
                 )
                 break
 
-        duration_ms = (time.perf_counter_ns() - start_ns) // 1_000_000
+        return self._finalize_failure(task, last_exc, attempts, start_ns, context)
+
+    async def _execute_single_attempt(
+        self,
+        task: AgentTask,
+        tool: Any,
+        task_ctx: dict[str, Any],
+        requires_llm: bool,
+        previous_results: dict[str, Any],
+        context: ConversationContext,
+    ) -> Any:
+        async with maybe_timeout(self.task_timeout_s):
+            typed_params = self._resolve_and_validate_params(
+                task, tool, previous_results, context
+            )
+
+            value = await self._invoke_tool(
+                tool=tool,
+                task=task,
+                task_ctx=task_ctx,
+                requires_llm=requires_llm,
+                typed_params=typed_params,
+            )
+
+            log_event("spawner_task_value_summary_pre_sanitized", {"value": value})
+            value = sanitize_tool_output(value)
+            log_event("spawner_task_value_summary_post_sanitized", {"value": value})
+
+            return value
+
+    def _resolve_and_validate_params(
+        self,
+        task: AgentTask,
+        tool: Any,
+        previous_results: dict[str, Any],
+        context: ConversationContext,
+    ) -> BaseModel:
+        try:
+            resolved_params = resolve_params(
+                task.parameters,
+                previous_results,
+                task.depends_on or [],
+            )
+        except Exception as e:
+            log_event(
+                "spawner_param_resolution_failed",
+                {
+                    "conversation_id": context.conversation_id,
+                    "task_id": task.task_id,
+                    "tool_name": task.tool_name,
+                    "error": str(e),
+                    "depends_on": task.depends_on,
+                    "params_preview": _safe_preview(task.parameters, 600),
+                },
+                level=logging.ERROR,
+            )
+            raise
+
+        self._check_unresolved_placeholders(task, resolved_params, context)
+
+        model: type[BaseModel] | None = getattr(tool, "input_model", None)
+        if model is None:
+            raise ToolExecutionError(
+                f"Tool '{task.tool_name}' missing input_model (Pydantic BaseModel)"
+            )
+
+        return model.model_validate(resolved_params)
+
+    def _check_unresolved_placeholders(
+        self,
+        task: AgentTask,
+        resolved_params: dict[str, Any],
+        context: ConversationContext,
+    ) -> None:
+        try:
+            params_str = json.dumps(resolved_params, ensure_ascii=False)
+        except Exception:
+            params_str = str(resolved_params)
+
+        if _PLACEHOLDER_PATTERN.search(params_str):
+            log_event(
+                "spawner_unresolved_placeholders",
+                {
+                    "conversation_id": context.conversation_id,
+                    "task_id": task.task_id,
+                    "tool_name": task.tool_name,
+                    "params_preview": _json_preview(params_str, 1500),
+                },
+                level=logging.ERROR,
+            )
+            raise ValueError(
+                "Unresolved dependency placeholder remains in parameters. "
+                "Ensure all '<from task_id>' references point to completed dependencies."
+            )
+
+    async def _handle_retriable_error(
+        self,
+        task: AgentTask,
+        error: BaseException,
+        attempts: int,
+        context: ConversationContext,
+    ) -> bool:
+        if attempts <= self.max_retries:
+            delay = self._compute_backoff(attempts)
+            log_event(
+                "spawner_retriable_error",
+                {
+                    "conversation_id": context.conversation_id,
+                    "task_id": task.task_id,
+                    "attempt": attempts,
+                    "max_retries": self.max_retries,
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                    "backoff_seconds": delay,
+                },
+                level=logging.WARNING,
+            )
+            self.log.warning(
+                "Retriable error on task %s (attempt %d/%d): %s; backing off %.2fs",
+                task.task_id,
+                attempts,
+                self.max_retries,
+                type(error).__name__,
+                delay,
+            )
+            await asyncio.sleep(delay)
+            return True
+
+        log_event(
+            "spawner_retries_exhausted",
+            {
+                "conversation_id": context.conversation_id,
+                "task_id": task.task_id,
+                "attempts": attempts,
+                "error_type": type(error).__name__,
+                "error": str(error),
+            },
+            level=logging.ERROR,
+        )
+        return False
+
+    def _finalize_success(
+        self,
+        task: AgentTask,
+        value: Any,
+        attempts: int,
+        start_ns: int,
+        requires_llm: bool,
+        context: ConversationContext,
+    ) -> ResultEnvelope:
+        duration_ms = self._elapsed_ms(start_ns)
+
+        log_event(
+            "spawner_execute_success",
+            {
+                "conversation_id": context.conversation_id,
+                "task_id": task.task_id,
+                "tool_name": task.tool_name,
+                "attempts": attempts,
+                "duration_ms": duration_ms,
+                "requires_llm": requires_llm,
+            },
+        )
+
+        if isinstance(value, ResultEnvelope):
+            if value.attempts < attempts:
+                value.attempts = attempts
+            if not value.duration_ms:
+                value.duration_ms = duration_ms
+            return value
+
+        return ResultEnvelope.ok(
+            task.task_id,
+            value,
+            attempts=attempts,
+            duration_ms=duration_ms,
+        )
+
+    def _finalize_failure(
+        self,
+        task: AgentTask,
+        error: Optional[BaseException],
+        attempts: int,
+        start_ns: int,
+        context: ConversationContext,
+    ) -> ResultEnvelope:
+        duration_ms = self._elapsed_ms(start_ns)
+        error_type = type(error).__name__ if error else "UnknownError"
+        error_message = str(error) if error else "Unknown error"
+
         log_event(
             "spawner_execute_failed",
             {
@@ -325,16 +407,16 @@ class AgentSpawner:
                 "tool_name": task.tool_name,
                 "attempts": attempts,
                 "duration_ms": duration_ms,
-                "error_type": type(last_exc).__name__ if last_exc else "UnknownError",
-                "error": str(last_exc) if last_exc else "Unknown error",
+                "error_type": error_type,
+                "error": error_message,
             },
             level=logging.ERROR,
         )
-        return ResultEnvelope(
-            task_id=task.task_id,
-            status="error",
-            error_type=type(last_exc).__name__ if last_exc else "UnknownError",
-            error_message=str(last_exc) if last_exc else "Unknown error",
+
+        return ResultEnvelope.error(
+            task.task_id,
+            error_type,
+            error_message,
             attempts=attempts,
             duration_ms=duration_ms,
         )
@@ -382,15 +464,7 @@ class AgentSpawner:
 
         deps: dict[str, Any] = {}
         total_bytes = 0
-        log_event(
-            "================================= BUILD TASK CONTEXT ================================="
-        )
-        log_event(json.dumps({"Tool Name": task.tool_name}, indent=2))
-        log_event(json.dumps({"Depends On": task.depends_on}, indent=2))
-        log_event(json.dumps({"Previous Resultd": previous_results}, indent=2))
-        log_event(
-            "------------------------------------------------------------------------"
-        )
+
         for dep_id in task.depends_on:
             if dep_id in previous_results:
                 val = previous_results[dep_id]
@@ -416,6 +490,12 @@ class AgentSpawner:
         }
 
     def _compute_backoff(self, attempt: int) -> float:
-        base = self.backoff_base_s * (2 ** (attempt - 1))
-        jitter = 0.2 * base * (2 * random.random() - 1)
-        return float(min(self.backoff_max_s, max(0.0, base + jitter)))
+        return compute_exponential_backoff(
+            attempt,
+            base_seconds=self.backoff_base_s,
+            max_seconds=self.backoff_max_s,
+        )
+
+    @staticmethod
+    def _elapsed_ms(start_ns: int) -> int:
+        return (time.perf_counter_ns() - start_ns) // 1_000_000

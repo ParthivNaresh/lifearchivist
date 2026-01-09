@@ -21,6 +21,7 @@ from .exceptions import (
     InsufficientCreditsError,
     InvalidRequestError,
     LLMProviderError,
+    LLMTimeoutError,
     ModelNotFoundError,
     ProviderAPIError,
     ProviderConfigurationError,
@@ -28,7 +29,6 @@ from .exceptions import (
     RateLimitError,
     ServerError,
     StreamingError,
-    TimeoutError,
     parse_provider_error,
 )
 from .provider_factory import ProviderManagerFactory
@@ -57,7 +57,7 @@ __all__ = [
     "ModelNotFoundError",
     "ServerError",
     "ConnectionError",
-    "TimeoutError",
+    "LLMTimeoutError",
     "StreamingError",
     "ProviderNotInitializedError",
     "ProviderConfigurationError",

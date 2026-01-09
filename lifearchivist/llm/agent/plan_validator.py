@@ -1,6 +1,5 @@
 import logging
-from collections import Counter, deque
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import ValidationError
 
@@ -9,21 +8,10 @@ from .exceptions import PlanningError
 from .models.task import AgentTask, ExecutionPlan
 from .models.validation import ValidationResult
 from .tool_registry import AgentToolRegistry
+from .utils.dag_validator import validate_dag, validate_node_structure
 
 
 class PlanValidator:
-    """
-    Validates a plan for structural correctness, semantics, and graph soundness.
-
-    Improvements:
-      - O(n) duplicate detection (Counter)
-      - Self-dependency detection
-      - Per-tool existence checks
-      - Parameter type and presence checks against tool.input_schema
-      - Budget checks (time & cost)
-      - Graph checks using Kahn's algorithm (cycles) and reachability from roots
-      - Clear warnings for isolated tasks
-    """
 
     def __init__(
         self,
@@ -37,7 +25,6 @@ class PlanValidator:
         self.max_cost_usd = max_cost_usd
         self.max_time_seconds = max_time_seconds
 
-    # @track(operation="plan_validate")
     def validate(self, plan: ExecutionPlan) -> None:
         result = self._validate_plan(plan)
 
@@ -64,10 +51,7 @@ class PlanValidator:
                 f"  - {e}" for e in result.errors
             )
             raise PlanningError(msg)
-        # You may want to surface warnings upstream as events/logs
-        # (e.g., AgentEvent of type PLAN_VALIDATED with warnings)
 
-    # Internal
     def _validate_plan(self, plan: ExecutionPlan) -> ValidationResult:
         errors: List[str] = []
         warnings: List[str] = []
@@ -89,50 +73,30 @@ class PlanValidator:
         if not tasks:
             return ["Plan contains no tasks"]
 
-        if len(tasks) > self.max_tasks:
-            errors.append(
-                f"Plan exceeds maximum task limit: {len(tasks)} > {self.max_tasks}"
-            )
-
-        # task_id presence and format
-        ids = []
+        task_ids = []
         for t in tasks:
             if not getattr(t, "task_id", None):
                 errors.append("Each task must include a non-empty 'task_id'")
             else:
-                ids.append(t.task_id)
+                task_ids.append(t.task_id)
 
-        # Duplicate IDs (O(n))
-        counts = Counter(ids)
-        dups = [tid for tid, c in counts.items() if c > 1]
-        if dups:
-            errors.append(f"Duplicate task IDs found: {sorted(dups)}")
+        dependencies = {t.task_id: t.depends_on for t in tasks if t.task_id}
 
-        # Tool existence and dependency checks
-        id_set = set(ids)
+        structure_errors = validate_node_structure(
+            node_ids=task_ids,
+            dependencies=dependencies,
+            node_type_name="task",
+            max_nodes=self.max_tasks,
+        )
+
+        for err in structure_errors:
+            if "Must have at least one" not in err:
+                errors.append(err)
+
         for t in tasks:
             if not self.tools.has_tool(t.tool_name):
                 errors.append(
                     f"Task '{t.task_id}' references unknown tool: '{t.tool_name}'"
-                )
-
-            # Self-dependency
-            if t.task_id in t.depends_on:
-                errors.append(f"Task '{t.task_id}' has a self-dependency")
-
-            # Non-existent dependencies
-            missing = [d for d in t.depends_on if d not in id_set]
-            if missing:
-                errors.append(
-                    f"Task '{t.task_id}' depends on non-existent tasks: {sorted(missing)}"
-                )
-
-            # Duplicate dependencies within a task
-            dep_counts = Counter(t.depends_on)
-            dup_deps = [d for d, c in dep_counts.items() if c > 1]
-            if dup_deps:
-                errors.append(
-                    f"Task '{t.task_id}' lists duplicate dependencies: {sorted(dup_deps)}"
                 )
 
         return errors
@@ -142,9 +106,6 @@ class PlanValidator:
         for t in plan.tasks:
             tool = self.tools.get_tool(t.tool_name)
             if not tool:
-                errors.append(
-                    f"Task '{t.task_id}' references unknown tool: '{t.tool_name}'"
-                )
                 continue
             if tool.input_model is None:
                 errors.append(
@@ -154,7 +115,6 @@ class PlanValidator:
 
             model = tool.input_model
             try:
-                # This also normalizes types (e.g., str->int coercion if allowed)
                 model.model_validate(t.parameters)
             except ValidationError as ve:
                 for err in ve.errors():
@@ -168,7 +128,6 @@ class PlanValidator:
     def _validate_semantics(self, plan: ExecutionPlan) -> List[str]:
         errors: List[str] = []
 
-        # Budget checks
         if plan.estimated_cost_usd > self.max_cost_usd:
             errors.append(
                 f"Plan exceeds cost budget: ${plan.estimated_cost_usd:.4f} > ${self.max_cost_usd:.4f}"
@@ -210,74 +169,17 @@ class PlanValidator:
         return None
 
     def _validate_graph(self, tasks: List[AgentTask]) -> Tuple[List[str], List[str]]:
-        """
-        Uses Kahn's algorithm to detect cycles and computes reachability from roots.
-        """
-        errors: List[str] = []
-        warnings: List[str] = []
-
         if not tasks:
-            return errors, warnings
+            return [], []
 
-        # Build graph: edge dep -> task
-        id_to_task = {t.task_id: t for t in tasks}
-        all_ids = set(id_to_task.keys())
+        node_ids = {t.task_id for t in tasks if t.task_id}
+        dependencies = {t.task_id: t.depends_on for t in tasks if t.task_id}
 
-        indeg: Dict[str, int] = {tid: 0 for tid in all_ids}
-        adj: Dict[str, List[str]] = {tid: [] for tid in all_ids}
-
-        for t in tasks:
-            for dep in t.depends_on:
-                if dep in all_ids:
-                    adj[dep].append(t.task_id)
-                    indeg[t.task_id] += 1
-
-        roots = [tid for tid, d in indeg.items() if d == 0]
-        if not roots:
-            # If there are no roots and there are tasks, either a cycle exists or non-existent deps already reported.
-            # Kahn's will report cycles precisely below.
-            pass
-
-        # Kahn's algorithm for cycle detection & topological order
-        q = deque(roots)
-        visited: List[str] = []
-
-        while q:
-            u = q.popleft()
-            visited.append(u)
-            for v in adj[u]:
-                indeg[v] -= 1
-                if indeg[v] == 0:
-                    q.append(v)
-
-        if len(visited) != len(all_ids):
-            cyclic = sorted(all_ids - set(visited))
-            errors.append(f"Plan contains circular dependencies among: {cyclic}")
-
-        # Reachability from roots (ignoring cycles already flagged)
-        reachable: Set[str] = set()
-        rq = deque(roots)
-        while rq:
-            u = rq.popleft()
-            if u in reachable:
-                continue
-            reachable.add(u)
-            for v in adj[u]:
-                rq.append(v)
-
-        unreachable = sorted(all_ids - reachable)
-        if roots and unreachable:
-            errors.append(
-                f"Unreachable tasks detected (no path from any root): {unreachable}"
-            )
-
-        # Isolated tasks (no deps and no dependents) are likely dangling work
-        isolated = sorted(
-            t.task_id for t in tasks if not t.depends_on and not adj[t.task_id]
+        result = validate_dag(
+            node_ids=node_ids,
+            dependencies=dependencies,
+            node_type_name="task",
+            allow_isolated=True,
         )
-        if len(tasks) > 1 and isolated:
-            warnings.append(
-                f"Tasks with no dependencies or dependents: {isolated} (verify intent)"
-            )
 
-        return errors, warnings
+        return list(result.errors), list(result.warnings)

@@ -9,6 +9,7 @@ from .exceptions import PlanningError
 from .models.context import ConversationContext
 from .models.strategic_plan import PhaseComplexity, StrategicPhase, StrategicPlan
 from .prompts import StrategicPromptBuilder
+from .strategic_plan_validator import StrategicPlanValidator
 from .tool_registry import AgentToolRegistry
 from .utils.parsing import json_loads_strict
 
@@ -26,12 +27,20 @@ class StrategicPlanner:
         planning_model: str = AgentModelDefaults.PLANNING_MODEL,
         planning_temperature: float = AgentModelDefaults.PLANNING_TEMPERATURE,
         max_phases: int = AgentExecutionDefaults.MAX_PHASES,
+        max_cost_usd: float = AgentExecutionDefaults.MAX_COST_USD,
+        max_time_seconds: int = AgentExecutionDefaults.MAX_TIME_SECONDS,
     ):
         self.llm = llm_provider_manager
         self.tools = tool_registry
         self.planning_model = planning_model
         self.planning_temperature = planning_temperature
         self.max_phases = max_phases
+        self.validator = StrategicPlanValidator(
+            tool_registry=tool_registry,
+            max_phases=max_phases,
+            max_cost_usd=max_cost_usd,
+            max_time_seconds=max_time_seconds,
+        )
 
     async def create_strategic_plan(
         self, query: str, context: ConversationContext
@@ -173,9 +182,13 @@ class StrategicPlanner:
         estimated_time = int(plan_data.get("estimated_time_seconds", 0))
         estimated_cost = float(plan_data.get("estimated_cost_usd", 0.0))
 
-        return StrategicPlan(
+        plan = StrategicPlan(
             strategy=strategy,
             phases=phases,
             estimated_time_seconds=estimated_time,
             estimated_cost_usd=estimated_cost,
         )
+
+        self.validator.validate(plan)
+
+        return plan

@@ -74,7 +74,6 @@ class TacticalPlannerFactory:
             complexity_classifier=self.complexity_classifier,
             executor=executor,
             plan_validator=plan_validator,
-            on_observe=self.on_observe,
             planning_model=self.planning_model,
             planning_temperature=self.planning_temperature,
             synthesis_model=self.synthesis_model,

@@ -4,13 +4,16 @@ import logging
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from ...utils.logx import log_event
+from .constants import AgentExecutionDefaults
 from .exceptions import PlanningError
 from .models.context import ConversationContext
 from .models.events import AgentEvent, AgentEventType
+from .models.phase_result import PhaseResult
 from .models.strategic_plan import StrategicPhase, StrategicPlan
 from .models.task import ExecutionPlan
 from .strategic_planner import StrategicPlanner
 from .tactical_planner_factory import TacticalPlannerFactory
+from .utils.async_utils import maybe_timeout
 
 
 def _check_cancelled(context: ConversationContext) -> bool:
@@ -23,9 +26,12 @@ class PhaseCoordinator:
         self,
         strategic_planner: StrategicPlanner,
         tactical_planner_factory: TacticalPlannerFactory,
+        *,
+        phase_timeout_s: float | None = AgentExecutionDefaults.PHASE_TIMEOUT_SECONDS,
     ):
         self.strategic_planner = strategic_planner
         self.tactical_planner_factory = tactical_planner_factory
+        self.phase_timeout_s = phase_timeout_s
 
     async def execute_query(
         self, query: str, context: ConversationContext
@@ -82,7 +88,7 @@ class PhaseCoordinator:
                 },
             )
 
-            phase_results: Dict[str, Any] = {}
+            phase_results: Dict[str, PhaseResult] = {}
             completed_phases: set[str] = set()
 
             for phase_idx, phase in enumerate(strategic_plan.phases, 1):
@@ -110,6 +116,7 @@ class PhaseCoordinator:
                         "phase_number": phase_idx,
                         "total_phases": len(strategic_plan.phases),
                         "description": phase.description,
+                        "timeout_seconds": self.phase_timeout_s,
                     },
                 )
 
@@ -135,28 +142,31 @@ class PhaseCoordinator:
                 )
                 log_event("")
 
+                phase_result = PhaseResult(phase_id=phase.phase_id)
+
                 try:
-                    phase_task_results: Dict[str, Any] = {}
-                    async for ev in self._execute_phase_streaming(
+                    async for ev in self._execute_phase_with_timeout(
                         phase=phase,
                         phase_number=phase_idx,
                         total_phases=len(strategic_plan.phases),
                         query=query,
                         context=context,
                         previous_results=phase_results,
+                        phase_result=phase_result,
                     ):
                         yield ev
-                        if ev.type == AgentEventType.TASK_COMPLETED and ev.task_id:
-                            phase_task_results[ev.task_id] = ev.data
+
                         if ev.type == AgentEventType.PLAN_FAILED:
+                            phase_results[phase.phase_id] = phase_result
                             raise PlanningError(
                                 f"Phase {phase.phase_id} execution failed"
                             )
                         if ev.type == AgentEventType.PLAN_CANCELLED:
+                            phase_results[phase.phase_id] = phase_result
                             yield AgentEvent.cancelled()
                             return
 
-                    phase_results[phase.phase_id] = phase_task_results
+                    phase_results[phase.phase_id] = phase_result
                     completed_phases.add(phase.phase_id)
 
                     yield AgentEvent.phase_completed(phase.phase_id)
@@ -167,8 +177,31 @@ class PhaseCoordinator:
                             "phase_id": phase.phase_id,
                             "phase_number": phase_idx,
                             "total_phases": len(strategic_plan.phases),
+                            "completed_tasks": len(phase_result.completed),
+                            "failed_tasks": len(phase_result.failed),
+                            "skipped_tasks": len(phase_result.skipped),
                         },
                     )
+
+                except TimeoutError:
+                    phase_results[phase.phase_id] = phase_result
+                    log_event(
+                        "phase_coordinator_phase_timeout",
+                        {
+                            "conversation_id": context.conversation_id,
+                            "phase_id": phase.phase_id,
+                            "timeout_seconds": self.phase_timeout_s,
+                            "completed_tasks": len(phase_result.completed),
+                            "failed_tasks": len(phase_result.failed),
+                            "skipped_tasks": len(phase_result.skipped),
+                        },
+                        level=logging.ERROR,
+                    )
+                    yield AgentEvent.plan_failed(
+                        f"Phase {phase.phase_id} timed out after {self.phase_timeout_s}s"
+                    )
+                    yield AgentEvent.complete()
+                    return
 
                 except asyncio.CancelledError:
                     log_event(
@@ -230,11 +263,14 @@ class PhaseCoordinator:
 
             try:
                 synthesis_planner = self.tactical_planner_factory.create()
+                synthesis_results = self._flatten_phase_results_for_synthesis(
+                    phase_results
+                )
 
                 async for chunk in synthesis_planner._synthesize_response(
                     query=query,
                     plan=self._create_synthetic_execution_plan(strategic_plan),
-                    task_results=phase_results,
+                    task_results=synthesis_results,
                     context=context,
                 ):
                     if _check_cancelled(context):
@@ -310,6 +346,68 @@ class PhaseCoordinator:
             yield AgentEvent.error(f"Unexpected error: {e}")
             yield AgentEvent.complete()
 
+    async def _execute_phase_with_timeout(
+        self,
+        phase: StrategicPhase,
+        phase_number: int,
+        total_phases: int,
+        query: str,
+        context: ConversationContext,
+        previous_results: Dict[str, PhaseResult],
+        phase_result: PhaseResult,
+    ) -> AsyncGenerator[AgentEvent, None]:
+        async with maybe_timeout(self.phase_timeout_s):
+            async for ev in self._execute_phase_streaming(
+                phase=phase,
+                phase_number=phase_number,
+                total_phases=total_phases,
+                query=query,
+                context=context,
+                previous_results=previous_results,
+            ):
+                self._capture_task_event(ev, phase_result)
+                yield ev
+
+    def _capture_task_event(self, ev: AgentEvent, phase_result: PhaseResult) -> None:
+        if ev.task_id is None:
+            return
+
+        if ev.type == AgentEventType.TASK_COMPLETED:
+            phase_result.add_completed(ev.task_id, ev.data)
+
+        elif ev.type == AgentEventType.TASK_FAILED:
+            error = (
+                ev.data.get("error", "Unknown error") if ev.data else "Unknown error"
+            )
+            phase_result.add_failed(ev.task_id, error)
+
+        elif ev.type == AgentEventType.TASK_SKIPPED:
+            reason = (
+                ev.data.get("reason", "Unknown reason") if ev.data else "Unknown reason"
+            )
+            phase_result.add_skipped(ev.task_id, reason)
+
+    def _flatten_phase_results_for_synthesis(
+        self, phase_results: Dict[str, PhaseResult]
+    ) -> Dict[str, Any]:
+        flattened: Dict[str, Any] = {}
+
+        for phase_id, phase_result in phase_results.items():
+            phase_data = phase_result.to_synthesis_dict()
+
+            for task_id, data in phase_data.items():
+                flattened[f"{phase_id}.{task_id}"] = data
+
+            if not phase_result.is_success:
+                flattened[f"{phase_id}._meta"] = {
+                    "is_partial": phase_result.is_partial,
+                    "completed_count": len(phase_result.completed),
+                    "failed_count": len(phase_result.failed),
+                    "skipped_count": len(phase_result.skipped),
+                }
+
+        return flattened
+
     async def _create_strategic_plan_with_cancellation(
         self, query: str, context: ConversationContext
     ) -> Optional[StrategicPlan]:
@@ -352,7 +450,7 @@ class PhaseCoordinator:
         total_phases: int,
         query: str,
         context: ConversationContext,
-        previous_results: Dict[str, Any],
+        previous_results: Dict[str, PhaseResult],
     ) -> AsyncGenerator[AgentEvent, None]:
         tactical_planner = self.tactical_planner_factory.create()
 
@@ -422,7 +520,7 @@ class PhaseCoordinator:
         self,
         phase: StrategicPhase,
         original_query: str,
-        previous_results: Dict[str, Any],
+        previous_results: Dict[str, PhaseResult],
     ) -> str:
         query_parts = [phase.description]
 
@@ -444,17 +542,18 @@ class PhaseCoordinator:
         return "\n".join(query_parts)
 
     def _extract_document_ids_from_results(
-        self, phase_results: Dict[str, Any]
+        self, phase_results: Dict[str, PhaseResult]
     ) -> List[str]:
         document_ids: List[str] = []
         seen: set[str] = set()
 
-        for _phase_id, result in phase_results.items():
-            ids = self._extract_ids_from_value(result)
-            for doc_id in ids:
-                if doc_id not in seen:
-                    document_ids.append(doc_id)
-                    seen.add(doc_id)
+        for _phase_id, phase_result in phase_results.items():
+            for _task_id, result in phase_result.completed.items():
+                ids = self._extract_ids_from_value(result)
+                for doc_id in ids:
+                    if doc_id not in seen:
+                        document_ids.append(doc_id)
+                        seen.add(doc_id)
 
         return document_ids
 
@@ -480,31 +579,50 @@ class PhaseCoordinator:
         return ids
 
     def _summarize_previous_results(
-        self, phase_results: Dict[str, Any], max_chars: int = 2000
+        self, phase_results: Dict[str, PhaseResult], max_chars: int = 2000
     ) -> Optional[str]:
         if not phase_results:
             return None
 
         summaries: List[str] = []
 
-        for phase_id, result in phase_results.items():
-            doc_count = self._count_documents(result)
-            if doc_count > 0:
-                summaries.append(f"- {phase_id}: Found {doc_count} documents")
+        for phase_id, phase_result in phase_results.items():
+            if not phase_result.is_success:
+                status_parts = []
+                if phase_result.failed:
+                    status_parts.append(f"{len(phase_result.failed)} failed")
+                if phase_result.skipped:
+                    status_parts.append(f"{len(phase_result.skipped)} skipped")
+                status = ", ".join(status_parts)
+                summaries.append(
+                    f"- {phase_id}: PARTIAL ({len(phase_result.completed)} completed, {status})"
+                )
 
-            if isinstance(result, dict):
-                if "text" in result:
-                    text_preview = str(result["text"])[:200]
+            for task_id, result in phase_result.completed.items():
+                doc_count = self._count_documents(result)
+                if doc_count > 0:
                     summaries.append(
-                        f"- {phase_id}: Text output (preview): {text_preview}..."
+                        f"- {phase_id}/{task_id}: Found {doc_count} documents"
                     )
-                elif "extractions" in result:
-                    ext_count = (
-                        len(result["extractions"])
-                        if isinstance(result["extractions"], list)
-                        else 1
-                    )
-                    summaries.append(f"- {phase_id}: Extracted {ext_count} items")
+
+                if isinstance(result, dict):
+                    if "text" in result:
+                        text_preview = str(result["text"])[:200]
+                        summaries.append(
+                            f"- {phase_id}/{task_id}: Text output (preview): {text_preview}..."
+                        )
+                    elif "extractions" in result:
+                        ext_count = (
+                            len(result["extractions"])
+                            if isinstance(result["extractions"], list)
+                            else 1
+                        )
+                        summaries.append(
+                            f"- {phase_id}/{task_id}: Extracted {ext_count} items"
+                        )
+
+            for task_id, error in phase_result.failed.items():
+                summaries.append(f"- {phase_id}/{task_id}: FAILED - {error[:100]}")
 
         if not summaries:
             return None

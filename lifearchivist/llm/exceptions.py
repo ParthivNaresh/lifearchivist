@@ -368,7 +368,7 @@ class ConnectionError(LLMProviderError):
         return self.USER_MESSAGE
 
 
-class TimeoutError(LLMProviderError):
+class LLMTimeoutError(LLMProviderError):
     """
     Request timeout error.
 
@@ -500,7 +500,7 @@ def parse_provider_error(
     error_str_lower = error_str.lower()
 
     if "timeout" in error_str_lower or "timed out" in error_str_lower:
-        return TimeoutError(
+        return LLMTimeoutError(
             message=error_str,
             provider_id=provider_id,
             timeout_seconds=120,

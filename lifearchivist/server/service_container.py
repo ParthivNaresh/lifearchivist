@@ -693,9 +693,8 @@ class ServiceContainer:
             self.phase_coordinator = PhaseCoordinator(
                 strategic_planner=strategic_planner,
                 tactical_planner_factory=tactical_planner_factory,
+                phase_timeout_s=AgentExecutionDefaults.PHASE_TIMEOUT_SECONDS,
             )
-
-            self.tactical_planner = tactical_planner_factory.create()
 
         except Exception as e:
             raise ServiceInitializationError(
